@@ -1,0 +1,258 @@
+{
+  "entities": {
+    "Profile": {
+      "title": "ملف تعريف المستخدم",
+      "description": "يمثل حساب مستخدم واحد في النظام، مرتبط بـ Firebase Auth. يحدد هذا الملف من هو المستخدم وما هو دوره.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "معرف المستخدم الفريد (UID) من نظام المصادقة."
+        },
+        "full_name": {
+          "type": "string",
+          "description": "الاسم الكامل للمستخدم."
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "phone_number": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "admin",
+            "owner"
+          ]
+        },
+        "account_status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "pending",
+            "suspended"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "restaurant_id": {
+          "type": "string",
+          "$ref": "#/entities/Restaurant/properties/id",
+          "description": "مفتاح خارجي لمجموعة المطاعم، يربط الملف الشخصي بالمطعم الذي يملكه."
+        },
+        "restaurant_name": {
+            "type": "string",
+            "description": "اسم المطعم غير المعياري لتسهيل الوصول إليه."
+        },
+        "admin_permissions": {
+          "type": "array",
+          "description": "يحدد صفحات المسؤول التي يمكن للمستخدم الوصول إليها. ينطبق فقط إذا كان الدور 'admin'.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "role",
+        "account_status"
+      ]
+    },
+    "Restaurant": {
+      "title": "مطعم",
+      "description": "يمثل كيان مطعم واحد، يحتوي على جميع بياناته وإعداداته وعلامته التجارية المحددة. يملكه ملف تعريف مستخدم.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "المعرف الفريد للمطعم."
+        },
+        "owner_id": {
+          "type": "string",
+          "$ref": "#/entities/Profile/properties/id",
+          "description": "مفتاح خارجي لمجموعة الملفات الشخصية، يربط المطعم بمالكه."
+        },
+        "name": {
+          "type": "string",
+          "description": "اسم العرض للمطعم."
+        },
+        "username": {
+          "type": "string",
+          "description": "اسم مستخدم فريد وسهل الاستخدام في عناوين URL لصفحات المطعم العامة."
+        },
+        "username_last_updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "الطابع الزمني لآخر مرة تم فيها تغيير اسم المستخدم."
+        },
+        "logo": {
+          "type": "string",
+          "format": "uri",
+          "description": "رابط شعار المطعم."
+        },
+        "description": {
+          "type": "string",
+          "description": "وصف قصير للمطعم للصفحات العامة."
+        },
+        "primaryColor": {
+          "type": "string"
+        },
+        "secondaryColor": {
+          "type": "string"
+        },
+        "buttonTextColor": {
+          "type": "string"
+        },
+        "borderRadius": {
+          "type": "number"
+        },
+        "fontFamily": {
+          "type": "string"
+        },
+        "socialLinks": {
+          "type": "object"
+        },
+        "applications": {
+          "type": "object"
+        },
+        "aiConfig": {
+          "type": "object"
+        },
+        "rating": {
+          "type": "number",
+          "description": "متوسط تقييم المطعم، من 1 إلى 5."
+        },
+        "reviewCount": {
+          "type": "number",
+          "description": "إجمالي عدد التقييمات للمطعم."
+        },
+        "totalRatingScore": {
+          "type": "number",
+          "description": "مجموع كل التقييمات، يستخدم لحساب المتوسط."
+        },
+        "analysis_daily_count": {
+          "type": "number"
+        },
+        "analysis_last_reset": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "analysis_reviews_daily_count": {
+          "type": "number"
+        },
+        "analysis_reviews_last_reset": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "pulse_daily_count": { "type": "number" },
+        "pulse_last_reset": { "type": "string", "format": "date-time" },
+        "reply_templates_daily_count": { "type": "number" },
+        "reply_templates_last_reset": { "type": "string", "format": "date-time" },
+        "feedback_summary_daily_count": { "type": "number" },
+        "feedback_summary_last_reset": { "type": "string", "format": "date-time" },
+        "content_writer_daily_count": { "type": "number" },
+        "content_writer_last_reset": { "type": "string", "format": "date-time" },
+        "image_generation_daily_count": { "type": "number" },
+        "image_generation_last_reset": { "type": "string", "format": "date-time" },
+        "maps_search_daily_count": { "type": "number" },
+        "maps_search_last_reset": { "type": "string", "format": "date-time" },
+        "maps_details_daily_count": { "type": "number" },
+        "maps_details_last_reset": { "type": "string", "format": "date-time" },
+        "menu_import_monthly_count": { "type": "number", "description": "عدد مرات استخدام ميزة استيراد المنيو بالذكاء الاصطناعي هذا الشهر." },
+        "menu_import_last_reset": { "type": "string", "format": "date-time", "description": "تاريخ آخر تصفير لعداد استيراد المنيو." }
+      },
+      "required": [
+        "id",
+        "owner_id",
+        "name"
+      ]
+    },
+    "Application": {
+      "title": "تطبيق",
+      "description": "يمثل تطبيقًا خارجيًا يمكن للمطاعم ربطه، مثل تطبيقات التوصيل أو الولاء.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "platform_id": { "type": "string", "description": "معرف فريد مثل 'jahez' أو 'bonat'." },
+        "logo_url": { "type": "string", "format": "uri" },
+        "category": { "type": "string", "enum": ["delivery", "loyalty", "payment", "other"], "description": "فئة التطبيق." }
+      },
+      "required": ["name", "platform_id", "logo_url", "category"]
+    },
+    "MenuItem": {
+      "title": "عنصر القائمة",
+      "description": "عنصر واحد في قائمة طعام المطعم.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "image_url": { "type": "string", "format": "uri" },
+        "sizes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "price": { "type": "number" },
+              "cost": { "type": "number" },
+              "calories": { "type": "number" }
+            },
+            "required": ["name", "price", "cost"]
+          }
+        },
+        "status": { "type": "string", "enum": ["available", "unavailable"] },
+        "restaurant_id": { "type": "string", "$ref": "#/entities/Restaurant/properties/id" },
+        "display_tags": { "type": "string", "enum": ["new", "best_seller", "daily_offer", "none"] },
+        "position": { "type": "number" }
+      },
+      "required": ["name", "category", "sizes", "status", "restaurant_id"]
+    },
+    "Subscription": {
+      "title": "اشتراك",
+      "description": "يمثل خطة اشتراك المستخدم.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "profile_id": { "type": "string", "$ref": "#/entities/Profile/properties/id" },
+        "plan_name": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive", "cancelled"] },
+        "start_date": { "type": "string", "format": "date-time" },
+        "end_date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["profile_id", "plan_name", "status", "end_date"]
+    },
+    "SupportTicket": {
+      "title": "تذكرة دعم",
+      "description": "تذكرة دعم مقدمة من عميل.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "restaurant_id": { "type": "string", "$ref": "#/entities/Restaurant/properties/id" },
+        "status": { "type": "string", "enum": ["open", "contacted", "resolved", "closed"], "default": "open" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "subject", "message", "restaurant_id", "status", "createdAt"]
+    }
+  },
+  "auth": { "providers": ["password"] },
+  "firestore": {
+    "profiles/{profileId}": { "schema": { "$ref": "#/entities/Profile" }, "description": "بيانات حساب المستخدم." },
+    "profiles/{profileId}/subscriptions/{subscriptionId}": { "schema": { "$ref": "#/entities/Subscription" }, "description": "اشتراكات المستخدمين." },
+    "restaurants/{restaurantId}": { "schema": { "$ref": "#/entities/Restaurant" }, "description": "بيانات مطعم معين." },
+    "restaurants/{restaurantId}/menu_items/{menuItemId}": { "schema": { "$ref": "#/entities/MenuItem" }, "description": "أصناف المنيو." },
+    "support_tickets/{ticketId}": { "schema": { "$ref": "#/entities/SupportTicket" }, "description": "تذاكر دعم العملاء." },
+    "applications/{appId}": { "schema": { "$ref": "#/entities/Application" }, "description": "قائمة التطبيقات العالمية." }
+  }
+}

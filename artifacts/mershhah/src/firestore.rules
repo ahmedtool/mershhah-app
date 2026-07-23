@@ -1,0 +1,136 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // --- وظائف مساعدة ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserData(userId) {
+      return get(/databases/(default)/documents/profiles/$(userId)).data;
+    }
+
+    function isAdmin(userId) {
+      return isSignedIn() && exists(/databases/(default)/documents/profiles/$(userId)) && getUserData(userId).role == 'admin';
+    }
+
+    function isRestaurantOwner(userId, restaurantId) {
+      return isSignedIn() && (
+        getUserData(userId).restaurant_id == restaurantId ||
+        (exists(/databases/(default)/documents/restaurants/$(restaurantId)) && 
+         get(/databases/(default)/documents/restaurants/$(restaurantId)).data.owner_id == userId)
+      );
+    }
+
+    // --- مجموعات البيانات ---
+
+    match /profiles/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin(request.auth.uid));
+      allow create, update: if isSignedIn() && (request.auth.uid == userId || isAdmin(request.auth.uid));
+      allow delete: if isAdmin(request.auth.uid);
+
+      match /subscriptions/{subscriptionId} { allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin(request.auth.uid)); }
+      match /invoices/{invoiceId} { allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin(request.auth.uid)); }
+      match /activated_tools/{toolId} { allow read, write: if isSignedIn() && (request.auth.uid == userId || isAdmin(request.auth.uid)); }
+    }
+
+    match /restaurants/{restaurantId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      // السماح بتحديث حقول التقييمات فقط للعامة، وباقي الحقول للمالك والمدير
+      allow update: if (isSignedIn() && (resource.data.owner_id == request.auth.uid || isAdmin(request.auth.uid))) || 
+                    (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewCount', 'totalRatingScore', 'rating']));
+      allow delete: if isSignedIn() && (resource.data.owner_id == request.auth.uid || isAdmin(request.auth.uid));
+      
+      match /branches/{branchId} {
+        allow read: if true;
+        allow write: if isRestaurantOwner(request.auth.uid, restaurantId) || isAdmin(request.auth.uid);
+      }
+      
+      match /menu_items/{menuItemId} {
+        allow read: if true;
+        allow write: if isRestaurantOwner(request.auth.uid, restaurantId) || isAdmin(request.auth.uid);
+      }
+
+      match /menu_item_interactions/{interactionId} {
+        allow create: if true;
+        allow read, list, delete: if isRestaurantOwner(request.auth.uid, restaurantId) || isAdmin(request.auth.uid);
+      }
+
+      match /search_logs/{logId} {
+        allow create: if true;
+        allow read: if isRestaurantOwner(request.auth.uid, restaurantId) || isAdmin(request.auth.uid);
+      }
+      
+      match /offers/{offerId} {
+        allow read: if true;
+        allow create, delete: if isRestaurantOwner(request.auth.uid, restaurantId) || isAdmin(request.auth.uid);
+        allow update: if isRestaurantOwner(request.auth.uid, restaurantId) || isAdmin(request.auth.uid) || 
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views_count', 'clicks_count', 'link_clicks_count']));
+      }
+
+      match /ai_sessions/{sessionId} {
+        allow read: if isRestaurantOwner(request.auth.uid, restaurantId) || isAdmin(request.auth.uid);
+        allow create, update: if true;
+
+        match /messages/{messageId} {
+          allow read: if isRestaurantOwner(request.auth.uid, restaurantId) || isAdmin(request.auth.uid);
+          allow create: if true;
+        }
+      }
+
+      match /ai_analysis_cache/{cacheId} {
+        allow read, write: if isRestaurantOwner(request.auth.uid, restaurantId) || isAdmin(request.auth.uid);
+      }
+
+      match /image_gallery/{imageId} {
+        allow read, write: if isRestaurantOwner(request.auth.uid, restaurantId) || isAdmin(request.auth.uid);
+      }
+
+      match /reviews/{reviewId} {
+        allow read, list: if true;
+        allow create: if true;
+        allow update, delete: if isRestaurantOwner(request.auth.uid, restaurantId) || isAdmin(request.auth.uid);
+      }
+    }
+
+    match /support_tickets/{ticketId} {
+        allow create: if true;
+        allow read, update: if isAdmin(request.auth.uid) || (isSignedIn() && resource.data.restaurant_id == getUserData(request.auth.uid).restaurant_id);
+    }
+
+    match /tools/{toolId} {
+      allow read: if true;
+      allow write: if isAdmin(request.auth.uid);
+    }
+    
+    match /plans/{planId} {
+      allow read: if true;
+      allow write: if isAdmin(request.auth.uid);
+    }
+
+    match /applications/{appId} {
+        allow read: if true;
+        allow write: if isAdmin(request.auth.uid);
+    }
+
+    match /chats/{ownerId} {
+      allow read, write: if isAdmin(request.auth.uid) || (isSignedIn() && request.auth.uid == ownerId);
+
+      match /messages/{messageId} {
+        allow read, write: if isAdmin(request.auth.uid) || (isSignedIn() && request.auth.uid == ownerId);
+      }
+    }
+
+    match /tasks/{taskId} {
+      allow read, write: if isAdmin(request.auth.uid);
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAdmin(request.auth.uid);
+    }
+  }
+}

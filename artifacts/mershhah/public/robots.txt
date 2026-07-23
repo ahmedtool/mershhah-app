@@ -1,0 +1,8 @@
+# See https://www.robotstxt.org/robotstxt.html for syntax and directives
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /owner/
+
+Sitemap: https://mershhah.com/sitemap.xml

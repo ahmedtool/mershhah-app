@@ -1,0 +1,213 @@
+'use client';
+
+import { usePathname, useRouter } from '@/lib/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useUser } from '@/hooks/useUser';
+import { Link } from 'wouter';
+import { Logo } from './Logo';
+import {
+  LayoutDashboard,
+  Utensils,
+  Megaphone,
+  Settings,
+  MessageSquare,
+  Ticket,
+  Store,
+  ChevronDown,
+  Box,
+  Star,
+  Building2,
+  BarChart3,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+
+export function OwnerTopNav() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { user } = useUser();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [activatedTools, setActivatedTools] = useState<any[]>([]);
+  const [isLoadingTools, setIsLoadingTools] = useState(true);
+  const [showTools, setShowTools] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
+  const navItems = [
+    { href: '/owner/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
+    { href: '/owner/menu', label: 'المنيو', icon: Utensils },
+    { href: '/owner/pricing', label: 'التقارير', icon: BarChart3 },
+    { href: '/owner/offers', label: 'العروض', icon: Megaphone },
+    { href: '/owner/reviews', label: 'التقييمات', icon: Star },
+    { href: '/owner/branches', label: 'الفروع', icon: Building2 },
+    { href: '/owner/customize', label: 'التخصيص', icon: Settings },
+    { href: '/owner/store', label: 'المتجر', icon: Store },
+    { href: '/owner/support', label: 'الدعم', icon: MessageSquare },
+    { href: '/owner/tickets', label: 'التذاكر', icon: Ticket },
+  ];
+
+  useEffect(() => {
+    const fetchTools = async () => {
+      if (!user?.id) { setIsLoadingTools(false); return; }
+      try {
+        const { data: allTools } = await supabase.from('tools').select('id, title, icon');
+        const allToolsMap = new Map((allTools || []).map((t: any) => [t.id, t]));
+        const { data: activatedToolsData } = await supabase
+          .from('activated_tools').select('tool_id').eq('profile_id', user.id);
+        const userTools = (activatedToolsData || [])
+          .map((row: any) => {
+            const toolDetails = allToolsMap.get(row.tool_id) as any;
+            if (!toolDetails) return null;
+            const IconComponent = (toolDetails.icon as any) || Box;
+            return { id: row.tool_id, label: toolDetails.title, href: `/owner/tools/${row.tool_id}`, icon: IconComponent };
+          }).filter(Boolean);
+        setActivatedTools(userTools);
+      } catch (e) {} finally {
+        setIsLoadingTools(false);
+      }
+    };
+    fetchTools();
+  }, [user]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
+
+  const allNavItems = [...navItems, ...activatedTools.map(t => ({ href: t.href, label: t.label, icon: t.icon }))];
+
+  const navigatePage = (dir: 'next' | 'prev') => {
+    const currentIndex = allNavItems.findIndex(item => isActive(item.href));
+    if (currentIndex === -1) return;
+    const rtl = document.documentElement.getAttribute('dir') === 'rtl';
+    let nextIndex: number;
+    if (rtl) {
+      nextIndex = dir === 'next' ? currentIndex - 1 : currentIndex + 1;
+    } else {
+      nextIndex = dir === 'next' ? currentIndex + 1 : currentIndex - 1;
+    }
+    if (nextIndex >= 0 && nextIndex < allNavItems.length) {
+      router.push(allNavItems[nextIndex].href);
+    }
+  };
+
+  const isActive = (href: string) => pathname.startsWith(href);
+
+  return (
+    <div className="sticky top-0 z-50 bg-white border-b border-gray-100" dir="rtl">
+      <div className="flex items-center h-14 px-4 gap-3">
+        {/* Logo */}
+        <Link href="/owner/dashboard" className="shrink-0 flex items-center gap-2">
+          <img src="/logo.png" alt="مرشح" className="h-8 w-8 rounded-lg" />
+          <span className="text-sm font-black text-gray-900 hidden sm:block">مرشح</span>
+        </Link>
+
+        {/* Next page arrow - mobile */}
+        <button onClick={() => navigatePage('next')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden relative z-10">
+          <ChevronRight className="h-4 w-4" />
+        </button>
+
+        {/* Nav items - scrollable */}
+        <div ref={scrollRef} className="flex-1 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-1 min-w-max">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-1.5 h-9 px-3 rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap ${
+                  isActive(item.href)
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                }`}
+              >
+                <item.icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden md:inline">{item.label}</span>
+              </Link>
+            ))}
+
+            {/* Activated tools */}
+            {activatedTools.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowTools(!showTools)}
+                  className={`flex items-center gap-1.5 h-9 px-3 rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap ${
+                    activatedTools.some(t => isActive(t.href))
+                      ? 'bg-gray-900 text-white'
+                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                  }`}
+                >
+                  <Box className="h-3.5 w-3.5" />
+                  <span className="hidden md:inline">أدواتي</span>
+                  <ChevronDown className={`h-3 w-3 transition-transform ${showTools ? 'rotate-180' : ''}`} />
+                </button>
+                {showTools && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowTools(false)} />
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 min-w-[180px]">
+                      {activatedTools.map((tool) => (
+                        <Link
+                          key={tool.id}
+                          href={tool.href}
+                          onClick={() => setShowTools(false)}
+                          className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold transition-colors ${
+                            isActive(tool.href) ? 'bg-gray-50 text-gray-900' : 'text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          <tool.icon className="h-3.5 w-3.5 text-gray-400" />
+                          {tool.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Prev page arrow - mobile */}
+        <button onClick={() => navigatePage('prev')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden relative z-10">
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+
+        {/* User menu */}
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            className="flex items-center gap-2 h-9 px-3 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
+              <span className="text-[10px] font-bold text-gray-500">
+                {user?.full_name?.charAt(0) || 'U'}
+              </span>
+            </div>
+            <ChevronDown className={`h-3 w-3 text-gray-400 transition-transform hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
+          </button>
+          {showUserMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 min-w-[200px]">
+                <div className="px-4 py-3 border-b border-gray-100">
+                  <p className="text-xs font-bold text-gray-900">{user?.full_name || 'مستخدم'}</p>
+                  <p className="text-[10px] text-gray-400">{user?.email}</p>
+                </div>
+                <Link href="/owner/settings" onClick={() => setShowUserMenu(false)}
+                  className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold text-gray-500 hover:bg-gray-50">
+                  <Settings className="h-3.5 w-3.5 text-gray-400" />
+                  الإعدادات
+                </Link>
+                <button onClick={handleLogout}
+                  className="w-full flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold text-red-500 hover:bg-red-50">
+                  <LogOut className="h-3.5 w-3.5" />
+                  تسجيل الخروج
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
