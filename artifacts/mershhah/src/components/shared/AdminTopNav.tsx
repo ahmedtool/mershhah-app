@@ -23,7 +23,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-const SUPER_ADMIN_EMAIL = 'ahmedsupsa@gmail.com';
+const SUPER_ADMIN_EMAILS = ['ahmedsupsa@gmail.com', 'ahmdtjrbt74@gmail.com'];
 
 export function AdminTopNav() {
   const pathname = usePathname();
@@ -74,7 +74,7 @@ export function AdminTopNav() {
   };
 
   const visibleNavItems = navItems.filter((item) => {
-    if (user?.email === SUPER_ADMIN_EMAIL) return true;
+    if (SUPER_ADMIN_EMAILS.includes(user?.email)) return true;
     return user?.admin_permissions?.includes(item.permissionId);
   });
 
