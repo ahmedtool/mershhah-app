@@ -19,7 +19,7 @@ const routePermissions: Record<string, string> = {
     // '/admin/settings' is accessible to all admins
 };
 
-const SUPER_ADMIN_EMAIL = 'ahmedsupsa@gmail.com';
+const SUPER_ADMIN_EMAILS = ['ahmedsupsa@gmail.com', 'ahmdtjrbt74@gmail.com'];
 
 
 const FullPageLoader = () => (
@@ -57,8 +57,8 @@ export function AdminAccountStatusChecker({ children }: { children: React.ReactN
         );
     }
     
-    // Super admin bypass: If user is the super admin, grant access regardless of DB permissions.
-    if (user.email === SUPER_ADMIN_EMAIL) {
+    // Super admin bypass: If user is a super admin, grant access regardless of DB permissions.
+    if (SUPER_ADMIN_EMAILS.includes(user.email)) {
         return <>{children}</>;
     }
     
