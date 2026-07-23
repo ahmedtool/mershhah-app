@@ -1,4 +1,4 @@
-# Workspace
+﻿# Workspace
 
 ## Overview
 
@@ -11,7 +11,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Preview path**: `/`
 - **Stack**: React 18, Vite 7, Tailwind CSS v4, Wouter (routing), Supabase (auth + DB + Storage), TanStack Query, shadcn/ui
 - **Description**: SaaS restaurant management platform for Saudi restaurants. Features: digital menu, AI chat assistant, owner dashboard, admin panel, public pages.
-- **Migrated from**: Next.js 15 App Router (Firebase → Supabase)
+- **Migrated from**: Next.js 15 App Router (Supabase)
 - **Deployed**: Vercel via GitHub repo `ahmednshmijob-creator/morassh`
 - **Key files**:
   - `src/App.tsx` — main router (Wouter Switch/Route tree)
@@ -58,7 +58,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Package manager**: pnpm 10.26.1
 - **TypeScript version**: 5.9
 - **API framework**: Express 5
-- **Auth + DB**: Supabase (was Firebase)
+- **Auth + DB**: Supabase (was supabase)
 - **Build**: esbuild (api-server), Vite (web app)
 
 ## Key Commands
@@ -75,10 +75,8 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **Public pages**: Restaurant data cached in `public_pages` table (keyed by username), synced via `syncPublicPage()` on changes
 - **Sidebar**: Fixed-width (17rem), non-collapsible, RTL-aware (appears on right side for Arabic)
 
-## Migration Notes (Firebase → Supabase)
+## Migration Notes (Supabase)
 
-- All `firebase/firestore` → `supabase.from(table).*`
-- All `firebase/auth` → `supabase.auth.*`
-- All `firebase/storage` → `supabase.storage.from(bucket).*`
 - `getSession()` timeout: 8 seconds with `.catch()` fallback
 - Profile fetch: 3 retries with 800ms delay
+

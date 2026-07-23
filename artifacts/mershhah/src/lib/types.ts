@@ -1,4 +1,4 @@
-// Represents a record from the 'profiles' table. Defines WHO the user is.
+﻿// Represents a record from the 'profiles' table. Defines WHO the user is.
 export type Profile = {
   id: string; // Corresponds to auth.users.id
   full_name: string | null;
@@ -218,7 +218,7 @@ export type Tool = {
   popular: boolean;
   type: "free" | "paid";
   /**
-   * مسار صورة الأداة في Firebase Storage (اختياري).
+   * مسار صورة الأداة في Supabase Storage (اختياري).
    * إذا كان موجوداً، يتم استخدامه في المتجر بدلاً من أيقونة Lucide.
    */
   image_path?: string | null;

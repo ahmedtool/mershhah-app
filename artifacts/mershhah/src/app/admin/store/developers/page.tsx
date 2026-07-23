@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Link } from 'wouter';
 import PageHeader from '@/components/dashboard/PageHeader';
@@ -40,7 +40,7 @@ export default function StoreDevelopersPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-muted-foreground">
-                <p className="font-semibold text-foreground">حقول الأداة الأساسية (كما تُخزَّن في Firestore تحت مجموعة <code className="px-1 py-0.5 rounded bg-muted text-xs">tools</code>):</p>
+                <p className="font-semibold text-foreground">حقول الأداة الأساسية (كما تُخزَّن في Supabase في جدول <code className="px-1 py-0.5 rounded bg-muted text-xs">tools</code>):</p>
                 <ul className="list-disc pr-5 space-y-1">
                   <li><span className="font-semibold text-foreground">id</span>: المعرف البرمجي للأداة، بصيغة <code className="px-1 py-0.5 rounded bg-muted text-xs">[a-z0-9-]</code> فقط (مثال: <code className="px-1 py-0.5 rounded bg-muted text-xs">smart-reviews</code>).</li>
                   <li><span className="font-semibold text-foreground">title</span>: اسم الأداة الظاهر لصاحب المطعم (مثال: <span className="font-semibold">محلل التقييمات الذكي</span>).</li>
@@ -139,8 +139,7 @@ export default function StoreDevelopersPage() {
 {`'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { useUser } from '@/hooks/useUser';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -155,9 +154,11 @@ export default function SmartReviewsToolPage() {
 
     const run = async () => {
       setIsLoading(true);
-      const reviewsCol = collection(db, 'restaurants', user.restaurantId, 'reviews');
-      const snapshot = await getDocs(reviewsCol);
-      const docs = snapshot.docs.map(d => d.data() as { rating: number });
+      const { data } = await supabase
+        .from('reviews')
+        .select('rating')
+        .eq('restaurant_id', user.restaurantId);
+      const docs = data ?? [];
       const count = docs.length;
       const avg = count ? docs.reduce((s, r) => s + (r.rating ?? 0), 0) / count : 0;
       setStats({ count, avg });
@@ -251,4 +252,5 @@ export default function SmartReviewsToolPage() {
     </div>
   );
 }
+
 
