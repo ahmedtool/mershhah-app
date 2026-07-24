@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Profile, Restaurant, Subscription } from '@/lib/types';
 
@@ -69,23 +69,21 @@ function computeEntitlements(subscriptions: Subscription[], profile: Profile): E
 export function useUser() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const loadingRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  const loadUserData = async (userId: string, retries = 3) => {
+  const loadUserData = useCallback(async (userId: string) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+
     try {
-      let profile: any = null;
-      let profileError: any = null;
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
 
-      for (let attempt = 0; attempt < retries; attempt++) {
-        const result = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .single();
-        profile = result.data;
-        profileError = result.error;
-        if (profile) break;
-        if (attempt < retries - 1) await new Promise(r => setTimeout(r, 800));
-      }
+      if (!mountedRef.current) return;
 
       if (profileError || !profile) {
         setUser(null);
@@ -109,6 +107,8 @@ export function useUser() {
         .eq('profile_id', userId)
         .eq('status', 'active');
 
+      if (!mountedRef.current) return;
+
       const entitlements = computeEntitlements(subscriptions || [], profile);
 
       const combinedUser: AppUser = {
@@ -123,20 +123,26 @@ export function useUser() {
       setUser(combinedUser);
     } catch (error) {
       console.error('Error loading user data:', error);
-      setUser(null);
+      if (mountedRef.current) setUser(null);
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
+      loadingRef.current = false;
     }
-  };
+  }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
+
     const timeout = setTimeout(() => {
-      setUser(null);
-      setIsLoading(false);
+      if (mountedRef.current) {
+        setUser(null);
+        setIsLoading(false);
+      }
     }, 8000);
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       clearTimeout(timeout);
+      if (!mountedRef.current) return;
       if (session?.user) {
         loadUserData(session.user.id);
       } else {
@@ -145,28 +151,33 @@ export function useUser() {
       }
     }).catch(() => {
       clearTimeout(timeout);
-      setUser(null);
-      setIsLoading(false);
+      if (mountedRef.current) {
+        setUser(null);
+        setIsLoading(false);
+      }
     });
 
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        if (!mountedRef.current) return;
         if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsLoading(false);
           return;
         }
-        if (session?.user) {
-          setIsLoading(true);
-          await loadUserData(session.user.id);
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          if (session?.user && !loadingRef.current) {
+            loadUserData(session.user.id);
+          }
         }
       }
     );
 
     return () => {
+      mountedRef.current = false;
       authSubscription.unsubscribe();
     };
-  }, []);
+  }, [loadUserData]);
 
   return { user, isLoading };
 }
