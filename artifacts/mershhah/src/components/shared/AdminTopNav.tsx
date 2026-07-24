@@ -36,7 +36,7 @@ export function AdminTopNav() {
   const navItems = [
     { href: '/admin/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard, permissionId: 'dashboard' },
     { href: '/admin/management', label: 'المشتركين', icon: Building, permissionId: 'management' },
-    { href: '/admin/plans', label: 'الباقات', icon: Package, permissionId: 'financials' },
+    { href: '/admin/financials', label: 'المالية', icon: Package, permissionId: 'financials' },
     { href: '/admin/store-management', label: 'إدارة المتجر', icon: Store, permissionId: 'store-management' },
     { href: '/admin/applications', label: 'التطبيقات', icon: AppWindow, permissionId: 'applications' },
     { href: '/admin/announcements', label: 'الإعلانات', icon: Megaphone, permissionId: 'announcements' },

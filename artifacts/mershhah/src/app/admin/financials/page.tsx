@@ -130,10 +130,10 @@ export default function AdminFinancialsPage() {
   const pathname = usePathname();
 
   const tabs = [
-    { href: '/financials', label: 'نظرة عامة', icon: BarChart3 },
-    { href: '/financials/plans', label: 'الباقات', icon: Package },
-    { href: '/financials/orders', label: 'الطلبات', icon: ShoppingCart },
-    { href: '/financials/discounts', label: 'أكواد الخصم', icon: Tag },
+    { href: '/admin/financials', label: 'نظرة عامة', icon: BarChart3 },
+    { href: '/admin/financials/plans', label: 'الباقات', icon: Package },
+    { href: '/admin/financials/orders', label: 'الطلبات', icon: ShoppingCart },
+    { href: '/admin/financials/discounts', label: 'أكواد الخصم', icon: Tag },
   ];
 
   return (
@@ -141,8 +141,8 @@ export default function AdminFinancialsPage() {
       {/* Tabs */}
       <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1 w-fit">
         {tabs.map((tab) => {
-          const isActive = tab.href === '/financials'
-            ? pathname === '/financials'
+          const isActive = tab.href === '/admin/financials'
+            ? pathname === '/admin/financials'
             : pathname.startsWith(tab.href);
           return (
             <Link

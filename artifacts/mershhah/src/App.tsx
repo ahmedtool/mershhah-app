@@ -50,6 +50,10 @@ import AdminSalesPage from "@/app/admin/sales/page";
 import AdminApplicationsPage from "@/app/admin/applications/page";
 import AdminAnnouncementsPage from "@/app/admin/announcements/page";
 import AdminWorkflowPage from "@/app/admin/workflow/page";
+import AdminFinancialsPage from "@/app/admin/financials/page";
+import AdminFinancialsPlansPage from "@/app/admin/financials/plans/page";
+import AdminFinancialsOrdersPage from "@/app/admin/financials/orders/page";
+import AdminFinancialsDiscountsPage from "@/app/admin/financials/discounts/page";
 
 import MenuPage from "@/app/menu/[username]/page";
 import HubPage from "@/app/hub/[username]/page";
@@ -121,6 +125,10 @@ function AdminRoutes({ params }: { params?: any }) {
         <Route path="/admin/applications" component={AdminApplicationsPage} />
         <Route path="/admin/announcements" component={AdminAnnouncementsPage} />
         <Route path="/admin/workflow" component={AdminWorkflowPage} />
+        <Route path="/admin/financials/plans" component={AdminFinancialsPlansPage} />
+        <Route path="/admin/financials/orders" component={AdminFinancialsOrdersPage} />
+        <Route path="/admin/financials/discounts" component={AdminFinancialsDiscountsPage} />
+        <Route path="/admin/financials" component={AdminFinancialsPage} />
         <Route component={NotFoundPage} />
       </Switch>
     </AdminLayout>
