@@ -309,6 +309,22 @@ export type Plan = {
     features?: Record<string, boolean>;
 };
 
+export type DiscountCode = {
+    id: string;
+    code: string;
+    description?: string | null;
+    discount_type: 'percentage' | 'fixed';
+    discount_value: number;
+    max_uses?: number | null;
+    used_count: number;
+    min_amount?: number;
+    applicable_plans?: string[] | null;
+    starts_at?: any;
+    expires_at?: any;
+    is_active: boolean;
+    created_at?: any;
+};
+
 export type ActivationCode = {
     id: string;
     tool_id: string;
