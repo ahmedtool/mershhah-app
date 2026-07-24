@@ -605,3 +605,36 @@ create policy "activation_codes: admin full" on public.activation_codes for all 
 );
 create policy "activation_codes: owner read unused" on public.activation_codes for select using (auth.uid() is not null);
 
+-- ============================================================
+-- AUTH.USERS RLS (مطلوب لـ admin policies)
+-- ============================================================
+-- auth.users مفعل فيها RLS افتراضياً — بدون هذا الـ policy،
+-- الـ subquery في admin policies ترجع NULL لأن nobody يقدر يقرأ.
+create policy "users: own read" on auth.users for select using (id = auth.uid());
+
+-- ============================================================
+-- DISCOUNT CODES
+-- ============================================================
+create table if not exists public.discount_codes (
+  id uuid default gen_random_uuid() primary key,
+  code text not null unique,
+  description text,
+  discount_type text not null default 'percentage' check (discount_type in ('percentage', 'fixed')),
+  discount_value numeric not null default 0,
+  max_uses integer,
+  used_count integer not null default 0,
+  min_amount numeric default 0,
+  applicable_plans text[],
+  starts_at timestamptz default now(),
+  expires_at timestamptz,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+alter table public.discount_codes enable row level security;
+create policy "discount_codes: admin full" on public.discount_codes for all using (
+  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+);
+create policy "discount_codes: public read" on public.discount_codes for select using (true);
+grant select on public.discount_codes to anon, authenticated;
+grant all on public.discount_codes to service_role;
+

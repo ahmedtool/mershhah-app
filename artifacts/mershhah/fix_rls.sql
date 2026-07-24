@@ -98,3 +98,8 @@ DROP POLICY IF EXISTS "discount_codes: admin full" ON public.discount_codes;
 CREATE POLICY "discount_codes: admin full" ON public.discount_codes FOR ALL USING (
   (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
 );
+
+-- CRITICAL: auth.users RLS policy
+-- Without this, all admin policies above return NULL because auth.users has RLS enabled with no policies
+DROP POLICY IF EXISTS "users: own read" ON auth.users;
+CREATE POLICY "users: own read" ON auth.users FOR SELECT USING (id = auth.uid());
