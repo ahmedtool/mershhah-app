@@ -9,12 +9,10 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '../ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, Sparkles, Check, ChevronDown, UploadCloud, X } from 'lucide-react';
+import { Loader2, Plus, Trash2, Sparkles, UploadCloud, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { generateMenuDescriptions } from '@/ai/flows/generate-menu-descriptions';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { cn } from '@/lib/utils';
 import type { MenuItem } from '@/lib/types';
 import { syncPublicPage } from '@/lib/public-pages';
@@ -45,7 +43,7 @@ const formSchema = z.object({
   name: z.string().min(2, 'الاسم مطلوب'),
   description: z.string().optional().or(z.literal('')),
   image_url: z.string().optional().or(z.literal('')),
-  category: z.string().min(2, 'التصنيف مطلوب'),
+  category: z.string().optional().or(z.literal('')),
   sizes: z.array(sizeSchema).min(1, 'أضف حجماً واحداً على الأقل'),
   status: z.enum(['available', 'unavailable']).default('available'),
   calories: z.coerce.number().min(0).optional().or(z.literal(0)),
@@ -76,7 +74,6 @@ export function EditMenuItemDialog({
   const [open, setOpen] = useState(false);
   const [isSaving, startSaving] = useTransition();
   const [isGeneratingDesc, startGeneratingDesc] = useTransition();
-  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -259,39 +256,21 @@ export function EditMenuItemDialog({
             {/* Category */}
             <FormField control={form.control} name="category" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">التصنيف</FormLabel>
-                <Popover open={categoriesOpen} onOpenChange={setCategoriesOpen}>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <button
-                        type="button"
-                        className={cn(
-                          "w-full h-10 rounded-xl border border-gray-200 bg-white px-3 text-right flex items-center justify-between text-sm transition-colors hover:border-gray-300",
-                          !field.value && "text-gray-400"
-                        )}
-                      >
-                        <span>{field.value || "اختر أو أنشئ تصنيف..."}</span>
-                        <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
-                      </button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" dir="rtl">
-                    <Command filter={(v, s) => v.toLowerCase().includes(s.toLowerCase()) ? 1 : 0}>
-                      <CommandInput placeholder="ابحث أو اكتب تصنيف جديد..." className="h-9" />
-                      <CommandList>
-                        <CommandEmpty>اضغط Enter للإضافة</CommandEmpty>
-                        <CommandGroup>
-                          {uniqueCategories.map(cat => (
-                            <CommandItem value={cat} key={cat} onSelect={() => { form.setValue('category', cat); setCategoriesOpen(false); }}>
-                              <Check className={cn("h-4 w-4 shrink-0", cat === field.value ? "opacity-100" : "opacity-0")} />
-                              <span className="mr-2">{cat}</span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <FormLabel className="text-xs text-gray-500">التصنيف <span className="text-gray-300">(اختياري)</span></FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder="مثال: مشروبات، معجنات..."
+                    list="categories-list"
+                    className="h-10 rounded-xl border-gray-200 text-sm"
+                    disabled={pending}
+                  />
+                </FormControl>
+                <datalist id="categories-list">
+                  {uniqueCategories.map(cat => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
                 <FormMessage className="text-[10px]" />
               </FormItem>
             )} />
