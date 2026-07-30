@@ -197,10 +197,21 @@ export default function CustomizePage() {
         }
 
         const updateData: Record<string, unknown> = {
-            ...cleanSettings,
+            name: settings.name || null,
+            name_en: settings.name_en || null,
+            description: settings.description || null,
+            description_en: settings.description_en || null,
             username: newUsername || cleanSettings.username,
             logo: logoUrl || null,
+            primaryColor: settings.primaryColor || null,
+            secondaryColor: settings.secondaryColor || null,
+            buttonTextColor: settings.buttonTextColor || null,
+            borderRadius: settings.borderRadius ?? 16,
+            fontFamily: settings.fontFamily || 'Cairo',
+            socialLinks: settings.socialLinks || [],
+            deliveryApps: settings.deliveryApps || [],
             applications: updatedApplications || [],
+            aiConfig: settings.aiConfig || {},
             updated_at: new Date().toISOString(),
         };
         if (usernameChanged) {
@@ -209,9 +220,6 @@ export default function CustomizePage() {
         }
 
         Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
-        delete updateData.id;
-        delete updateData.owner_id;
-        delete updateData.created_at;
 
         const { error } = await supabase
             .from('restaurants')
