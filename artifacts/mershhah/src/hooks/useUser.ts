@@ -165,7 +165,7 @@ export function useUser() {
           setIsLoading(false);
           return;
         }
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (event === 'SIGNED_IN') {
           if (session?.user && !loadingRef.current) {
             loadUserData(session.user.id);
           }
