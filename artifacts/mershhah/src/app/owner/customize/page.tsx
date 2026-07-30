@@ -209,6 +209,9 @@ export default function CustomizePage() {
         }
 
         Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+        delete updateData.id;
+        delete updateData.owner_id;
+        delete updateData.created_at;
 
         const { error } = await supabase
             .from('restaurants')
