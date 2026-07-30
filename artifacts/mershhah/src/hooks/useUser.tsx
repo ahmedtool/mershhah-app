@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Profile, Restaurant, Subscription } from '@/lib/types';
 
@@ -186,8 +186,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
     };
   }, [loadUserData]);
 
+  const ctxValue = useMemo(() => ({ user, isLoading }), [user, isLoading]);
+
   return (
-    <UserContext.Provider value={{ user, isLoading }}>
+    <UserContext.Provider value={ctxValue}>
       {children}
     </UserContext.Provider>
   );

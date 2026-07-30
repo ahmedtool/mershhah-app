@@ -65,7 +65,7 @@ export function AdminTopNav() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user?.id, user?.role]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

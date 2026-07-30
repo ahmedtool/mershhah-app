@@ -68,7 +68,7 @@ export function OwnerTopNav() {
       }
     };
     fetchTools();
-  }, [user]);
+  }, [user?.id]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
