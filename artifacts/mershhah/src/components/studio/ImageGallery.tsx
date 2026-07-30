@@ -55,7 +55,7 @@ export function ImageGallery({ onImageSelect }: { onImageSelect?: (storagePath: 
             const images = (data || []).map((item: MenuItem) => ({
                 id: item.id,
                 storagePath: item.image_url,
-                createdAt: item.createdAt || new Date().toISOString(),
+                createdAt: item.created_at || new Date().toISOString(),
                 expiresAt: null,
                 sourceItemId: item.id,
                 sourceItemName: item.name,
