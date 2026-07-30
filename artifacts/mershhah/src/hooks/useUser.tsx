@@ -78,9 +78,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const loadingRef = useRef(false);
   const mountedRef = useRef(true);
+  const loadedUserIdRef = useRef<string | null>(null);
 
   const loadUserData = useCallback(async (userId: string) => {
     if (loadingRef.current) return;
+    if (loadedUserIdRef.current === userId) return;
     loadingRef.current = true;
 
     try {
@@ -128,9 +130,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       };
 
       setUser(combinedUser);
+      loadedUserIdRef.current = userId;
     } catch (error) {
       console.error('Error loading user data:', error);
-      if (mountedRef.current) setUser(null);
+      if (mountedRef.current) {
+        setUser(null);
+        loadedUserIdRef.current = null;
+      }
     } finally {
       if (mountedRef.current) setIsLoading(false);
       loadingRef.current = false;
@@ -170,10 +176,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsLoading(false);
+          loadedUserIdRef.current = null;
           return;
         }
         if (event === 'SIGNED_IN') {
-          if (session?.user && !loadingRef.current) {
+          if (session?.user && session.user.id !== loadedUserIdRef.current) {
+            loadedUserIdRef.current = null;
             loadUserData(session.user.id);
           }
         }
