@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Pencil, Plus, CreditCard, Clock, Link as LinkIcon, Loader2, BarChart3, ShoppingCart, Package, Tag } from 'lucide-react';
+import { Pencil, Plus, CreditCard, Clock, Link as LinkIcon, Loader2, BarChart3, ShoppingCart, Package, Tag, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -16,21 +16,32 @@ export default function FinancialsPlansPage() {
   const { toast } = useToast();
   const pathname = usePathname();
 
-  useEffect(() => {
-    const fetchPlans = async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase.from('plans').select('*').order('price');
-        if (error) throw error;
-        setPlans((data || []) as Plan[]);
-      } catch (error: any) {
-        toast({ variant: 'destructive', title: 'خطأ في جلب الباقات', description: error.message });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchPlans();
-  }, [toast]);
+  const fetchPlans = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.from('plans').select('*').order('price');
+      if (error) throw error;
+      setPlans((data || []) as Plan[]);
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'خطأ في جلب الباقات', description: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchPlans(); }, [toast]);
+
+  const deletePlan = async (plan: Plan) => {
+    if (!confirm(`هل أنت متأكد من حذف باقة "${plan.name}"؟`)) return;
+    try {
+      const { error } = await supabase.from('plans').delete().eq('id', plan.id);
+      if (error) throw error;
+      setPlans(prev => prev.filter(p => p.id !== plan.id));
+      toast({ title: 'تم الحذف', description: `تم حذف باقة ${plan.name}` });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'خطأ', description: error.message });
+    }
+  };
 
   const tabs = [
     { href: '/admin/financials', label: 'نظرة عامة', icon: BarChart3 },
@@ -81,7 +92,7 @@ export default function FinancialsPlansPage() {
           <h2 className="text-sm font-bold text-gray-900">باقات الاشتراك</h2>
           <p className="text-[10px] text-gray-400 mt-0.5">{plans.length} باقة متاحة</p>
         </div>
-        <EditPlanDialog onSave={() => window.location.reload()}>
+        <EditPlanDialog onSave={fetchPlans}>
           <button className="h-9 px-4 rounded-xl bg-gray-900 text-white text-[11px] font-bold hover:bg-gray-800 transition-colors flex items-center gap-2">
             <Plus className="h-3.5 w-3.5" />
             باقة جديدة
@@ -142,14 +153,18 @@ export default function FinancialsPlansPage() {
               )}
             </div>
 
-            {/* Edit Button */}
-            <div className="px-5 pb-5">
-              <EditPlanDialog plan={plan} onSave={() => window.location.reload()}>
-                <button className="w-full h-9 rounded-xl border border-gray-200 text-[11px] font-bold text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+            {/* Edit/Delete Buttons */}
+            <div className="px-5 pb-5 flex gap-2">
+              <EditPlanDialog plan={plan} onSave={fetchPlans}>
+                <button className="flex-1 h-9 rounded-xl border border-gray-200 text-[11px] font-bold text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
                   <Pencil className="h-3.5 w-3.5" />
                   تعديل
                 </button>
               </EditPlanDialog>
+              <button onClick={() => deletePlan(plan)} className="h-9 px-4 rounded-xl border border-red-200 text-[11px] font-bold text-red-500 hover:bg-red-50 transition-colors flex items-center justify-center gap-2">
+                <Trash2 className="h-3.5 w-3.5" />
+                حذف
+              </button>
             </div>
           </div>
         ))}

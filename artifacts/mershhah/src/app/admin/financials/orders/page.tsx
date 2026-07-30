@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShoppingCart, Search, Filter, Download, Loader2, Eye, CheckCircle, Clock, XCircle, BarChart3, Package, Tag } from 'lucide-react';
+import { ShoppingCart, Search, Filter, Download, Loader2, Eye, CheckCircle, Clock, XCircle, BarChart3, Package, Tag, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 import { usePathname } from '@/lib/navigation';
 import type { Subscription, Plan, Profile, Restaurant } from '@/lib/types';
@@ -24,48 +25,71 @@ export default function FinancialsOrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'cancelled'>('all');
+  const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      const [subsRes, plansRes, profilesRes, restaurantsRes] = await Promise.all([
-        supabase.from('subscriptions').select('*'),
-        supabase.from('plans').select('*'),
-        supabase.from('profiles').select('*'),
-        supabase.from('restaurants').select('*'),
-      ]);
+  const fetchOrders = async () => {
+    const [subsRes, plansRes, profilesRes, restaurantsRes] = await Promise.all([
+      supabase.from('subscriptions').select('*'),
+      supabase.from('plans').select('*'),
+      supabase.from('profiles').select('*'),
+      supabase.from('restaurants').select('*'),
+    ]);
 
-      const subs = (subsRes.data || []) as Subscription[];
-      const plans = (plansRes.data || []) as Plan[];
-      const profiles = (profilesRes.data || []) as Profile[];
-      const restaurants = (restaurantsRes.data || []) as Restaurant[];
+    const subs = (subsRes.data || []) as Subscription[];
+    const plans = (plansRes.data || []) as Plan[];
+    const profiles = (profilesRes.data || []) as Profile[];
+    const restaurants = (restaurantsRes.data || []) as Restaurant[];
 
-      const planMap = new Map(plans.map(p => [p.id, p]));
-      const profileMap = new Map(profiles.map(p => [p.id, p]));
-      const restaurantMap = new Map(restaurants.map(r => [r.owner_id, r]));
+    const planMap = new Map(plans.map(p => [p.id, p]));
+    const profileMap = new Map(profiles.map(p => [p.id, p]));
+    const restaurantMap = new Map(restaurants.map(r => [r.owner_id, r]));
 
-      const ordersData: Order[] = subs.map(sub => {
-        const plan = planMap.get(sub.plan_id);
-        const profile = profileMap.get(sub.profile_id);
-        const restaurant = restaurantMap.get(sub.profile_id);
+    const ordersData: Order[] = subs.map(sub => {
+      const plan = planMap.get(sub.plan_id);
+      const profile = profileMap.get(sub.profile_id);
+      const restaurant = restaurantMap.get(sub.profile_id);
 
-        return {
-          id: sub.id,
-          restaurant: restaurant?.name || profile?.restaurant_name || 'غير محدد',
-          ownerName: profile?.full_name || 'غير محدد',
-          plan: sub.plan_name,
-          amount: plan?.price || 0,
-          status: sub.status,
-          startDate: sub.start_date,
-          endDate: sub.end_date,
-        };
-      }).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+      return {
+        id: sub.id,
+        restaurant: restaurant?.name || profile?.restaurant_name || 'غير محدد',
+        ownerName: profile?.full_name || 'غير محدد',
+        plan: sub.plan_name,
+        amount: plan?.price || 0,
+        status: sub.status,
+        startDate: sub.start_date,
+        endDate: sub.end_date,
+      };
+    }).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
 
-      setOrders(ordersData);
-      setIsLoading(false);
-    };
+    setOrders(ordersData);
+    setIsLoading(false);
+  };
 
-    fetchOrders();
-  }, []);
+  useEffect(() => { fetchOrders(); }, []);
+
+  const toggleStatus = async (order: Order) => {
+    const newStatus = order.status === 'active' ? 'cancelled' : 'active';
+    try {
+      const { error } = await supabase.from('subscriptions').update({ status: newStatus }).eq('id', order.id);
+      if (error) throw error;
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus as any } : o));
+      toast({ title: newStatus === 'active' ? 'تم التفعيل' : 'تم الإلغاء', description: `تم ${newStatus === 'active' ? 'تفعيل' : 'إلغاء'} الاشتراك` });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'خطأ', description: error.message });
+    }
+  };
+
+  const deleteOrder = async (order: Order) => {
+    if (!confirm(`هل أنت متأكد من حذف اشتراك "${order.restaurant}"؟`)) return;
+    try {
+      const { error } = await supabase.from('subscriptions').delete().eq('id', order.id);
+      if (error) throw error;
+      setOrders(prev => prev.filter(o => o.id !== order.id));
+      toast({ title: 'تم الحذف', description: `تم حذف اشتراك ${order.restaurant}` });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'خطأ', description: error.message });
+    }
+  };
 
   const filteredOrders = orders.filter(order => {
     const matchesSearch = order.restaurant.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -179,6 +203,7 @@ export default function FinancialsOrdersPage() {
                   <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">تاريخ البداية</th>
                   <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">تاريخ النهاية</th>
                   <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">الحالة</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">إجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -212,6 +237,16 @@ export default function FinancialsOrdersPage() {
                           <StatusIcon className="h-3 w-3" />
                           {statusInfo.label}
                         </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => toggleStatus(order)} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors" title={order.status === 'active' ? 'إلغاء' : 'تفعيل'}>
+                            {order.status === 'active' ? <ToggleRight className="h-4 w-4 text-emerald-500" /> : <ToggleLeft className="h-4 w-4 text-gray-300" />}
+                          </button>
+                          <button onClick={() => deleteOrder(order)} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 transition-colors" title="حذف">
+                            <Trash2 className="h-3.5 w-3.5 text-red-400" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
