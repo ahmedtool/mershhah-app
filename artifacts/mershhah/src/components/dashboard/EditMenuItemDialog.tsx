@@ -4,7 +4,7 @@ import React, { useState, useTransition, useRef, useEffect, useMemo } from 'reac
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '../ui/textarea';
@@ -192,6 +192,7 @@ export function EditMenuItemDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
+        <DialogTitle className="sr-only">تعديلصنف المنيو</DialogTitle>
         {/* Hero Image */}
         <div className="relative w-full aspect-[16/9] bg-gray-100 overflow-hidden">
           {imagePreview ? (

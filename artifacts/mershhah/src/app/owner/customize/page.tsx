@@ -537,7 +537,7 @@ export default function CustomizePage() {
                     src={`/hub/${settings.username}`}
                     title="معاينة"
                     className="w-full h-full min-h-[600px] border-0 rounded-b-[2rem] bg-white"
-                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                    sandbox="allow-scripts"
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-gray-300 text-xs p-6 text-center">
