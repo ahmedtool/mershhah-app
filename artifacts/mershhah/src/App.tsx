@@ -78,61 +78,16 @@ import OAuthConsentPage from "@/app/oauth/consent/page";
 
 const queryClient = new QueryClient();
 
-function OwnerRoutes({ params }: { params?: any }) {
-  return (
-    <OwnerLayout>
-      <Switch>
-        <Route path="/owner/dashboard" component={OwnerDashboardPage} />
-        <Route path="/owner/menu" component={OwnerMenuPage} />
-        <Route path="/owner/offers" component={OwnerOffersPage} />
-        <Route path="/owner/customize" component={OwnerCustomizePage} />
-        <Route path="/owner/branches" component={OwnerBranchesPage} />
-        <Route path="/owner/reviews" component={OwnerReviewsPage} />
-        <Route path="/owner/settings" component={OwnerSettingsPage} />
-        <Route path="/owner/store" component={OwnerStorePage} />
-        <Route path="/owner/pricing" component={OwnerPricingPage} />
-        <Route path="/owner/tickets/:ticketId" component={OwnerTicketDetailPage} />
-        <Route path="/owner/tickets" component={OwnerTicketsPage} />
-        <Route path="/owner/tools/daily-pulse-dashboard" component={DailyPulsePage} />
-        <Route path="/owner/tools/marketing-calendar" component={MarketingCalendarPage} />
-        <Route path="/owner/tools/reply-templates" component={ReplyTemplatesPage} />
-        <Route path="/owner/tools/summarize-feedback" component={SummarizeFeedbackPage} />
-        <Route path="/owner/tools/weekly-content-writer" component={WeeklyContentWriterPage} />
-        <Route path="/owner/tools/:toolId" component={OwnerToolDetailPage} />
-        <Route path="/owner/tools" component={OwnerToolsPage} />
-        <Route path="/owner/support" component={OwnerSupportPage} />
-
-        <Route component={NotFoundPage} />
-      </Switch>
-    </OwnerLayout>
-  );
+function withOwnerLayout<P extends object>(Page: React.ComponentType<P>) {
+  return function WrappedOwnerPage(props: P) {
+    return <OwnerLayout><Page {...props} /></OwnerLayout>;
+  };
 }
 
-function AdminRoutes({ params }: { params?: any }) {
-  return (
-    <AdminLayout>
-      <Switch>
-        <Route path="/admin/dashboard" component={AdminDashboardPage} />
-        <Route path="/admin/management" component={AdminManagementPage} />
-        <Route path="/admin/plans" component={AdminPlansPage} />
-        <Route path="/admin/store" component={AdminStorePage} />
-        <Route path="/admin/store-management" component={AdminStoreManagementPage} />
-        <Route path="/admin/support/:chatId" component={AdminSupportChatPage} />
-        <Route path="/admin/support" component={AdminSupportPage} />
-        <Route path="/admin/settings" component={AdminSettingsPage} />
-        <Route path="/admin/team" component={AdminTeamPage} />
-        <Route path="/admin/sales" component={AdminSalesPage} />
-        <Route path="/admin/applications" component={AdminApplicationsPage} />
-        <Route path="/admin/announcements" component={AdminAnnouncementsPage} />
-        <Route path="/admin/workflow" component={AdminWorkflowPage} />
-        <Route path="/admin/financials/plans" component={AdminFinancialsPlansPage} />
-        <Route path="/admin/financials/orders" component={AdminFinancialsOrdersPage} />
-        <Route path="/admin/financials/discounts" component={AdminFinancialsDiscountsPage} />
-        <Route path="/admin/financials" component={AdminFinancialsPage} />
-        <Route component={NotFoundPage} />
-      </Switch>
-    </AdminLayout>
-  );
+function withAdminLayout<P extends object>(Page: React.ComponentType<P>) {
+  return function WrappedAdminPage(props: P) {
+    return <AdminLayout><Page {...props} /></AdminLayout>;
+  };
 }
 
 function Router() {
@@ -164,8 +119,47 @@ function Router() {
       <Route path="/branches/:username" component={BranchesPublicPage} />
       <Route path="/chat/:username" component={ChatPage} />
       <Route path="/reviews/:username" component={ReviewsPublicPage} />
-      <Route path="/owner/:rest*" component={OwnerRoutes} />
-      <Route path="/admin/:rest*" component={AdminRoutes} />
+
+      <Route path="/owner/dashboard" component={withOwnerLayout(OwnerDashboardPage)} />
+      <Route path="/owner/menu" component={withOwnerLayout(OwnerMenuPage)} />
+      <Route path="/owner/offers" component={withOwnerLayout(OwnerOffersPage)} />
+      <Route path="/owner/customize" component={withOwnerLayout(OwnerCustomizePage)} />
+      <Route path="/owner/branches" component={withOwnerLayout(OwnerBranchesPage)} />
+      <Route path="/owner/reviews" component={withOwnerLayout(OwnerReviewsPage)} />
+      <Route path="/owner/settings" component={withOwnerLayout(OwnerSettingsPage)} />
+      <Route path="/owner/store" component={withOwnerLayout(OwnerStorePage)} />
+      <Route path="/owner/pricing" component={withOwnerLayout(OwnerPricingPage)} />
+      <Route path="/owner/tickets/:ticketId" component={withOwnerLayout(OwnerTicketDetailPage)} />
+      <Route path="/owner/tickets" component={withOwnerLayout(OwnerTicketsPage)} />
+      <Route path="/owner/tools/daily-pulse-dashboard" component={withOwnerLayout(DailyPulsePage)} />
+      <Route path="/owner/tools/marketing-calendar" component={withOwnerLayout(MarketingCalendarPage)} />
+      <Route path="/owner/tools/reply-templates" component={withOwnerLayout(ReplyTemplatesPage)} />
+      <Route path="/owner/tools/summarize-feedback" component={withOwnerLayout(SummarizeFeedbackPage)} />
+      <Route path="/owner/tools/weekly-content-writer" component={withOwnerLayout(WeeklyContentWriterPage)} />
+      <Route path="/owner/tools/:toolId" component={withOwnerLayout(OwnerToolDetailPage)} />
+      <Route path="/owner/tools" component={withOwnerLayout(OwnerToolsPage)} />
+      <Route path="/owner/support" component={withOwnerLayout(OwnerSupportPage)} />
+      <Route path="/owner" component={withOwnerLayout(OwnerDashboardPage)} />
+
+      <Route path="/admin/dashboard" component={withAdminLayout(AdminDashboardPage)} />
+      <Route path="/admin/management" component={withAdminLayout(AdminManagementPage)} />
+      <Route path="/admin/plans" component={withAdminLayout(AdminPlansPage)} />
+      <Route path="/admin/store" component={withAdminLayout(AdminStorePage)} />
+      <Route path="/admin/store-management" component={withAdminLayout(AdminStoreManagementPage)} />
+      <Route path="/admin/support/:chatId" component={withAdminLayout(AdminSupportChatPage)} />
+      <Route path="/admin/support" component={withAdminLayout(AdminSupportPage)} />
+      <Route path="/admin/settings" component={withAdminLayout(AdminSettingsPage)} />
+      <Route path="/admin/team" component={withAdminLayout(AdminTeamPage)} />
+      <Route path="/admin/sales" component={withAdminLayout(AdminSalesPage)} />
+      <Route path="/admin/applications" component={withAdminLayout(AdminApplicationsPage)} />
+      <Route path="/admin/announcements" component={withAdminLayout(AdminAnnouncementsPage)} />
+      <Route path="/admin/workflow" component={withAdminLayout(AdminWorkflowPage)} />
+      <Route path="/admin/financials/plans" component={withAdminLayout(AdminFinancialsPlansPage)} />
+      <Route path="/admin/financials/orders" component={withAdminLayout(AdminFinancialsOrdersPage)} />
+      <Route path="/admin/financials/discounts" component={withAdminLayout(AdminFinancialsDiscountsPage)} />
+      <Route path="/admin/financials" component={withAdminLayout(AdminFinancialsPage)} />
+      <Route path="/admin" component={withAdminLayout(AdminDashboardPage)} />
+
       <Route component={NotFoundPage} />
     </Switch>
   );
