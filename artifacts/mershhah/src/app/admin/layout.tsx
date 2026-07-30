@@ -22,7 +22,7 @@ export default function AdminLayout({
     if (!isLoading && !user) {
       router.push('/login');
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading]);
 
   if (isLoading || !user) {
     return (

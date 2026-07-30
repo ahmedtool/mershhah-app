@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, useCallback, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Profile, Restaurant, Subscription } from '@/lib/types';
 
@@ -66,7 +66,14 @@ function computeEntitlements(subscriptions: Subscription[], profile: Profile): E
   };
 }
 
-export function useUser() {
+interface UserContextValue {
+  user: AppUser | null;
+  isLoading: boolean;
+}
+
+const UserContext = createContext<UserContextValue>({ user: null, isLoading: true });
+
+export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const loadingRef = useRef(false);
@@ -179,5 +186,13 @@ export function useUser() {
     };
   }, [loadUserData]);
 
-  return { user, isLoading };
+  return (
+    <UserContext.Provider value={{ user, isLoading }}>
+      {children}
+    </UserContext.Provider>
+  );
+}
+
+export function useUser(): UserContextValue {
+  return useContext(UserContext);
 }
