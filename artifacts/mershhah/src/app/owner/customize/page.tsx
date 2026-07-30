@@ -62,43 +62,47 @@ export default function CustomizePage() {
   const appLogoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const initialUsernameRef = useRef<string | null>(null);
 
+  const restaurantId = user?.restaurantId;
+  const fetchedRef = useRef<string | null>(null);
+
   useEffect(() => {
+    if (!restaurantId || fetchedRef.current === restaurantId) return;
+    fetchedRef.current = restaurantId;
+
     const fetchData = async () => {
-      if (user?.restaurantId) {
-        try {
-            const { data: restData } = await supabase
-                .from('restaurants')
-                .select('*')
-                .eq('id', user.restaurantId)
-                .single();
+      try {
+          const { data: restData } = await supabase
+              .from('restaurants')
+              .select('*')
+              .eq('id', restaurantId)
+              .single();
 
-            if (restData) {
-              initialUsernameRef.current = restData.username ?? null;
-              setSettings({
-                ...restData,
-                socialLinks: Array.isArray(restData.socialLinks) ? restData.socialLinks : [],
-                applications: Array.isArray(restData.applications) ? restData.applications : [],
-                borderRadius: restData.borderRadius ?? 16,
-                fontFamily: restData.fontFamily ?? 'Cairo',
-              });
-              setLogoPreview(restData.logo);
-            }
-        } catch (serverError: any) {
-            console.error("Error fetching restaurant data:", serverError);
-        }
-
-        try {
-            const { data: appsData } = await supabase.from('applications').select('*');
-            setGlobalApps(appsData || []);
-        } catch (serverError: any) {
-            console.error("Error fetching applications:", serverError);
-        }
-
-        setLoading(false);
+          if (restData) {
+            initialUsernameRef.current = restData.username ?? null;
+            setSettings({
+              ...restData,
+              socialLinks: Array.isArray(restData.socialLinks) ? restData.socialLinks : [],
+              applications: Array.isArray(restData.applications) ? restData.applications : [],
+              borderRadius: restData.borderRadius ?? 16,
+              fontFamily: restData.fontFamily ?? 'Cairo',
+            });
+            setLogoPreview(restData.logo);
+          }
+      } catch (serverError: any) {
+          console.error("Error fetching restaurant data:", serverError);
       }
+
+      try {
+          const { data: appsData } = await supabase.from('applications').select('*');
+          setGlobalApps(appsData || []);
+      } catch (serverError: any) {
+          console.error("Error fetching applications:", serverError);
+      }
+
+      setLoading(false);
     };
     fetchData();
-  }, [user]);
+  }, [restaurantId]);
 
   const handleSuggestColors = async () => {
     let dataUri = '';
