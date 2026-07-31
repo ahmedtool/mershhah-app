@@ -64,7 +64,7 @@ export function AdminAccountStatusChecker({ children }: { children: React.ReactN
     
     // Permission check based on route for other admins
     const requiredPermission = Object.entries(routePermissions).find(([route]) => pathname.startsWith(route))?.[1];
-    if (requiredPermission && !user.admin_permissions?.includes(requiredPermission)) {
+    if (requiredPermission && !user.admin_permissions?.includes('all') && !user.admin_permissions?.includes(requiredPermission)) {
         return (
              <CenteredMessage icon={ShieldAlert} title="وصول مرفوض">
                 <p>ليس لديك الصلاحية اللازمة لعرض هذه الصفحة. يرجى التواصل مع مدير النظام.</p>
