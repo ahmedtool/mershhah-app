@@ -17,9 +17,10 @@ export default function ForgotPasswordPage() {
 
           <ForgotPasswordForm />
 
-          <p className="text-center text-xs text-gray-400 mt-6">
-            <Link href="/login" className="text-gray-900 font-bold hover:underline">العودة لتسجيل الدخول</Link>
-          </p>
+          <Link href="/login"
+            className="mt-5 w-full h-11 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center">
+            العودة لتسجيل الدخول
+          </Link>
         </div>
       </div>
 

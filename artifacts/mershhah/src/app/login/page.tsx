@@ -17,10 +17,10 @@ export default function LoginPage() {
 
           <LoginForm />
 
-          <p className="text-center text-xs text-gray-400 mt-6">
-            ما عندك حساب؟{' '}
-            <Link href="/register" className="text-gray-900 font-bold hover:underline">سجّل حساب جديد</Link>
-          </p>
+          <Link href="/register"
+            className="mt-5 w-full h-11 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center">
+            ما عندك حساب؟ سجّل حساب جديد
+          </Link>
         </div>
       </div>
 

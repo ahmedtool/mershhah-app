@@ -17,10 +17,10 @@ export default function RegisterPage() {
 
           <RegisterForm />
 
-          <p className="text-center text-xs text-gray-400 mt-6">
-            عندك حساب؟{' '}
-            <Link href="/login" className="text-gray-900 font-bold hover:underline">سجّل دخول</Link>
-          </p>
+          <Link href="/login"
+            className="mt-5 w-full h-11 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center">
+            عندك حساب؟ سجّل دخول
+          </Link>
         </div>
       </div>
 
