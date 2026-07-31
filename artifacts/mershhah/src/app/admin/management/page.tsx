@@ -48,6 +48,7 @@ function ProfileDetails({
   const { toast } = useToast();
   const [activePlans, setActivePlans] = useState<Plan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const form = useForm<FormValues>({ resolver: zodResolver(formSchema) });
 
@@ -119,7 +120,7 @@ function ProfileDetails({
       isMounted = false;
       supabase.removeChannel(channel);
     };
-  }, [profileId, form]);
+  }, [profileId, form, refreshKey]);
 
   function onSubmit(values: FormValues) {
     startSaving(async () => {
@@ -139,6 +140,7 @@ function ProfileDetails({
         }
 
         toast({ title: `تم تحديث بيانات "${values.restaurant_name}" بنجاح` });
+        setRefreshKey(k => k + 1);
         onSave();
       } catch (err: any) {
         toast({ title: 'خطأ في الحفظ', description: err.message, variant: 'destructive' });
@@ -192,6 +194,7 @@ function ProfileDetails({
         if (subErr) throw subErr;
 
         toast({ title: 'تم تجديد/تفعيل الاشتراك بنجاح!' });
+        setRefreshKey(k => k + 1);
         onSave();
       } catch (err: any) {
         toast({ title: 'خطأ في التفعيل', description: err.message, variant: 'destructive' });
