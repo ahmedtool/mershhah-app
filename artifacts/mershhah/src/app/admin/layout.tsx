@@ -1,7 +1,7 @@
 'use client';
 
 import { AdminTopNav } from "@/components/shared/AdminTopNav";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { AdminAccountStatusChecker } from "@/components/auth/AdminAccountStatusChecker";
 import { useUser } from "@/hooks/useUser";
 import { useRouter } from '@/lib/navigation';
@@ -15,20 +15,27 @@ export default function AdminLayout({
 }) {
   const { user, isLoading } = useUser();
   const router = useRouter();
+  const didRedirect = useRef(false);
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !user && !didRedirect.current) {
+      didRedirect.current = true;
       router.push('/login');
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading]);
 
-  if (isLoading || !user) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-background">
-        <Loader2 className="animate-spin h-10 w-10 text-primary" />
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin h-6 w-6 text-gray-900" />
+          <span className="text-xs font-bold text-gray-400">مرشح</span>
+        </div>
       </div>
     );
   }
+
+  if (!user) return null;
 
   return (
     <div dir="rtl">
