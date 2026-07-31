@@ -1,8 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from '@/lib/navigation';
-import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, useRef } from 'react';
 import { useUser } from '@/hooks/useUser';
 import { Link } from 'wouter';
 import {
@@ -30,7 +29,6 @@ export function AdminTopNav() {
   const router = useRouter();
   const { user } = useUser();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const navItems = [
@@ -45,27 +43,6 @@ export function AdminTopNav() {
     { href: '/admin/workflow', label: 'سير العمل', icon: Activity, permissionId: 'workflow' },
     { href: '/admin/sales', label: 'دليل المبيعات', icon: TrendingUp, permissionId: 'sales' },
   ];
-
-  useEffect(() => {
-    if (!user || user.role !== 'admin') return;
-
-    const fetchUnread = async () => {
-      const { count } = await supabase
-        .from('chats')
-        .select('*', { count: 'exact', head: true })
-        .eq('adminHasUnread', true);
-      setUnreadCount(count || 0);
-    };
-
-    fetchUnread();
-
-    const channel = supabase
-      .channel('admin-unread-chats')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => { fetchUnread(); })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -123,11 +100,6 @@ export function AdminTopNav() {
               >
                 <item.icon className="h-3.5 w-3.5 shrink-0" />
                 <span className="hidden md:inline">{item.label}</span>
-                {item.showBadge && unreadCount > 0 && (
-                  <span className="flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold">
-                    {unreadCount}
-                  </span>
-                )}
               </Link>
             ))}
           </div>
