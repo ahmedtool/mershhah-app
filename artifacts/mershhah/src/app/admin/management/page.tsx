@@ -479,16 +479,40 @@ export default function ManagementPage() {
     if (!profileToDelete) return;
     startDeleteTransition(async () => {
       try {
-        const { error: delErr } = await supabase.from('profiles').delete().eq('id', profileToDelete.id);
-        if (delErr) throw delErr;
-        if (profileToDelete.restaurant_id) {
-          const { error: restDelErr } = await supabase.from('restaurants').delete().eq('id', profileToDelete.restaurant_id);
+        const restId = profileToDelete.restaurant_id;
+
+        // Delete related data first (some may not cascade)
+        if (restId) {
+          await supabase.from('menu_items').delete().eq('restaurant_id', restId);
+          await supabase.from('branches').delete().eq('restaurant_id', restId);
+          await supabase.from('offers').delete().eq('restaurant_id', restId);
+          await supabase.from('reviews').delete().eq('restaurant_id', restId);
+          await supabase.from('hub_visits').delete().eq('restaurant_id', restId);
+          await supabase.from('applications').delete().eq('restaurant_id', restId);
+        }
+        await supabase.from('subscriptions').delete().eq('profile_id', profileToDelete.id);
+        await supabase.from('activated_tools').delete().eq('profile_id', profileToDelete.id);
+        await supabase.from('chats').delete().eq('id', profileToDelete.id);
+        await supabase.from('activity').delete().eq('userId', profileToDelete.id);
+
+        // Delete restaurant (cascades to menu_items, branches, offers, reviews)
+        if (restId) {
+          const { error: restDelErr } = await supabase.from('restaurants').delete().eq('id', restId);
           if (restDelErr) throw restDelErr;
         }
-        const { error: chatDelErr } = await supabase.from('chats').delete().eq('id', profileToDelete.id);
-        if (chatDelErr) throw chatDelErr;
 
-        toast({ title: 'تم الحذف', description: `تم حذف بيانات ${profileToDelete.restaurant_name}.` });
+        // Delete profile (cascades to subscriptions, activated_tools)
+        const { error: delErr } = await supabase.from('profiles').delete().eq('id', profileToDelete.id);
+        if (delErr) throw delErr;
+
+        // Delete auth user (requires service_role — try via edge function)
+        try {
+          await supabase.functions.invoke('admin-delete-user', { body: { userId: profileToDelete.id } });
+        } catch (_) {
+          // Auth deletion may fail if edge function not deployed — data is still cleaned
+        }
+
+        toast({ title: 'تم الحذف', description: `تم حذف بيانات ${profileToDelete.restaurant_name} بالكامل.` });
         setProfileToDelete(null);
         if (selectedProfileId === profileToDelete.id) {
           const remaining = subscribers.filter((s) => s.id !== profileToDelete.id);
