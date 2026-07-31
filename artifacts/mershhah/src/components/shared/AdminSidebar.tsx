@@ -2,14 +2,6 @@
 
 import { usePathname, useRouter } from '@/lib/navigation';
 import {
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-} from '@/components/ui/sidebar';
-import {
   LayoutDashboard,
   LogOut,
   Settings,
@@ -23,14 +15,10 @@ import {
   Package,
   TrendingUp,
 } from 'lucide-react';
-import { Logo } from './Logo';
-import { Separator } from '../ui/separator';
 import { Link } from 'wouter';
-import { LanguageSwitcherSimple } from './LanguageSwitcher';
 import { supabase } from '@/lib/supabase';
 import { useUser } from '@/hooks/useUser';
 import { useEffect, useState } from 'react';
-import { Badge } from '../ui/badge';
 
 const SUPER_ADMIN_EMAIL = 'ahmedsupsa@gmail.com';
 
@@ -81,70 +69,64 @@ export function AdminSidebar() {
   };
 
   const visibleMenuItems = menuItems.filter((item) => {
-    if (user?.email === SUPER_ADMIN_EMAIL) return true;
+    if (user?.email === SUPER_ADMIN_EMAIL || user?.admin_permissions?.includes('all')) return true;
     return user?.admin_permissions?.includes(item.permissionId);
   });
 
   return (
-    <div className="flex h-full flex-col bg-sidebar border-l" style={{ width: 'var(--sidebar-width)', minWidth: 'var(--sidebar-width)' }} dir="rtl">
-      <SidebarHeader className="px-4 py-4">
-        <Logo />
-      </SidebarHeader>
-      <Separator />
-      <SidebarContent className="flex-1 px-3 py-3">
-        <SidebarMenu>
-          {visibleMenuItems.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                size="lg"
-                isActive={pathname.startsWith(item.href)}
-                className="h-11 px-3 text-sm"
-              >
-                <Link href={item.href} className="flex flex-row-reverse items-center justify-start w-full">
-                  <span className="flex-1 text-right">{item.label}</span>
-                  <div className="flex items-center gap-2">
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    {item.href === '/admin/support' && unreadCount > 0 && (
-                      <Badge className="h-5 min-w-5 px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-xs">
-                        {unreadCount}
-                      </Badge>
-                    )}
-                  </div>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarContent>
-      <Separator />
-      <SidebarFooter className="px-3 py-3">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg" className="h-11 px-3 text-sm" isActive={pathname === '/admin/settings'}>
-              <Link href="/admin/settings" className="flex flex-row-reverse w-full">
-                <span className="flex-1 text-right">الإعدادات</span>
-                <Settings className="h-4 w-4 shrink-0" />
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              onClick={handleLogout}
-              className="h-11 px-3 text-sm text-destructive hover:text-destructive hover:bg-destructive/10"
+    <aside className="hidden lg:flex flex-col w-56 min-h-screen bg-white border-l border-gray-100 shrink-0" dir="rtl">
+      {/* Logo */}
+      <div className="h-14 flex items-center px-5 border-b border-gray-100">
+        <Link href="/admin/dashboard" className="text-sm font-black text-gray-900">مرشح</Link>
+      </div>
+
+      {/* Menu */}
+      <nav className="flex-1 py-3 px-3 space-y-0.5 overflow-y-auto">
+        {visibleMenuItems.map((item) => {
+          const isActive = pathname.startsWith(item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 h-10 px-3 rounded-xl text-xs font-bold transition-colors ${
+                isActive
+                  ? 'bg-gray-900 text-white'
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+              }`}
             >
-              <span className="flex flex-row-reverse w-full">
-                <span className="flex-1 text-right">تسجيل الخروج</span>
-                <LogOut className="h-4 w-4 shrink-0" />
-              </span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-        <div className="px-2 pt-2">
-          <LanguageSwitcherSimple />
-        </div>
-      </SidebarFooter>
-    </div>
+              <item.icon className="h-4 w-4 shrink-0" />
+              <span className="flex-1">{item.label}</span>
+              {item.href === '/admin/support' && unreadCount > 0 && (
+                <span className="flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="border-t border-gray-100 py-3 px-3 space-y-0.5">
+        <Link
+          href="/admin/settings"
+          className={`flex items-center gap-3 h-10 px-3 rounded-xl text-xs font-bold transition-colors ${
+            pathname === '/admin/settings'
+              ? 'bg-gray-900 text-white'
+              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+          }`}
+        >
+          <Settings className="h-4 w-4 shrink-0" />
+          <span>الإعدادات</span>
+        </Link>
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 h-10 px-3 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 transition-colors"
+        >
+          <LogOut className="h-4 w-4 shrink-0" />
+          <span>تسجيل الخروج</span>
+        </button>
+      </div>
+    </aside>
   );
 }

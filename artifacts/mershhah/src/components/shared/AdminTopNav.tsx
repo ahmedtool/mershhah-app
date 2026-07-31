@@ -103,13 +103,13 @@ export function AdminTopNav() {
           <span className="text-sm font-black text-gray-900">مرشح</span>
         </Link>
 
-        {/* Next page arrow - mobile */}
-        <button onClick={() => navigatePage('next')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden relative z-10">
+        {/* Next page arrow - mobile only */}
+        <button onClick={() => navigatePage('next')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden lg:hidden relative z-10">
           <ChevronRight className="h-4 w-4" />
         </button>
 
-        {/* Nav items - scrollable */}
-        <div ref={scrollRef} className="flex-1 overflow-x-auto scrollbar-hide">
+        {/* Nav items - scrollable, hidden on lg+ (sidebar handles it) */}
+        <div ref={scrollRef} className="flex-1 overflow-x-auto scrollbar-hide lg:hidden">
           <div className="flex items-center gap-1 min-w-max">
             {visibleNavItems.map((item) => (
               <Link
@@ -133,8 +133,8 @@ export function AdminTopNav() {
           </div>
         </div>
 
-        {/* Prev page arrow - mobile */}
-        <button onClick={() => navigatePage('prev')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden relative z-10">
+        {/* Prev page arrow - mobile only */}
+        <button onClick={() => navigatePage('prev')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden lg:hidden relative z-10">
           <ChevronLeft className="h-4 w-4" />
         </button>
 
