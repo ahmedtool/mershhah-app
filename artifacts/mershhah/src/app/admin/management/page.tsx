@@ -125,15 +125,17 @@ function ProfileDetails({
     startSaving(async () => {
       if (!profile) return;
       try {
-        await supabase.from('profiles').update({
+        const { error } = await supabase.from('profiles').update({
           restaurant_name: values.restaurant_name,
           full_name: values.full_name,
           phone_number: values.phone_number,
           account_status: values.account_status,
         }).eq('id', profile.id);
+        if (error) throw error;
 
         if (profile.restaurant_id) {
-          await supabase.from('restaurants').update({ name: values.restaurant_name }).eq('id', profile.restaurant_id);
+          const { error: restErr } = await supabase.from('restaurants').update({ name: values.restaurant_name }).eq('id', profile.restaurant_id);
+          if (restErr) throw restErr;
         }
 
         toast({ title: `تم تحديث بيانات "${values.restaurant_name}" بنجاح` });
@@ -153,12 +155,14 @@ function ProfileDetails({
 
     startActivating(async () => {
       try {
-        await supabase.from('profiles').update({ account_status: 'active' }).eq('id', profile.id);
+        const { error: profErr } = await supabase.from('profiles').update({ account_status: 'active' }).eq('id', profile.id);
+        if (profErr) throw profErr;
 
         if (profile.restaurant_id) {
-          await supabase.from('restaurants')
+          const { error: restErr } = await supabase.from('restaurants')
             .update({ is_paid_plan: selectedPlan.id !== 'free' })
             .eq('id', profile.restaurant_id);
+          if (restErr) throw restErr;
         }
 
         let startDate = new Date();
@@ -168,7 +172,7 @@ function ProfileDetails({
         }
         const endDate = addMonths(startDate, selectedPlan.duration_months);
 
-        await supabase.from('subscriptions').insert({
+        const { error: subErr } = await supabase.from('subscriptions').insert({
           id: crypto.randomUUID(),
           profile_id: profile.id,
           plan_name: selectedPlan.name,
@@ -177,6 +181,7 @@ function ProfileDetails({
           start_date: startDate.toISOString(),
           end_date: endDate.toISOString(),
         });
+        if (subErr) throw subErr;
 
         toast({ title: 'تم تجديد/تفعيل الاشتراك بنجاح!' });
         onSave();
@@ -463,11 +468,14 @@ export default function ManagementPage() {
     if (!profileToDelete) return;
     startDeleteTransition(async () => {
       try {
-        await supabase.from('profiles').delete().eq('id', profileToDelete.id);
+        const { error: delErr } = await supabase.from('profiles').delete().eq('id', profileToDelete.id);
+        if (delErr) throw delErr;
         if (profileToDelete.restaurant_id) {
-          await supabase.from('restaurants').delete().eq('id', profileToDelete.restaurant_id);
+          const { error: restDelErr } = await supabase.from('restaurants').delete().eq('id', profileToDelete.restaurant_id);
+          if (restDelErr) throw restDelErr;
         }
-        await supabase.from('chats').delete().eq('id', profileToDelete.id);
+        const { error: chatDelErr } = await supabase.from('chats').delete().eq('id', profileToDelete.id);
+        if (chatDelErr) throw chatDelErr;
 
         toast({ title: 'تم الحذف', description: `تم حذف بيانات ${profileToDelete.restaurant_name}.` });
         setProfileToDelete(null);
