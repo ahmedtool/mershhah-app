@@ -1,29 +1,41 @@
 'use client';
 
 import { RegisterForm } from "@/components/auth/RegisterForm";
-import { Logo } from "@/components/shared/Logo";
 import { Link } from "wouter";
+import { Smartphone } from "lucide-react";
 
 export default function RegisterPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" dir="rtl">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="inline-block mb-6">
-            <Logo />
+    <div className="min-h-screen flex" dir="rtl">
+      {/* Left: Form */}
+      <div className="flex-1 flex items-center justify-center px-6 bg-white">
+        <div className="w-full max-w-sm">
+          <div className="mb-8">
+            <h1 className="text-2xl font-black text-gray-900 mb-1">مرشح</h1>
+            <p className="text-sm text-gray-400">أنشئ حسابك وابدأ إدارة مطعمك</p>
           </div>
-          <h1 className="text-lg font-black text-gray-900 mb-1">أنشئ حسابك</h1>
-          <p className="text-xs text-gray-400">سجّل بياناتك للانضمام إلى المنصة</p>
-        </div>
 
-        <div className="bg-white border border-gray-100 rounded-2xl p-6">
           <RegisterForm />
-        </div>
 
-        <p className="text-center text-[11px] text-gray-400 mt-5">
-          عندك حساب؟{' '}
-          <Link href="/login" className="text-gray-900 font-bold hover:underline">سجل دخول</Link>
-        </p>
+          <p className="text-center text-xs text-gray-400 mt-6">
+            عندك حساب؟{' '}
+            <Link href="/login" className="text-gray-900 font-bold hover:underline">سجّل دخول</Link>
+          </p>
+        </div>
+      </div>
+
+      {/* Right: Visual */}
+      <div className="hidden lg:flex flex-1 bg-gray-900 items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.05),transparent)]" />
+        <div className="text-center relative z-10 px-12">
+          <div className="w-20 h-20 rounded-3xl bg-white/10 backdrop-blur-sm flex items-center justify-center mx-auto mb-8">
+            <Smartphone className="h-10 w-10 text-white" />
+          </div>
+          <h2 className="text-3xl font-black text-white mb-3">مرشح</h2>
+          <p className="text-sm text-white/50 leading-relaxed">
+            منصة ذكية لإدارة مطعمك<br />قائمة طعام، فروع، عروض، وتقييمات
+          </p>
+        </div>
       </div>
     </div>
   );

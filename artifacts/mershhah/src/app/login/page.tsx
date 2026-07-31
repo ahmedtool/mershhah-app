@@ -1,29 +1,41 @@
 'use client';
 
 import { LoginForm } from "@/components/auth/LoginForm";
-import { Logo } from "@/components/shared/Logo";
 import { Link } from "wouter";
+import { Smartphone } from "lucide-react";
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4" dir="rtl">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="inline-block mb-6">
-            <Logo />
+    <div className="min-h-screen flex" dir="rtl">
+      {/* Left: Form */}
+      <div className="flex-1 flex items-center justify-center px-6 bg-white">
+        <div className="w-full max-w-sm">
+          <div className="mb-8">
+            <h1 className="text-2xl font-black text-gray-900 mb-1">مرشح</h1>
+            <p className="text-sm text-gray-400">أهلاً بك! سجّل دخولك للوصول للوحة التحكم</p>
           </div>
-          <h1 className="text-lg font-black text-gray-900 mb-1">تسجيل الدخول</h1>
-          <p className="text-xs text-gray-400">أهلاً بك! أدخل بياناتك للوصول للوحة التحكم</p>
-        </div>
 
-        <div className="bg-white border border-gray-100 rounded-2xl p-6">
           <LoginForm />
-        </div>
 
-        <p className="text-center text-[11px] text-gray-400 mt-5">
-          ما عندك حساب؟{' '}
-          <Link href="/register" className="text-gray-900 font-bold hover:underline">سوّ حساب جديد</Link>
-        </p>
+          <p className="text-center text-xs text-gray-400 mt-6">
+            ما عندك حساب؟{' '}
+            <Link href="/register" className="text-gray-900 font-bold hover:underline">سجّل حساب جديد</Link>
+          </p>
+        </div>
+      </div>
+
+      {/* Right: Visual */}
+      <div className="hidden lg:flex flex-1 bg-gray-900 items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.05),transparent)]" />
+        <div className="text-center relative z-10 px-12">
+          <div className="w-20 h-20 rounded-3xl bg-white/10 backdrop-blur-sm flex items-center justify-center mx-auto mb-8">
+            <Smartphone className="h-10 w-10 text-white" />
+          </div>
+          <h2 className="text-3xl font-black text-white mb-3">مرشح</h2>
+          <p className="text-sm text-white/50 leading-relaxed">
+            منصة ذكية لإدارة مطعمك<br />قائمة طعام، فروع، عروض، وتقييمات
+          </p>
+        </div>
       </div>
     </div>
   );
