@@ -1,14 +1,13 @@
 import { useLocation, useParams as wouterUseParams } from 'wouter';
-import { useMemo, useCallback } from 'react';
 
 export function useRouter() {
   const [, navigate] = useLocation();
-  return useMemo(() => ({
+  return {
     push: (path: string) => navigate(path),
     replace: (path: string) => navigate(path, { replace: true }),
     back: () => window.history.back(),
     refresh: () => window.location.reload(),
-  }), [navigate]);
+  };
 }
 
 export function usePathname(): string {

@@ -23,7 +23,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-const SUPER_ADMIN_EMAILS = ['ahmedsupsa@gmail.com', 'ahmdtjrbt74@gmail.com'];
+const SUPER_ADMIN_EMAIL = 'ahmedsupsa@gmail.com';
 
 export function AdminTopNav() {
   const pathname = usePathname();
@@ -36,7 +36,7 @@ export function AdminTopNav() {
   const navItems = [
     { href: '/admin/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard, permissionId: 'dashboard' },
     { href: '/admin/management', label: 'المشتركين', icon: Building, permissionId: 'management' },
-    { href: '/admin/financials', label: 'المالية', icon: Package, permissionId: 'financials' },
+    { href: '/admin/plans', label: 'الباقات', icon: Package, permissionId: 'financials' },
     { href: '/admin/store-management', label: 'إدارة المتجر', icon: Store, permissionId: 'store-management' },
     { href: '/admin/applications', label: 'التطبيقات', icon: AppWindow, permissionId: 'applications' },
     { href: '/admin/announcements', label: 'الإعلانات', icon: Megaphone, permissionId: 'announcements' },
@@ -65,7 +65,7 @@ export function AdminTopNav() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user?.id, user?.role]);
+  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -74,7 +74,7 @@ export function AdminTopNav() {
   };
 
   const visibleNavItems = navItems.filter((item) => {
-    if (SUPER_ADMIN_EMAILS.includes(user?.email)) return true;
+    if (user?.email === SUPER_ADMIN_EMAIL) return true;
     return user?.admin_permissions?.includes(item.permissionId);
   });
 
@@ -100,7 +100,8 @@ export function AdminTopNav() {
       <div className="flex items-center h-14 px-4 gap-3">
         {/* Logo */}
         <Link href="/admin/dashboard" className="shrink-0 flex items-center gap-2">
-          <span className="text-sm font-bold text-gray-900">مرشح</span>
+          <img src="/logo.png" alt="مرشح" className="h-8 w-8 rounded-lg" />
+          <span className="text-sm font-black text-gray-900 hidden sm:block">مرشح</span>
         </Link>
 
         {/* Next page arrow - mobile */}

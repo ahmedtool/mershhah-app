@@ -4,7 +4,7 @@ import { useState, useTransition, useEffect, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -170,7 +170,6 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
-        <DialogTitle className="sr-only">{isEditing ? 'تعديل الأداة' : 'إضافة أداة جديدة'}</DialogTitle>
         {/* Header */}
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center justify-between">

@@ -1,4 +1,4 @@
-﻿// Represents a record from the 'profiles' table. Defines WHO the user is.
+// Represents a record from the 'profiles' table. Defines WHO the user is.
 export type Profile = {
   id: string; // Corresponds to auth.users.id
   full_name: string | null;
@@ -218,7 +218,7 @@ export type Tool = {
   popular: boolean;
   type: "free" | "paid";
   /**
-   * مسار صورة الأداة في Supabase Storage (اختياري).
+   * مسار صورة الأداة في Firebase Storage (اختياري).
    * إذا كان موجوداً، يتم استخدامه في المتجر بدلاً من أيقونة Lucide.
    */
   image_path?: string | null;
@@ -307,22 +307,6 @@ export type Plan = {
      * إذا لم تكن موجودة، يتم استخدام DEFAULT_PLAN_FEATURES كافتراضي.
      */
     features?: Record<string, boolean>;
-};
-
-export type DiscountCode = {
-    id: string;
-    code: string;
-    description?: string | null;
-    discount_type: 'percentage' | 'fixed';
-    discount_value: number;
-    max_uses?: number | null;
-    used_count: number;
-    min_amount?: number;
-    applicable_plans?: string[] | null;
-    starts_at?: any;
-    expires_at?: any;
-    is_active: boolean;
-    created_at?: any;
 };
 
 export type ActivationCode = {

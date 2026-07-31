@@ -443,13 +443,13 @@ create policy "profiles: read own" on public.profiles for select using (auth.uid
 create policy "profiles: insert own" on public.profiles for insert with check (auth.uid() = id);
 create policy "profiles: update own" on public.profiles for update using (auth.uid() = id);
 create policy "profiles: admin full" on public.profiles for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- RESTAURANTS policies
 create policy "restaurants: owner full" on public.restaurants for all using (owner_id = auth.uid());
 create policy "restaurants: admin full" on public.restaurants for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 create policy "restaurants: public read" on public.restaurants for select using (true);
 
@@ -458,7 +458,7 @@ create policy "branches: owner full" on public.branches for all using (
   restaurant_id in (select id from public.restaurants where owner_id = auth.uid())
 );
 create policy "branches: admin full" on public.branches for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 create policy "branches: public read" on public.branches for select using (true);
 
@@ -467,7 +467,7 @@ create policy "menu_items: owner full" on public.menu_items for all using (
   restaurant_id in (select id from public.restaurants where owner_id = auth.uid())
 );
 create policy "menu_items: admin full" on public.menu_items for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 create policy "menu_items: public read" on public.menu_items for select using (true);
 
@@ -476,7 +476,7 @@ create policy "offers: owner full" on public.offers for all using (
   restaurant_id in (select id from public.restaurants where owner_id = auth.uid())
 );
 create policy "offers: admin full" on public.offers for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 create policy "offers: public read" on public.offers for select using (true);
 
@@ -487,33 +487,33 @@ create policy "reviews: owner manage" on public.reviews for all using (
   restaurant_id in (select id from public.restaurants where owner_id = auth.uid())
 );
 create policy "reviews: admin full" on public.reviews for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- PLANS / TOOLS / APPLICATIONS - public read, admin write
 create policy "plans: public read" on public.plans for select using (true);
 create policy "plans: admin write" on public.plans for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 create policy "tools: public read" on public.tools for select using (true);
 create policy "tools: admin write" on public.tools for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 create policy "applications: public read" on public.applications for select using (true);
 create policy "applications: admin write" on public.applications for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- ACTIVATED TOOLS
 create policy "activated_tools: owner" on public.activated_tools for all using (profile_id = auth.uid());
 create policy "activated_tools: admin" on public.activated_tools for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- SUBSCRIPTIONS
 create policy "subscriptions: owner" on public.subscriptions for all using (profile_id = auth.uid());
 create policy "subscriptions: admin" on public.subscriptions for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- SUPPORT TICKETS
@@ -522,17 +522,17 @@ create policy "support_tickets: owner read own" on public.support_tickets for se
   restaurant_id in (select id from public.restaurants where owner_id = auth.uid())
 );
 create policy "support_tickets: admin full" on public.support_tickets for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- CHATS / CHAT_MESSAGES
 create policy "chats: owner" on public.chats for all using ("ownerId" = auth.uid()::text);
 create policy "chats: admin" on public.chats for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 create policy "chat_messages: participant" on public.chat_messages for all using (
   chat_id in (select id from public.chats where "ownerId" = auth.uid()::text)
-  or (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- AI SESSIONS / MESSAGES
@@ -541,37 +541,37 @@ create policy "ai_sessions: owner read" on public.ai_sessions for select using (
   restaurant_id in (select id from public.restaurants where owner_id = auth.uid())
 );
 create policy "ai_sessions: admin" on public.ai_sessions for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 create policy "ai_session_messages: public insert" on public.ai_session_messages for insert with check (true);
 create policy "ai_session_messages: owner read" on public.ai_session_messages for select using (
   restaurant_id in (select id from public.restaurants where owner_id = auth.uid())
 );
 create policy "ai_session_messages: admin" on public.ai_session_messages for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- TASKS / ANNOUNCEMENTS (admin only write, authenticated read)
 create policy "tasks: authenticated read" on public.tasks for select using (auth.uid() is not null);
 create policy "tasks: admin write" on public.tasks for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 create policy "announcements: authenticated read" on public.announcements for select using (auth.uid() is not null);
 create policy "announcements: admin write" on public.announcements for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- ACTIVITY / HUB_VISITS / MENU_ITEM_INTERACTIONS (open insert, admin read)
 create policy "activity: open insert" on public.activity for insert with check (true);
 create policy "activity: admin read" on public.activity for select using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 create policy "hub_visits: open insert" on public.hub_visits for insert with check (true);
 create policy "hub_visits: owner read" on public.hub_visits for select using (
   restaurant_id in (select id from public.restaurants where owner_id = auth.uid())
 );
 create policy "hub_visits: admin read" on public.hub_visits for select using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 create policy "menu_item_interactions: open insert" on public.menu_item_interactions for insert with check (true);
 create policy "menu_item_interactions: owner read" on public.menu_item_interactions for select using (
@@ -583,7 +583,7 @@ create policy "image_gallery: owner full" on public.image_gallery for all using 
   "restaurantId" in (select id from public.restaurants where owner_id = auth.uid())
 );
 create policy "image_gallery: admin full" on public.image_gallery for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 
 -- PUBLIC PAGES (open read, owner write)
@@ -601,40 +601,7 @@ create policy "chat-attachments: auth all" on storage.objects for all using (buc
 -- ACTIVATION CODES RLS
 -- ============================================================
 create policy "activation_codes: admin full" on public.activation_codes for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+  exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
 );
 create policy "activation_codes: owner read unused" on public.activation_codes for select using (auth.uid() is not null);
-
--- ============================================================
--- AUTH.USERS RLS (مطلوب لـ admin policies)
--- ============================================================
--- auth.users مفعل فيها RLS افتراضياً — بدون هذا الـ policy،
--- الـ subquery في admin policies ترجع NULL لأن nobody يقدر يقرأ.
-create policy "users: own read" on auth.users for select using (id = auth.uid());
-
--- ============================================================
--- DISCOUNT CODES
--- ============================================================
-create table if not exists public.discount_codes (
-  id uuid default gen_random_uuid() primary key,
-  code text not null unique,
-  description text,
-  discount_type text not null default 'percentage' check (discount_type in ('percentage', 'fixed')),
-  discount_value numeric not null default 0,
-  max_uses integer,
-  used_count integer not null default 0,
-  min_amount numeric default 0,
-  applicable_plans text[],
-  starts_at timestamptz default now(),
-  expires_at timestamptz,
-  is_active boolean not null default true,
-  created_at timestamptz not null default now()
-);
-alter table public.discount_codes enable row level security;
-create policy "discount_codes: admin full" on public.discount_codes for all using (
-  (SELECT raw_app_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
-);
-create policy "discount_codes: public read" on public.discount_codes for select using (true);
-grant select on public.discount_codes to anon, authenticated;
-grant all on public.discount_codes to service_role;
 

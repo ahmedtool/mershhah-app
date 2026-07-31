@@ -62,47 +62,43 @@ export default function CustomizePage() {
   const appLogoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const initialUsernameRef = useRef<string | null>(null);
 
-  const restaurantId = user?.restaurantId;
-  const fetchedRef = useRef<string | null>(null);
-
   useEffect(() => {
-    if (!restaurantId || fetchedRef.current === restaurantId) return;
-    fetchedRef.current = restaurantId;
-
     const fetchData = async () => {
-      try {
-          const { data: restData } = await supabase
-              .from('restaurants')
-              .select('*')
-              .eq('id', restaurantId)
-              .single();
+      if (user?.restaurantId) {
+        try {
+            const { data: restData } = await supabase
+                .from('restaurants')
+                .select('*')
+                .eq('id', user.restaurantId)
+                .single();
 
-          if (restData) {
-            initialUsernameRef.current = restData.username ?? null;
-            setSettings({
-              ...restData,
-              socialLinks: Array.isArray(restData.socialLinks) ? restData.socialLinks : [],
-              applications: Array.isArray(restData.applications) ? restData.applications : [],
-              borderRadius: restData.borderRadius ?? 16,
-              fontFamily: restData.fontFamily ?? 'Cairo',
-            });
-            setLogoPreview(restData.logo);
-          }
-      } catch (serverError: any) {
-          console.error("Error fetching restaurant data:", serverError);
+            if (restData) {
+              initialUsernameRef.current = restData.username ?? null;
+              setSettings({
+                ...restData,
+                socialLinks: Array.isArray(restData.socialLinks) ? restData.socialLinks : [],
+                applications: Array.isArray(restData.applications) ? restData.applications : [],
+                borderRadius: restData.borderRadius ?? 16,
+                fontFamily: restData.fontFamily ?? 'Cairo',
+              });
+              setLogoPreview(restData.logo);
+            }
+        } catch (serverError: any) {
+            console.error("Error fetching restaurant data:", serverError);
+        }
+
+        try {
+            const { data: appsData } = await supabase.from('applications').select('*');
+            setGlobalApps(appsData || []);
+        } catch (serverError: any) {
+            console.error("Error fetching applications:", serverError);
+        }
+
+        setLoading(false);
       }
-
-      try {
-          const { data: appsData } = await supabase.from('applications').select('*');
-          setGlobalApps(appsData || []);
-      } catch (serverError: any) {
-          console.error("Error fetching applications:", serverError);
-      }
-
-      setLoading(false);
     };
     fetchData();
-  }, [restaurantId]);
+  }, [user]);
 
   const handleSuggestColors = async () => {
     let dataUri = '';
@@ -154,6 +150,9 @@ export default function CustomizePage() {
 
     startSaving(async () => {
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('[Customize] Auth check:', { userId: user.uid, restaurantId: user.restaurantId, hasSession: !!session, authUid: session?.user?.id });
+
         let logoUrl = settings.logo;
         if (logoFile) {
           const path = `restaurants/${user.restaurantId}/logo`;
@@ -198,9 +197,7 @@ export default function CustomizePage() {
 
         const updateData: Record<string, unknown> = {
             name: settings.name || null,
-            name_en: settings.name_en || null,
             description: settings.description || null,
-            description_en: settings.description_en || null,
             username: newUsername || cleanSettings.username,
             logo: logoUrl || null,
             primaryColor: settings.primaryColor || null,
@@ -225,18 +222,24 @@ export default function CustomizePage() {
             .from('restaurants')
             .update(updateData)
             .eq('id', user.restaurantId);
-        if (error) throw error;
+        if (error) {
+          console.error('[Customize] Restaurant update failed:', JSON.stringify(error, null, 2), 'restaurantId:', user.restaurantId, 'auth.uid:', user.uid);
+          throw error;
+        }
 
-        syncPublicPage(user.restaurantId!).catch(() => {});
+        syncPublicPage(user.restaurantId!).catch((e) => {
+          console.error('[Customize] syncPublicPage failed:', e);
+        });
 
         if (logoFile) {
-          await supabase.from('activity').insert({
+          const { error: actError } = await supabase.from('activity').insert({
             type: "logo_added",
             restaurantId: user.restaurantId,
             restaurantName: settings.name || null,
             userId: user.uid,
             timestamp: new Date().toISOString(),
           });
+          if (actError) console.error('[Customize] Activity insert failed:', actError);
         }
 
         toast({ title: "تم الحفظ بنجاح!" });
@@ -548,7 +551,7 @@ export default function CustomizePage() {
                     src={`/hub/${settings.username}`}
                     title="معاينة"
                     className="w-full h-full min-h-[600px] border-0 rounded-b-[2rem] bg-white"
-                    sandbox="allow-scripts"
+                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-gray-300 text-xs p-6 text-center">

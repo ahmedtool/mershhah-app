@@ -4,7 +4,7 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,7 @@ import { syncPublicPage } from '@/lib/public-pages';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { MenuItem } from "@/lib/types";
 import { Badge } from "../ui/badge";
-import { Dialog as GalleryDialog, DialogContent as GalleryDialogContent, DialogTitle as GalleryDialogTitle } from "@/components/ui/dialog";
+import { Dialog as GalleryDialog, DialogContent as GalleryDialogContent } from "@/components/ui/dialog";
 import { StorageImage } from "../shared/StorageImage";
 import { ImageGallery } from "../studio/ImageGallery";
 
@@ -164,7 +164,6 @@ export function EditOfferDialog({ children, offer, onSave, restaurantId, userId 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>{children}</DialogTrigger>
         <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
-          <DialogTitle className="sr-only">تعديل العرض</DialogTitle>
           {/* Hero Image */}
           <div className="relative w-full aspect-[16/9] bg-gray-100 overflow-hidden">
             {imagePreview ? (
@@ -394,7 +393,6 @@ export function EditOfferDialog({ children, offer, onSave, restaurantId, userId 
       {/* Gallery Dialog */}
       <GalleryDialog open={galleryOpen} onOpenChange={setGalleryOpen}>
         <GalleryDialogContent className="max-w-4xl max-h-[90vh] flex flex-col rounded-2xl" dir="rtl">
-          <GalleryDialogTitle className="sr-only">اختر صورة من المعرض</GalleryDialogTitle>
           <div className="px-5 pt-5 pb-3">
             <h2 className="text-lg font-bold">اختر صورة من المعرض</h2>
             <p className="text-sm text-gray-400 mt-1">اضغط على الصورة لاختيارها</p>

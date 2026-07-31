@@ -68,7 +68,7 @@ export function OwnerTopNav() {
       }
     };
     fetchTools();
-  }, [user?.id]);
+  }, [user]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -100,7 +100,8 @@ export function OwnerTopNav() {
       <div className="flex items-center h-14 px-4 gap-3">
         {/* Logo */}
         <Link href="/owner/dashboard" className="shrink-0 flex items-center gap-2">
-          <span className="text-sm font-bold text-gray-900">مرشح</span>
+          <img src="/logo.png" alt="مرشح" className="h-8 w-8 rounded-lg" />
+          <span className="text-sm font-black text-gray-900 hidden sm:block">مرشح</span>
         </Link>
 
         {/* Next page arrow - mobile */}

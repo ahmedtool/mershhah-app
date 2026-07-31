@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import {
-  Dialog, DialogContent, DialogTrigger, DialogTitle
+  Dialog, DialogContent, DialogTrigger
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -229,7 +229,7 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
                     status: 'available',
                     display_tags: 'none',
                     restaurant_id: restaurantId,
-                    created_at: new Date().toISOString(),
+                    createdAt: new Date().toISOString(),
                 });
             }
         }
@@ -272,7 +272,6 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) resetState(); setOpen(isOpen); }}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent dir="rtl" className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0">
-        <DialogTitle className="sr-only">استيراد المنيو بالذكاء الاصطناعي</DialogTitle>
         {/* Header */}
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center justify-between">
