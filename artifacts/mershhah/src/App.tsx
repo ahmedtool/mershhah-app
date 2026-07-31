@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { LanguageProvider } from "@/components/shared/LanguageContext";
 import { HydrationGate } from "@/components/shared/HydrationGate";
+import { UserProvider } from "@/hooks/useUser";
 
 import HomePage from "@/app/page";
 import LoginPage from "@/app/login/page";
@@ -170,9 +171,11 @@ function App() {
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <LanguageProvider>
             <HydrationGate>
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-                <Router />
-              </WouterRouter>
+              <UserProvider>
+                <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                  <Router />
+                </WouterRouter>
+              </UserProvider>
               <Toaster />
             </HydrationGate>
           </LanguageProvider>
