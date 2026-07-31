@@ -98,7 +98,7 @@ function ProfileDetails({
         const subs = (subsData || []) as Subscription[];
         const activeSubs = subs
           .filter((s) => s.status === 'active')
-          .sort((a, b) => new Date(b.end_date || 0).getTime() - new Date(a.end_date || 0).getTime());
+          .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
         setCurrentSub(activeSubs[0] || null);
       } else {
         setProfile(null);
@@ -164,6 +164,14 @@ function ProfileDetails({
             .eq('id', profile.restaurant_id);
           if (restErr) throw restErr;
         }
+
+        // Expire all previous active subscriptions
+        const { error: expireErr } = await supabase
+          .from('subscriptions')
+          .delete()
+          .eq('profile_id', profile.id)
+          .eq('status', 'active');
+        if (expireErr) throw expireErr;
 
         let startDate = new Date();
         const subEndDate = currentSub?.end_date ? new Date(currentSub.end_date) : null;
