@@ -1,7 +1,8 @@
 'use client';
 
 import { usePathname, useRouter } from '@/lib/navigation';
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/lib/supabase';
 import { useUser } from '@/hooks/useUser';
 import { Link } from 'wouter';
 import {
@@ -29,6 +30,7 @@ export function AdminTopNav() {
   const router = useRouter();
   const { user } = useUser();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const navItems = [
@@ -44,6 +46,27 @@ export function AdminTopNav() {
     { href: '/admin/sales', label: 'دليل المبيعات', icon: TrendingUp, permissionId: 'sales' },
   ];
 
+  useEffect(() => {
+    if (!user || user.role !== 'admin') return;
+
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('chats')
+        .select('*', { count: 'exact', head: true })
+        .eq('adminHasUnread', true);
+      setUnreadCount(count || 0);
+    };
+
+    fetchUnread();
+
+    const channel = supabase
+      .channel('admin-unread-chats')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => { fetchUnread(); })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
@@ -51,7 +74,7 @@ export function AdminTopNav() {
   };
 
   const visibleNavItems = navItems.filter((item) => {
-    if (user?.email === SUPER_ADMIN_EMAIL) return true;
+    if (user?.email === SUPER_ADMIN_EMAIL || user?.admin_permissions?.includes('all')) return true;
     return user?.admin_permissions?.includes(item.permissionId);
   });
 
@@ -80,13 +103,13 @@ export function AdminTopNav() {
           <span className="text-sm font-black text-gray-900">مرشح</span>
         </Link>
 
-        {/* Next page arrow - mobile only */}
-        <button onClick={() => navigatePage('next')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden lg:hidden relative z-10">
+        {/* Prev page arrow */}
+        <button onClick={() => navigatePage('prev')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden relative z-10">
           <ChevronRight className="h-4 w-4" />
         </button>
 
-        {/* Nav items - scrollable, hidden on lg+ (sidebar handles it) */}
-        <div ref={scrollRef} className="flex-1 overflow-x-auto scrollbar-hide lg:hidden">
+        {/* Nav items - scrollable */}
+        <div ref={scrollRef} className="flex-1 overflow-x-auto scrollbar-hide">
           <div className="flex items-center gap-1 min-w-max">
             {visibleNavItems.map((item) => (
               <Link
@@ -100,13 +123,18 @@ export function AdminTopNav() {
               >
                 <item.icon className="h-3.5 w-3.5 shrink-0" />
                 <span className="hidden md:inline">{item.label}</span>
+                {item.showBadge && unreadCount > 0 && (
+                  <span className="flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold">
+                    {unreadCount}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
         </div>
 
-        {/* Prev page arrow - mobile only */}
-        <button onClick={() => navigatePage('prev')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden lg:hidden relative z-10">
+        {/* Next page arrow */}
+        <button onClick={() => navigatePage('next')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden relative z-10">
           <ChevronLeft className="h-4 w-4" />
         </button>
 

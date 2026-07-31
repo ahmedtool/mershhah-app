@@ -1,7 +1,6 @@
 'use client';
 
 import { AdminTopNav } from "@/components/shared/AdminTopNav";
-import { AdminSidebar } from "@/components/shared/AdminSidebar";
 import React, { useEffect } from "react";
 import { AdminAccountStatusChecker } from "@/components/auth/AdminAccountStatusChecker";
 import { useUser } from "@/hooks/useUser";
@@ -32,17 +31,14 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen" dir="rtl">
+    <div dir="rtl">
       <SessionTimeout />
-      <AdminSidebar />
-      <div className="flex-1 flex flex-col min-w-0">
-        <AdminTopNav />
-        <main className="p-4 sm:p-6 flex-1">
-          <AdminAccountStatusChecker>
-            {children}
-          </AdminAccountStatusChecker>
-        </main>
-      </div>
+      <AdminTopNav />
+      <main className="p-4 sm:p-6">
+        <AdminAccountStatusChecker>
+          {children}
+        </AdminAccountStatusChecker>
+      </main>
     </div>
   );
 }
