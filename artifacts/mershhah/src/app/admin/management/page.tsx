@@ -505,7 +505,11 @@ export default function ManagementPage() {
         const { error: delErr } = await supabase.from('profiles').delete().eq('id', profileToDelete.id);
         if (delErr) throw delErr;
 
-        toast({ title: 'تم الحذف', description: `تم حذف بيانات ${profileToDelete.restaurant_name} بالكامل.` });
+        // Delete auth user via SECURITY DEFINER function
+        const { error: authErr } = await supabase.rpc('delete_auth_user', { target_user_id: profileToDelete.id });
+        if (authErr) throw authErr;
+
+        toast({ title: 'تم الحذف', description: `تم حذف ${profileToDelete.restaurant_name} بالكامل من النظام.` });
         setProfileToDelete(null);
         if (selectedProfileId === profileToDelete.id) {
           const remaining = subscribers.filter((s) => s.id !== profileToDelete.id);
