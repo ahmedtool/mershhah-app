@@ -505,13 +505,6 @@ export default function ManagementPage() {
         const { error: delErr } = await supabase.from('profiles').delete().eq('id', profileToDelete.id);
         if (delErr) throw delErr;
 
-        // Delete auth user (requires service_role — try via edge function)
-        try {
-          await supabase.functions.invoke('admin-delete-user', { body: { userId: profileToDelete.id } });
-        } catch (_) {
-          // Auth deletion may fail if edge function not deployed — data is still cleaned
-        }
-
         toast({ title: 'تم الحذف', description: `تم حذف بيانات ${profileToDelete.restaurant_name} بالكامل.` });
         setProfileToDelete(null);
         if (selectedProfileId === profileToDelete.id) {
