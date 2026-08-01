@@ -211,7 +211,6 @@ export default function CustomizePage() {
             aiConfig: settings.aiConfig || {},
             updated_at: new Date().toISOString(),
         };
-        console.log('[Customize] Saving socialLinks:', JSON.stringify(updateData.socialLinks));
         if (usernameChanged) {
           updateData.username_last_updated_at = new Date().toISOString();
           initialUsernameRef.current = newUsername;
