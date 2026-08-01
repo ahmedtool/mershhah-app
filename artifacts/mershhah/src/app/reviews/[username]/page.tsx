@@ -76,7 +76,7 @@ export default function PublicReviewsPage() {
         const data = await getPublicPage(username);
         if (data?.restaurant && Array.isArray(data.reviews)) {
           setRestaurant(data.restaurant);
-          setReviews(data.reviews as Review[]);
+          setReviews((data.reviews as Review[]).filter(r => r.is_visible !== false));
           setLoading(false);
           return;
         }
