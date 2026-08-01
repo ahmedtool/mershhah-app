@@ -129,16 +129,22 @@ export async function syncPublicPage(restaurantId: string): Promise<void> {
     const payload: PublicPageData = {
       restaurant: {
         id: restData.id,
-        ...restData,
         name: restData.name ?? '',
+        name_en: restData.name_en ?? null,
         username,
         description: restData.description ?? null,
+        description_en: restData.description_en ?? null,
         logo: restData.logo ?? null,
         primaryColor: restData.primaryColor ?? null,
         secondaryColor: restData.secondaryColor ?? null,
+        buttonTextColor: restData.buttonTextColor ?? null,
+        borderRadius: restData.borderRadius ?? null,
+        fontFamily: restData.fontFamily ?? null,
         applications: Array.isArray(restData.applications) ? restData.applications : [],
         socialLinks: Array.isArray(restData.socialLinks) ? restData.socialLinks : [],
         is_paid_plan: restData.is_paid_plan ?? false,
+        rating: restData.rating ?? null,
+        review_count: restData.review_count ?? 0,
       },
       menu,
       branches,
@@ -152,9 +158,10 @@ export async function syncPublicPage(restaurantId: string): Promise<void> {
       updated_at: new Date().toISOString(),
     };
 
-    await supabase
+    const { error: upsertErr } = await supabase
       .from('public_pages')
       .upsert({ id: username, data: payload, updated_at: new Date().toISOString() });
+    if (upsertErr) console.error('[public-pages] upsert failed:', upsertErr);
   } catch (e) {
     console.error('[public-pages] sync failed:', e);
   }
