@@ -6,17 +6,10 @@ import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
-import PageHeader from "@/components/dashboard/PageHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, MessageCircle, TrendingUp, User as UserIcon, Bot, ThumbsUp, ThumbsDown, Lightbulb, Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
+import { Star, MessageCircle, TrendingUp, ThumbsUp, ThumbsDown, Lightbulb, BarChart3, Hash } from "lucide-react";
 import StatCard from '@/components/dashboard/StatCard';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { analyzeReviews, AnalyzeReviewsOutput } from '@/ai/flows/analyze-reviews';
-import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
-import { Link } from 'wouter';
+import { analyzeReviewsLocally, type ReviewAnalysisResult } from '@/lib/reviews-analyzer';
 
 interface Review {
   id: string;
@@ -38,12 +31,7 @@ export default function ReviewsPage() {
   const { user, isLoading: isUserLoading } = useUser();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [isAnalyzing, startAnalysis] = useTransition();
-  const [analysisResult, setAnalysisResult] = useState<AnalyzeReviewsOutput | null>(null);
-  const { toast } = useToast();
   const [updatingVisibility, startVisibilityUpdate] = useTransition();
-
-  const canUseAiAnalysis = user?.entitlements.canUseAiAnalysis ?? false;
 
   const fetchReviews = async () => {
     if (!user?.restaurantId) return;
@@ -67,9 +55,7 @@ export default function ReviewsPage() {
       return () => { supabase.removeChannel(channel); };
     } else if (!isUserLoading) {
       setIsLoadingData(false);
-      return;
     }
-    return;
   }, [user, isUserLoading]);
 
   const stats = useMemo(() => {
@@ -85,49 +71,16 @@ export default function ReviewsPage() {
     return { totalReviews, averageRating, distribution };
   }, [reviews]);
 
-  const handleAnalyzeReviews = () => {
-    if (!user?.restaurantId || !user.name || reviews.length === 0) {
-      toast({ title: "لا توجد بيانات كافية", description: "يجب أن يكون هناك تقييمات لتحليلها.", variant: "destructive" });
-      return;
-    }
-    startAnalysis(async () => {
-      try {
-        if (user.entitlements.planId === 'free' && !user.ai_trial_used) {
-          await supabase.from('profiles').update({ ai_trial_used: true }).eq('id', user.uid);
-        }
-        const { data: restData } = await supabase.from('restaurants').select('analysis_reviews_daily_count, analysis_reviews_last_reset').eq('id', user.restaurantId!).single();
-        let dailyCount = restData?.analysis_reviews_daily_count || 0;
-        const lastReset = restData?.analysis_reviews_last_reset ? new Date(restData.analysis_reviews_last_reset) : null;
-        const today = new Date();
-        const isNewDay = !lastReset || lastReset.getDate() !== today.getDate() || lastReset.getMonth() !== today.getMonth() || lastReset.getFullYear() !== today.getFullYear();
-        if (isNewDay) {
-          dailyCount = 0;
-          await supabase.from('restaurants').update({ analysis_reviews_daily_count: 0, analysis_reviews_last_reset: new Date().toISOString() }).eq('id', user.restaurantId!);
-        }
-        if (dailyCount >= 3) {
-          toast({ title: "تم الوصول للحد اليومي", description: "لقد استخدمت تحليلاتك الثلاثة لهذا اليوم.", variant: "destructive" });
-          return;
-        }
-        const reviewDataForAI = reviews.map(r => ({ rating: r.rating, comment: r.comment || '' }));
-        const result = await analyzeReviews({ reviews: reviewDataForAI, restaurantName: user.name! });
-        setAnalysisResult(result);
-        await supabase.from('restaurants').update({ analysis_reviews_daily_count: (dailyCount + 1) }).eq('id', user.restaurantId!);
-        toast({ title: "تم تحليل الآراء بنجاح!" });
-      } catch (error: any) {
-        toast({ title: "فشل التحليل", description: error.message, variant: "destructive" });
-      }
-    });
-  };
+  const analysis = useMemo<ReviewAnalysisResult | null>(() => {
+    if (reviews.length === 0) return null;
+    return analyzeReviewsLocally(reviews.map(r => ({ rating: r.rating, comment: r.comment })));
+  }, [reviews]);
 
   const handleVisibilityToggle = (reviewId: string, newVisibility: boolean) => {
     startVisibilityUpdate(async () => {
       const { error } = await supabase.from('reviews').update({ is_visible: newVisibility }).eq('id', reviewId);
-      if (error) {
-        toast({ title: "خطأ", description: 'لم نتمكن من تحديث حالة التقييم.', variant: 'destructive' });
-      } else {
-        toast({ title: `تم ${newVisibility ? 'إظهار' : 'إخفاء'} التقييم بنجاح.` });
-        fetchReviews();
-      }
+      if (error) return;
+      fetchReviews();
     });
   };
 
@@ -136,69 +89,138 @@ export default function ReviewsPage() {
   if (loading) {
     return (
       <div className="space-y-5">
-        <PageHeader title="تقييمات العملاء" description="آراء عملائك لمساعدتك على التطور." />
+        <div className="h-8 w-48 bg-gray-100 rounded-xl" />
         <div className="grid gap-3 md:grid-cols-3"><Skeleton className="h-24 rounded-2xl" /><Skeleton className="h-24 rounded-2xl" /><Skeleton className="h-24 rounded-2xl" /></div>
-        <Skeleton className="h-48 rounded-2xl" /><Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-64 rounded-2xl" /><Skeleton className="h-64 rounded-2xl" />
       </div>
     );
   }
 
   return (
     <div className="space-y-5">
-      <PageHeader title="تقييمات العملاء" description="هنا تجد كل آراء عملائك لمساعدتك على التطور." />
+      <div>
+        <h1 className="text-lg font-black text-gray-900">تقييمات العملاء</h1>
+        <p className="text-xs text-gray-400 mt-0.5">تحليل تقريري لأراء عملائك</p>
+      </div>
 
       <div className="grid gap-3 md:grid-cols-3">
         <StatCard title="متوسط التقييم" value={stats.averageRating.toFixed(1)} icon={Star} change={`من ${stats.totalReviews} تقييم`} />
         <StatCard title="إجمالي التقييمات" value={stats.totalReviews.toString()} icon={MessageCircle} />
-        <StatCard title="5 نجوم" value={`${(stats.distribution[5] / stats.totalReviews * 100 || 0).toFixed(0)}%`} icon={TrendingUp} change="من التقييمات" />
+        <StatCard title="نسبة الرضا" value={`${analysis?.sentimentScore ?? 0}%`} icon={TrendingUp} change={analysis?.sentimentLabel || ''} />
       </div>
 
-      {/* AI Analysis */}
+      {/* Analysis Report */}
       <div className="bg-white border border-gray-100 rounded-2xl p-5">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center">
-            <Bot className="h-4 w-4 text-gray-400" />
+            <BarChart3 className="h-4 w-4 text-gray-400" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-gray-900">تحليل الآراء بالذكاء الاصطناعي</h3>
-            <p className="text-[10px] text-gray-300">3 تحليلات يومياً</p>
+            <h3 className="text-sm font-bold text-gray-900">التقرير التحليلي</h3>
+            <p className="text-[10px] text-gray-300">تحليل فوري بالمؤشرات local</p>
           </div>
         </div>
-        {isAnalyzing ? (
-          <div className="flex items-center justify-center h-20"><Loader2 className="w-6 h-6 animate-spin text-gray-300" /></div>
-        ) : analysisResult ? (
+
+        {analysis ? (
           <div className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Sentiment Bar */}
+            <div className="p-3 bg-gray-50 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-[11px] font-bold text-gray-700">مؤشر الرضا العام</h4>
+                <span className="text-lg">{analysis.overallEmoji}</span>
+              </div>
+              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{
+                    width: `${analysis.sentimentScore}%`,
+                    background: analysis.sentimentScore >= 70
+                      ? 'linear-gradient(90deg, #10b981, #059669)'
+                      : analysis.sentimentScore >= 40
+                        ? 'linear-gradient(90deg, #f59e0b, #d97706)'
+                        : 'linear-gradient(90deg, #ef4444, #dc2626)',
+                  }}
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 mt-1 text-center">{analysis.sentimentLabel} — {analysis.sentimentScore}%</p>
+            </div>
+
+            {/* Strengths & Weaknesses */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="p-3 bg-emerald-50 rounded-xl">
-                <h4 className="text-[11px] font-bold text-emerald-700 mb-1 flex items-center gap-1"><ThumbsUp className="h-3 w-3" />نقاط القوة</h4>
-                <ul className="space-y-0.5">{analysisResult.positiveThemes.map((t, i) => <li key={i} className="text-[10px] text-emerald-600">{t}</li>)}</ul>
+                <h4 className="text-[11px] font-bold text-emerald-700 mb-1 flex items-center gap-1">
+                  <ThumbsUp className="h-3 w-3" />نقاط القوة
+                </h4>
+                {analysis.positiveThemes.length === 0 ? (
+                  <p className="text-[10px] text-emerald-500">لم يتم رصد ملاحظات إيجابية بعد.</p>
+                ) : (
+                  <ul className="space-y-0.5">
+                    {analysis.positiveThemes.map((t, i) => <li key={i} className="text-[10px] text-emerald-600">• {t}</li>)}
+                  </ul>
+                )}
               </div>
               <div className="p-3 bg-red-50 rounded-xl">
-                <h4 className="text-[11px] font-bold text-red-700 mb-1 flex items-center gap-1"><ThumbsDown className="h-3 w-3" />للتحسين</h4>
-                <ul className="space-y-0.5">{analysisResult.negativeThemes.map((t, i) => <li key={i} className="text-[10px] text-red-600">{t}</li>)}</ul>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-xl text-center">
-                <h4 className="text-[11px] font-bold text-blue-700 mb-1">مؤشر الرضا</h4>
-                <p className="text-2xl font-black text-blue-900">{analysisResult.sentimentScore}%</p>
+                <h4 className="text-[11px] font-bold text-red-700 mb-1 flex items-center gap-1">
+                  <ThumbsDown className="h-3 w-3" />للتحسين
+                </h4>
+                {analysis.negativeThemes.length === 0 ? (
+                  <p className="text-[10px] text-red-500">ممتاز! لا توجد ملاحظات سلبية.</p>
+                ) : (
+                  <ul className="space-y-0.5">
+                    {analysis.negativeThemes.map((t, i) => <li key={i} className="text-[10px] text-red-600">• {t}</li>)}
+                  </ul>
+                )}
               </div>
             </div>
+
+            {/* Top Words */}
+            {analysis.topWords.length > 0 && (
+              <div className="p-3 bg-blue-50 rounded-xl">
+                <h4 className="text-[11px] font-bold text-blue-700 mb-2 flex items-center gap-1">
+                  <Hash className="h-3 w-3" />الكلمات الأكثر تكراراً
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {analysis.topWords.map((w, i) => (
+                    <span key={i} className="px-2 py-0.5 bg-blue-100 text-blue-600 rounded-md text-[10px] font-medium">
+                      {w.word} <span className="text-blue-400">({w.count})</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Topic Breakdown */}
             <div className="p-3 bg-amber-50 rounded-xl">
-              <h4 className="text-[11px] font-bold text-amber-700 mb-1 flex items-center gap-1"><Lightbulb className="h-3 w-3" />توصية ذكية</h4>
-              <p className="text-[10px] text-amber-600">{analysisResult.actionableInsight}</p>
+              <h4 className="text-[11px] font-bold text-amber-700 mb-2 flex items-center gap-1">
+                <BarChart3 className="h-3 w-3" />تحليل المواضيع
+              </h4>
+              <div className="space-y-1.5">
+                {analysis.topicBreakdown.filter(t => t.positive + t.negative + t.neutral > 0).map((t, i) => {
+                  const total = t.positive + t.negative + t.neutral;
+                  const posPct = Math.round((t.positive / total) * 100);
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-[10px] font-medium text-gray-600 w-14">{t.topic}</span>
+                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-amber-400 rounded-full" style={{ width: `${posPct}%` }} />
+                      </div>
+                      <span className="text-[9px] text-gray-400 w-10 text-left">{posPct}% إيجابي</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Recommendation */}
+            <div className="p-3 bg-violet-50 rounded-xl">
+              <h4 className="text-[11px] font-bold text-violet-700 mb-1 flex items-center gap-1">
+                <Lightbulb className="h-3 w-3" />توصية
+              </h4>
+              <p className="text-[10px] text-violet-600 leading-relaxed">{analysis.recommendation}</p>
             </div>
           </div>
         ) : (
-          <p className="text-xs text-gray-400 text-center py-6">
-            {canUseAiAnalysis ? 'اضغط للبدء في تحليل التقييمات.' : 'متاح في الباقات المدفوعة.'}
-          </p>
-        )}
-        <button onClick={handleAnalyzeReviews} disabled={isAnalyzing || reviews.length === 0 || !canUseAiAnalysis}
-          className="w-full h-10 mt-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-          {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          {analysisResult ? 'إعادة التحليل' : 'تحليل الآن'}
-        </button>
-        {!canUseAiAnalysis && (
-          <p className="text-[10px] text-gray-300 text-center mt-2">للوصول، <Link href="/pricing" className="text-gray-900 font-bold hover:underline">رقّ باقتك</Link></p>
+          <p className="text-xs text-gray-400 text-center py-6">لا توجد تقييمات كافية للتحليل.</p>
         )}
       </div>
 
