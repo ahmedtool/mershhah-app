@@ -7,7 +7,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, MessageCircle, TrendingUp, ThumbsUp, ThumbsDown, Lightbulb, BarChart3, Hash } from "lucide-react";
+import { Star, MessageCircle, TrendingUp, ThumbsUp, ThumbsDown, Lightbulb, BarChart3 } from "lucide-react";
 import StatCard from '@/components/dashboard/StatCard';
 import { analyzeReviewsLocally, type ReviewAnalysisResult } from '@/lib/reviews-analyzer';
 
@@ -172,22 +172,6 @@ export default function ReviewsPage() {
                 )}
               </div>
             </div>
-
-            {/* Top Words */}
-            {analysis.topWords.length > 0 && (
-              <div className="p-3 bg-blue-50 rounded-xl">
-                <h4 className="text-[11px] font-bold text-blue-700 mb-2 flex items-center gap-1">
-                  <Hash className="h-3 w-3" />الكلمات الأكثر تكراراً
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {analysis.topWords.map((w, i) => (
-                    <span key={i} className="px-2 py-0.5 bg-blue-100 text-blue-600 rounded-md text-[10px] font-medium">
-                      {w.word} <span className="text-blue-400">({w.count})</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Topic Breakdown */}
             <div className="p-3 bg-amber-50 rounded-xl">
