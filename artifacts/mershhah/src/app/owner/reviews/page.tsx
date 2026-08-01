@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Star, MessageCircle, TrendingUp, ThumbsUp, ThumbsDown, Lightbulb, BarChart3 } from "lucide-react";
 import StatCard from '@/components/dashboard/StatCard';
 import { analyzeReviewsLocally, type ReviewAnalysisResult } from '@/lib/reviews-analyzer';
+import { syncPublicPage } from '@/lib/public-pages';
 
 interface Review {
   id: string;
@@ -81,6 +82,7 @@ export default function ReviewsPage() {
       const { error } = await supabase.from('reviews').update({ is_visible: newVisibility }).eq('id', reviewId);
       if (error) return;
       fetchReviews();
+      if (user?.restaurantId) syncPublicPage(user.restaurantId).catch(() => {});
     });
   };
 
