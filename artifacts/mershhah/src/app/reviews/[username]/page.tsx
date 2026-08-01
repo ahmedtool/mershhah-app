@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition, useMemo } from 'react';
 import { useParams } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Star, Info, Eye, EyeOff } from 'lucide-react';
+import { ChevronRight, Star, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage, syncPublicPage } from '@/lib/public-pages';
 import { formatDistanceToNow } from 'date-fns';
@@ -49,21 +49,6 @@ export default function PublicReviewsPage() {
   const [isSubmitting, startSubmission] = useTransition();
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [filterTag, setFilterTag] = useState<string | null>(null);
-
-  const toggleReviewVisibility = async (reviewId: string, currentVisible: boolean) => {
-    try {
-      const { error } = await supabase
-        .from('reviews')
-        .update({ is_visible: !currentVisible })
-        .eq('id', reviewId);
-      if (error) throw error;
-      setReviews(prev => prev.map(r =>
-        r.id === reviewId ? { ...r, is_visible: !currentVisible } : r
-      ));
-    } catch (error: any) {
-      console.error('Failed to toggle visibility:', error);
-    }
-  };
 
   const reviewTags = [
     { id: 'quality', label: 'الجودة', icon: '✦', keywords: ['جودة', 'ممتاز', 'رائع', 'جميل', 'فخم', 'مميز', 'أفضل', 'نظيف', 'مرتب'] },
@@ -370,21 +355,6 @@ export default function PublicReviewsPage() {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 leading-relaxed">{review.comment}</p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-[10px] text-gray-400 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-md">
-                      {review.is_visible !== false ? 'معروض' : 'مخفي'}
-                    </span>
-                    <button
-                      onClick={() => toggleReviewVisibility(review.id, review.is_visible !== false)}
-                      className="flex items-center gap-1.5 text-[10px] text-gray-400 hover:text-gray-900 bg-gray-50 border border-gray-100 rounded-md px-2 py-1 transition-colors"
-                    >
-                      {review.is_visible !== false ? (
-                        <><Eye className="h-3 w-3" /> إخفاء</>
-                      ) : (
-                        <><EyeOff className="h-3 w-3" /> إظهار</>
-                      )}
-                    </button>
-                  </div>
                 </div>
               ))}
             </div>

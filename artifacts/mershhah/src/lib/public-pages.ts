@@ -57,7 +57,7 @@ export type PublicPageData = {
     id: string;
     rating: number;
     comment?: string;
-    createdAt?: unknown;
+    created_at?: unknown;
     is_visible?: boolean;
   }>;
   updated_at: unknown;

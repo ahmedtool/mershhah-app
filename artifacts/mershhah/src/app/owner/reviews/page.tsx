@@ -22,7 +22,7 @@ interface Review {
   id: string;
   rating: number;
   comment?: string;
-  createdAt: string | null;
+  created_at: string | null;
   is_visible?: boolean;
 }
 
@@ -52,7 +52,7 @@ export default function ReviewsPage() {
       .from('reviews')
       .select('*')
       .eq('restaurant_id', user.restaurantId)
-      .order('createdAt', { ascending: false });
+      .order('created_at', { ascending: false });
     if (!error) setReviews((data || []) as Review[]);
     setIsLoadingData(false);
   };
@@ -238,7 +238,7 @@ export default function ReviewsPage() {
                       ))}
                     </div>
                     <span className="text-[9px] text-gray-300">
-                      {review.createdAt ? formatDistanceToNow(new Date(review.createdAt), { addSuffix: true, locale: ar }) : ''}
+                      {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: ar }) : ''}
                     </span>
                   </div>
                   {review.comment && <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">{review.comment}</p>}
