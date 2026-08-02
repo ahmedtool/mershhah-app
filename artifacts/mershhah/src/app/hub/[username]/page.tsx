@@ -19,6 +19,7 @@ import { getPublicPage } from '@/lib/public-pages';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { InstagramIcon, TikTokIcon, SnapchatIcon, XIcon, WhatsAppIcon, WebsiteIcon, FacebookIcon, YoutubeIcon } from '@/components/shared/SocialIcons';
 import { Skeleton } from '@/components/ui/skeleton';
+import { trackAppClick, trackSocialClick, trackPageView } from '@/lib/event-tracker';
 
 const SOCIAL_ICONS: { [key: string]: React.ElementType } = {
     whatsapp: WhatsAppIcon,
@@ -63,6 +64,7 @@ export default function RestaurantHubPage() {
       source,
       created_at: new Date().toISOString(),
     }).then(() => {});
+    trackPageView(restaurant.id);
   }, [restaurant?.id, searchParams]);
 
   useEffect(() => {
@@ -358,6 +360,7 @@ export default function RestaurantHubPage() {
                     key={app.id || idx} 
                     href={app.value || '#'} 
                     target="_blank" 
+                    onClick={() => restaurant.id && trackAppClick(restaurant.id, app.name || 'unknown')}
                     className="aspect-square bg-white border border-gray-100 rounded-2xl p-3 flex items-center justify-center hover:shadow-md transition-all"
                   >
                     <div className="relative w-full h-full">
@@ -389,7 +392,8 @@ export default function RestaurantHubPage() {
                         key={link.id || idx} 
                         href={link.value.trim()} 
                         target="_blank" 
-                        rel="noopener noreferrer" 
+                        rel="noopener noreferrer"
+                        onClick={() => restaurant.id && trackSocialClick(restaurant.id, link.platform || 'unknown')}
                         className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all"
                       >
                         <Icon size={22} style={{ color: SOCIAL_COLORS[link.platform] || primaryColor }} />

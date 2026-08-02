@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { getPublicPage } from '@/lib/public-pages';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { Skeleton } from '@/components/ui/skeleton';
+import { trackMapsClick, trackWhatsappClick, trackPhoneClick, trackBranchView } from '@/lib/event-tracker';
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -225,7 +226,11 @@ export default function PublicBranchesPage() {
               >
                 {/* Branch Header */}
                 <button
-                  onClick={() => setExpandedId(isExpanded ? null : branch.id)}
+                  onClick={() => {
+                    const next = isExpanded ? null : branch.id;
+                    setExpandedId(next);
+                    if (next && restaurant?.id) trackBranchView(restaurant.id, branch.name);
+                  }}
                   className="w-full flex items-center gap-4 p-4 text-right"
                 >
                   {/* Number badge */}
@@ -293,6 +298,7 @@ export default function PublicBranchesPage() {
                           href={`https://wa.me/${branch.phone.replace(/[^0-9]/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => restaurant?.id && trackWhatsappClick(restaurant.id)}
                           className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-[#25D366]/10 text-[#25D366] text-xs font-semibold hover:bg-[#25D366]/20 transition-colors"
                         >
                           <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
@@ -307,6 +313,7 @@ export default function PublicBranchesPage() {
                           href={branch.google_maps_url || `https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={() => restaurant?.id && trackMapsClick(restaurant.id)}
                           className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
                           style={{ backgroundColor: primaryColor }}
                         >
@@ -318,6 +325,7 @@ export default function PublicBranchesPage() {
                       {branch.phone ? (
                         <a
                           href={`tel:${branch.phone}`}
+                          onClick={() => restaurant?.id && trackPhoneClick(restaurant.id)}
                           className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
                         >
                           <Phone className="h-3.5 w-3.5" />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition, useMemo } from 'react';
-import { useParams } from 'wouter';
+import { useParams, useSearchParams } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Star, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -38,6 +38,7 @@ const StarRating = ({ rating, size = 'md' }: { rating: number; size?: 'sm' | 'md
 export default function PublicReviewsPage() {
   const params = useParams();
   const username = params.username as string;
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
 
   const [restaurant, setRestaurant] = useState<any>(null);
@@ -116,16 +117,32 @@ export default function PublicReviewsPage() {
     return () => { supabase.removeChannel(channel); };
   }, [restaurant?.id]);
 
+  const detectSource = (): { source: string; source_detail: string | null } => {
+    const src = searchParams.get('source');
+    if (src) return { source: 'direct', source_detail: src };
+    const ref = document.referrer.toLowerCase();
+    if (ref.includes('google')) return { source: 'google', source_detail: 'google_search' };
+    if (ref.includes('twitter') || ref.includes('x.com')) return { source: 'social', source_detail: 'twitter' };
+    if (ref.includes('instagram')) return { source: 'social', source_detail: 'instagram' };
+    if (ref.includes('tiktok')) return { source: 'social', source_detail: 'tiktok' };
+    if (ref.includes('snapchat')) return { source: 'social', source_detail: 'snapchat' };
+    if (ref.includes('facebook')) return { source: 'social', source_detail: 'facebook' };
+    return { source: 'direct', source_detail: null };
+  };
+
   const handleSubmit = () => {
     if (!restaurant || rating === 0) return;
     startSubmission(async () => {
       try {
+        const { source, source_detail } = detectSource();
         const { error: insertError } = await supabase.from('reviews').insert({
           rating,
           comment,
           created_at: new Date().toISOString(),
           restaurant_id: restaurant.id,
           is_visible: true,
+          source,
+          source_detail,
         });
         if (insertError) throw insertError;
 
