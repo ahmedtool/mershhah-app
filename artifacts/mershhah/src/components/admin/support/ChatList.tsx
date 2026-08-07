@@ -12,7 +12,6 @@ import { useRouter, usePathname } from '@/lib/navigation';
 import { cn } from '@/lib/utils';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
 export function ChatList() {
@@ -24,18 +23,21 @@ export function ChatList() {
   const [isDeleting, startDeleteTransition] = useTransition();
   const { toast } = useToast();
   const router = useRouter();
-  const [showNewChat, setShowNewChat] = useState(false);
   const [restaurants, setRestaurants] = useState<any[]>([]);
-  const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     const fetchSessions = async () => {
-      const { data, error } = await supabase
-        .from('chats')
-        .select('*')
-        .order('lastMessageTimestamp', { ascending: false });
-      if (!error && data) setSessions(data as ChatSession[]);
+      try {
+        const { data, error } = await supabase
+          .from('chats')
+          .select('*')
+          .order('lastMessageTimestamp', { ascending: false });
+        if (!error && data) setSessions(data as ChatSession[]);
+      } catch (e) {
+        console.error('ChatList fetch error:', e);
+      }
       setIsLoading(false);
     };
 
@@ -50,39 +52,6 @@ export function ChatList() {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
-
-  const openNewChat = async () => {
-    setShowNewChat(true);
-    setIsLoadingRestaurants(true);
-    const { data } = await supabase.from('restaurants').select('id, name, logo, username').order('name');
-    setRestaurants(data || []);
-    setIsLoadingRestaurants(false);
-  };
-
-  const createChat = async (restaurant: any) => {
-    setIsCreating(true);
-    try {
-      const chatId = crypto.randomUUID();
-      const { error } = await supabase.from('chats').insert({
-        id: chatId,
-        ownerId: restaurant.owner_id || '',
-        ownerName: restaurant.name,
-        ownerLogo: restaurant.logo || null,
-        lastMessage: null,
-        lastMessageTimestamp: new Date().toISOString(),
-        adminHasUnread: false,
-        ownerHasUnread: true,
-        chat_type: 'admin',
-      });
-      if (error) throw error;
-      setShowNewChat(false);
-      router.push(`/admin/support/${chatId}`);
-    } catch (e: any) {
-      toast({ title: 'خطأ', description: e.message, variant: 'destructive' });
-    } finally {
-      setIsCreating(false);
-    }
-  };
 
   const handleDeleteConfirm = () => {
     if (!sessionToDelete) return;
@@ -121,6 +90,36 @@ export function ChatList() {
     return <p className="text-[11px] text-gray-400 truncate">{session.lastMessage || 'لا توجد رسائل'}</p>;
   };
 
+  const openNewChat = async () => {
+    setShowPicker(true);
+    const { data } = await supabase.from('restaurants').select('id, name, logo, username, owner_id').order('name');
+    setRestaurants(data || []);
+  };
+
+  const createChat = async (restaurant: any) => {
+    setIsCreating(true);
+    try {
+      const chatId = crypto.randomUUID();
+      const { error } = await supabase.from('chats').insert({
+        id: chatId,
+        ownerId: restaurant.owner_id || '',
+        ownerName: restaurant.name,
+        ownerLogo: restaurant.logo || null,
+        lastMessage: null,
+        lastMessageTimestamp: new Date().toISOString(),
+        adminHasUnread: false,
+        ownerHasUnread: true,
+      });
+      if (error) throw error;
+      setShowPicker(false);
+      router.push(`/admin/support/${chatId}`);
+    } catch (e: any) {
+      toast({ title: 'خطأ', description: e.message, variant: 'destructive' });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col h-full bg-white border-r border-gray-100">
@@ -128,7 +127,7 @@ export function ChatList() {
         <div className="p-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-sm font-bold text-gray-900">صندوق الوارد</h2>
+              <h2 className="text-sm font-bold text-gray-900">المحادثات</h2>
               <p className="text-[10px] text-gray-400 mt-0.5">{sessions.length} محادثة</p>
             </div>
             <button onClick={openNewChat} className="w-8 h-8 rounded-xl bg-gray-900 text-white flex items-center justify-center hover:bg-gray-800 transition-colors">
@@ -158,6 +157,7 @@ export function ChatList() {
             <div className="flex flex-col items-center justify-center text-center h-full p-4">
               <MessageSquare className="h-8 w-8 text-gray-200 mb-2" />
               <p className="text-xs text-gray-400 font-bold">لا توجد محادثات</p>
+              <p className="text-[10px] text-gray-300 mt-1">اضغط + لبدء محادثة جديدة</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
@@ -182,8 +182,11 @@ export function ChatList() {
                   >
                     <Link href={`/admin/support/${session.id}`} className="flex-1 px-4 py-3 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
-                        <StorageImage imagePath={session.ownerLogo} alt={session.ownerName || ''} fill className="object-cover" sizes="40px" />
-                        <span className="text-xs font-bold text-gray-500 absolute">{getInitials(session.ownerName)}</span>
+                        {session.ownerLogo ? (
+                          <StorageImage imagePath={session.ownerLogo} alt={session.ownerName || ''} fill className="object-cover" sizes="40px" />
+                        ) : (
+                          <span className="text-xs font-bold text-gray-500">{getInitials(session.ownerName)}</span>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-center">
@@ -197,7 +200,7 @@ export function ChatList() {
                         <div className="flex items-center justify-between mt-0.5">
                           <div className="flex-1 overflow-hidden">{renderLastMessage(session)}</div>
                           {session.adminHasUnread && (
-                            <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0 mr-2" />
+                            <span className="w-2 h-2 bg-gray-900 rounded-full shrink-0 mr-2" />
                           )}
                         </div>
                       </div>
@@ -215,6 +218,47 @@ export function ChatList() {
           )}
         </div>
       </div>
+
+      {/* Restaurant Picker - inline overlay */}
+      {showPicker && (
+        <div className="absolute inset-0 bg-white z-50 flex flex-col">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-900">محادثة جديدة</h3>
+            <button onClick={() => setShowPicker(false)} className="text-xs text-gray-400 hover:text-gray-600">إلغاء</button>
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            {restaurants.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-xs text-gray-400">لا يوجد مطاعم مسجلة</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {restaurants.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => createChat(r)}
+                    disabled={isCreating}
+                    className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-right disabled:opacity-50"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+                      {r.logo ? (
+                        <StorageImage imagePath={r.logo} alt={r.name} width={40} height={40} className="object-cover w-full h-full" />
+                      ) : (
+                        <span className="text-xs font-bold text-gray-400">{r.name?.[0]}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-gray-900 truncate">{r.name}</p>
+                      {r.username && <p className="text-[10px] text-gray-400">@{r.username}</p>}
+                    </div>
+                    {isCreating && <Loader2 className="h-4 w-4 animate-spin text-gray-300" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <AlertDialog open={!!sessionToDelete} onOpenChange={(open) => !open && setSessionToDelete(null)}>
         <AlertDialogContent className="sm:max-w-lg p-0 gap-0" dir="rtl">
@@ -244,49 +288,6 @@ export function ChatList() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
-
-      <Dialog open={showNewChat} onOpenChange={setShowNewChat}>
-        <DialogContent className="sm:max-w-md p-0 gap-0" dir="rtl">
-          <DialogHeader className="px-5 pt-5 pb-3 border-b border-gray-100">
-            <DialogTitle className="text-base font-bold text-gray-900">محادثة جديدة</DialogTitle>
-          </DialogHeader>
-          <div className="p-3 max-h-80 overflow-y-auto">
-            {isLoadingRestaurants ? (
-              <div className="space-y-2 p-2">
-                <Skeleton className="h-14 rounded-xl" />
-                <Skeleton className="h-14 rounded-xl" />
-              </div>
-            ) : restaurants.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-xs text-gray-400">لا يوجد مطاعم مسجلة</p>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {restaurants.map((r) => (
-                  <button
-                    key={r.id}
-                    onClick={() => createChat(r)}
-                    disabled={isCreating}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors text-right disabled:opacity-50"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
-                      {r.logo ? (
-                        <StorageImage imagePath={r.logo} alt={r.name} width={40} height={40} className="object-cover w-full h-full" />
-                      ) : (
-                        <span className="text-xs font-bold text-gray-400">{r.name?.[0]}</span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-gray-900 truncate">{r.name}</p>
-                      {r.username && <p className="text-[10px] text-gray-400">@{r.username}</p>}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
