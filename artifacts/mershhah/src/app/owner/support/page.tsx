@@ -1,33 +1,22 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
-import { SendHorizonal, Paperclip, Loader2, FileIcon, Download, MessageSquare, Phone, User, ArrowLeft } from 'lucide-react';
+import { SendHorizonal, Paperclip, Loader2, FileIcon, Download, MessageSquare, User, ArrowLeft } from 'lucide-react';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/hooks/useUser';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
-import type { ChatMessage } from '@/lib/types';
+import type { ChatMessage, ChatSession } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
-
-interface CustomerChat {
-  id: string;
-  restaurant_id: string;
-  customer_phone: string | null;
-  customer_name: string | null;
-  lastMessage: string | null;
-  lastMessageTimestamp: string | null;
-  ownerHasUnread: boolean | null;
-  created_at: string;
-}
 
 export default function OwnerSupportPage() {
   const { user, isLoading: isUserLoading } = useUser();
   const { toast } = useToast();
 
-  const [chats, setChats] = useState<CustomerChat[]>([]);
-  const [selectedChat, setSelectedChat] = useState<CustomerChat | null>(null);
+  const [chats, setChats] = useState<ChatSession[]>([]);
+  const [selectedChat, setSelectedChat] = useState<ChatSession | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState('');
   const [isLoadingChats, setIsLoadingChats] = useState(true);
@@ -35,25 +24,25 @@ export default function OwnerSupportPage() {
   const [isUploading, setIsUploading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showChat, setShowChat] = useState(false);
 
   const fetchChats = async () => {
-    if (!user?.restaurantId) return;
+    if (!user?.id) return;
     const { data, error } = await supabase
       .from('chats')
       .select('*')
-      .eq('restaurant_id', user.restaurantId)
-      .eq('chat_type', 'customer')
+      .eq('ownerId', user.id)
       .order('lastMessageTimestamp', { ascending: false, nullsFirst: false });
-    if (!error) setChats((data || []) as CustomerChat[]);
+    if (!error) setChats((data || []) as ChatSession[]);
     setIsLoadingChats(false);
   };
 
   useEffect(() => {
-    if (user?.restaurantId) {
+    if (user?.id) {
       fetchChats();
       const channel = supabase
-        .channel('owner-customer-chats')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `restaurant_id=eq.${user.restaurantId}` }, fetchChats)
+        .channel('owner-admin-chats')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `ownerId=eq.${user.id}` }, fetchChats)
         .subscribe();
       return () => { supabase.removeChannel(channel); };
     } else if (!isUserLoading) {
@@ -61,8 +50,9 @@ export default function OwnerSupportPage() {
     }
   }, [user, isUserLoading]);
 
-  const selectChat = async (chat: CustomerChat) => {
+  const selectChat = async (chat: ChatSession) => {
     setSelectedChat(chat);
+    setShowChat(true);
     setIsLoadingMessages(true);
     setMessages([]);
 
@@ -139,6 +129,7 @@ export default function OwnerSupportPage() {
       await supabase.from('chats').update({
         lastMessage: file ? `ملف: ${file.name}` : messageText,
         lastMessageTimestamp: now,
+        adminHasUnread: true,
         ownerHasUnread: false,
       }).eq('id', selectedChat.id);
 
@@ -167,9 +158,6 @@ export default function OwnerSupportPage() {
   const loading = isUserLoading || isLoadingChats;
   const unreadCount = chats.filter(c => c.ownerHasUnread).length;
 
-  // Mobile: show chat list or chat view
-  const [showChat, setShowChat] = useState(false);
-
   if (loading) {
     return (
       <div className="space-y-4">
@@ -182,7 +170,7 @@ export default function OwnerSupportPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-lg font-black text-gray-900">محادثات العملاء</h1>
+        <h1 className="text-lg font-black text-gray-900">محادثة مع الإدارة</h1>
         <p className="text-xs text-gray-400 mt-0.5">{chats.length} محادثة {unreadCount > 0 && `• ${unreadCount} جديدة`}</p>
       </div>
 
@@ -190,9 +178,7 @@ export default function OwnerSupportPage() {
         {/* Chat List */}
         <div className={`w-full md:w-80 lg:w-96 border-l border-gray-100 flex flex-col shrink-0 ${showChat ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-3 border-b border-gray-100">
-            <div className="relative">
-              <Input placeholder="بحث بالاسم أو الجوال..." className="h-10 text-xs rounded-xl bg-gray-50 border-gray-100" dir="rtl" />
-            </div>
+            <Input placeholder="بحث..." className="h-10 text-xs rounded-xl bg-gray-50 border-gray-100" dir="rtl" />
           </div>
           <div className="flex-1 overflow-y-auto">
             {chats.length === 0 ? (
@@ -201,7 +187,7 @@ export default function OwnerSupportPage() {
                   <MessageSquare className="h-5 w-5 text-gray-300" />
                 </div>
                 <p className="text-xs font-bold text-gray-900 mb-1">لا توجد محادثات</p>
-                <p className="text-[10px] text-gray-400">ستظهر محادثات العملاء هنا</p>
+                <p className="text-[10px] text-gray-400">ستظهر محادثاتك مع الإدارة هنا</p>
               </div>
             ) : chats.map(chat => (
               <button
@@ -211,21 +197,16 @@ export default function OwnerSupportPage() {
                   selectedChat?.id === chat.id ? 'bg-gray-50' : ''
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                  <User className="h-4 w-4 text-gray-400" />
+                <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-bold text-white">أد</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-900 truncate">{chat.customer_name || 'عميل'}</span>
+                    <span className="text-xs font-bold text-gray-900">الإدارة</span>
                     {chat.lastMessageTimestamp && (
                       <span className="text-[9px] text-gray-300 shrink-0">
                         {formatDistanceToNow(new Date(chat.lastMessageTimestamp), { addSuffix: true, locale: ar })}
                       </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    {chat.customer_phone && (
-                      <span className="text-[9px] text-gray-300 font-mono" dir="ltr">{chat.customer_phone}</span>
                     )}
                   </div>
                   <p className="text-[10px] text-gray-400 truncate mt-0.5">{chat.lastMessage || 'محادثة جديدة'}</p>
@@ -257,14 +238,12 @@ export default function OwnerSupportPage() {
                 <button onClick={() => setShowChat(false)} className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100">
                   <ArrowLeft className="h-4 w-4" />
                 </button>
-                <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                  <User className="h-4 w-4 text-gray-400" />
+                <div className="w-9 h-9 rounded-full bg-gray-900 flex items-center justify-center">
+                  <span className="text-xs font-bold text-white">أد</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs font-bold text-gray-900">{selectedChat.customer_name || 'عميل'}</p>
-                  {selectedChat.customer_phone && (
-                    <p className="text-[10px] text-gray-400 font-mono" dir="ltr">{selectedChat.customer_phone}</p>
-                  )}
+                  <p className="text-xs font-bold text-gray-900">الإدارة</p>
+                  <p className="text-[10px] text-gray-400">محادثة مباشرة</p>
                 </div>
               </div>
 
@@ -282,8 +261,8 @@ export default function OwnerSupportPage() {
                     return (
                       <div key={msg.id} className={`flex items-end gap-2 ${isOwner ? 'justify-end' : 'justify-start'}`}>
                         {!isOwner && (
-                          <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                            <span className="text-[9px] font-bold text-gray-400">{(selectedChat.customer_name || 'ع')[0]}</span>
+                          <div className="w-7 h-7 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
+                            <span className="text-[9px] font-bold text-white">أد</span>
                           </div>
                         )}
                         <div className={`p-3 text-[13px] rounded-2xl max-w-[70%] ${isOwner ? 'bg-gray-900 text-white rounded-br-md' : 'bg-gray-50 text-gray-700 border border-gray-100 rounded-bl-md'}`}>
@@ -309,7 +288,7 @@ export default function OwnerSupportPage() {
                   })}
                   {!isLoadingMessages && messages.length === 0 && (
                     <div className="text-center pt-16">
-                      <p className="text-xs text-gray-300">ابدأ المحادثة مع العميل</p>
+                      <p className="text-xs text-gray-300">ابدأ المحادثة مع الإدارة</p>
                     </div>
                   )}
                   <div ref={messagesEndRef} />
