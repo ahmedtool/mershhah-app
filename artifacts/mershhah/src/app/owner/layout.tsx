@@ -7,6 +7,7 @@ import { useUser } from "@/hooks/useUser";
 import { useRouter } from '@/lib/navigation';
 import { Loader2 } from "lucide-react";
 import { DashboardAssistant } from "@/components/dashboard/DashboardAssistant";
+import { AnnouncementBanner } from "@/components/dashboard/AnnouncementBanner";
 import { SessionTimeout } from "@/components/shared/SessionTimeout";
 import { useLanguage } from "@/components/shared/LanguageContext";
 
@@ -41,6 +42,7 @@ function OwnerLayoutContent({ children }: { children: React.ReactNode }) {
       <SessionTimeout />
       <OwnerTopNav />
       <main className="p-4 sm:p-6">
+        <AnnouncementBanner />
         <AccountStatusChecker>
           {children}
         </AccountStatusChecker>
