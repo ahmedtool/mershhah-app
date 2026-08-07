@@ -1,7 +1,7 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
-import { SendHorizonal, Paperclip, Loader2, FileIcon, Download, MessageSquare, User, ArrowLeft } from 'lucide-react';
+import { SendHorizonal, Paperclip, Loader2, FileIcon, Download, MessageSquare, User, ArrowRight } from 'lucide-react';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useParams } from 'wouter';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -158,6 +158,9 @@ export default function AdminChatPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="p-3 border-b border-gray-100 flex items-center gap-3 shrink-0">
+        <a href="/admin/support" className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 shrink-0">
+          <ArrowRight className="h-4 w-4" />
+        </a>
         <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
           {chat.ownerLogo ? (
             <StorageImage imagePath={chat.ownerLogo} alt={chat.ownerName || ''} width={36} height={36} className="object-cover w-full h-full" />
