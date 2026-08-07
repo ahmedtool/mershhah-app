@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import type { ChatMessage, ChatSession } from '@/lib/types';
 import { StorageImage } from '@/components/shared/StorageImage';
+import { VoiceRecorder } from '@/components/shared/VoiceRecorder';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -153,6 +154,41 @@ export default function AdminSupportPage() {
         return;
       }
       handleSendMessage(e as any, file);
+    }
+  };
+
+  const handleSendVoice = async (blob: Blob) => {
+    if (!selectedChat) return;
+    try {
+      const filePath = `chat_attachments/${selectedChat.id}/${Date.now()}-voice.webm`;
+      const { error: uploadError } = await supabase.storage
+        .from('chat-attachments')
+        .upload(filePath, blob);
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('chat-attachments').getPublicUrl(filePath);
+      const now = new Date().toISOString();
+
+      await supabase.from('chat_messages').insert({
+        id: crypto.randomUUID(),
+        chat_id: selectedChat.id,
+        senderId: 'admin',
+        senderRole: 'admin',
+        text: '',
+        timestamp: now,
+        attachment_url: urlData.publicUrl,
+        attachment_type: 'file',
+        attachment_filename: 'رسالة صوتية',
+      });
+
+      await supabase.from('chats').update({
+        lastMessage: 'رسالة صوتية',
+        lastMessageTimestamp: now,
+        adminHasUnread: false,
+        ownerHasUnread: true,
+      }).eq('id', selectedChat.id);
+    } catch (error: any) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
     }
   };
 
@@ -443,6 +479,7 @@ export default function AdminSupportPage() {
                   className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0 disabled:opacity-30">
                   {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                 </button>
+                <VoiceRecorder onSend={handleSendVoice} disabled={isLoadingMessages} />
                 <Input
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
