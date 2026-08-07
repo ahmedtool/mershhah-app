@@ -7,11 +7,12 @@ import type { ChatSession } from '@/lib/types';
 import { Link } from 'wouter';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { MessageSquare, Search, File, ImageIcon, Trash2, Loader2 } from 'lucide-react';
-import { usePathname } from '@/lib/navigation';
+import { MessageSquare, Search, File, ImageIcon, Trash2, Loader2, Plus } from 'lucide-react';
+import { useRouter, usePathname } from '@/lib/navigation';
 import { cn } from '@/lib/utils';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
 export function ChatList() {
@@ -22,6 +23,11 @@ export function ChatList() {
   const [sessionToDelete, setSessionToDelete] = useState<ChatSession | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
   const { toast } = useToast();
+  const router = useRouter();
+  const [showNewChat, setShowNewChat] = useState(false);
+  const [restaurants, setRestaurants] = useState<any[]>([]);
+  const [isLoadingRestaurants, setIsLoadingRestaurants] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     const fetchSessions = async () => {
@@ -44,6 +50,39 @@ export function ChatList() {
 
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  const openNewChat = async () => {
+    setShowNewChat(true);
+    setIsLoadingRestaurants(true);
+    const { data } = await supabase.from('restaurants').select('id, name, logo, username').order('name');
+    setRestaurants(data || []);
+    setIsLoadingRestaurants(false);
+  };
+
+  const createChat = async (restaurant: any) => {
+    setIsCreating(true);
+    try {
+      const chatId = crypto.randomUUID();
+      const { error } = await supabase.from('chats').insert({
+        id: chatId,
+        ownerId: restaurant.owner_id || '',
+        ownerName: restaurant.name,
+        ownerLogo: restaurant.logo || null,
+        lastMessage: null,
+        lastMessageTimestamp: new Date().toISOString(),
+        adminHasUnread: false,
+        ownerHasUnread: true,
+        chat_type: 'admin',
+      });
+      if (error) throw error;
+      setShowNewChat(false);
+      router.push(`/admin/support/${chatId}`);
+    } catch (e: any) {
+      toast({ title: 'خطأ', description: e.message, variant: 'destructive' });
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const handleDeleteConfirm = () => {
     if (!sessionToDelete) return;
@@ -87,8 +126,15 @@ export function ChatList() {
       <div className="flex flex-col h-full bg-white border-r border-gray-100">
         {/* Header */}
         <div className="p-4 border-b border-gray-100">
-          <h2 className="text-sm font-bold text-gray-900">صندوق الوارد</h2>
-          <p className="text-[10px] text-gray-400 mt-0.5">{sessions.length} محادثة</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-bold text-gray-900">صندوق الوارد</h2>
+              <p className="text-[10px] text-gray-400 mt-0.5">{sessions.length} محادثة</p>
+            </div>
+            <button onClick={openNewChat} className="w-8 h-8 rounded-xl bg-gray-900 text-white flex items-center justify-center hover:bg-gray-800 transition-colors">
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
           <div className="relative mt-3">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
             <input
@@ -198,6 +244,49 @@ export function ChatList() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={showNewChat} onOpenChange={setShowNewChat}>
+        <DialogContent className="sm:max-w-md p-0 gap-0" dir="rtl">
+          <DialogHeader className="px-5 pt-5 pb-3 border-b border-gray-100">
+            <DialogTitle className="text-base font-bold text-gray-900">محادثة جديدة</DialogTitle>
+          </DialogHeader>
+          <div className="p-3 max-h-80 overflow-y-auto">
+            {isLoadingRestaurants ? (
+              <div className="space-y-2 p-2">
+                <Skeleton className="h-14 rounded-xl" />
+                <Skeleton className="h-14 rounded-xl" />
+              </div>
+            ) : restaurants.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-xs text-gray-400">لا يوجد مطاعم مسجلة</p>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {restaurants.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => createChat(r)}
+                    disabled={isCreating}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors text-right disabled:opacity-50"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+                      {r.logo ? (
+                        <StorageImage imagePath={r.logo} alt={r.name} width={40} height={40} className="object-cover w-full h-full" />
+                      ) : (
+                        <span className="text-xs font-bold text-gray-400">{r.name?.[0]}</span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-gray-900 truncate">{r.name}</p>
+                      {r.username && <p className="text-[10px] text-gray-400">@{r.username}</p>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
