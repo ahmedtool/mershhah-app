@@ -7,7 +7,7 @@ import type { ChatSession } from '@/lib/types';
 import { Link } from 'wouter';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { MessageSquare, Search, File, ImageIcon, Trash2, Loader2, Plus } from 'lucide-react';
+import { MessageSquare, Search, Trash2, Loader2, Plus, X } from 'lucide-react';
 import { useRouter, usePathname } from '@/lib/navigation';
 import { cn } from '@/lib/utils';
 import { StorageImage } from '@/components/shared/StorageImage';
@@ -27,29 +27,31 @@ export function ChatList() {
   const [showPicker, setShowPicker] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
-    const fetchSessions = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('chats')
-          .select('*')
-          .order('lastMessageTimestamp', { ascending: false });
-        if (!error && data) setSessions(data as ChatSession[]);
-      } catch (e) {
-        console.error('ChatList fetch error:', e);
+  const fetchSessions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('chats')
+        .select('*')
+        .order('lastMessageTimestamp', { ascending: false, nullsFirst: true });
+      if (error) {
+        console.error('Fetch chats error:', error);
+      } else {
+        setSessions((data || []) as ChatSession[]);
       }
-      setIsLoading(false);
-    };
+    } catch (e) {
+      console.error('Chats error:', e);
+    }
+    setIsLoading(false);
+  };
 
+  useEffect(() => {
     fetchSessions();
-
     const channel = supabase
-      .channel('chats-list')
+      .channel('admin-chats-list')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => {
         fetchSessions();
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, []);
 
@@ -69,26 +71,13 @@ export function ChatList() {
   };
 
   const getInitials = (name?: string | null) => {
-    if (!name) return 'U';
-    return name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase();
+    if (!name) return 'م';
+    return name.charAt(0);
   };
 
   const filteredSessions = sessions.filter((session) =>
     session.ownerName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const renderLastMessage = (session: ChatSession) => {
-    if (session.lastMessage?.startsWith('ملف:')) {
-      const isImage = session.lastMessage.toLowerCase().match(/\.(jpeg|jpg|gif|png|webp)$/);
-      return (
-        <div className="flex items-center gap-1.5">
-          {isImage ? <ImageIcon className="h-3 w-3 text-gray-300 shrink-0" /> : <File className="h-3 w-3 text-gray-300 shrink-0" />}
-          <span className="text-[11px] text-gray-400 truncate">{session.lastMessage.replace('ملف:', '').trim()}</span>
-        </div>
-      );
-    }
-    return <p className="text-[11px] text-gray-400 truncate">{session.lastMessage || 'لا توجد رسائل'}</p>;
-  };
 
   const openNewChat = async () => {
     setShowPicker(true);
@@ -112,6 +101,7 @@ export function ChatList() {
       });
       if (error) throw error;
       setShowPicker(false);
+      toast({ title: 'تم إنشاء المحادثة' });
       router.push(`/admin/support/${chatId}`);
     } catch (e: any) {
       toast({ title: 'خطأ', description: e.message, variant: 'destructive' });
@@ -120,25 +110,70 @@ export function ChatList() {
     }
   };
 
+  if (showPicker) {
+    return (
+      <div className="flex flex-col h-full bg-white">
+        <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-gray-900">اختر صاحب مطعم</h3>
+          <button onClick={() => setShowPicker(false)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100">
+            <X className="h-4 w-4 text-gray-400" />
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">
+          {restaurants.length === 0 ? (
+            <div className="text-center py-12 px-4">
+              <p className="text-xs text-gray-400">لا يوجد مطاعم مسجلة</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {restaurants.map((r) => (
+                <button
+                  key={r.id}
+                  onClick={() => createChat(r)}
+                  disabled={isCreating}
+                  className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-right disabled:opacity-50"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+                    {r.logo ? (
+                      <StorageImage imagePath={r.logo} alt={r.name} width={40} height={40} className="object-cover w-full h-full" />
+                    ) : (
+                      <span className="text-sm font-bold text-gray-400">{r.name?.charAt(0)}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-gray-900 truncate">{r.name}</p>
+                    {r.username && <p className="text-[10px] text-gray-400">@{r.username}</p>}
+                  </div>
+                  {isCreating && <Loader2 className="h-4 w-4 animate-spin text-gray-300" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-      <div className="flex flex-col h-full bg-white border-r border-gray-100">
+      <div className="flex flex-col h-full bg-white">
         {/* Header */}
         <div className="p-4 border-b border-gray-100">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <div>
               <h2 className="text-sm font-bold text-gray-900">المحادثات</h2>
-              <p className="text-[10px] text-gray-400 mt-0.5">{sessions.length} محادثة</p>
+              <p className="text-[10px] text-gray-400">{sessions.length} محادثة</p>
             </div>
-            <button onClick={openNewChat} className="w-8 h-8 rounded-xl bg-gray-900 text-white flex items-center justify-center hover:bg-gray-800 transition-colors">
-              <Plus className="h-4 w-4" />
+            <button onClick={openNewChat} className="h-8 px-3 rounded-lg bg-gray-900 text-white text-[11px] font-bold flex items-center gap-1.5 hover:bg-gray-800 transition-colors">
+              <Plus className="h-3.5 w-3.5" />
+              جديدة
             </button>
           </div>
-          <div className="relative mt-3">
+          <div className="relative">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
             <input
               placeholder="بحث..."
-              className="w-full h-9 pr-8 pl-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+              className="w-full h-9 pr-8 pl-3 rounded-lg border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -149,15 +184,21 @@ export function ChatList() {
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="space-y-1 p-2">
-              <Skeleton className="h-16 rounded-xl" />
-              <Skeleton className="h-16 rounded-xl" />
-              <Skeleton className="h-16 rounded-xl" />
+              <Skeleton className="h-14 rounded-xl" />
+              <Skeleton className="h-14 rounded-xl" />
+              <Skeleton className="h-14 rounded-xl" />
             </div>
           ) : filteredSessions.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center h-full p-4">
-              <MessageSquare className="h-8 w-8 text-gray-200 mb-2" />
-              <p className="text-xs text-gray-400 font-bold">لا توجد محادثات</p>
-              <p className="text-[10px] text-gray-300 mt-1">اضغط + لبدء محادثة جديدة</p>
+              <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center mb-3">
+                <MessageSquare className="h-5 w-5 text-gray-300" />
+              </div>
+              <p className="text-xs font-bold text-gray-900 mb-1">لا توجد محادثات</p>
+              <p className="text-[10px] text-gray-400 mb-3">ابدأ محادثة مع صاحب مطعم</p>
+              <button onClick={openNewChat} className="h-8 px-4 rounded-lg bg-gray-900 text-white text-[11px] font-bold flex items-center gap-1.5 hover:bg-gray-800">
+                <Plus className="h-3.5 w-3.5" />
+                محادثة جديدة
+              </button>
             </div>
           ) : (
             <div className="divide-y divide-gray-50">
@@ -167,7 +208,7 @@ export function ChatList() {
                 const tsDate = ts
                   ? typeof ts === 'string'
                     ? new Date(ts)
-                    : ts.seconds
+                    : ts?.seconds
                     ? new Date(ts.seconds * 1000)
                     : new Date(ts)
                   : null;
@@ -185,7 +226,7 @@ export function ChatList() {
                         {session.ownerLogo ? (
                           <StorageImage imagePath={session.ownerLogo} alt={session.ownerName || ''} fill className="object-cover" sizes="40px" />
                         ) : (
-                          <span className="text-xs font-bold text-gray-500">{getInitials(session.ownerName)}</span>
+                          <span className="text-sm font-bold text-gray-500">{getInitials(session.ownerName)}</span>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -197,12 +238,7 @@ export function ChatList() {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center justify-between mt-0.5">
-                          <div className="flex-1 overflow-hidden">{renderLastMessage(session)}</div>
-                          {session.adminHasUnread && (
-                            <span className="w-2 h-2 bg-gray-900 rounded-full shrink-0 mr-2" />
-                          )}
-                        </div>
+                        <p className="text-[11px] text-gray-400 truncate mt-0.5">{session.lastMessage || 'محادثة جديدة'}</p>
                       </div>
                     </Link>
                     <button
@@ -218,47 +254,6 @@ export function ChatList() {
           )}
         </div>
       </div>
-
-      {/* Restaurant Picker - inline overlay */}
-      {showPicker && (
-        <div className="absolute inset-0 bg-white z-50 flex flex-col">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-gray-900">محادثة جديدة</h3>
-            <button onClick={() => setShowPicker(false)} className="text-xs text-gray-400 hover:text-gray-600">إلغاء</button>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {restaurants.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-xs text-gray-400">لا يوجد مطاعم مسجلة</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-gray-50">
-                {restaurants.map((r) => (
-                  <button
-                    key={r.id}
-                    onClick={() => createChat(r)}
-                    disabled={isCreating}
-                    className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-right disabled:opacity-50"
-                  >
-                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
-                      {r.logo ? (
-                        <StorageImage imagePath={r.logo} alt={r.name} width={40} height={40} className="object-cover w-full h-full" />
-                      ) : (
-                        <span className="text-xs font-bold text-gray-400">{r.name?.[0]}</span>
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-gray-900 truncate">{r.name}</p>
-                      {r.username && <p className="text-[10px] text-gray-400">@{r.username}</p>}
-                    </div>
-                    {isCreating && <Loader2 className="h-4 w-4 animate-spin text-gray-300" />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       <AlertDialog open={!!sessionToDelete} onOpenChange={(open) => !open && setSessionToDelete(null)}>
         <AlertDialogContent className="sm:max-w-lg p-0 gap-0" dir="rtl">
