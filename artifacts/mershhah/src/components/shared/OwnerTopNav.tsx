@@ -42,6 +42,7 @@ export function OwnerTopNav() {
     { href: '/owner/reviews', label: 'التقييمات', icon: Star },
     { href: '/owner/branches', label: 'الفروع', icon: Building2 },
     { href: '/owner/customize', label: 'التخصيص', icon: Settings },
+    { href: '/owner/tools', label: 'أدواتي', icon: Box },
     { href: '/owner/store', label: 'المتجر', icon: Store },
     { href: '/owner/support', label: 'الدعم', icon: MessageSquare },
     { href: '/owner/tickets', label: 'التذاكر', icon: Ticket },
@@ -126,7 +127,7 @@ export function OwnerTopNav() {
               </Link>
             ))}
 
-            {/* Activated tools */}
+            {/* Activated tools dropdown */}
             {activatedTools.length > 0 && (
               <div className="relative">
                 <button
@@ -137,8 +138,6 @@ export function OwnerTopNav() {
                       : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                   }`}
                 >
-                  <Box className="h-3.5 w-3.5" />
-                  <span className="hidden md:inline">أدواتي</span>
                   <ChevronDown className={`h-3 w-3 transition-transform ${showTools ? 'rotate-180' : ''}`} />
                 </button>
                 {showTools && (
