@@ -407,9 +407,9 @@ export default function CustomizePage() {
                             />
                             <p className="text-[10px] text-gray-300">
                                 {settings.username ? (
-                                  <>mershhah.com/hub/{settings.username} أو <span className="font-semibold">{settings.username}</span>.mershhah.com</>
+                                  <>{settings.username}.mershhah.com</>
                                 ) : (
-                                  '/hub/...'
+                                  '...'
                                 )} — مرة كل 30 يوماً
                             </p>
                         </div>
