@@ -4,15 +4,15 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MapPin, Crosshair, Link as LinkIcon, X, PlusCircle, ImageIcon } from 'lucide-react';
+import { Loader2, MapPin, Link as LinkIcon, X } from 'lucide-react';
 import { TimePicker } from '@/components/ui/time-picker';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
-import { geocodeAddress, extractFromGoogleMapsUrl } from '@/lib/geocoding';
+import { extractFromGoogleMapsUrl } from '@/lib/geocoding';
 import saGeodata from '@/data/sa-geodata.json';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -23,7 +23,6 @@ const schema = z.object({
   name: z.string().min(2, 'اسم الفرع مطلوب'),
   city: z.string().min(2, 'اختر المدينة'),
   district: z.string().min(2, 'اختر الحي'),
-  address: z.string().min(5, 'العنوان مطلوب'),
   phone: z.string().optional(),
   opening_hours: z.string().max(200).optional(),
   status: z.enum(['active', 'inactive']),
@@ -66,8 +65,6 @@ export function EditBranchDialog({
 }: EditBranchDialogProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [geocoding, setGeocoding] = useState(false);
-  const [locating, setLocating] = useState(false);
   const [mapsUrl, setMapsUrl] = useState('');
   const [parsingMaps, setParsingMaps] = useState(false);
   const [showFriday, setShowFriday] = useState(false);
@@ -82,7 +79,7 @@ export function EditBranchDialog({
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name: '', city: '', district: '', address: '', phone: '', opening_hours: '',
+      name: '', city: '', district: '', phone: '', opening_hours: '',
       status: 'active', latitude: null, longitude: null,
     },
   });
@@ -95,16 +92,17 @@ export function EditBranchDialog({
     if (branch) {
       form.reset({
         name: branch.name, city: branch.city, district: branch.district,
-        address: branch.address, phone: branch.phone ?? '', opening_hours: branch.opening_hours ?? '',
+        phone: branch.phone ?? '', opening_hours: branch.opening_hours ?? '',
         status: branch.status ?? 'active', latitude: branch.latitude ?? null, longitude: branch.longitude ?? null,
       });
       setBranchApps(Array.isArray(branch.applications) ? branch.applications : []);
-      setAllDaysOpen(''); setAllDaysClose(''); setFridayOpen(''); setFridayClose(''); setShowFriday(false);
+      setMapsUrl('');
     } else {
-      form.reset({ name: '', city: '', district: '', address: '', phone: '', opening_hours: '', status: 'active', latitude: null, longitude: null });
+      form.reset({ name: '', city: '', district: '', phone: '', opening_hours: '', status: 'active', latitude: null, longitude: null });
       setBranchApps([]);
-      setAllDaysOpen(''); setAllDaysClose(''); setFridayOpen(''); setFridayClose(''); setShowFriday(false);
+      setMapsUrl('');
     }
+    setAllDaysOpen(''); setAllDaysClose(''); setFridayOpen(''); setFridayClose(''); setShowFriday(false);
   }, [open, branch, form]);
 
   useEffect(() => {
@@ -115,56 +113,52 @@ export function EditBranchDialog({
 
   useEffect(() => { if (!city) form.setValue('district', ''); }, [city, form]);
 
-  async function handleGeocode() {
-    const addr = form.getValues('address');
-    const full = [addr, form.getValues('district'), city, 'السعودية'].filter(Boolean).join(', ');
-    if (full.length < 5) { toast({ variant: 'destructive', title: 'أدخل العنوان أولاً' }); return; }
-    setGeocoding(true);
-    try {
-      const r = await geocodeAddress(full);
-      if (r) { form.setValue('latitude', r.latitude, { shouldDirty: true }); form.setValue('longitude', r.longitude, { shouldDirty: true }); toast({ title: 'تم التحويل' }); }
-      else toast({ variant: 'destructive', title: 'لم يتم العثور' });
-    } catch { toast({ variant: 'destructive', title: 'فشل التحويل' }); } finally { setGeocoding(false); }
-  }
-
-  function handleLocateMe() {
-    if (!navigator.geolocation) { toast({ variant: 'destructive', title: 'المتصفح لا يدعم تحديد الموقع' }); return; }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { form.setValue('latitude', pos.coords.latitude, { shouldDirty: true }); form.setValue('longitude', pos.coords.longitude, { shouldDirty: true }); setLocating(false); toast({ title: 'تم التحديد' }); },
-      () => { setLocating(false); toast({ variant: 'destructive', title: 'فشل تحديد الموقع' }); },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  }
-
   async function handleParseMapsUrl() {
     if (!mapsUrl.trim()) { toast({ variant: 'destructive', title: 'الصق رابط أولاً' }); return; }
     setParsingMaps(true);
     try {
       const r = await extractFromGoogleMapsUrl(mapsUrl.trim());
-      if (r) { form.setValue('latitude', r.latitude, { shouldDirty: true }); form.setValue('longitude', r.longitude, { shouldDirty: true }); toast({ title: 'تم الاستخراج' }); }
-      else toast({ variant: 'destructive', title: 'لم يتم العثور' });
-    } catch { toast({ variant: 'destructive', title: 'فشل قراءة الرابط' }); } finally { setParsingMaps(false); }
+      if (r) {
+        form.setValue('latitude', r.latitude, { shouldDirty: true });
+        form.setValue('longitude', r.longitude, { shouldDirty: true });
+        toast({ title: 'تم استخراج الموقع' });
+        setMapsUrl('');
+      } else {
+        toast({ variant: 'destructive', title: 'لم يتم العثور على إحداثيات' });
+      }
+    } catch {
+      toast({ variant: 'destructive', title: 'فشل قراءة الرابط' });
+    } finally {
+      setParsingMaps(false);
+    }
   }
 
   async function onSubmit(values: FormValues) {
     if (!restaurantId) return;
     setSaving(true);
     try {
-      let lat = values.latitude, lng = values.longitude;
-      if (lat == null || lng == null) {
-        const full = [values.address, values.district, values.city, 'السعودية'].filter(Boolean).join(', ');
-        if (full.length > 5) { const geo = await geocodeAddress(full); if (geo) { lat = geo.latitude; lng = geo.longitude; form.setValue('latitude', lat, { shouldDirty: false }); form.setValue('longitude', lng, { shouldDirty: false }); } }
-      }
-
-      const data: Record<string, unknown> = { name: values.name, city: values.city, district: values.district, address: values.address, status: values.status, restaurant_id: restaurantId, applications: branchApps };
+      const data: Record<string, unknown> = {
+        name: values.name,
+        city: values.city,
+        district: values.district,
+        status: values.status,
+        restaurant_id: restaurantId,
+        applications: branchApps,
+      };
       if (values.phone?.trim()) data.phone = values.phone.trim();
       if (values.opening_hours?.trim()) data.opening_hours = values.opening_hours.trim();
-      if (lat != null) data.latitude = lat;
-      if (lng != null) data.longitude = lng;
+      if (values.latitude != null) data.latitude = values.latitude;
+      if (values.longitude != null) data.longitude = values.longitude;
 
-      if (isEdit && branch?.id) { const { error } = await supabase.from('branches').update(data).eq('id', branch.id); if (error) throw error; toast({ title: 'تم التحديث' }); }
-      else { const { error } = await supabase.from('branches').insert({ id: crypto.randomUUID(), ...data }); if (error) throw error; toast({ title: 'تمت الإضافة' }); }
+      if (isEdit && branch?.id) {
+        const { error } = await supabase.from('branches').update(data).eq('id', branch.id);
+        if (error) throw error;
+        toast({ title: 'تم التحديث' });
+      } else {
+        const { error } = await supabase.from('branches').insert({ id: crypto.randomUUID(), ...data });
+        if (error) throw error;
+        toast({ title: 'تمت الإضافة' });
+      }
 
       syncPublicPage(restaurantId).catch(() => {});
       onSaved?.();
@@ -236,17 +230,6 @@ export function EditBranchDialog({
               )} />
             </div>
 
-            {/* Address */}
-            <FormField control={form.control} name="address" render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs text-gray-500">العنوان</FormLabel>
-                <FormControl>
-                  <Input placeholder="الشارع والحي..." {...field} className="h-10 rounded-xl border-gray-200 text-sm" disabled={saving} />
-                </FormControl>
-                <FormMessage className="text-[10px]" />
-              </FormItem>
-            )} />
-
             {/* Phone */}
             <FormField control={form.control} name="phone" render={({ field }) => (
               <FormItem>
@@ -287,51 +270,27 @@ export function EditBranchDialog({
               )}
             </div>
 
-            {/* Location */}
+            {/* Location - URL only */}
             <div className="space-y-2">
               <FormLabel className="text-xs text-gray-500">موقع الفرع</FormLabel>
-
-              <div className="grid grid-cols-3 gap-2">
-                <button type="button" onClick={handleLocateMe} disabled={locating}
-                  className="h-10 rounded-xl border border-gray-200 text-[11px] font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5">
-                  {locating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crosshair className="h-3.5 w-3.5 text-emerald-500" />}
-                  تحديد موقعي
-                </button>
-                <button type="button" onClick={handleGeocode} disabled={geocoding}
-                  className="h-10 rounded-xl border border-gray-200 text-[11px] font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5">
-                  {geocoding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MapPin className="h-3.5 w-3.5 text-blue-500" />}
-                  من العنوان
-                </button>
-                <button type="button" onClick={handleParseMapsUrl} disabled={parsingMaps}
-                  className="h-10 rounded-xl border border-gray-200 text-[11px] font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="الصق رابط جوجل مابز..."
+                  value={mapsUrl}
+                  onChange={(e) => setMapsUrl(e.target.value)}
+                  className="h-10 text-xs rounded-xl border-gray-200 flex-1"
+                  dir="ltr"
+                />
+                <button type="button" onClick={handleParseMapsUrl} disabled={parsingMaps || !mapsUrl.trim()}
+                  className="h-10 px-3 rounded-xl border border-gray-200 text-[11px] font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center gap-1.5 disabled:opacity-50">
                   {parsingMaps ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5 text-purple-500" />}
-                  من الرابط
+                  استخراج
                 </button>
               </div>
-
-              <Input placeholder="أو الصق رابط جوجل مابز هنا..." value={mapsUrl} onChange={(e) => setMapsUrl(e.target.value)} className="h-9 text-xs rounded-xl border-gray-200" dir="ltr" />
-
-              <div className="grid grid-cols-2 gap-2">
-                <FormField control={form.control} name="latitude" render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input type="number" step="any" placeholder="خط العرض" {...field} value={field.value ?? ''} className="h-9 text-xs rounded-xl border-gray-200" dir="ltr" />
-                    </FormControl>
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="longitude" render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input type="number" step="any" placeholder="خط الطول" {...field} value={field.value ?? ''} className="h-9 text-xs rounded-xl border-gray-200" dir="ltr" />
-                    </FormControl>
-                  </FormItem>
-                )} />
-              </div>
-
               {form.watch('latitude') && form.watch('longitude') && (
                 <a href={`https://www.google.com/maps/dir/?api=1&destination=${form.watch('latitude')},${form.watch('longitude')}`} target="_blank" rel="noopener noreferrer"
                   className="text-[11px] text-blue-500 hover:underline inline-flex items-center gap-1">
-                  <MapPin className="h-3 w-3" /> فتح في خرائط جوجل
+                  <MapPin className="h-3 w-3" /> تم تحديد الموقع ✓
                 </a>
               )}
             </div>
@@ -353,7 +312,7 @@ export function EditBranchDialog({
 
             {/* Branch Delivery Apps */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-500">تطبيقات التوصيل لهذا الفرع</FormLabel>
+              <FormLabel className="text-xs text-gray-500">تطبيقات التوصيل</FormLabel>
               <p className="text-[10px] text-gray-300">أضف روابط التطبيقات الخاصة بهذا الفرع</p>
               
               {globalApps.length > 0 && (
