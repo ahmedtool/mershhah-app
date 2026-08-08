@@ -1,20 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { useState } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Clock, Phone, CheckCircle } from 'lucide-react';
+import { Loader2, Check, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
-import { TimePicker } from '@/components/ui/time-picker';
 import type { Branch } from '@/lib/types';
 
 interface BulkEditDialogProps {
@@ -25,232 +18,125 @@ interface BulkEditDialogProps {
   onSaved?: () => void;
 }
 
-function generateHoursText(open: string, close: string, friOpen: string, friClose: string): string {
-  if (!open || !close) return '';
-  const to12 = (t: string) => {
-    const [h, m] = t.split(':');
-    const hour24 = parseInt(h);
-    const period = hour24 >= 12 ? 'م' : 'ص';
-    let hour12 = hour24 % 12;
-    if (hour12 === 0) hour12 = 12;
-    return `${hour12}:${m} ${period}`;
-  };
-  let text = `يوميًا ${to12(open)} - ${to12(close)}`;
-  if (friOpen && friClose) {
-    text += ` (الجمعة ${to12(friOpen)} - ${to12(friClose)})`;
-  }
-  return text;
-}
-
 export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onSaved }: BulkEditDialogProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<'active' | 'inactive' | null>(null);
+  const [openingHours, setOpeningHours] = useState('');
+  const [applyStatus, setApplyStatus] = useState(false);
+  const [applyHours, setApplyHours] = useState(false);
 
-  const [phone, setPhone] = useState('');
-  const [openTime, setOpenTime] = useState('');
-  const [closeTime, setCloseTime] = useState('');
-  const [showFriday, setShowFriday] = useState(false);
-  const [fridayOpen, setFridayOpen] = useState('');
-  const [fridayClose, setFridayClose] = useState('');
-
-  const [applyPhone, setApplyPhone] = useState(true);
-  const [applyHours, setApplyHours] = useState(true);
-
-  useEffect(() => {
-    if (!open) return;
-    const first = branches[0];
-    if (first) {
-      setPhone(first.phone || '');
-      setShowFriday(false);
-      setFridayOpen('');
-      setFridayClose('');
-    }
-  }, [open, branches]);
-
-  const hoursText = generateHoursText(openTime, closeTime, fridayOpen, fridayClose);
-
-  async function handleSave() {
+  const handleSave = async () => {
     if (!restaurantId || branches.length === 0) return;
-    setSaving(true);
+    if (!applyStatus && !applyHours) {
+      toast({ title: 'اختر değişiklik أولاً', variant: 'destructive' });
+      return;
+    }
 
+    setSaving(true);
     try {
       const updates: Record<string, unknown> = {};
+      if (applyStatus && status) updates.status = status;
+      if (applyHours && openingHours.trim()) updates.opening_hours = openingHours.trim();
 
-      if (applyPhone && phone.trim()) {
-        updates.phone = phone.trim();
-      }
-
-      if (applyHours && openTime && closeTime) {
-        updates.opening_hours = hoursText;
-      }
-
-      if (Object.keys(updates).length === 0) {
-        toast({ variant: 'destructive', title: 'خطأ', description: 'اختر على الأقل خياراً واحداً' });
-        setSaving(false);
-        return;
-      }
-
-      const ids = branches.map((b) => b.id);
       const { error } = await supabase
         .from('branches')
         .update(updates)
-        .in('id', ids)
-        .eq('restaurant_id', restaurantId);
+        .eq('restaurant_id', restaurantId)
+        .in('id', branches.map(b => b.id));
 
       if (error) throw error;
 
-      toast({
-        title: `تم تحديث ${branches.length} فرع`,
-        description: applyPhone && applyHours ? 'تم تحديث رقم الهاتف وأوقات العمل' :
-                     applyPhone ? 'تم تحديث رقم الهاتف' : 'تم تحديث أوقات العمل',
-      });
-
       syncPublicPage(restaurantId).catch(() => {});
+      toast({ title: `تم تحديث ${branches.length} فرع` });
       onSaved?.();
-      onOpenChange(false);
+      resetState();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       toast({ variant: 'destructive', title: 'خطأ', description: msg });
     } finally {
       setSaving(false);
     }
-  }
+  };
+
+  const resetState = () => {
+    setStatus(null);
+    setOpeningHours('');
+    setApplyStatus(false);
+    setApplyHours(false);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
-        <DialogHeader>
-          <DialogTitle>تعديل جميع الفروع ({branches.length})</DialogTitle>
-          <DialogDescription>
-            عدّل البيانات المشتركة بين جميع الفروع دفعة واحدة.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-5 pt-2">
-          {/* Phone */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={applyPhone}
-                onChange={(e) => setApplyPhone(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-gray-300"
-              />
-              <Phone className="h-3.5 w-3.5 text-gray-400" />
-              <span className="text-sm font-medium">رقم الهاتف</span>
-            </label>
-            {applyPhone && (
-              <Input
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="05XXXXXXXX"
-                className="h-9 text-sm"
-                dir="ltr"
-              />
-            )}
-          </div>
-
-          <div className="h-px bg-gray-100" />
-
-          {/* Opening Hours */}
-          <div className="space-y-3">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={applyHours}
-                onChange={(e) => setApplyHours(e.target.checked)}
-                className="w-3.5 h-3.5 rounded border-gray-300"
-              />
-              <Clock className="h-3.5 w-3.5 text-gray-400" />
-              <span className="text-sm font-medium">أوقات العمل</span>
-            </label>
-
-            {applyHours && (
-              <>
-                <div className="flex items-end gap-2">
-                  <TimePicker
-                    value={openTime}
-                    onChange={setOpenTime}
-                    label="الفتح"
-                    className="flex-1"
-                  />
-                  <span className="text-xs text-muted-foreground mb-3">—</span>
-                  <TimePicker
-                    value={closeTime}
-                    onChange={setCloseTime}
-                    label="الإغلاق"
-                    className="flex-1"
-                  />
-                </div>
-
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showFriday}
-                    onChange={(e) => {
-                      setShowFriday(e.target.checked);
-                      if (!e.target.checked) {
-                        setFridayOpen('');
-                        setFridayClose('');
-                      }
-                    }}
-                    className="w-3.5 h-3.5 rounded border-gray-300"
-                  />
-                  <span className="text-xs text-muted-foreground">الجمعة مختلفة</span>
-                </label>
-
-                {showFriday && (
-                  <div className="flex items-end gap-2">
-                    <TimePicker
-                      value={fridayOpen}
-                      onChange={setFridayOpen}
-                      label="فتح الجمعة"
-                      className="flex-1"
-                    />
-                    <span className="text-xs text-muted-foreground mb-3">—</span>
-                    <TimePicker
-                      value={fridayClose}
-                      onChange={setFridayClose}
-                      label="إغلاق الجمعة"
-                      className="flex-1"
-                    />
-                  </div>
-                )}
-
-                {openTime && closeTime && (
-                  <div className="bg-gray-50 rounded-lg px-3 py-2">
-                    <p className="text-xs text-gray-600">{hoursText}</p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Summary */}
-          <div className="bg-blue-50 rounded-lg px-3 py-2.5 space-y-1">
-            <p className="text-xs font-medium text-blue-800">سيتم التحديث في:</p>
-            <div className="flex flex-wrap gap-1">
-              {branches.map((b) => (
-                <span key={b.id} className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
-                  {b.name}
-                </span>
-              ))}
+    <Dialog open={open} onOpenChange={(o) => { if (!o) resetState(); onOpenChange(o); }}>
+      <DialogContent className="sm:max-w-md p-0 gap-0" dir="rtl">
+        <div className="px-5 pt-5 pb-3 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold text-gray-900">تعديل جماعي</h2>
+              <p className="text-xs text-gray-400 mt-0.5">{branches.length} فروع محددة</p>
             </div>
+            <button onClick={() => onOpenChange(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+              <X className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-end gap-2 pt-2">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="p-5 space-y-5">
+          {/* Status */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={applyStatus} onChange={(e) => setApplyStatus(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300" />
+              <span className="text-sm font-medium text-gray-700">تغيير الحالة</span>
+            </label>
+            {applyStatus && (
+              <div className="flex gap-2 mr-6">
+                <button onClick={() => setStatus('active')}
+                  className={`flex-1 h-10 rounded-xl text-xs font-medium transition-all border ${
+                    status === 'active' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-400'
+                  }`}>
+                  نشط
+                </button>
+                <button onClick={() => setStatus('inactive')}
+                  className={`flex-1 h-10 rounded-xl text-xs font-medium transition-all border ${
+                    status === 'inactive' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-gray-200 text-gray-400'
+                  }`}>
+                  غير نشط
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Opening Hours */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={applyHours} onChange={(e) => setApplyHours(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300" />
+              <span className="text-sm font-medium text-gray-700">تغيير أوقات العمل</span>
+            </label>
+            {applyHours && (
+              <div className="mr-6">
+                <Input
+                  value={openingHours}
+                  onChange={(e) => setOpeningHours(e.target.value)}
+                  placeholder="يوميًا 9 ص - 11 م"
+                  className="h-10 rounded-xl border-gray-200 text-sm"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="px-5 pb-5 flex gap-2">
+          <button onClick={() => onOpenChange(false)}
+            className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">
             إلغاء
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saving || (!applyPhone && !applyHours)}
-            className="gap-1.5"
-          >
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-            {saving ? 'جاري الحفظ...' : `تحديث ${branches.length} فرع`}
-          </Button>
+          </button>
+          <button onClick={handleSave} disabled={saving || (!applyStatus && !applyHours)}
+            className="flex-1 h-11 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            {saving ? 'جاري الحفظ...' : 'تطبيق على الكل'}
+          </button>
         </div>
       </DialogContent>
     </Dialog>
