@@ -80,9 +80,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const mountedRef = useRef(true);
   const loadedUserIdRef = useRef<string | null>(null);
 
-  const loadUserData = useCallback(async (userId: string) => {
-    if (loadingRef.current) return;
-    if (loadedUserIdRef.current === userId) return;
+  const loadUserData = useCallback(async (userId: string, retryCount = 0) => {
+    if (loadingRef.current && retryCount === 0) return;
+    if (loadedUserIdRef.current === userId && retryCount === 0) return;
     loadingRef.current = true;
 
     try {
@@ -95,6 +95,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (!mountedRef.current) return;
 
       if (profileError || !profile) {
+        // Profile might not be committed yet (race condition after login)
+        if (retryCount < 3) {
+          await new Promise(r => setTimeout(r, 500));
+          return loadUserData(userId, retryCount + 1);
+        }
         setUser(null);
         setIsLoading(false);
         return;

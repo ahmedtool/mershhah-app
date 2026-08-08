@@ -3,6 +3,7 @@
 import { useUser } from '@/hooks/useUser';
 import { Loader2, ShieldAlert } from 'lucide-react';
 import { usePathname } from '@/lib/navigation';
+import { useState, useEffect } from 'react';
 
 // Define which permission is required for each route
 const routePermissions: Record<string, string> = {
@@ -39,8 +40,16 @@ const CenteredMessage = ({ icon: Icon, title, children }: { icon: React.ElementT
 export function AdminAccountStatusChecker({ children }: { children: React.ReactNode }) {
     const { user, isLoading } = useUser();
     const pathname = usePathname();
+    const [ready, setReady] = useState(false);
 
-    if (isLoading) {
+    useEffect(() => {
+        if (!isLoading && user) {
+            const t = setTimeout(() => setReady(true), 300);
+            return () => clearTimeout(t);
+        }
+    }, [isLoading, user]);
+
+    if (isLoading || !ready) {
         return <FullPageLoader />;
     }
 
