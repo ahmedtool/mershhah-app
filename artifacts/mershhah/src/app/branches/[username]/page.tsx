@@ -333,6 +333,31 @@ export default function PublicBranchesPage() {
                         </a>
                       ) : null}
                     </div>
+
+                    {/* Branch Delivery Apps */}
+                    {branch.applications && branch.applications.length > 0 && (
+                      <div className="pt-2">
+                        <p className="text-[10px] text-gray-400 font-medium mb-2">تطبيقات التوصيل</p>
+                        <div className="flex gap-2 flex-wrap">
+                          {branch.applications.map((app: any, idx: number) => (
+                            <a
+                              key={app.id || idx}
+                              href={app.value || '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 h-9 px-3 rounded-lg bg-gray-50 border border-gray-100 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+                            >
+                              {app.logo && (
+                                <div className="relative w-5 h-5 shrink-0">
+                                  <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain" sizes="20px" />
+                                </div>
+                              )}
+                              {app.name}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
