@@ -66,9 +66,9 @@ export function ToolsTable({ tools, onActionComplete }: ToolsTableProps) {
                     <TableRow key={tool.id} className="hover:bg-muted/30 transition-colors">
                     <TableCell className="font-medium">
                         <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-lg ${tool.bg_color} ${tool.color} flex items-center justify-center overflow-hidden`}>
+                            <div className={`relative w-8 h-8 rounded-lg ${tool.bg_color || 'bg-gray-100'} flex items-center justify-center overflow-hidden shrink-0`}>
                                 {tool.image_path ? (
-                                  <StorageImage imagePath={tool.image_path} alt={tool.title} fill className="object-contain p-1" sizes="32px" />
+                                  <StorageImage imagePath={tool.image_path} alt={tool.title} fill className="object-contain" sizes="32px" />
                                 ) : (
                                   getIcon(tool.icon)
                                 )}
@@ -106,9 +106,9 @@ export function ToolsTable({ tools, onActionComplete }: ToolsTableProps) {
             <Card key={tool.id}>
                 <CardHeader>
                     <div className="flex items-center gap-3">
-                         <div className={`w-10 h-10 rounded-lg ${tool.bg_color} ${tool.color} flex items-center justify-center overflow-hidden`}>
+                         <div className={`relative w-10 h-10 rounded-lg ${tool.bg_color || 'bg-gray-100'} flex items-center justify-center overflow-hidden shrink-0`}>
                             {tool.image_path ? (
-                              <StorageImage imagePath={tool.image_path} alt={tool.title} fill className="object-contain p-1" sizes="40px" />
+                              <StorageImage imagePath={tool.image_path} alt={tool.title} fill className="object-contain" sizes="40px" />
                             ) : (
                               getIcon(tool.icon)
                             )}
