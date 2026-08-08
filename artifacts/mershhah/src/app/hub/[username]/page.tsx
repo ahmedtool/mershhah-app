@@ -11,7 +11,9 @@ import {
     Star,
     Share2,
     Info,
-    Ticket
+    Ticket,
+    Loader2,
+    Crosshair
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { supabase } from '@/lib/supabase';
@@ -43,6 +45,18 @@ const SOCIAL_COLORS: { [key: string]: string } = {
     website: '#714dfa',
 };
 
+function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export default function RestaurantHubPage() {
   const params = useParams();
   const username = params.username as string;
@@ -52,6 +66,9 @@ export default function RestaurantHubPage() {
   const [offers, setOffers] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<any>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locationDenied, setLocationDenied] = useState(false);
   const [loading, setLoading] = useState(true);
   const recordedViewOfferIds = useRef<Set<string>>(new Set());
   const searchParams = useSearchParams();
@@ -149,6 +166,35 @@ export default function RestaurantHubPage() {
 
     return () => { supabase.removeChannel(channel); };
   }, [username]);
+
+  const detectLocation = () => {
+    if (!navigator.geolocation || branches.length === 0) return;
+    setLocating(true);
+    setLocationDenied(false);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setUserLocation(loc);
+        setLocating(false);
+
+        const branchesWithApps = branches.filter((b: any) => b.applications?.length > 0);
+        if (branchesWithApps.length === 0) return;
+
+        const sorted = [...branchesWithApps].sort((a: any, b: any) => {
+          const distA = a.latitude && a.longitude ? haversineDistance(loc.lat, loc.lng, a.latitude, a.longitude) : Infinity;
+          const distB = b.latitude && b.longitude ? haversineDistance(loc.lat, loc.lng, b.latitude, b.longitude) : Infinity;
+          return distA - distB;
+        });
+
+        setSelectedBranch(sorted[0]);
+      },
+      () => {
+        setLocating(false);
+        setLocationDenied(true);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   const handleOfferClick = async (offer: { id: string; external_link?: string | null }) => {
     if (!restaurant?.id) return;
@@ -261,34 +307,153 @@ export default function RestaurantHubPage() {
         {/* المحتوى */}
         <div className="px-4 py-6 space-y-6">
           
-          {/* اختيار الفرع */}
-          {branches.length > 0 && (
+          {/* فرع واحد فقط - التطبيقات تظهر مباشرة */}
+          {branches.length === 1 && branches[0].applications?.length > 0 && (
             <section className="space-y-3">
-              <h3 className="font-black text-sm text-gray-500 px-1 text-right">اختر فرعك</h3>
-              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                <button
-                  type="button"
-                  onClick={() => setSelectedBranch(null)}
-                  className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold transition-all border ${
-                    !selectedBranch ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  الكل
-                </button>
-                {branches.map((branch) => (
-                  <button
-                    key={branch.id}
-                    type="button"
-                    onClick={() => setSelectedBranch(branch)}
-                    className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
-                      selectedBranch?.id === branch.id ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <MapPin className="h-3 w-3" />
-                    {branch.name}
-                  </button>
+              <div className="flex items-center gap-2 px-1">
+                <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                <h3 className="font-black text-sm text-gray-500">{branches[0].name}</h3>
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                {branches[0].applications.map((app: any, idx: number) => (
+                  <a key={app.id || idx} href={app.value || '#'} target="_blank" rel="noopener noreferrer"
+                    onClick={() => restaurant.id && trackAppClick(restaurant.id, app.name || 'unknown')}
+                    className="aspect-square bg-white border border-gray-100 rounded-2xl p-3 flex items-center justify-center hover:shadow-md transition-all">
+                    <div className="relative w-full h-full">
+                      <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain" sizes="64px" />
+                    </div>
+                  </a>
                 ))}
               </div>
+            </section>
+          )}
+
+          {/* أكثر من فرع - كشف الموقع */}
+          {branches.length > 1 && (
+            <section className="space-y-3">
+              {!selectedBranch ? (
+                <div className="text-center space-y-3 py-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto">
+                    <MapPin className="h-6 w-6 text-gray-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">اختر فرعك القريب</p>
+                    <p className="text-[11px] text-gray-400 mt-1">حدد موقعك لنعرض أقرب فرع وتطبيقاته</p>
+                  </div>
+                  <button
+                    onClick={detectLocation}
+                    disabled={locating}
+                    className="h-11 px-6 rounded-xl text-white text-sm font-bold transition-all flex items-center justify-center gap-2 mx-auto disabled:opacity-50"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    {locating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        جاري تحديد الموقع...
+                      </>
+                    ) : (
+                      <>
+                        <Crosshair className="h-4 w-4" />
+                        حدد موقعي
+                      </>
+                    )}
+                  </button>
+                  {locationDenied && (
+                    <p className="text-[10px] text-red-400">يرجى تفعيل خدمات الموقع من إعدادات المتصفح</p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-3.5 w-3.5 text-gray-400" />
+                      <h3 className="font-black text-sm text-gray-500">أقرب فرع</h3>
+                    </div>
+                    <button onClick={() => { setSelectedBranch(null); setUserLocation(null); }}
+                      className="text-[10px] text-gray-400 hover:text-gray-600">
+                      تغيير
+                    </button>
+                  </div>
+
+                  {/* البطاقة الرئيسية */}
+                  <div className="bg-white border border-gray-100 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: primaryColor }}>
+                          الأقرب لك
+                        </span>
+                        <h4 className="text-sm font-bold text-gray-900">{selectedBranch.name}</h4>
+                      </div>
+                      {selectedBranch.opening_hours && (
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+                          مفتوح
+                        </span>
+                      )}
+                    </div>
+                    {selectedBranch.address && (
+                      <p className="text-[11px] text-gray-400">{selectedBranch.address}</p>
+                    )}
+                    {selectedBranch.applications?.length > 0 && (
+                      <div className="grid grid-cols-4 gap-2 pt-1">
+                        {selectedBranch.applications.map((app: any, idx: number) => (
+                          <a key={app.id || idx} href={app.value || '#'} target="_blank" rel="noopener noreferrer"
+                            onClick={() => restaurant.id && trackAppClick(restaurant.id, app.name || 'unknown')}
+                            className="aspect-square bg-gray-50 border border-gray-100 rounded-xl p-2 flex items-center justify-center hover:shadow-sm transition-all">
+                            <div className="relative w-full h-full">
+                              <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain" sizes="48px" />
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* فروع أخرى قريبة */}
+                  {(() => {
+                    if (!userLocation) return null;
+                    const otherBranches = branches
+                      .filter((b: any) => b.id !== selectedBranch.id && b.applications?.length > 0)
+                      .map((b: any) => ({
+                        ...b,
+                        distance: b.latitude && b.longitude
+                          ? haversineDistance(userLocation.lat, userLocation.lng, b.latitude, b.longitude)
+                          : Infinity
+                      }))
+                      .filter((b: any) => b.distance < 50)
+                      .sort((a: any, b: any) => a.distance - b.distance)
+                      .slice(0, 4);
+
+                    if (otherBranches.length === 0) return null;
+
+                    return (
+                      <div className="space-y-2">
+                        <p className="text-[10px] text-gray-400 font-medium px-1">فروع أخرى قريبة</p>
+                        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 snap-x snap-mandatory">
+                          {otherBranches.map((branch: any) => (
+                            <button key={branch.id} onClick={() => setSelectedBranch(branch)}
+                              className="shrink-0 snap-center bg-white border border-gray-100 rounded-xl p-3 text-right min-w-[140px] hover:border-gray-200 transition-all">
+                              <p className="text-xs font-bold text-gray-900 truncate">{branch.name}</p>
+                              <p className="text-[10px] text-gray-400 mt-0.5">
+                                {branch.distance < 1 ? `${Math.round(branch.distance * 1000)} م` : `${branch.distance.toFixed(1)} كم`}
+                              </p>
+                              <div className="flex gap-1 mt-2">
+                                {branch.applications.slice(0, 3).map((app: any, idx: number) => (
+                                  <div key={idx} className="w-5 h-5 rounded bg-gray-50 flex items-center justify-center">
+                                    <StorageImage imagePath={app.logo} alt={app.name} width={16} height={16} className="object-contain" />
+                                  </div>
+                                ))}
+                                {branch.applications.length > 3 && (
+                                  <span className="text-[8px] text-gray-400 self-center">+{branch.applications.length - 3}</span>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </section>
           )}
 
@@ -392,38 +557,22 @@ export default function RestaurantHubPage() {
             </div>
           </section>
 
-          {/* التطبيقات */}
-          {(() => {
-            const activeApps = selectedBranch?.applications?.length > 0
-              ? selectedBranch.applications
-              : restaurant.applications || [];
-            
+          {/* التطبيقات - للمطعم بدون فروع */}
+          {branches.length === 0 && (() => {
+            const activeApps = restaurant.applications || [];
             if (activeApps.length === 0) return null;
-
             return (
               <section className="space-y-3">
-                <h3 className="font-black text-sm text-gray-500 px-1 text-right">
-                  {selectedBranch ? `تطبيقات ${selectedBranch.name}` : 'التطبيقات'}
-                </h3>
+                <h3 className="font-black text-sm text-gray-500 px-1 text-right">التطبيقات</h3>
                 <div className="grid grid-cols-4 gap-3">
                   {activeApps.map((app: any, idx: number) => (
-                    <Link 
-                      key={app.id || idx} 
-                      href={app.value || '#'} 
-                      target="_blank" 
+                    <a key={app.id || idx} href={app.value || '#'} target="_blank" rel="noopener noreferrer"
                       onClick={() => restaurant.id && trackAppClick(restaurant.id, app.name || 'unknown')}
-                      className="aspect-square bg-white border border-gray-100 rounded-2xl p-3 flex items-center justify-center hover:shadow-md transition-all"
-                    >
+                      className="aspect-square bg-white border border-gray-100 rounded-2xl p-3 flex items-center justify-center hover:shadow-md transition-all">
                       <div className="relative w-full h-full">
-                        <StorageImage 
-                          imagePath={app.logo} 
-                          alt={app.name} 
-                          fill 
-                          className="object-contain" 
-                          sizes="64px" 
-                        />
+                        <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain" sizes="64px" />
                       </div>
-                    </Link>
+                    </a>
                   ))}
                 </div>
               </section>
