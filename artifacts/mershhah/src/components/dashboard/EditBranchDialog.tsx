@@ -14,9 +14,6 @@ import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
 import { extractFromGoogleMapsUrl } from '@/lib/geocoding';
 import saGeodata from '@/data/sa-geodata.json';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import type { Branch } from '@/lib/types';
 
 const schema = z.object({
@@ -75,6 +72,10 @@ export function EditBranchDialog({
   const [fridayClose, setFridayClose] = useState('');
   const [branchApps, setBranchApps] = useState<any[]>([]);
   const [globalApps, setGlobalApps] = useState<any[]>([]);
+  const [citySearch, setCitySearch] = useState('');
+  const [cityOpen, setCityOpen] = useState(false);
+  const [districtSearch, setDistrictSearch] = useState('');
+  const [districtOpen, setDistrictOpen] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -87,6 +88,14 @@ export function EditBranchDialog({
   const city = form.watch('city');
   const districts = (saGeodata as Record<string, string[]>)[city] ?? [];
 
+  const filteredCities = citySearch
+    ? cities.filter(c => c.includes(citySearch))
+    : cities;
+
+  const filteredDistricts = districtSearch
+    ? districts.filter(d => d.includes(districtSearch))
+    : districts;
+
   useEffect(() => {
     if (!open) return;
     if (branch) {
@@ -95,10 +104,14 @@ export function EditBranchDialog({
         phone: branch.phone ?? '', opening_hours: branch.opening_hours ?? '',
         status: branch.status ?? 'active', latitude: branch.latitude ?? null, longitude: branch.longitude ?? null,
       });
+      setCitySearch(branch.city || '');
+      setDistrictSearch(branch.district || '');
       setBranchApps(Array.isArray(branch.applications) ? branch.applications : []);
       setMapsUrl('');
     } else {
       form.reset({ name: '', city: '', district: '', phone: '', opening_hours: '', status: 'active', latitude: null, longitude: null });
+      setCitySearch('');
+      setDistrictSearch('');
       setBranchApps([]);
       setMapsUrl('');
     }
@@ -200,34 +213,77 @@ export function EditBranchDialog({
 
             {/* City & District */}
             <div className="grid grid-cols-2 gap-3">
-              <FormField control={form.control} name="city" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-gray-500">المدينة</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="h-10 rounded-xl border-gray-200 text-sm"><SelectValue placeholder="اختر" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-[10px]" />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="district" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-gray-500">الحي</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={!city || districts.length === 0}>
-                    <FormControl>
-                      <SelectTrigger className="h-10 rounded-xl border-gray-200 text-sm"><SelectValue placeholder="اختر" /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {districts.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-[10px]" />
-                </FormItem>
-              )} />
+              {/* City Searchable */}
+              <div className="space-y-1.5">
+                <FormLabel className="text-xs text-gray-500">المدينة</FormLabel>
+                <div className="relative">
+                  <Input
+                    value={citySearch}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCitySearch(val);
+                      form.setValue('city', val, { shouldDirty: true });
+                      form.setValue('district', '', { shouldDirty: true });
+                    }}
+                    onFocus={() => setCityOpen(true)}
+                    onBlur={() => setTimeout(() => setCityOpen(false), 200)}
+                    placeholder="ابحث عن مدينة..."
+                    className="h-10 rounded-xl border-gray-200 text-sm"
+                    disabled={saving}
+                  />
+                  {cityOpen && filteredCities.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                      {filteredCities.map(c => (
+                        <button key={c} type="button"
+                          onClick={() => {
+                            form.setValue('city', c, { shouldDirty: true });
+                            form.setValue('district', '', { shouldDirty: true });
+                            setCitySearch(c);
+                            setCityOpen(false);
+                          }}
+                          className="w-full text-right px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* District Searchable */}
+              <div className="space-y-1.5">
+                <FormLabel className="text-xs text-gray-500">الحي</FormLabel>
+                <div className="relative">
+                  <Input
+                    value={districtSearch}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setDistrictSearch(val);
+                      form.setValue('district', val, { shouldDirty: true });
+                    }}
+                    onFocus={() => setDistrictOpen(true)}
+                    onBlur={() => setTimeout(() => setDistrictOpen(false), 200)}
+                    placeholder={city ? "ابحث عن حي..." : "اختر المدينة أولاً"}
+                    className="h-10 rounded-xl border-gray-200 text-sm"
+                    disabled={saving || !city}
+                  />
+                  {districtOpen && filteredDistricts.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                      {filteredDistricts.map(d => (
+                        <button key={d} type="button"
+                          onClick={() => {
+                            form.setValue('district', d, { shouldDirty: true });
+                            setDistrictSearch(d);
+                            setDistrictOpen(false);
+                          }}
+                          className="w-full text-right px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Phone */}
