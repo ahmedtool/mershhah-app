@@ -233,6 +233,16 @@ export type Tool = {
    * إذا لم يتم تحديدها، يتم اعتباره شهراً واحداً عند التفعيل.
    */
   period_months?: number | null;
+  // Integration fields
+  integration_url?: string | null;
+  config_schema?: any;
+  permissions?: string[];
+  version?: string;
+  developer_name?: string | null;
+  developer_url?: string | null;
+  screenshots?: string[];
+  avg_rating?: number;
+  total_installs?: number;
 };
 
 export type Application = {
@@ -247,6 +257,26 @@ export type ActivatedTool = {
     tool_id: string;
     activated_at: any;
     expires_at: any;
+    config?: Record<string, any>;
+    installed_by?: string;
+};
+
+export type ToolReview = {
+    id: string;
+    tool_id: string;
+    profile_id: string;
+    rating: number;
+    review?: string;
+    created_at: any;
+};
+
+export type ToolLog = {
+    id: string;
+    tool_id: string;
+    profile_id: string;
+    action: string;
+    metadata?: Record<string, any>;
+    created_at: any;
 };
 
 export type Review = {

@@ -47,10 +47,13 @@ export default function StoreDevelopersPage() {
                   <li><span className="font-semibold text-foreground">description</span>: وصف قصير يشرح فائدة الأداة وكيف تساعد المطعم.</li>
                   <li><span className="font-semibold text-foreground">category</span>: تصنيف عام للأداة مثل <code className="px-1 py-0.5 rounded bg-muted text-xs">marketing</code> أو <code className="px-1 py-0.5 rounded bg-muted text-xs">operations</code> أو <code className="px-1 py-0.5 rounded bg-muted text-xs">analytics</code>.</li>
                   <li><span className="font-semibold text-foreground">price_label</span>: عبارة نصية تظهر كسعر مختصر (مثال: <span className="font-semibold">مجاني</span>، <span className="font-semibold">50 ر.س / شهر</span>).</li>
-                  <li><span className="font-semibold text-foreground">icon</span>: اسم أيقونة من مكتبة <code className="px-1 py-0.5 rounded bg-muted text-xs">Lucide</code> (مثل <code className="px-1 py-0.5 rounded bg-muted text-xs">BarChart3</code>, <code className="px-1 py-0.5 rounded bg-muted text-xs">Megaphone</code>).</li>
+                  <li><span className="font-semibold text-foreground">icon</span>: اسم أيقونة مناسبة من مكتبة <code className="px-1 py-0.5 rounded bg-muted text-xs">Lucide</code> (مثل <code className="px-1 py-0.5 rounded bg-muted text-xs">BarChart3</code>, <code className="px-1 py-0.5 rounded bg-muted text-xs">Megaphone</code>).</li>
                   <li><span className="font-semibold text-foreground">color</span>: كلاس لون نص يبدأ بـ <code className="px-1 py-0.5 rounded bg-muted text-xs">text-</code> (مثال: <code className="px-1 py-0.5 rounded bg-muted text-xs">text-primary</code> أو <code className="px-1 py-0.5 rounded bg-muted text-xs">text-blue-500</code>).</li>
                   <li><span className="font-semibold text-foreground">bg_color</span>: كلاس لون خلفية يبدأ بـ <code className="px-1 py-0.5 rounded bg-muted text-xs">bg-</code> (مثال: <code className="px-1 py-0.5 rounded bg-muted text-xs">bg-primary/10</code>).</li>
                   <li><span className="font-semibold text-foreground">popular</span>: قيمة منطقية تحدد هل الأداة مميزة / مقترحة لصاحب المطعم.</li>
+                  <li><span className="font-semibold text-foreground">integration_url</span>: رابط الـ API أو لوحة الإعدادات الخاصة بالأداة (اختياري).</li>
+                  <li><span className="font-semibold text-foreground">developer_name</span>: اسم المطور أو الشركة (اختياري).</li>
+                  <li><span className="font-semibold text-foreground">version</span>: إصدار الأداة (مثال: <code className="px-1 py-0.5 rounded bg-muted text-xs">1.0.0</code>).</li>
                 </ul>
               </CardContent>
             </Card>
@@ -68,12 +71,14 @@ export default function StoreDevelopersPage() {
               <CardContent className="space-y-4 text-sm text-muted-foreground">
                 <p>
                   عند تفعيل الأداة لمطعم معيّن، يستطيع النظام لاحقاً استهلاك تعريفك البرمجي (API أو Webhook) لتنفيذ الوظائف الفعلية للأداة.
-                  في الإصدارات القادمة سيتم إضافة حقول مثل:
+                  الحقول المتاحة حالياً:
                 </p>
                 <ul className="list-disc pr-5 space-y-1">
                   <li><span className="font-semibold text-foreground">integration_url</span>: رابط الـ API أو لوحة الإعدادات الخاصة بالأداة.</li>
                   <li><span className="font-semibold text-foreground">config_schema</span>: JSON يوضح إعدادات الأداة التي يحتاج صاحب المطعم لتعبئتها.</li>
                   <li><span className="font-semibold text-foreground">permissions</span>: ما الذي تحتاجه الأداة من صلاحيات داخل مرشح (قراءة منيو، كتابة عروض، ...).</li>
+                  <li><span className="font-semibold text-foreground">developer_name</span>: اسم المطور أو الشركة المطورة للأداة.</li>
+                  <li><span className="font-semibold text-foreground">version</span>: إصدار الأداة للتمييز بين التحديثات.</li>
                 </ul>
                 <p className="text-xs text-muted-foreground flex items-start gap-1">
                   <Info className="h-3 w-3 mt-0.5" />

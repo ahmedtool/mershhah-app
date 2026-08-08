@@ -28,6 +28,10 @@ const formSchema = z.object({
   popular: z.boolean().default(false),
   billing_type: z.enum(["plan", "addon"]).default("plan"),
   period_months: z.coerce.number().int().min(1, "المدة يجب أن تكون شهراً واحداً على الأقل.").nullable().optional(),
+  integration_url: z.string().url("رابط غير صحيح").or(z.literal("")).optional(),
+  developer_name: z.string().optional(),
+  developer_url: z.string().url("رابط غير صحيح").or(z.literal("")).optional(),
+  version: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -82,6 +86,10 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
         id: tool.id,
         billing_type: tool.billing_type || "plan",
         period_months: tool.period_months ?? (tool.billing_type === "addon" ? 1 : null),
+        integration_url: tool.integration_url || "",
+        developer_name: tool.developer_name || "",
+        developer_url: tool.developer_url || "",
+        version: tool.version || "1.0.0",
       } : {
         id: "",
         title: "",
@@ -94,6 +102,10 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
         popular: false,
         billing_type: "plan",
         period_months: null,
+        integration_url: "",
+        developer_name: "",
+        developer_url: "",
+        version: "1.0.0",
       });
       setPreviewImage(tool?.image_path || null);
       setLocalImageFile(null);
@@ -360,6 +372,43 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
                 </button>
               </FormItem>
             )} />
+
+            {/* Integration Fields */}
+            <div className="rounded-xl bg-gray-50 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Code2 className="h-4 w-4 text-gray-400" />
+                <span className="text-xs font-bold text-gray-600">معلومات التكامل</span>
+              </div>
+              <FormField control={form.control} name="integration_url" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-[10px] text-gray-500">رابط التكامل (API)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://api.example.com/webhook" {...field} className="h-9 rounded-lg border-gray-200 text-[11px]" dir="ltr" disabled={isSaving} />
+                  </FormControl>
+                  <FormMessage className="text-[10px]" />
+                </FormItem>
+              )} />
+              <div className="grid grid-cols-2 gap-2">
+                <FormField control={form.control} name="developer_name" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] text-gray-500">اسم المطور</FormLabel>
+                    <FormControl>
+                      <Input placeholder="اسم الشركة أو المطور" {...field} className="h-9 rounded-lg border-gray-200 text-[11px]" disabled={isSaving} />
+                    </FormControl>
+                    <FormMessage className="text-[10px]" />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="version" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] text-gray-500">الإصدار</FormLabel>
+                    <FormControl>
+                      <Input placeholder="1.0.0" {...field} className="h-9 rounded-lg border-gray-200 text-[11px]" dir="ltr" disabled={isSaving} />
+                    </FormControl>
+                    <FormMessage className="text-[10px]" />
+                  </FormItem>
+                )} />
+              </div>
+            </div>
 
             {/* Developer Info */}
             <div className="rounded-xl bg-gray-50 p-4 space-y-2">

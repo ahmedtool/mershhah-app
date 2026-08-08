@@ -222,7 +222,7 @@ export default function ToolsStorePage() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => handleInstallClick(tool)}
+                      onClick={() => processFreeInstallation(tool)}
                       disabled={!!installing}
                       className="w-full h-10 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >

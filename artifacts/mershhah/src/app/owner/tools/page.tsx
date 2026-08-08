@@ -1,14 +1,15 @@
 'use client';
 
 import PageHeader from "@/components/dashboard/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Wrench } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Wrench, Box, icons, Loader2, Clock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
+
+const iconMap: { [key: string]: React.ElementType } = { ...icons, Box };
 
 export default function OwnerToolsPage() {
     const { user } = useUser();
@@ -17,10 +18,35 @@ export default function OwnerToolsPage() {
 
     useEffect(() => {
         const fetchTools = async () => {
-            if (!user?.restaurantId) return;
+            if (!user?.id) return;
             try {
-                const { data } = await supabase.from('tools').select('*');
-                setTools(data || []);
+                const { data: activated } = await supabase
+                    .from('activated_tools')
+                    .select('tool_id, activated_at, expires_at, status')
+                    .eq('profile_id', user.id)
+                    .eq('status', 'active');
+
+                if (!activated || activated.length === 0) {
+                    setTools([]);
+                    return;
+                }
+
+                const toolIds = activated.map(a => a.tool_id);
+                const { data: toolsData } = await supabase
+                    .from('tools')
+                    .select('*')
+                    .in('id', toolIds);
+
+                const merged = (toolsData || []).map(tool => {
+                    const activation = activated.find(a => a.tool_id === tool.id);
+                    return {
+                        ...tool,
+                        activated_at: activation?.activated_at,
+                        expires_at: activation?.expires_at,
+                        Icon: iconMap[tool.icon] || Box,
+                    };
+                });
+                setTools(merged);
             } catch (error) {
                 console.error("Error fetching tools:", error);
             } finally {
@@ -29,6 +55,11 @@ export default function OwnerToolsPage() {
         };
         fetchTools();
     }, [user]);
+
+    const isExpired = (expiresAt?: string | null) => {
+        if (!expiresAt) return false;
+        return new Date(expiresAt) < new Date();
+    };
 
     return (
         <div className="flex flex-col gap-6 p-4">
@@ -40,24 +71,47 @@ export default function OwnerToolsPage() {
             ) : tools.length === 0 ? (
                 <Card>
                     <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
-                        <Wrench className="h-12 w-12 text-muted-foreground" />
-                        <p className="text-muted-foreground text-center">لا توجد أدوات مفعّلة حالياً</p>
-                        <Link href="/owner/store"><Button>استعراض المتجر</Button></Link>
+                        <Wrench className="h-12 w-12 text-gray-200" />
+                        <p className="text-gray-400 text-center text-sm">لا توجد أدوات مفعّلة حالياً</p>
+                        <Link href="/owner/store">
+                            <button className="h-10 px-5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors">
+                                متجر الأدوات
+                            </button>
+                        </Link>
                     </CardContent>
                 </Card>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {tools.map(tool => (
-                        <Card key={tool.id} className="hover:shadow-md transition-shadow">
-                            <CardHeader>
-                                <CardTitle>{tool.title}</CardTitle>
-                                <CardDescription>{tool.description}</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <Link href={`/owner/tools/${tool.id}`}><Button variant="outline" className="w-full">فتح الأداة</Button></Link>
-                            </CardContent>
-                        </Card>
-                    ))}
+                    {tools.map(tool => {
+                        const IconComp = tool.Icon;
+                        const expired = isExpired(tool.expires_at);
+                        return (
+                            <div key={tool.id} className="bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
+                                <div className={`p-4 text-center ${tool.bg_color || 'bg-gray-50'}`}>
+                                    <div className="w-12 h-12 rounded-xl bg-white/80 border border-white/50 flex items-center justify-center mx-auto mb-2">
+                                        <IconComp className={`h-6 w-6 ${tool.color || 'text-gray-600'}`} />
+                                    </div>
+                                    <h3 className="text-sm font-bold text-gray-900">{tool.title}</h3>
+                                </div>
+                                <div className="p-4 space-y-3">
+                                    <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-2">{tool.description}</p>
+                                    {tool.expires_at && (
+                                        <div className="flex items-center gap-1.5 text-[10px]">
+                                            <Clock className="h-3 w-3 text-gray-300" />
+                                            <span className={expired ? 'text-red-500 font-bold' : 'text-gray-400'}>
+                                                {expired ? 'منتهية الصلاحية' : `صالح حتى ${new Date(tool.expires_at).toLocaleDateString('ar-SA')}`}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <Link href={`/owner/tools/${tool.id}`}>
+                                        <button className="w-full h-9 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                                            فتح الأداة
+                                        </button>
+                                    </Link>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>
