@@ -144,8 +144,7 @@ export default function StoreDevelopersPage() {
 {`'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { supabase } from '@/lib/supabase';
 import { useUser } from '@/hooks/useUser';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -160,9 +159,12 @@ export default function SmartReviewsToolPage() {
 
     const run = async () => {
       setIsLoading(true);
-      const reviewsCol = collection(db, 'restaurants', user.restaurantId, 'reviews');
-      const snapshot = await getDocs(reviewsCol);
-      const docs = snapshot.docs.map(d => d.data() as { rating: number });
+      const { data } = await supabase
+        .from('reviews')
+        .select('rating')
+        .eq('restaurant_id', user.restaurantId);
+      
+      const docs = data || [];
       const count = docs.length;
       const avg = count ? docs.reduce((s, r) => s + (r.rating ?? 0), 0) / count : 0;
       setStats({ count, avg });
