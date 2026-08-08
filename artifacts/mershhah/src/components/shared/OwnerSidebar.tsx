@@ -8,9 +8,6 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-  SidebarMenuSub,
-  SidebarMenuSubItem,
-  SidebarMenuSubButton,
   SidebarMenuSkeleton,
 } from '@/components/ui/sidebar';
 import { useState, useEffect } from 'react';
@@ -25,7 +22,6 @@ import {
   MessageSquare,
   Ticket,
   Store,
-  ChevronDown,
   Box,
   Star,
   Building2,
@@ -35,13 +31,11 @@ import {
 import { Logo } from './Logo';
 import { Separator } from '../ui/separator';
 import { Link } from 'wouter';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 export function OwnerSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useUser();
-  const [isToolsOpen, setIsToolsOpen] = useState(true);
   const [activatedTools, setActivatedTools] = useState<any[]>([]);
   const [isLoadingTools, setIsLoadingTools] = useState(true);
 
@@ -119,37 +113,19 @@ export function OwnerSidebar() {
           ))}
 
           {(isLoadingTools || activatedTools.length > 0) && (
-            <Collapsible open={isToolsOpen} onOpenChange={setIsToolsOpen} className="group/collapsible">
-              <SidebarMenuItem>
-                <CollapsibleTrigger asChild>
-                  <SidebarMenuButton size="lg" className="h-10 px-3 text-[13px] font-bold text-gray-600 hover:bg-gray-50 justify-between rounded-lg">
-                    <span className="flex-1 text-right">أدواتي المفعلة</span>
-                    <ChevronDown className="h-4 w-4 text-gray-400 transition-transform group-data-[state=open]/collapsible:rotate-180" />
-                  </SidebarMenuButton>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    {isLoadingTools ? (
-                      <div className="p-2 space-y-1">
-                        <SidebarMenuSkeleton showIcon />
-                        <SidebarMenuSkeleton showIcon />
-                      </div>
-                    ) : (
-                      activatedTools.map((tool) => (
-                        <SidebarMenuSubItem key={tool.id}>
-                          <SidebarMenuSubButton asChild isActive={pathname === tool.href} className="h-9 text-xs font-bold text-gray-500 hover:text-gray-700 justify-start">
-                            <Link href={tool.href} className="flex-row-reverse w-full">
-                              <span className="flex-1 text-right">{tool.label}</span>
-                              <tool.icon className="h-4 w-4 shrink-0 text-gray-400" />
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))
-                    )}
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </SidebarMenuItem>
-            </Collapsible>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                size="lg"
+                isActive={pathname === '/owner/tools'}
+                className="h-10 px-3 text-[13px] font-bold text-gray-600 hover:bg-gray-50 hover:text-gray-900 data-[active=true]:bg-gray-50 data-[active=true]:text-gray-900 justify-start rounded-lg"
+              >
+                <Link href="/owner/tools" className="flex-row-reverse w-full">
+                  <span className="flex-1 text-right">أدواتي</span>
+                  <Wrench className="h-4 w-4 shrink-0 text-gray-400" />
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
           )}
 
           <Separator className="my-2 bg-gray-100" />
