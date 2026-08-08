@@ -30,8 +30,10 @@ ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS discount_amount numeri
 ALTER TABLE public.subscriptions ADD COLUMN IF NOT EXISTS updated_at timestamptz default now();
 
 -- 3. جدول الفواتير
+DROP TABLE IF EXISTS public.invoices CASCADE;
+
 CREATE TABLE IF NOT EXISTS public.invoices (
-  id text primary key default gen_random_uuid()::text,
+  id uuid primary key default gen_random_uuid(),
   profile_id uuid references public.profiles(id) on delete cascade,
   subscription_id text references public.subscriptions(id) on delete set null,
   streampay_invoice_id text,
@@ -47,8 +49,11 @@ CREATE TABLE IF NOT EXISTS public.invoices (
 );
 
 -- 4. جدول كوبونات الخصم
+DROP TABLE IF EXISTS public.discount_code_usage CASCADE;
+DROP TABLE IF EXISTS public.discount_codes CASCADE;
+
 CREATE TABLE IF NOT EXISTS public.discount_codes (
-  id text primary key default gen_random_uuid()::text,
+  id uuid primary key default gen_random_uuid(),
   code text unique not null,
   description text,
   discount_type text not null check (discount_type in ('percentage', 'fixed', 'free_trial')),
@@ -66,18 +71,18 @@ CREATE TABLE IF NOT EXISTS public.discount_codes (
 
 -- 5. جدول استخدام الكوبونات
 CREATE TABLE IF NOT EXISTS public.discount_code_usage (
-  id text primary key default gen_random_uuid()::text,
-  discount_code_id text references public.discount_codes(id) on delete cascade,
+  id uuid primary key default gen_random_uuid(),
+  discount_code_id uuid references public.discount_codes(id) on delete cascade,
   profile_id uuid references public.profiles(id) on delete cascade,
   subscription_id text references public.subscriptions(id) on delete set null,
-  invoice_id text references public.invoices(id) on delete set null,
+  invoice_id uuid references public.invoices(id) on delete set null,
   discount_amount numeric not null,
   created_at timestamptz default now()
 );
 
 -- 6. جدول سجل المعاملات المالية
 CREATE TABLE IF NOT EXISTS public.transactions (
-  id text primary key default gen_random_uuid()::text,
+  id uuid primary key default gen_random_uuid(),
   profile_id uuid references public.profiles(id) on delete cascade,
   type text not null check (type in ('subscription', 'tool_purchase', 'refund', 'adjustment')),
   amount numeric not null,
