@@ -20,13 +20,17 @@ export default function OwnerToolsPage() {
         const fetchTools = async () => {
             if (!user?.id) return;
             try {
-                // First try to get activated tools
+                // Get all activated tools for this user (without status filter)
                 const { data: activated, error: actError } = await supabase
                     .from('activated_tools')
                     .select('tool_id, activated_at, expires_at')
                     .eq('profile_id', user.id);
 
-                console.log('Activated tools:', activated, actError);
+                if (actError) {
+                    console.error('Error fetching activated tools:', actError);
+                    setTools([]);
+                    return;
+                }
 
                 if (!activated || activated.length === 0) {
                     setTools([]);
@@ -34,12 +38,14 @@ export default function OwnerToolsPage() {
                 }
 
                 const toolIds = activated.map(a => a.tool_id);
-                const { data: toolsData } = await supabase
+                const { data: toolsData, error: toolsError } = await supabase
                     .from('tools')
                     .select('*')
                     .in('id', toolIds);
 
-                console.log('Tools data:', toolsData);
+                if (toolsError) {
+                    console.error('Error fetching tools:', toolsError);
+                }
 
                 const merged = (toolsData || []).map(tool => {
                     const activation = activated.find(a => a.tool_id === tool.id);
