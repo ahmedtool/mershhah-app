@@ -27,6 +27,7 @@ export default function OwnerSupportPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showChat, setShowChat] = useState(false);
+  const msgChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchChats = async () => {
     if (!user?.id) return;
@@ -46,13 +47,20 @@ export default function OwnerSupportPage() {
         .channel('owner-admin-chats')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'chats', filter: `ownerId=eq.${user.id}` }, fetchChats)
         .subscribe();
-      return () => { supabase.removeChannel(channel); };
+      return () => {
+        supabase.removeChannel(channel);
+        if (msgChannelRef.current) supabase.removeChannel(msgChannelRef.current);
+      };
     } else if (!isUserLoading) {
       setIsLoadingChats(false);
     }
   }, [user, isUserLoading]);
 
   const selectChat = async (chat: ChatSession) => {
+    if (msgChannelRef.current) {
+      supabase.removeChannel(msgChannelRef.current);
+      msgChannelRef.current = null;
+    }
     setSelectedChat(chat);
     setShowChat(true);
     setIsLoadingMessages(true);
@@ -82,8 +90,7 @@ export default function OwnerSupportPage() {
         setMessages(prev => [...prev, payload.new as ChatMessage]);
       })
       .subscribe();
-
-    return () => { supabase.removeChannel(msgChannel); };
+    msgChannelRef.current = msgChannel;
   };
 
   useEffect(() => {

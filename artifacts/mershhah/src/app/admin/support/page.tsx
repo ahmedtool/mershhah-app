@@ -34,6 +34,7 @@ export default function AdminSupportPage() {
   const [showPicker, setShowPicker] = useState(false);
   const [restaurants, setRestaurants] = useState<any[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  const msgChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchChats = async () => {
     const { data, error } = await supabase
@@ -50,10 +51,17 @@ export default function AdminSupportPage() {
       .channel('admin-chats-all')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, fetchChats)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+      if (msgChannelRef.current) supabase.removeChannel(msgChannelRef.current);
+    };
   }, []);
 
   const selectChat = async (chat: ChatSession) => {
+    if (msgChannelRef.current) {
+      supabase.removeChannel(msgChannelRef.current);
+      msgChannelRef.current = null;
+    }
     setSelectedChat(chat);
     setShowChat(true);
     setIsLoadingMessages(true);
@@ -83,8 +91,7 @@ export default function AdminSupportPage() {
         setMessages(prev => [...prev, payload.new as ChatMessage]);
       })
       .subscribe();
-
-    return () => { supabase.removeChannel(msgChannel); };
+    msgChannelRef.current = msgChannel;
   };
 
   useEffect(() => {
