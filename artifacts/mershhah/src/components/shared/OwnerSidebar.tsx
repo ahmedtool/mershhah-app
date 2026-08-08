@@ -30,6 +30,7 @@ import {
   Star,
   Building2,
   BarChart3,
+  Wrench,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { Separator } from '../ui/separator';
@@ -52,6 +53,7 @@ export function OwnerSidebar() {
     { href: '/owner/reviews', label: 'التقييمات', icon: Star },
     { href: '/owner/branches', label: 'إدارة الفروع', icon: Building2 },
     { href: '/owner/customize', label: 'تخصيص الواجهة', icon: Settings },
+    { href: '/owner/tools', label: 'أدواتي', icon: Wrench },
     { href: '/owner/store', label: 'متجر الأدوات', icon: Store },
   ];
 

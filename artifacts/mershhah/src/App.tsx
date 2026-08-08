@@ -34,6 +34,7 @@ import MarketingCalendarPage from "@/app/owner/tools/marketing-calendar/page";
 import ReplyTemplatesPage from "@/app/owner/tools/reply-templates/page";
 import SummarizeFeedbackPage from "@/app/owner/tools/summarize-feedback/page";
 import WeeklyContentWriterPage from "@/app/owner/tools/weekly-content-writer/page";
+import SalaryCalculatorPage from "@/app/owner/tools/salary-calculator/page";
 import OwnerSupportPage from "@/app/owner/support/page";
 
 
@@ -96,6 +97,7 @@ function OwnerRoutes({ params }: { params?: any }) {
         <Route path="/owner/tools/reply-templates" component={ReplyTemplatesPage} />
         <Route path="/owner/tools/summarize-feedback" component={SummarizeFeedbackPage} />
         <Route path="/owner/tools/weekly-content-writer" component={WeeklyContentWriterPage} />
+        <Route path="/owner/tools/salary-calculator" component={SalaryCalculatorPage} />
         <Route path="/owner/tools/:toolId" component={OwnerToolDetailPage} />
         <Route path="/owner/tools" component={OwnerToolsPage} />
         <Route path="/owner/support" component={OwnerSupportPage} />

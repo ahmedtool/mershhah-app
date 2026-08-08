@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Wrench, Box, icons, Loader2, Clock, Settings, ExternalLink, ArrowRight } from "lucide-react";
-import { useParams, Link } from 'wouter';
+import { useParams, Link, useLocation } from 'wouter';
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { useUser } from "@/hooks/useUser";
