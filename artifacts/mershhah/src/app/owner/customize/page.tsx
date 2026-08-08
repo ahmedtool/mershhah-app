@@ -406,7 +406,11 @@ export default function CustomizePage() {
                                 })()}
                             />
                             <p className="text-[10px] text-gray-300">
-                                /hub/{settings.username || '...'} — مرة كل 30 يوماً
+                                {settings.username ? (
+                                  <>mershhah.com/hub/{settings.username} أو <span className="font-semibold">{settings.username}</span>.mershhah.com</>
+                                ) : (
+                                  '/hub/...'
+                                )} — مرة كل 30 يوماً
                             </p>
                         </div>
                         <div className="space-y-1.5">

@@ -207,12 +207,21 @@ export default function InsightsHubPage() {
                             <p className="text-[10px] text-gray-400 font-medium">الرابط الذكي</p>
                             <div className="flex gap-2 items-center flex-wrap">
                                 <code className="text-xs text-gray-500 bg-gray-50 border border-gray-100 px-3 py-2 rounded-xl break-all">
-                                    {(import.meta.env.VITE_APP_URL || '').replace(/\/$/, '') || '...'}/hub/{hubUsername}
+                                    {hubUsername}.mershhah.com
                                 </code>
                                 <Button size="sm" variant="outline" className="h-8 rounded-xl text-xs border-gray-200" onClick={() => {
+                                    navigator.clipboard.writeText(`${hubUsername}.mershhah.com`);
+                                    toast({ title: 'تم نسخ الرابط' });
+                                }}><Copy className="h-3 w-3 ml-1" /> نسخ</Button>
+                            </div>
+                            <div className="flex gap-2 items-center flex-wrap mt-1">
+                                <code className="text-[10px] text-gray-400 bg-gray-50 border border-gray-100 px-3 py-2 rounded-xl break-all">
+                                    {(import.meta.env.VITE_APP_URL || '').replace(/\/$/, '') || '...'}/hub/{hubUsername}
+                                </code>
+                                <Button size="sm" variant="outline" className="h-7 rounded-xl text-[10px] border-gray-200" onClick={() => {
                                     const url = `${(import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, '')}/hub/${hubUsername}`;
                                     navigator.clipboard.writeText(url);
-                                    toast({ title: 'تم نسخ الرابط' });
+                                    toast({ title: 'تم نسخ الرابط القديم' });
                                 }}><Copy className="h-3 w-3 ml-1" /> نسخ</Button>
                             </div>
                         </div>
