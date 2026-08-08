@@ -77,36 +77,7 @@ import OAuthConsentPage from "@/app/oauth/consent/page";
 
 const queryClient = new QueryClient();
 
-function OwnerRoutes({ params }: { params?: any }) {
-  return (
-    <OwnerLayout>
-      <Switch>
-        <Route path="/owner/dashboard" component={OwnerDashboardPage} />
-        <Route path="/owner/menu" component={OwnerMenuPage} />
-        <Route path="/owner/offers" component={OwnerOffersPage} />
-        <Route path="/owner/customize" component={OwnerCustomizePage} />
-        <Route path="/owner/branches" component={OwnerBranchesPage} />
-        <Route path="/owner/reviews" component={OwnerReviewsPage} />
-        <Route path="/owner/settings" component={OwnerSettingsPage} />
-        <Route path="/owner/store" component={OwnerStorePage} />
-        <Route path="/owner/pricing" component={OwnerPricingPage} />
-        <Route path="/owner/tickets/:ticketId" component={OwnerTicketDetailPage} />
-        <Route path="/owner/tickets" component={OwnerTicketsPage} />
-        <Route path="/owner/tools/daily-pulse-dashboard" component={DailyPulsePage} />
-        <Route path="/owner/tools/marketing-calendar" component={MarketingCalendarPage} />
-        <Route path="/owner/tools/reply-templates" component={ReplyTemplatesPage} />
-        <Route path="/owner/tools/summarize-feedback" component={SummarizeFeedbackPage} />
-        <Route path="/owner/tools/weekly-content-writer" component={WeeklyContentWriterPage} />
-        <Route path="/owner/tools/salary-calculator" component={SalaryCalculatorPage} />
-        <Route path="/owner/tools/:toolId" component={OwnerToolDetailPage} />
-        <Route path="/owner/tools" component={OwnerToolsPage} />
-        <Route path="/owner/support" component={OwnerSupportPage} />
-
-        <Route component={NotFoundPage} />
-      </Switch>
-    </OwnerLayout>
-  );
-}
+const OW = ({ children }: { children: React.ReactNode }) => <OwnerLayout>{children}</OwnerLayout>;
 
 function Router() {
   return (
@@ -136,7 +107,26 @@ function Router() {
       <Route path="/branches/:username" component={BranchesPublicPage} />
       <Route path="/chat/:username" component={ChatPage} />
       <Route path="/reviews/:username" component={ReviewsPublicPage} />
-      <Route path="/owner/:rest*" component={OwnerRoutes} />
+      <Route path="/owner/dashboard" component={() => <OW><OwnerDashboardPage /></OW>} />
+      <Route path="/owner/menu" component={() => <OW><OwnerMenuPage /></OW>} />
+      <Route path="/owner/offers" component={() => <OW><OwnerOffersPage /></OW>} />
+      <Route path="/owner/customize" component={() => <OW><OwnerCustomizePage /></OW>} />
+      <Route path="/owner/branches" component={() => <OW><OwnerBranchesPage /></OW>} />
+      <Route path="/owner/reviews" component={() => <OW><OwnerReviewsPage /></OW>} />
+      <Route path="/owner/settings" component={() => <OW><OwnerSettingsPage /></OW>} />
+      <Route path="/owner/store" component={() => <OW><OwnerStorePage /></OW>} />
+      <Route path="/owner/pricing" component={() => <OW><OwnerPricingPage /></OW>} />
+      <Route path="/owner/tickets/:ticketId" component={() => <OW><OwnerTicketDetailPage /></OW>} />
+      <Route path="/owner/tickets" component={() => <OW><OwnerTicketsPage /></OW>} />
+      <Route path="/owner/tools/daily-pulse-dashboard" component={() => <OW><DailyPulsePage /></OW>} />
+      <Route path="/owner/tools/marketing-calendar" component={() => <OW><MarketingCalendarPage /></OW>} />
+      <Route path="/owner/tools/reply-templates" component={() => <OW><ReplyTemplatesPage /></OW>} />
+      <Route path="/owner/tools/summarize-feedback" component={() => <OW><SummarizeFeedbackPage /></OW>} />
+      <Route path="/owner/tools/weekly-content-writer" component={() => <OW><WeeklyContentWriterPage /></OW>} />
+      <Route path="/owner/tools/salary-calculator" component={() => <OW><SalaryCalculatorPage /></OW>} />
+      <Route path="/owner/tools/:toolId" component={() => <OW><OwnerToolDetailPage /></OW>} />
+      <Route path="/owner/tools" component={() => <OW><OwnerToolsPage /></OW>} />
+      <Route path="/owner/support" component={() => <OW><OwnerSupportPage /></OW>} />
       <Route path="/admin/dashboard" component={() => <AdminLayout><AdminDashboardPage /></AdminLayout>} />
       <Route path="/admin/management" component={() => <AdminLayout><AdminManagementPage /></AdminLayout>} />
       <Route path="/admin/plans" component={() => <AdminLayout><AdminPlansPage /></AdminLayout>} />
