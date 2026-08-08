@@ -27,6 +27,7 @@ import {
   Building2,
   BarChart3,
   Wrench,
+  CreditCard,
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { Separator } from '../ui/separator';
@@ -49,6 +50,7 @@ export function OwnerSidebar() {
     { href: '/owner/customize', label: 'تخصيص الواجهة', icon: Settings },
     { href: '/owner/tools', label: 'أدواتي', icon: Wrench },
     { href: '/owner/store', label: 'متجر الأدوات', icon: Store },
+    { href: '/owner/billing', label: 'الفواتير والاشتراكات', icon: CreditCard },
   ];
 
   const supportItems = [

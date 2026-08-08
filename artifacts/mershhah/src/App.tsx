@@ -36,6 +36,7 @@ import SummarizeFeedbackPage from "@/app/owner/tools/summarize-feedback/page";
 import WeeklyContentWriterPage from "@/app/owner/tools/weekly-content-writer/page";
 import SalaryCalculatorPage from "@/app/owner/tools/salary-calculator/page";
 import OwnerSupportPage from "@/app/owner/support/page";
+import OwnerBillingPage from "@/app/owner/billing/page";
 
 
 import AdminLayout from "@/app/admin/layout";
@@ -53,6 +54,7 @@ import AdminSalesPage from "@/app/admin/sales/page";
 import AdminApplicationsPage from "@/app/admin/applications/page";
 import AdminAnnouncementsPage from "@/app/admin/announcements/page";
 import AdminWorkflowPage from "@/app/admin/workflow/page";
+import AdminDiscountsPage from "@/app/admin/discounts/page";
 
 import MenuPage from "@/app/menu/[username]/page";
 import HubPage from "@/app/hub/[username]/page";
@@ -69,6 +71,8 @@ import TermsPage from "@/app/terms/page";
 import BioPage from "@/app/bio/page";
 import SuccessPage from "@/app/success/page";
 import FailurePage from "@/app/failure/page";
+import BillingSuccessPage from "@/app/billing/success/page";
+import BillingFailedPage from "@/app/billing/failed/page";
 import ReferPage from "@/app/refer/page";
 import StatusPage from "@/app/status/page";
 import TicketPage from "@/app/ticket/page";
@@ -95,6 +99,8 @@ function Router() {
       <Route path="/bio" component={BioPage} />
       <Route path="/success" component={SuccessPage} />
       <Route path="/failure" component={FailurePage} />
+      <Route path="/billing/success" component={BillingSuccessPage} />
+      <Route path="/billing/failed" component={BillingFailedPage} />
       <Route path="/refer" component={ReferPage} />
       <Route path="/status" component={StatusPage} />
       <Route path="/ticket" component={TicketPage} />
@@ -127,6 +133,7 @@ function Router() {
       <Route path="/owner/tools/:toolId" component={() => <OW><OwnerToolDetailPage /></OW>} />
       <Route path="/owner/tools" component={() => <OW><OwnerToolsPage /></OW>} />
       <Route path="/owner/support" component={() => <OW><OwnerSupportPage /></OW>} />
+      <Route path="/owner/billing" component={() => <OW><OwnerBillingPage /></OW>} />
       <Route path="/admin/dashboard" component={() => <AdminLayout><AdminDashboardPage /></AdminLayout>} />
       <Route path="/admin/management" component={() => <AdminLayout><AdminManagementPage /></AdminLayout>} />
       <Route path="/admin/plans" component={() => <AdminLayout><AdminPlansPage /></AdminLayout>} />
@@ -141,6 +148,7 @@ function Router() {
       <Route path="/admin/applications" component={() => <AdminLayout><AdminApplicationsPage /></AdminLayout>} />
       <Route path="/admin/announcements" component={() => <AdminLayout><AdminAnnouncementsPage /></AdminLayout>} />
       <Route path="/admin/workflow" component={() => <AdminLayout><AdminWorkflowPage /></AdminLayout>} />
+      <Route path="/admin/discounts" component={() => <AdminLayout><AdminDiscountsPage /></AdminLayout>} />
       <Route path="/:username" component={HubPage} />
       <Route component={NotFoundPage} />
     </Switch>
