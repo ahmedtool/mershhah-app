@@ -229,7 +229,7 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
                     status: 'available',
                     display_tags: 'none',
                     restaurant_id: restaurantId,
-                    createdAt: new Date().toISOString(),
+                    created_at: new Date().toISOString(),
                 });
             }
         }
