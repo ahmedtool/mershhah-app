@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import type { ChatMessage, ChatSession } from '@/lib/types';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { VoiceRecorder } from '@/components/shared/VoiceRecorder';
+import { VoiceMessage } from '@/components/shared/VoiceMessage';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -454,9 +455,7 @@ export default function AdminSupportPage() {
                           {msg.attachment_url && (
                             <div className="mt-2">
                               {msg.attachment_type === 'voice' ? (
-                                <div className={`flex items-center gap-2 p-2 rounded-lg ${isAdmin ? 'bg-white/10' : 'bg-white border border-gray-100'}`}>
-                                  <audio src={msg.attachment_url} controls className="h-8 max-w-[200px]" />
-                                </div>
+                                <VoiceMessage url={msg.attachment_url} isOwner={!isAdmin} />
                               ) : msg.attachment_type === 'image' ? (
                                 <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer">
                                   <img src={msg.attachment_url} alt={msg.attachment_filename || ''} width={200} height={200} className="rounded-lg object-cover cursor-pointer" />
