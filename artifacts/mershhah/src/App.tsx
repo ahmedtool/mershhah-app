@@ -106,30 +106,6 @@ function OwnerRoutes({ params }: { params?: any }) {
   );
 }
 
-function AdminRoutes({ params }: { params?: any }) {
-  return (
-    <AdminLayout>
-      <Switch>
-        <Route path="/admin/dashboard" component={AdminDashboardPage} />
-        <Route path="/admin/management" component={AdminManagementPage} />
-        <Route path="/admin/plans" component={AdminPlansPage} />
-        <Route path="/admin/store" component={AdminStorePage} />
-        <Route path="/admin/store/developers" component={AdminStoreDevelopersPage} />
-        <Route path="/admin/store-management" component={AdminStoreManagementPage} />
-        <Route path="/admin/support/:chatId" component={AdminSupportChatPage} />
-        <Route path="/admin/support" component={AdminSupportPage} />
-        <Route path="/admin/settings" component={AdminSettingsPage} />
-        <Route path="/admin/team" component={AdminTeamPage} />
-        <Route path="/admin/sales" component={AdminSalesPage} />
-        <Route path="/admin/applications" component={AdminApplicationsPage} />
-        <Route path="/admin/announcements" component={AdminAnnouncementsPage} />
-        <Route path="/admin/workflow" component={AdminWorkflowPage} />
-        <Route component={NotFoundPage} />
-      </Switch>
-    </AdminLayout>
-  );
-}
-
 function Router() {
   return (
     <Switch>
@@ -159,7 +135,20 @@ function Router() {
       <Route path="/chat/:username" component={ChatPage} />
       <Route path="/reviews/:username" component={ReviewsPublicPage} />
       <Route path="/owner/:rest*" component={OwnerRoutes} />
-      <Route path="/admin/:rest*" component={AdminRoutes} />
+      <Route path="/admin/dashboard" component={() => <AdminLayout><AdminDashboardPage /></AdminLayout>} />
+      <Route path="/admin/management" component={() => <AdminLayout><AdminManagementPage /></AdminLayout>} />
+      <Route path="/admin/plans" component={() => <AdminLayout><AdminPlansPage /></AdminLayout>} />
+      <Route path="/admin/store" component={() => <AdminLayout><AdminStorePage /></AdminLayout>} />
+      <Route path="/admin/store/developers" component={() => <AdminLayout><AdminStoreDevelopersPage /></AdminLayout>} />
+      <Route path="/admin/store-management" component={() => <AdminLayout><AdminStoreManagementPage /></AdminLayout>} />
+      <Route path="/admin/support/:chatId" component={() => <AdminLayout><AdminSupportChatPage /></AdminLayout>} />
+      <Route path="/admin/support" component={() => <AdminLayout><AdminSupportPage /></AdminLayout>} />
+      <Route path="/admin/settings" component={() => <AdminLayout><AdminSettingsPage /></AdminLayout>} />
+      <Route path="/admin/team" component={() => <AdminLayout><AdminTeamPage /></AdminLayout>} />
+      <Route path="/admin/sales" component={() => <AdminLayout><AdminSalesPage /></AdminLayout>} />
+      <Route path="/admin/applications" component={() => <AdminLayout><AdminApplicationsPage /></AdminLayout>} />
+      <Route path="/admin/announcements" component={() => <AdminLayout><AdminAnnouncementsPage /></AdminLayout>} />
+      <Route path="/admin/workflow" component={() => <AdminLayout><AdminWorkflowPage /></AdminLayout>} />
       <Route path="/:username" component={HubPage} />
       <Route component={NotFoundPage} />
     </Switch>
