@@ -42,6 +42,7 @@ import AdminDashboardPage from "@/app/admin/dashboard/page";
 import AdminManagementPage from "@/app/admin/management/page";
 import AdminPlansPage from "@/app/admin/plans/page";
 import AdminStorePage from "@/app/admin/store/page";
+import AdminStoreDevelopersPage from "@/app/admin/store/developers/page";
 import AdminStoreManagementPage from "@/app/admin/store-management/page";
 import AdminSupportPage from "@/app/admin/support/page";
 import AdminSupportChatPage from "@/app/admin/support/[chatId]/page";
@@ -113,6 +114,7 @@ function AdminRoutes({ params }: { params?: any }) {
         <Route path="/admin/management" component={AdminManagementPage} />
         <Route path="/admin/plans" component={AdminPlansPage} />
         <Route path="/admin/store" component={AdminStorePage} />
+        <Route path="/admin/store/developers" component={AdminStoreDevelopersPage} />
         <Route path="/admin/store-management" component={AdminStoreManagementPage} />
         <Route path="/admin/support/:chatId" component={AdminSupportChatPage} />
         <Route path="/admin/support" component={AdminSupportPage} />
