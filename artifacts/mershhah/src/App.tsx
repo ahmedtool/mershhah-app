@@ -6,7 +6,6 @@ import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { LanguageProvider } from "@/components/shared/LanguageContext";
 import { HydrationGate } from "@/components/shared/HydrationGate";
 import { UserProvider } from "@/hooks/useUser";
-import { SubdomainDetector } from "@/components/shared/SubdomainDetector";
 
 import HomePage from "@/app/page";
 import LoginPage from "@/app/login/page";
@@ -153,13 +152,13 @@ function Router() {
       <Route path="/blog" component={BlogListPage} />
       <Route path="/blog/:slug" component={BlogPostPage} />
       <Route path="/menu/:username" component={MenuPage} />
-      <Route path="/hub/:username" component={HubPage} />
       <Route path="/ai/:username" component={AiPage} />
       <Route path="/branches/:username" component={BranchesPublicPage} />
       <Route path="/chat/:username" component={ChatPage} />
       <Route path="/reviews/:username" component={ReviewsPublicPage} />
       <Route path="/owner/:rest*" component={OwnerRoutes} />
       <Route path="/admin/:rest*" component={AdminRoutes} />
+      <Route path="/:username" component={HubPage} />
       <Route component={NotFoundPage} />
     </Switch>
   );
@@ -173,7 +172,6 @@ function App() {
           <LanguageProvider>
             <HydrationGate>
               <UserProvider>
-                <SubdomainDetector />
                 <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
                   <Router />
                 </WouterRouter>

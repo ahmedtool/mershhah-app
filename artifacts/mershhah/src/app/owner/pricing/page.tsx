@@ -91,7 +91,8 @@ export default function InsightsHubPage() {
 
     useEffect(() => {
         if (!hubUsername || typeof window === 'undefined') return;
-        const qrUrl = `https://${hubUsername}.mershhah.com?source=qr_branch`;
+        const baseUrl = (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, '');
+        const qrUrl = `${baseUrl}/${hubUsername}?source=qr_branch`;
         import('qrcode').then((QRCode) => {
             QRCode.toDataURL(qrUrl, { width: 280, margin: 2 }).then(setQrDataUrl).catch(() => {});
         }).catch(() => {});
@@ -206,10 +207,11 @@ export default function InsightsHubPage() {
                             <p className="text-[10px] text-gray-400 font-medium">الرابط الذكي</p>
                             <div className="flex gap-2 items-center flex-wrap">
                                 <code className="text-xs text-gray-500 bg-gray-50 border border-gray-100 px-3 py-2 rounded-xl break-all">
-                                    {hubUsername}.mershhah.com
+                                    mershhah.com/{hubUsername}
                                 </code>
                                 <Button size="sm" variant="outline" className="h-8 rounded-xl text-xs border-gray-200" onClick={() => {
-                                    navigator.clipboard.writeText(`${hubUsername}.mershhah.com`);
+                                    const baseUrl = (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, '');
+                                    navigator.clipboard.writeText(`${baseUrl}/${hubUsername}`);
                                     toast({ title: 'تم نسخ الرابط' });
                                 }}><Copy className="h-3 w-3 ml-1" /> نسخ</Button>
                             </div>

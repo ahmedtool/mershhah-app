@@ -353,7 +353,7 @@ export default function CustomizePage() {
     <div className="space-y-5 pb-20" dir="rtl">
       <PageHeader title="تخصيص الواجهة" description="صمم هويتك البصرية والروابط الخاصة بك.">
           <button
-            onClick={() => window.open(`/hub/${settings.username}`, '_blank')}
+            onClick={() => window.open(`/${settings.username}`, '_blank')}
             className="h-9 px-4 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center gap-2"
           >
             <Globe className="h-3.5 w-3.5" />
@@ -407,7 +407,7 @@ export default function CustomizePage() {
                             />
                             <p className="text-[10px] text-gray-300">
                                 {settings.username ? (
-                                  <>{settings.username}.mershhah.com</>
+                                  <>mershhah.com/{settings.username}</>
                                 ) : (
                                   '...'
                                 )} — مرة كل 30 يوماً
@@ -552,7 +552,7 @@ export default function CustomizePage() {
                 {settings?.username ? (
                   <iframe
                     key={settings.username}
-                    src={`/hub/${settings.username}`}
+                    src={`/${settings.username}`}
                     title="معاينة"
                     className="w-full h-full min-h-[600px] border-0 rounded-b-[2rem] bg-white"
                     sandbox="allow-same-origin allow-scripts allow-popups allow-forms"

@@ -285,7 +285,7 @@ export default function AiAssistantPage() {
           </div>
           <h1 className="text-base font-black text-gray-900">المساعد الذكي متاح في الباقات المدفوعة</h1>
           <p className="text-[11px] text-gray-400">قم بترقية باقتك من لوحة التحكم</p>
-          <Link href={`/hub/${username}`} className="w-full h-10 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 flex items-center justify-center">
+          <Link href={`/${username}`} className="w-full h-10 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 flex items-center justify-center">
             العودة للرابط الرئيسي
           </Link>
         </div>
@@ -297,7 +297,7 @@ export default function AiAssistantPage() {
     <div className="flex flex-col min-h-screen bg-white pb-4 overflow-x-hidden" dir="rtl">
       {/* Header */}
       <div className="border-b border-gray-100 px-4 py-5 flex flex-col items-center text-center relative">
-        <Link href={`/hub/${username}`}
+        <Link href={`/${username}`}
           className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
           <ChevronRight className="h-4 w-4" />
         </Link>
