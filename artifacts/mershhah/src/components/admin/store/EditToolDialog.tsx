@@ -22,9 +22,9 @@ const formSchema = z.object({
   description: z.string().min(10, "الوصف يجب أن يكون 10 أحرف على الأقل"),
   category: z.string().min(1, "الرجاء اختيار أو إدخال تصنيف."),
   price_label: z.string().min(1, "بطاقة السعر مطلوبة"),
-  icon: z.string().min(1, "الأيقونة مطلوبة"),
-  color: z.string().regex(/^text-/, "يجب أن يبدأ بـ 'text-'"),
-  bg_color: z.string().regex(/^bg-/, "يجب أن يبدأ بـ 'bg-'"),
+  icon: z.string().optional().default("Box"),
+  color: z.string().optional().default("text-gray-600"),
+  bg_color: z.string().optional().default("bg-gray-100"),
   popular: z.boolean().default(false),
   billing_type: z.enum(["plan", "addon"]).default("plan"),
   period_months: z.coerce.number().int().min(1, "المدة يجب أن تكون شهراً واحداً على الأقل.").nullable().optional(),
@@ -42,16 +42,6 @@ interface EditToolDialogProps {
   allTools?: any[];
   onSave?: () => void;
 }
-
-const iconList = ['MessageCircle', 'Star', 'Truck', 'BarChart3', 'Megaphone', 'Box', 'KeyRound', 'Clock', 'Info', 'Calculator', 'FileText', 'Wrench', 'BrainCircuit', 'HeartPulse', 'ThumbsUp', 'Sparkles', 'CalendarDays'];
-const colorList = [
-  { name: 'أزرق', value: 'blue-500' },
-  { name: 'أخضر', value: 'green-500' },
-  { name: 'برتقالي', value: 'orange-500' },
-  { name: 'بنفسجي', value: 'violet-500' },
-  { name: 'وردي', value: 'pink-500' },
-  { name: 'أساسي', value: 'primary' },
-];
 
 export function EditToolDialog({ children, tool, allTools = [], onSave }: EditToolDialogProps) {
   const [open, setOpen] = useState(false);
@@ -304,64 +294,16 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
               </FormItem>
             )} />
 
-            {/* Price & Icon */}
-            <div className="grid grid-cols-2 gap-3">
-              <FormField control={form.control} name="price_label" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-gray-500">بطاقة السعر</FormLabel>
-                  <FormControl>
-                    <Input placeholder="مجاني أو 50 ر.س" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
-                  </FormControl>
-                  <FormMessage className="text-[10px]" />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="icon" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-gray-500">الأيقونة</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="h-11 rounded-xl border-gray-200 text-xs"><SelectValue /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {iconList.map(i => <SelectItem key={i} value={i} className="text-xs">{i}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-[10px]" />
-                </FormItem>
-              )} />
-            </div>
-
-            {/* Colors */}
-            <div className="grid grid-cols-2 gap-3">
-              <FormField control={form.control} name="color" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-gray-500">لون الأيقونة</FormLabel>
-                  <div className="flex gap-1.5">
-                    {colorList.map((c) => (
-                      <button key={c.value} type="button" onClick={() => field.onChange(`text-${c.value}`)}
-                        className={`w-8 h-8 rounded-lg border-2 transition-all flex items-center justify-center ${field.value === `text-${c.value}` ? 'border-gray-900 scale-110' : 'border-gray-100 hover:border-gray-300'}`}>
-                        <span className={`w-3 h-3 rounded-full bg-${c.value}`} />
-                      </button>
-                    ))}
-                  </div>
-                  <FormMessage className="text-[10px]" />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="bg_color" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-gray-500">لون الخلفية</FormLabel>
-                  <div className="flex gap-1.5">
-                    {colorList.map((c) => (
-                      <button key={c.value} type="button" onClick={() => field.onChange(`bg-${c.value}/10`)}
-                        className={`w-8 h-8 rounded-lg border-2 transition-all flex items-center justify-center ${field.value === `bg-${c.value}/10` ? 'border-gray-900 scale-110' : 'border-gray-100 hover:border-gray-300'}`}>
-                        <span className={`w-3 h-3 rounded-full bg-${c.value}/20`} />
-                      </button>
-                    ))}
-                  </div>
-                  <FormMessage className="text-[10px]" />
-                </FormItem>
-              )} />
-            </div>
+            {/* Price */}
+            <FormField control={form.control} name="price_label" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs text-gray-500">بطاقة السعر</FormLabel>
+                <FormControl>
+                  <Input placeholder="مجاني أو 50 ر.س" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )} />
 
             {/* Popular Toggle */}
             <FormField control={form.control} name="popular" render={({ field }) => (
