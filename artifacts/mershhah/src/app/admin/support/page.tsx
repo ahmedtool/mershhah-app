@@ -177,7 +177,7 @@ export default function AdminSupportPage() {
         text: '',
         timestamp: now,
         attachment_url: urlData.publicUrl,
-        attachment_type: 'file',
+        attachment_type: 'voice',
         attachment_filename: 'رسالة صوتية',
       });
 
@@ -446,7 +446,11 @@ export default function AdminSupportPage() {
                           {msg.text && <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>}
                           {msg.attachment_url && (
                             <div className="mt-2">
-                              {msg.attachment_type === 'image' ? (
+                              {msg.attachment_type === 'voice' ? (
+                                <div className={`flex items-center gap-2 p-2 rounded-lg ${isAdmin ? 'bg-white/10' : 'bg-white border border-gray-100'}`}>
+                                  <audio src={msg.attachment_url} controls className="h-8 max-w-[200px]" />
+                                </div>
+                              ) : msg.attachment_type === 'image' ? (
                                 <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer">
                                   <img src={msg.attachment_url} alt={msg.attachment_filename || ''} width={200} height={200} className="rounded-lg object-cover cursor-pointer" />
                                 </a>

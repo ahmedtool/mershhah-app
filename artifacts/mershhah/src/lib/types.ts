@@ -170,7 +170,7 @@ export type ChatMessage = {
   text?: string;
   timestamp: any; // Firestore Timestamp
   attachment_url?: string;
-  attachment_type?: 'image' | 'file';
+  attachment_type?: 'image' | 'file' | 'voice';
   attachment_filename?: string;
 };
 
