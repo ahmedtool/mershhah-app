@@ -168,7 +168,7 @@ export default function OwnerSupportPage() {
       const { data: urlData } = supabase.storage.from('chat-attachments').getPublicUrl(filePath);
       const now = new Date().toISOString();
 
-      await supabase.from('chat_messages').insert({
+      const { error: insertError } = await supabase.from('chat_messages').insert({
         id: crypto.randomUUID(),
         chat_id: selectedChat.id,
         senderId: user.id,
@@ -179,13 +179,20 @@ export default function OwnerSupportPage() {
         attachment_type: 'voice',
         attachment_filename: 'رسالة صوتية',
       });
+      if (insertError) throw insertError;
 
-      await supabase.from('chats').update({
+      const { error: updateError } = await supabase.from('chats').update({
         lastMessage: 'رسالة صوتية',
         lastMessageTimestamp: now,
         adminHasUnread: true,
         ownerHasUnread: false,
       }).eq('id', selectedChat.id);
+      if (updateError) throw updateError;
+
+      setChats(prev => prev.map(c => c.id === selectedChat.id
+        ? { ...c, lastMessage: 'رسالة صوتية', lastMessageTimestamp: now }
+        : c
+      ));
     } catch (error: any) {
       toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
     }
