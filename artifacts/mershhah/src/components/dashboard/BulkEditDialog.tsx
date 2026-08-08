@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Check, X } from 'lucide-react';
@@ -23,13 +22,15 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<'active' | 'inactive' | null>(null);
   const [openingHours, setOpeningHours] = useState('');
+  const [phone, setPhone] = useState('');
   const [applyStatus, setApplyStatus] = useState(false);
   const [applyHours, setApplyHours] = useState(false);
+  const [applyPhone, setApplyPhone] = useState(false);
 
   const handleSave = async () => {
     if (!restaurantId || branches.length === 0) return;
-    if (!applyStatus && !applyHours) {
-      toast({ title: 'اختر değişiklik أولاً', variant: 'destructive' });
+    if (!applyStatus && !applyHours && !applyPhone) {
+      toast({ title: 'اختر تعديلاً أولاً', variant: 'destructive' });
       return;
     }
 
@@ -38,6 +39,7 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
       const updates: Record<string, unknown> = {};
       if (applyStatus && status) updates.status = status;
       if (applyHours && openingHours.trim()) updates.opening_hours = openingHours.trim();
+      if (applyPhone) updates.phone = phone.trim() || null;
 
       const { error } = await supabase
         .from('branches')
@@ -62,9 +64,13 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
   const resetState = () => {
     setStatus(null);
     setOpeningHours('');
+    setPhone('');
     setApplyStatus(false);
     setApplyHours(false);
+    setApplyPhone(false);
   };
+
+  const hasChanges = applyStatus || applyHours || applyPhone;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetState(); onOpenChange(o); }}>
@@ -125,6 +131,27 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
               </div>
             )}
           </div>
+
+          {/* Phone */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={applyPhone} onChange={(e) => setApplyPhone(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300" />
+              <span className="text-sm font-medium text-gray-700">تغيير رقم الجوال</span>
+            </label>
+            {applyPhone && (
+              <div className="mr-6">
+                <Input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="05XXXXXXXX"
+                  dir="ltr"
+                  className="h-10 rounded-xl border-gray-200 text-sm"
+                />
+                <p className="text-[10px] text-gray-300 mt-1">اتركه فاضي لحذف الرقم</p>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="px-5 pb-5 flex gap-2">
@@ -132,7 +159,7 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
             className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">
             إلغاء
           </button>
-          <button onClick={handleSave} disabled={saving || (!applyStatus && !applyHours)}
+          <button onClick={handleSave} disabled={saving || !hasChanges}
             className="flex-1 h-11 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             {saving ? 'جاري الحفظ...' : 'تطبيق على الكل'}
