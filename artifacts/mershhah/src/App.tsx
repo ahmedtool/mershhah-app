@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { LanguageProvider } from "@/components/shared/LanguageContext";
 import { HydrationGate } from "@/components/shared/HydrationGate";
 import { UserProvider } from "@/hooks/useUser";
+import { SubdomainDetector } from "@/components/shared/SubdomainDetector";
 
 import HomePage from "@/app/page";
 import LoginPage from "@/app/login/page";
@@ -172,6 +173,7 @@ function App() {
           <LanguageProvider>
             <HydrationGate>
               <UserProvider>
+                <SubdomainDetector />
                 <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
                   <Router />
                 </WouterRouter>
