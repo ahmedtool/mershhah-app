@@ -11,27 +11,30 @@ const annotationSchema = {
       items: {
         type: "object",
         properties: {
-          name: { type: "string", description: "Menu item name in Arabic or English" },
-          description: { type: "string", description: "Brief description of the item" },
-          category: { type: "string", description: "Category like: main, appetizer, drink, dessert, side, soup, salad, sandwich" },
+          name: { type: "string", description: "اسم الصنف بالعربي أو الإنجليزي" },
+          description: { type: "string", description: "وصف مختصر للصنف" },
+          category: {
+            type: "string",
+            description: "التصنيف الرئيسي. اختر من: main (رئيسي), appetizer (مقبلات), drink (مشروبات), dessert (حلويات), side (أطباق جانبية), soup (شوربات), salad (سلطات), sandwich (ساندويتشات), pizza (بيتزا), burger (برجر), seafood (مأكولات بحرية), grilled (مشويات), rice (أرز), pasta (معكرونة), breakfast (إفطار), coffee (قهوة), juice (عصائر), kids (أطفال)"
+          },
           sizes: {
             type: "array",
             items: {
               type: "object",
               properties: {
-                name: { type: "string", description: "Size name like: وسط, كبير, صغير, Regular, Large" },
-                price: { type: "number", description: "Price in Saudi Riyals" },
+                name: { type: "string", description: "اسم الحجم: صغير Small, وسط Medium, كبير Large, عائلي Family, أو اسم مخصص" },
+                price: { type: "number", description: "السعر بالريال السعودي" },
               },
               required: ["name", "price"],
               additionalProperties: false,
             },
-            description: "Different sizes with prices. If only one price, use size 'Default' or 'أساسي'",
+            description: "الأحجام والأسعار. إذا سعر واحد فقط استخدم حجم 'أساسي' أو 'Default'",
           },
-          calories: { type: "number", description: "Calories per serving, null if not visible" },
+          calories: { type: "number", description: "السعرات الحرارية لكل حصة. إذا غير موجودة اكتب null" },
           allergens: {
             type: "array",
             items: { type: "string" },
-            description: "Allergens like: نواة, حليب, بيض, قمح, سمك, محار, صويا, سمسم, غلوتين",
+            description: "المواد المسببة للحساسية: مكسرات, حليب, بيض, قمح, سمك, محار, صويا, سمسم, غلوتين, فول سوداني",
           },
         },
         required: ["name", "description", "category", "sizes"],
@@ -62,7 +65,15 @@ export async function extractMenuFromImage(input: ExtractMenuFromImageInput): Pr
     body: JSON.stringify({
       model: "mistral-ocr-latest",
       document,
-      document_annotation_prompt: "Extract all menu items from this restaurant menu image/document. For each item, identify the name, description, category, sizes with prices, calories if visible, and allergens if mentioned. Return structured JSON.",
+      document_annotation_prompt: `استخرج جميع أصناف القائمة من صورة/ملف قائمة الطعام هذه. لكل صنف:
+1. الاسم (بالعربي أو الإنجليزي)
+2. الوصف المختصر
+3. التصنيف الرئيسي (رئيسي، مقبلات، مشروبات، حلويات، أطباق جانبية، شوربات، سلطات، ساندويتشات، بيتزا، برجر، مأكولات بحرية، مشويات، أرز، معكرونة، إفطار، قهوة، عصائر، أطفال)
+4. الأحجام والأسعار (إذا سعر واحد استخدم 'أساسي')
+5. السعرات الحرارية (إذا غير موجودة اتركها فاضية)
+6. المواد المسببة للحساسية (إذا غير موجودة اتركها فاضية)
+
+تأكد من إخراج جميع الأصناف الموجودة في الصورة. إذا كان هناك أصناف بأسعار مختلفة حسب الحجم، اذكر كل حجم وسعره.`,
       document_annotation_format: {
         type: "json_schema",
         json_schema: {

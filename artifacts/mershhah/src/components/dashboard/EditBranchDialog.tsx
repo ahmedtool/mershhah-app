@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MapPin, Crosshair, Link as LinkIcon } from 'lucide-react';
+import { Loader2, MapPin, Crosshair, Link as LinkIcon, X, PlusCircle, ImageIcon } from 'lucide-react';
 import { TimePicker } from '@/components/ui/time-picker';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
@@ -76,6 +76,8 @@ export function EditBranchDialog({
   const [allDaysClose, setAllDaysClose] = useState('');
   const [fridayOpen, setFridayOpen] = useState('');
   const [fridayClose, setFridayClose] = useState('');
+  const [branchApps, setBranchApps] = useState<any[]>([]);
+  const [globalApps, setGlobalApps] = useState<any[]>([]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -96,12 +98,20 @@ export function EditBranchDialog({
         address: branch.address, phone: branch.phone ?? '', opening_hours: branch.opening_hours ?? '',
         status: branch.status ?? 'active', latitude: branch.latitude ?? null, longitude: branch.longitude ?? null,
       });
+      setBranchApps(Array.isArray(branch.applications) ? branch.applications : []);
       setAllDaysOpen(''); setAllDaysClose(''); setFridayOpen(''); setFridayClose(''); setShowFriday(false);
     } else {
       form.reset({ name: '', city: '', district: '', address: '', phone: '', opening_hours: '', status: 'active', latitude: null, longitude: null });
+      setBranchApps([]);
       setAllDaysOpen(''); setAllDaysClose(''); setFridayOpen(''); setFridayClose(''); setShowFriday(false);
     }
   }, [open, branch, form]);
+
+  useEffect(() => {
+    if (open) {
+      supabase.from('applications').select('*').then(({ data }) => setGlobalApps(data || []));
+    }
+  }, [open]);
 
   useEffect(() => { if (!city) form.setValue('district', ''); }, [city, form]);
 
@@ -147,7 +157,7 @@ export function EditBranchDialog({
         if (full.length > 5) { const geo = await geocodeAddress(full); if (geo) { lat = geo.latitude; lng = geo.longitude; form.setValue('latitude', lat, { shouldDirty: false }); form.setValue('longitude', lng, { shouldDirty: false }); } }
       }
 
-      const data: Record<string, unknown> = { name: values.name, city: values.city, district: values.district, address: values.address, status: values.status, restaurant_id: restaurantId };
+      const data: Record<string, unknown> = { name: values.name, city: values.city, district: values.district, address: values.address, status: values.status, restaurant_id: restaurantId, applications: branchApps };
       if (values.phone?.trim()) data.phone = values.phone.trim();
       if (values.opening_hours?.trim()) data.opening_hours = values.opening_hours.trim();
       if (lat != null) data.latitude = lat;
@@ -339,6 +349,62 @@ export function EditBranchDialog({
                   غير نشط
                 </button>
               </div>
+            </div>
+
+            {/* Branch Delivery Apps */}
+            <div className="space-y-2">
+              <FormLabel className="text-xs text-gray-500">تطبيقات التوصيل لهذا الفرع</FormLabel>
+              <p className="text-[10px] text-gray-300">أضف روابط التطبيقات الخاصة بهذا الفرع</p>
+              
+              {globalApps.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {globalApps.map(app => {
+                    const isAdded = branchApps.some((a: any) => a.platformId === app.id);
+                    return (
+                      <button key={app.id} type="button"
+                        onClick={() => {
+                          if (isAdded) {
+                            setBranchApps(branchApps.filter((a: any) => a.platformId !== app.id));
+                          } else {
+                            setBranchApps([...branchApps, {
+                              id: `branch-app-${app.id}`,
+                              type: 'global',
+                              platformId: app.id,
+                              name: app.name,
+                              logo: app.logo_url,
+                              value: ''
+                            }]);
+                          }
+                        }}
+                        className={`h-8 gap-1.5 text-[10px] font-bold rounded-lg px-3 flex items-center border transition-colors ${
+                          isAdded ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                        }`}>
+                        {app.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {branchApps.map((app: any) => (
+                <div key={app.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                  <div className="p-1.5 bg-white rounded-lg border border-gray-100 shrink-0">
+                    <span className="text-[10px] font-bold text-gray-600">{app.name?.charAt(0)}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-bold text-gray-700">{app.name}</p>
+                    <Input dir="ltr" value={app.value} placeholder="https://..."
+                      onChange={(e) => {
+                        setBranchApps(branchApps.map((a: any) => a.id === app.id ? { ...a, value: e.target.value } : a));
+                      }}
+                      className="h-7 text-[10px] rounded-lg border-gray-200 mt-1" />
+                  </div>
+                  <button type="button" onClick={() => setBranchApps(branchApps.filter((a: any) => a.id !== app.id))}
+                    className="text-gray-300 hover:text-red-500 transition-colors p-1">
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
             </div>
 
             {/* Actions */}

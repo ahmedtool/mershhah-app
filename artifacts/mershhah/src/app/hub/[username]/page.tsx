@@ -50,6 +50,8 @@ export default function RestaurantHubPage() {
 
   const [restaurant, setRestaurant] = useState<any>(null);
   const [offers, setOffers] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const recordedViewOfferIds = useRef<Set<string>>(new Set());
   const searchParams = useSearchParams();
@@ -111,6 +113,15 @@ export default function RestaurantHubPage() {
         }
 
         setRestaurant(rest);
+
+        const { data: branchData } = await supabase
+          .from('branches')
+          .select('*')
+          .eq('restaurant_id', rest.id)
+          .eq('status', 'active')
+          .order('name');
+
+        setBranches(branchData || []);
 
         const now = new Date().toISOString();
         const { data: offersData } = await supabase
@@ -250,6 +261,37 @@ export default function RestaurantHubPage() {
         {/* المحتوى */}
         <div className="px-4 py-6 space-y-6">
           
+          {/* اختيار الفرع */}
+          {branches.length > 0 && (
+            <section className="space-y-3">
+              <h3 className="font-black text-sm text-gray-500 px-1 text-right">اختر فرعك</h3>
+              <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                <button
+                  type="button"
+                  onClick={() => setSelectedBranch(null)}
+                  className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold transition-all border ${
+                    !selectedBranch ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  الكل
+                </button>
+                {branches.map((branch) => (
+                  <button
+                    key={branch.id}
+                    type="button"
+                    onClick={() => setSelectedBranch(branch)}
+                    className={`shrink-0 h-10 px-4 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 ${
+                      selectedBranch?.id === branch.id ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <MapPin className="h-3 w-3" />
+                    {branch.name}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* العروض */}
           {offers.length > 0 && (
             <section className="space-y-3">
@@ -351,32 +393,42 @@ export default function RestaurantHubPage() {
           </section>
 
           {/* التطبيقات */}
-          {restaurant.applications && restaurant.applications.length > 0 && (
-            <section className="space-y-3">
-              <h3 className="font-black text-sm text-gray-500 px-1 text-right">التطبيقات</h3>
-              <div className="grid grid-cols-4 gap-3">
-                {restaurant.applications.map((app: any, idx: number) => (
-                  <Link 
-                    key={app.id || idx} 
-                    href={app.value || '#'} 
-                    target="_blank" 
-                    onClick={() => restaurant.id && trackAppClick(restaurant.id, app.name || 'unknown')}
-                    className="aspect-square bg-white border border-gray-100 rounded-2xl p-3 flex items-center justify-center hover:shadow-md transition-all"
-                  >
-                    <div className="relative w-full h-full">
-                      <StorageImage 
-                        imagePath={app.logo} 
-                        alt={app.name} 
-                        fill 
-                        className="object-contain" 
-                        sizes="64px" 
-                      />
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
+          {(() => {
+            const activeApps = selectedBranch?.applications?.length > 0
+              ? selectedBranch.applications
+              : restaurant.applications || [];
+            
+            if (activeApps.length === 0) return null;
+
+            return (
+              <section className="space-y-3">
+                <h3 className="font-black text-sm text-gray-500 px-1 text-right">
+                  {selectedBranch ? `تطبيقات ${selectedBranch.name}` : 'التطبيقات'}
+                </h3>
+                <div className="grid grid-cols-4 gap-3">
+                  {activeApps.map((app: any, idx: number) => (
+                    <Link 
+                      key={app.id || idx} 
+                      href={app.value || '#'} 
+                      target="_blank" 
+                      onClick={() => restaurant.id && trackAppClick(restaurant.id, app.name || 'unknown')}
+                      className="aspect-square bg-white border border-gray-100 rounded-2xl p-3 flex items-center justify-center hover:shadow-md transition-all"
+                    >
+                      <div className="relative w-full h-full">
+                        <StorageImage 
+                          imagePath={app.logo} 
+                          alt={app.name} 
+                          fill 
+                          className="object-contain" 
+                          sizes="64px" 
+                        />
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            );
+          })()}
 
           {/* التواصل الاجتماعي */}
           {Array.isArray(socialLinks) && socialLinks.filter((link: any) => link?.value?.trim()).length > 0 && (
