@@ -20,11 +20,13 @@ export default function OwnerToolsPage() {
         const fetchTools = async () => {
             if (!user?.id) return;
             try {
-                const { data: activated } = await supabase
+                // First try to get activated tools
+                const { data: activated, error: actError } = await supabase
                     .from('activated_tools')
-                    .select('tool_id, activated_at, expires_at, status')
-                    .eq('profile_id', user.id)
-                    .eq('status', 'active');
+                    .select('tool_id, activated_at, expires_at')
+                    .eq('profile_id', user.id);
+
+                console.log('Activated tools:', activated, actError);
 
                 if (!activated || activated.length === 0) {
                     setTools([]);
@@ -36,6 +38,8 @@ export default function OwnerToolsPage() {
                     .from('tools')
                     .select('*')
                     .in('id', toolIds);
+
+                console.log('Tools data:', toolsData);
 
                 const merged = (toolsData || []).map(tool => {
                     const activation = activated.find(a => a.tool_id === tool.id);
