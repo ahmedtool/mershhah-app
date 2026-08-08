@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Send, Loader2, X } from 'lucide-react';
 
 interface VoiceRecorderProps {
-  onSend: (blob: Blob) => void;
+  onSend: (blob: Blob) => void | Promise<void>;
   disabled?: boolean;
 }
 
@@ -79,7 +79,7 @@ export function VoiceRecorder({ onSend, disabled }: VoiceRecorderProps) {
     if (!blobRef.current) return;
     setIsSending(true);
     try {
-      onSend(blobRef.current);
+      await onSend(blobRef.current);
       setIsPreview(false);
       setAudioUrl(null);
       blobRef.current = null;
