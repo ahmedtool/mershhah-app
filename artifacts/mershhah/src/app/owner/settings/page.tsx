@@ -115,15 +115,24 @@ export default function OwnerSettingsPage() {
   const handleCheckout = async (planId: string) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/streampay-checkout`, {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/streampay-checkout`;
+      console.log('[Checkout] Calling:', url);
+      console.log('[Checkout] Token:', session?.access_token ? 'exists' : 'MISSING');
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
         body: JSON.stringify({ plan_id: planId, billing_cycle: selectedCycle, discount_code: couponCode || undefined }),
       });
-      const data = await res.json();
-      console.log('[Checkout] Response:', JSON.stringify(data));
-      if (data.url) { window.location.href = data.url; }
-      else { toast({ variant: 'destructive', title: 'خطأ', description: data.error || JSON.stringify(data) || 'فشل إنشاء رابط الدفع' }); }
+      console.log('[Checkout] Status:', res.status);
+      const rawText = await res.text();
+      console.log('[Checkout] Raw response:', rawText);
+      try {
+        const data = JSON.parse(rawText);
+        if (data.url) { window.location.href = data.url; }
+        else { toast({ variant: 'destructive', title: 'خطأ', description: data.error || rawText || 'فشل إنشاء رابط الدفع' }); }
+      } catch {
+        toast({ variant: 'destructive', title: 'خطأ', description: `رد غير متوقع (${res.status}): ${rawText.slice(0, 200)}` });
+      }
     } catch (error: any) { console.error('[Checkout] Error:', error); toast({ variant: 'destructive', title: 'خطأ', description: error.message }); }
   };
 
