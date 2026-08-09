@@ -22,9 +22,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Tag,
-  DollarSign,
-  BarChart3,
-  ShoppingCart,
 } from 'lucide-react';
 
 const SUPER_ADMIN_EMAIL = 'ahmedsupsa@gmail.com';
@@ -36,8 +33,6 @@ export function AdminTopNav() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showFinancials, setShowFinancials] = useState(false);
-  const financialsRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
     { href: '/admin/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard, permissionId: 'dashboard' },
@@ -49,13 +44,6 @@ export function AdminTopNav() {
     { href: '/admin/team', label: 'الفريق', icon: Users, permissionId: 'team' },
     { href: '/admin/workflow', label: 'سير العمل', icon: Activity, permissionId: 'workflow' },
     { href: '/admin/sales', label: 'دليل المبيعات', icon: TrendingUp, permissionId: 'sales' },
-  ];
-
-  const financialsItems = [
-    { href: '/admin/financials', label: 'نظرة عامة', icon: BarChart3 },
-    { href: '/admin/plans', label: 'الباقات', icon: Package },
-    { href: '/admin/financials/orders', label: 'الطلبات', icon: ShoppingCart },
-    { href: '/admin/financials/discounts', label: 'أكواد الخصم', icon: Tag },
   ];
 
   useEffect(() => {
@@ -79,23 +67,11 @@ export function AdminTopNav() {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (financialsRef.current && !financialsRef.current.contains(e.target as Node)) {
-        setShowFinancials(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
   };
-
-  const hasFinancials = user?.role === 'admin';
 
   const visibleNavItems = navItems.filter((item) => {
     if (user?.email === SUPER_ADMIN_EMAIL || user?.admin_permissions?.includes('all')) return true;
@@ -103,7 +79,6 @@ export function AdminTopNav() {
   });
 
   const isActive = (href: string) => pathname.startsWith(href);
-  const isFinancialsActive = pathname.startsWith('/admin/financials') || pathname === '/admin/plans' || pathname === '/admin/discounts';
 
   const navigatePage = (dir: 'next' | 'prev') => {
     const currentIndex = visibleNavItems.findIndex(item => isActive(item.href));
@@ -152,46 +127,6 @@ export function AdminTopNav() {
                 )}
               </Link>
             ))}
-
-            {hasFinancials && (
-              <div ref={financialsRef} className="relative">
-                <button
-                  onClick={() => setShowFinancials(!showFinancials)}
-                  className={`flex items-center gap-1.5 h-9 px-3 rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap ${
-                    isFinancialsActive
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                  }`}
-                >
-                  <DollarSign className="h-3.5 w-3.5 shrink-0" />
-                  <span className="hidden md:inline">المالية</span>
-                  <ChevronDown className={`h-3 w-3 transition-transform ${showFinancials ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showFinancials && (
-                  <div className="absolute top-full mt-1 right-0 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 min-w-[180px]">
-                    {financialsItems.map((item) => {
-                      const active = item.href === '/admin/financials'
-                        ? pathname === '/admin/financials'
-                        : pathname.startsWith(item.href);
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setShowFinancials(false)}
-                          className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold transition-colors ${
-                            active ? 'bg-gray-50 text-gray-900' : 'text-gray-500 hover:bg-gray-50'
-                          }`}
-                        >
-                          <item.icon className="h-3.5 w-3.5 text-gray-400" />
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
