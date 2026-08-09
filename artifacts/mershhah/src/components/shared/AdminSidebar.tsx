@@ -62,7 +62,7 @@ export function AdminSidebar() {
     fetchUnread();
 
     const channel = supabase
-      .channel('admin-unread-chats')
+      .channel('admin-sidebar-unread')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chats' }, () => { fetchUnread(); })
       .subscribe();
 
