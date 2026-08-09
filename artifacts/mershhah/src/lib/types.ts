@@ -243,6 +243,10 @@ export type Tool = {
   screenshots?: string[];
   avg_rating?: number;
   total_installs?: number;
+  // Tool type fields
+  tool_type?: "external" | "embedded" | "builtin";
+  external_url?: string | null;
+  content?: string | null;
 };
 
 export type Application = {

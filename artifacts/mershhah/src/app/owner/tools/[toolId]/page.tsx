@@ -136,8 +136,35 @@ export default function ToolDetailPage() {
                 )}
             </div>
 
-            {/* Dedicated page or placeholder */}
-            {dedicatedPage ? (
+            {/* Tool Content */}
+            {tool.tool_type === 'external' && tool.external_url ? (
+                <Card className="border-gray-100">
+                    <CardContent className="p-0">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border-b border-gray-100 rounded-t-2xl">
+                            <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
+                            <span className="text-[11px] text-gray-400 font-medium truncate" dir="ltr">{tool.external_url}</span>
+                        </div>
+                        <iframe
+                            src={tool.external_url}
+                            className="w-full min-h-[600px] border-0 rounded-b-2xl"
+                            title={tool.title}
+                            allow="fullscreen"
+                        />
+                    </CardContent>
+                </Card>
+            ) : tool.tool_type === 'embedded' && tool.content ? (
+                <Card className="border-gray-100">
+                    <CardContent className="p-0">
+                        <iframe
+                            srcDoc={tool.content}
+                            className="w-full min-h-[600px] border-0 rounded-2xl"
+                            title={tool.title}
+                            sandbox="allow-scripts allow-forms allow-same-origin"
+                            allow="fullscreen"
+                        />
+                    </CardContent>
+                </Card>
+            ) : dedicatedPage ? (
                 <Card className="border-gray-100">
                     <CardContent className="p-0">
                         <iframe

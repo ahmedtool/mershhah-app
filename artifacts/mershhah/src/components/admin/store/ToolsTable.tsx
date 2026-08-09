@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2, Box, icons } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Box, icons, Globe, FileCode } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -56,6 +56,7 @@ export function ToolsTable({ tools, onActionComplete }: ToolsTableProps) {
                 <TableRow className="bg-muted/50">
                     <TableHead className="text-right font-bold text-foreground">الأداة</TableHead>
                     <TableHead className="text-right font-bold text-foreground">المعرّف (ID)</TableHead>
+                    <TableHead className="text-right font-bold text-foreground">النوع</TableHead>
                     <TableHead className="text-right font-bold text-foreground">التصنيف</TableHead>
                     <TableHead className="text-right font-bold text-foreground">السعر</TableHead>
                     <TableHead className="text-right font-bold text-foreground">الإجراء</TableHead>
@@ -77,6 +78,12 @@ export function ToolsTable({ tools, onActionComplete }: ToolsTableProps) {
                         </div>
                     </TableCell>
                     <TableCell><Badge variant="outline" className="font-mono">{tool.id}</Badge></TableCell>
+                    <TableCell className="text-right">
+                        <div className="flex items-center gap-1.5">
+                            {(tool as any).tool_type === 'external' ? <Globe className="h-3 w-3 text-blue-500" /> : <FileCode className="h-3 w-3 text-violet-500" />}
+                            <span className="text-xs">{(tool as any).tool_type === 'embedded' ? 'مدمجة' : 'خارجية'}</span>
+                        </div>
+                    </TableCell>
                     <TableCell className="text-right">{tool.category}</TableCell>
                     <TableCell className="text-right font-mono">{tool.price_label}</TableCell>
                     <TableCell className="text-right">
@@ -121,7 +128,8 @@ export function ToolsTable({ tools, onActionComplete }: ToolsTableProps) {
                         <p className="text-xs text-muted-foreground">المعرّف (ID)</p>
                         <Badge variant="outline" className="font-mono">{tool.id}</Badge>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
+                        <div><p className="text-xs text-muted-foreground">النوع</p><p className="flex items-center gap-1">{(tool as any).tool_type === 'external' ? <Globe className="h-3 w-3 text-blue-500" /> : <FileCode className="h-3 w-3 text-violet-500" />} {(tool as any).tool_type === 'embedded' ? 'مدمجة' : 'خارجية'}</p></div>
                         <div><p className="text-xs text-muted-foreground">التصنيف</p><p>{tool.category}</p></div>
                         <div><p className="text-xs text-muted-foreground">السعر</p><p className="font-mono">{tool.price_label}</p></div>
                     </div>

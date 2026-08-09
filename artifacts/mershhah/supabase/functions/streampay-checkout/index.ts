@@ -14,16 +14,26 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const streamApiKey = Deno.env.get("STREAMPAY_API_KEY")!;
-    const streamApiSecret = Deno.env.get("STREAMPAY_API_SECRET")!;
+    const streamApiKey = Deno.env.get("STREAMPAY_API_KEY");
+    const streamApiSecret = Deno.env.get("STREAMPAY_API_SECRET");
     const streamApiBase = "https://stream-app-service.streampay.sa/api/v2";
+
+    // Validate secrets exist
+    if (!streamApiKey || !streamApiSecret) {
+      console.error("[StreamPay Checkout] Missing secrets! STREAMPAY_API_KEY:", !!streamApiKey, "STREAMPAY_API_SECRET:", !!streamApiSecret);
+      return new Response(
+        JSON.stringify({ error: "Payment gateway not configured. Please contact support." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace("Bearer ", "");
-    
-    const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) {
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      console.error("[StreamPay Checkout] Auth failed:", authError?.message);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
@@ -31,6 +41,8 @@ serve(async (req) => {
     }
 
     const { plan_id, billing_cycle, discount_code } = await req.json();
+    console.log("[StreamPay Checkout] Request:", { plan_id, billing_cycle, discount_code, user_id: user.id });
+
     const authToken = btoa(`${streamApiKey}:${streamApiSecret}`);
 
     // 1. Get plan
@@ -41,6 +53,7 @@ serve(async (req) => {
       .single();
 
     if (planError || !plan) {
+      console.error("[StreamPay Checkout] Plan not found:", plan_id, planError);
       return new Response(JSON.stringify({ error: "Plan not found" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 404,
@@ -57,6 +70,7 @@ serve(async (req) => {
     let consumerId = profile?.streampay_consumer_id;
 
     if (!consumerId) {
+      console.log("[StreamPay Checkout] Creating consumer for user:", user.id);
       const consumerRes = await fetch(`${streamApiBase}/consumers`, {
         method: "POST",
         headers: {
@@ -72,7 +86,17 @@ serve(async (req) => {
         }),
       });
 
-      const consumer = await consumerRes.json();
+      const consumerBody = await consumerRes.text();
+      console.log("[StreamPay Checkout] Consumer response:", consumerRes.status, consumerBody);
+
+      if (!consumerRes.ok) {
+        return new Response(
+          JSON.stringify({ error: `Failed to create customer: ${consumerBody}` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+        );
+      }
+
+      const consumer = JSON.parse(consumerBody);
       consumerId = consumer.id;
 
       await supabase
@@ -84,7 +108,7 @@ serve(async (req) => {
     // 3. Apply discount if provided
     let discountAmount = 0;
     let discountCodeId = null;
-    
+
     if (discount_code) {
       const { data: dc } = await supabase
         .from("discount_codes")
@@ -121,6 +145,7 @@ serve(async (req) => {
     // 5. Create StreamPay product for this plan if not exists
     let productId = plan.streampay_product_id;
     if (!productId) {
+      console.log("[StreamPay Checkout] Creating product for plan:", plan.name);
       const productRes = await fetch(`${streamApiBase}/products`, {
         method: "POST",
         headers: {
@@ -129,15 +154,25 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           name: `${plan.name} - ${billing_cycle === "yearly" ? "سنوي" : "شهري"}`,
-          description: plan.description,
-          price: Math.round(finalAmount * 100), // StreamPay uses halalas
+          description: plan.description || `اشتراك ${plan.name}`,
+          price: finalAmount,
           currency: "SAR",
           type: "RECURRING",
           recurring_interval: billing_cycle === "yearly" ? "YEARLY" : "MONTHLY",
         }),
       });
 
-      const product = await productRes.json();
+      const productBody = await productRes.text();
+      console.log("[StreamPay Checkout] Product response:", productRes.status, productBody);
+
+      if (!productRes.ok) {
+        return new Response(
+          JSON.stringify({ error: `Failed to create product: ${productBody}` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+        );
+      }
+
+      const product = JSON.parse(productBody);
       productId = product.id;
 
       await supabase
@@ -147,6 +182,9 @@ serve(async (req) => {
     }
 
     // 6. Create payment link
+    const origin = req.headers.get("origin") || "https://www.mershhah.com";
+    console.log("[StreamPay Checkout] Creating payment link, consumer:", consumerId, "product:", productId);
+
     const paymentLinkRes = await fetch(`${streamApiBase}/payment_links`, {
       method: "POST",
       headers: {
@@ -161,8 +199,8 @@ serve(async (req) => {
         currency: "SAR",
         max_number_of_payments: 1,
         organization_consumer_id: consumerId,
-        success_redirect_url: `${req.headers.get("origin") || "https://www.mershhah.com"}/billing/success`,
-        failure_redirect_url: `${req.headers.get("origin") || "https://www.mershhah.com"}/billing/failed`,
+        success_redirect_url: `${origin}/billing/success`,
+        failure_redirect_url: `${origin}/billing/failed`,
         custom_metadata: {
           profile_id: user.id,
           plan_id: plan_id,
@@ -175,7 +213,25 @@ serve(async (req) => {
       }),
     });
 
-    const paymentLink = await paymentLinkRes.json();
+    const paymentLinkBody = await paymentLinkRes.text();
+    console.log("[StreamPay Checkout] Payment link response:", paymentLinkRes.status, paymentLinkBody);
+
+    if (!paymentLinkRes.ok) {
+      return new Response(
+        JSON.stringify({ error: `Failed to create payment link: ${paymentLinkBody}` }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
+    }
+
+    const paymentLink = JSON.parse(paymentLinkBody);
+
+    if (!paymentLink.url) {
+      console.error("[StreamPay Checkout] No URL in response:", paymentLink);
+      return new Response(
+        JSON.stringify({ error: "Payment link created but no URL returned", raw: paymentLink }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
+      );
+    }
 
     // 7. Record pending subscription
     const endDate = new Date();
@@ -205,19 +261,20 @@ serve(async (req) => {
       await supabase.rpc("increment_discount_usage", { code_id: discountCodeId }).catch(() => {
         supabase
           .from("discount_codes")
-          .update({ current_uses: supabase.rpc ? undefined : 1 })
+          .update({ current_uses: 1 })
           .eq("id", discountCodeId);
       });
     }
 
+    console.log("[StreamPay Checkout] Success! URL:", paymentLink.url);
     return new Response(
       JSON.stringify({ url: paymentLink.url }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
-    console.error("[StreamPay Checkout] Error:", error);
+    console.error("[StreamPay Checkout] Fatal error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || "Internal server error" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }

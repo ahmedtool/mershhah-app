@@ -112,7 +112,10 @@ export default function OwnerSettingsPage() {
     } catch { toast({ variant: 'destructive', title: 'خطأ' }); } finally { setIsCheckingCoupon(false); }
   };
 
+  const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
+
   const handleCheckout = async (planId: string) => {
+    setIsCheckingOut(planId);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/streampay-checkout`;
@@ -128,12 +131,18 @@ export default function OwnerSettingsPage() {
       console.log('[Checkout] Raw response:', rawText);
       try {
         const data = JSON.parse(rawText);
-        if (data.url) { window.location.href = data.url; }
-        else { toast({ variant: 'destructive', title: 'خطأ', description: data.error || rawText || 'فشل إنشاء رابط الدفع' }); }
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          const errorMsg = data.error || 'فشل إنشاء رابط الدفع';
+          console.error('[Checkout] Error from function:', errorMsg);
+          toast({ variant: 'destructive', title: 'خطأ في الدفع', description: typeof errorMsg === 'string' ? errorMsg.slice(0, 200) : 'خطأ غير معروف' });
+        }
       } catch {
         toast({ variant: 'destructive', title: 'خطأ', description: `رد غير متوقع (${res.status}): ${rawText.slice(0, 200)}` });
       }
     } catch (error: any) { console.error('[Checkout] Error:', error); toast({ variant: 'destructive', title: 'خطأ', description: error.message }); }
+    finally { setIsCheckingOut(null); }
   };
 
   if (isUserLoading) {
@@ -338,10 +347,10 @@ export default function OwnerSettingsPage() {
                       )}
                       {plan.trial_days > 0 && <p className="text-[9px] text-violet-600 font-bold mt-1">فترة تجربة {plan.trial_days} يوم</p>}
                     </div>
-                    <button onClick={() => handleCheckout(plan.id)} disabled={isCurrentPlan}
+                    <button onClick={() => handleCheckout(plan.id)} disabled={isCurrentPlan || isCheckingOut === plan.id}
                       className={cn("w-full h-9 rounded-xl text-[11px] font-bold transition-colors mt-3 flex items-center justify-center gap-1",
-                        isCurrentPlan ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : plan.is_featured ? 'bg-gray-900 text-white hover:bg-gray-800' : 'border border-gray-200 text-gray-600 hover:bg-gray-50')}>
-                      {isCurrentPlan ? 'الباقة الحالية' : <>{selectedCycle === 'yearly' ? 'اشتراك سنوي' : 'اشتراك شهري'} <ArrowRight className="h-3 w-3" /></>}
+                        isCurrentPlan ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : isCheckingOut === plan.id ? 'bg-gray-400 text-white cursor-wait' : plan.is_featured ? 'bg-gray-900 text-white hover:bg-gray-800' : 'border border-gray-200 text-gray-600 hover:bg-gray-50')}>
+                      {isCurrentPlan ? 'الباقة الحالية' : isCheckingOut === plan.id ? <><Loader2 className="h-3 w-3 animate-spin" /> جاري التوجيه...</> : <>{selectedCycle === 'yearly' ? 'اشتراك سنوي' : 'اشتراك شهري'} <ArrowRight className="h-3 w-3" /></>}
                     </button>
                   </div>
                 </div>

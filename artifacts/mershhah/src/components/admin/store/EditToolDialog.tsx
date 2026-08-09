@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Code2, Copy, Sparkles, Box } from "lucide-react";
+import { Loader2, Code2, Copy, Sparkles, Box, ExternalLink, FileCode, Globe } from "lucide-react";
 import { supabase } from '@/lib/supabase';
 import { generateToolIdeas } from "@/ai/flows/generate-tool-ideas";
 import { StorageImage } from "@/components/shared/StorageImage";
@@ -28,7 +28,9 @@ const formSchema = z.object({
   popular: z.boolean().default(false),
   billing_type: z.enum(["plan", "addon"]).default("plan"),
   period_months: z.coerce.number().int().min(1, "المدة يجب أن تكون شهراً واحداً على الأقل.").nullable().optional(),
-  integration_url: z.string().url("رابط غير صحيح").or(z.literal("")).optional(),
+  tool_type: z.enum(["external", "embedded"]).default("external"),
+  external_url: z.string().url("رابط غير صحيح").or(z.literal("")).optional(),
+  content: z.string().optional(),
   developer_name: z.string().optional(),
   developer_url: z.string().url("رابط غير صحيح").or(z.literal("")).optional(),
   version: z.string().optional(),
@@ -61,6 +63,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
   const toolId = form.watch('id');
   const selectedCategory = form.watch('category');
   const billingType = form.watch('billing_type');
+  const toolType = form.watch('tool_type');
 
   const uniqueCategories = useMemo(() => {
     if (!allTools) return ['marketing', 'operations', 'analytics'];
@@ -76,7 +79,9 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
         id: tool.id,
         billing_type: tool.billing_type || "plan",
         period_months: tool.period_months ?? (tool.billing_type === "addon" ? 1 : null),
-        integration_url: tool.integration_url || "",
+        tool_type: (tool as any).tool_type || "external",
+        external_url: (tool as any).external_url || "",
+        content: (tool as any).content || "",
         developer_name: tool.developer_name || "",
         developer_url: tool.developer_url || "",
         version: tool.version || "1.0.0",
@@ -92,7 +97,9 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
         popular: false,
         billing_type: "plan",
         period_months: null,
-        integration_url: "",
+        tool_type: "external",
+        external_url: "",
+        content: "",
         developer_name: "",
         developer_url: "",
         version: "1.0.0",
@@ -140,16 +147,31 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
         }
 
         const dataToSave: any = {
-          ...values,
+          title: values.title,
+          description: values.description,
+          category: values.category,
+          price_label: values.price_label,
+          icon: values.icon,
+          color: values.color,
+          bg_color: values.bg_color,
+          popular: values.popular,
+          billing_type: values.billing_type,
+          period_months: values.period_months,
+          tool_type: values.tool_type,
+          external_url: values.tool_type === 'external' ? values.external_url : null,
+          content: values.tool_type === 'embedded' ? values.content : null,
+          developer_name: values.developer_name,
+          developer_url: values.developer_url,
+          version: values.version,
           type: 'free',
           image_path: imagePath ?? null,
         };
 
         if (isEditing) {
-          const { id, ...updateData } = dataToSave;
-          const { error } = await supabase.from('tools').update(updateData).eq('id', tool!.id);
+          const { error } = await supabase.from('tools').update(dataToSave).eq('id', tool!.id);
           if (error) throw error;
         } else {
+          dataToSave.id = values.id;
           const { data: existing } = await supabase.from('tools').select('id').eq('id', values.id).single();
           if (existing) {
             toast({ variant: "destructive", title: "المعرف مستخدم بالفعل", description: "هذا المعرف مستخدم من قبل أداة أخرى." });
@@ -236,6 +258,68 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
               }} />
             </div>
 
+            {/* Tool Type */}
+            <FormField control={form.control} name="tool_type" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs text-gray-500">نوع الأداة</FormLabel>
+                <div className="grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => field.onChange('external')}
+                    className={`h-14 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${
+                      field.value === 'external' ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                    <Globe className={`h-4 w-4 ${field.value === 'external' ? 'text-gray-900' : 'text-gray-400'}`} />
+                    <span className={`text-[10px] font-bold ${field.value === 'external' ? 'text-gray-900' : 'text-gray-500'}`}>أداة خارجية</span>
+                    <span className="text-[8px] text-gray-400">رابط URL</span>
+                  </button>
+                  <button type="button" onClick={() => field.onChange('embedded')}
+                    className={`h-14 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${
+                      field.value === 'embedded' ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}>
+                    <FileCode className={`h-4 w-4 ${field.value === 'embedded' ? 'text-gray-900' : 'text-gray-400'}`} />
+                    <span className={`text-[10px] font-bold ${field.value === 'embedded' ? 'text-gray-900' : 'text-gray-500'}`}>أداة مدمجة</span>
+                    <span className="text-[8px] text-gray-400">HTML/CSS/JS</span>
+                  </button>
+                </div>
+              </FormItem>
+            )} />
+
+            {/* External URL */}
+            {toolType === 'external' && (
+              <FormField control={form.control} name="external_url" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-gray-500">رابط الأداة الخارجي</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Globe className="absolute end-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
+                      <Input placeholder="https://my-tool.com" {...field} className="h-11 rounded-xl border-gray-200 text-sm pe-9" dir="ltr" disabled={isSaving} />
+                    </div>
+                  </FormControl>
+                  <p className="text-[9px] text-gray-400 mt-1">الأداة ستفتح داخل iframe في المنصة</p>
+                  <FormMessage className="text-[10px]" />
+                </FormItem>
+              )} />
+            )}
+
+            {/* Embedded Content */}
+            {toolType === 'embedded' && (
+              <FormField control={form.control} name="content" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-gray-500">كود الأداة (HTML + CSS + JS)</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder={`<div class="tool-container">\n  <h2>أداتي</h2>\n  <p>مرحباً!</p>\n</div>\n\n<style>\n  .tool-container { padding: 20px; }\n</style>\n\n<script>\n  console.log('أداة جديدة!');\n</script>`}
+                      {...field}
+                      className="rounded-xl border-gray-200 text-xs font-mono min-h-[150px] resize-y"
+                      dir="ltr"
+                      disabled={isSaving}
+                    />
+                  </FormControl>
+                  <p className="text-[9px] text-gray-400 mt-1">اكتب الكود بالكامل — HTML + CSS + JS في ملف واحد</p>
+                  <FormMessage className="text-[10px]" />
+                </FormItem>
+              )} />
+            )}
+
             {/* Category */}
             <FormField control={form.control} name="category" render={({ field }) => (
               <FormItem>
@@ -315,21 +399,12 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
               </FormItem>
             )} />
 
-            {/* Integration Fields */}
+            {/* Developer Info */}
             <div className="rounded-xl bg-gray-50 p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Code2 className="h-4 w-4 text-gray-400" />
-                <span className="text-xs font-bold text-gray-600">معلومات التكامل</span>
+                <span className="text-xs font-bold text-gray-600">معلومات المطور</span>
               </div>
-              <FormField control={form.control} name="integration_url" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-[10px] text-gray-500">رابط التكامل (API)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://api.example.com/webhook" {...field} className="h-9 rounded-lg border-gray-200 text-[11px]" dir="ltr" disabled={isSaving} />
-                  </FormControl>
-                  <FormMessage className="text-[10px]" />
-                </FormItem>
-              )} />
               <div className="grid grid-cols-2 gap-2">
                 <FormField control={form.control} name="developer_name" render={({ field }) => (
                   <FormItem>
@@ -350,23 +425,15 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
                   </FormItem>
                 )} />
               </div>
-            </div>
-
-            {/* Developer Info */}
-            <div className="rounded-xl bg-gray-50 p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <Code2 className="h-4 w-4 text-gray-400" />
-                <span className="text-xs font-bold text-gray-600">مسار الملف</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 text-[11px] text-gray-400 bg-white px-3 py-2 rounded-lg border border-gray-200" dir="ltr">
-                  {toolId ? `src/app/owner/tools/${toolId}/page.tsx` : 'src/app/owner/tools/.../page.tsx'}
-                </code>
-                <button type="button" onClick={() => { navigator.clipboard.writeText(`src/app/owner/tools/${toolId}/page.tsx`); toast({ title: "تم النسخ" }); }} disabled={!toolId}
-                  className="h-9 w-9 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-50">
-                  <Copy className="h-3.5 w-3.5 text-gray-400" />
-                </button>
-              </div>
+              <FormField control={form.control} name="developer_url" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-[10px] text-gray-500">رابط المطور</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://developer.com" {...field} className="h-9 rounded-lg border-gray-200 text-[11px]" dir="ltr" disabled={isSaving} />
+                  </FormControl>
+                  <FormMessage className="text-[10px]" />
+                </FormItem>
+              )} />
             </div>
 
             {/* Actions */}
