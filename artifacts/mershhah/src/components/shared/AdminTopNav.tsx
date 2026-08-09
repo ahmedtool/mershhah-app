@@ -170,21 +170,24 @@ export function AdminTopNav() {
 
                 {showFinancials && (
                   <div className="absolute top-full mt-1 right-0 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 min-w-[180px]">
-                    {financialsItems.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setShowFinancials(false)}
-                        className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold transition-colors ${
-                          (item.href === '/admin/financials' ? pathname === '/admin/financials' : pathname.startsWith(item.href))
-                            ? 'bg-gray-50 text-gray-900'
-                            : 'text-gray-500 hover:bg-gray-50'
-                        }`}
-                      >
-                        <item.icon className="h-3.5 w-3.5 text-gray-400" />
-                        {item.label}
-                      </Link>
-                    ))}
+                    {financialsItems.map((item) => {
+                      const active = item.href === '/admin/financials'
+                        ? pathname === '/admin/financials'
+                        : pathname.startsWith(item.href);
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setShowFinancials(false)}
+                          className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold transition-colors ${
+                            active ? 'bg-gray-50 text-gray-900' : 'text-gray-500 hover:bg-gray-50'
+                          }`}
+                        >
+                          <item.icon className="h-3.5 w-3.5 text-gray-400" />
+                          {item.label}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </div>
