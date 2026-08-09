@@ -153,9 +153,9 @@ export function AdminTopNav() {
             ))}
 
             {hasFinancials && (
-              <div ref={financialsRef} className="relative">
-                <button
-                  onClick={() => setShowFinancials(!showFinancials)}
+              <div ref={financialsRef} className="relative flex items-center">
+                <Link
+                  href="/admin/financials"
                   className={`flex items-center gap-1.5 h-9 px-3 rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap ${
                     isFinancialsActive
                       ? 'bg-gray-900 text-white'
@@ -164,6 +164,11 @@ export function AdminTopNav() {
                 >
                   <Tag className="h-3.5 w-3.5 shrink-0" />
                   <span className="hidden md:inline">المالية</span>
+                </Link>
+                <button
+                  onClick={() => setShowFinancials(!showFinancials)}
+                  className="h-9 px-1 flex items-center justify-center text-gray-400 hover:text-gray-600"
+                >
                   <ChevronDown className={`h-3 w-3 transition-transform ${showFinancials ? 'rotate-180' : ''}`} />
                 </button>
 
