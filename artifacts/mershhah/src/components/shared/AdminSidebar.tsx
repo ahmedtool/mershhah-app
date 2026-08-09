@@ -86,7 +86,7 @@ export function AdminSidebar() {
     router.refresh();
   };
 
-  const hasFinancials = user?.email === SUPER_ADMIN_EMAIL || user?.admin_permissions?.includes('all') || user?.admin_permissions?.includes('financials');
+  const hasFinancials = user?.role === 'admin';
 
   const visibleMenuItems = menuItems.filter((item) => {
     if (user?.email === SUPER_ADMIN_EMAIL || user?.admin_permissions?.includes('all')) return true;

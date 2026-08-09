@@ -95,7 +95,7 @@ export function AdminTopNav() {
     router.refresh();
   };
 
-  const hasFinancials = user?.email === SUPER_ADMIN_EMAIL || user?.admin_permissions?.includes('all') || user?.admin_permissions?.includes('financials');
+  const hasFinancials = user?.role === 'admin';
 
   const visibleNavItems = navItems.filter((item) => {
     if (user?.email === SUPER_ADMIN_EMAIL || user?.admin_permissions?.includes('all')) return true;
