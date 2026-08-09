@@ -129,6 +129,7 @@ GRANT EXECUTE ON FUNCTION public.delete_auth_user(uuid) TO authenticated;
 -- ============================================================
 -- 8. نظام مالي: StreamPay + باقات + فواتير + كوبونات
 -- ============================================================
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS streampay_consumer_id text;
 ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS streampay_product_id text;
 ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS price_monthly numeric default 0;
 ALTER TABLE public.plans ADD COLUMN IF NOT EXISTS price_yearly numeric default 0;
