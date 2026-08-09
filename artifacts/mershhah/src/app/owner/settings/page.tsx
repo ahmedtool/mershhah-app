@@ -121,9 +121,10 @@ export default function OwnerSettingsPage() {
         body: JSON.stringify({ plan_id: planId, billing_cycle: selectedCycle, discount_code: couponCode || undefined }),
       });
       const data = await res.json();
+      console.log('[Checkout] Response:', JSON.stringify(data));
       if (data.url) { window.location.href = data.url; }
-      else { toast({ variant: 'destructive', title: 'خطأ', description: data.error || 'فشل إنشاء رابط الدفع' }); }
-    } catch (error: any) { toast({ variant: 'destructive', title: 'خطأ', description: error.message }); }
+      else { toast({ variant: 'destructive', title: 'خطأ', description: data.error || JSON.stringify(data) || 'فشل إنشاء رابط الدفع' }); }
+    } catch (error: any) { console.error('[Checkout] Error:', error); toast({ variant: 'destructive', title: 'خطأ', description: error.message }); }
   };
 
   if (isUserLoading) {
