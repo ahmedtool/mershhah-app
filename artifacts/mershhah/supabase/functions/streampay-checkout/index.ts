@@ -99,9 +99,10 @@ serve(async (req) => {
         body: JSON.stringify({
           name: profile?.full_name || user.email || "Customer",
           email: user.email,
-          phone_number: profile?.phone,
+          phone_number: profile?.phone || undefined,
           external_id: user.id,
-          communication_methods: ["EMAIL", "SMS"],
+          // SMS requires a phone number on file — only request it when we actually have one
+          communication_methods: profile?.phone ? ["EMAIL", "SMS"] : ["EMAIL"],
         }),
       });
 
