@@ -57,6 +57,22 @@ async function fetchStreamPayAmount(path: string): Promise<number> {
   }
 }
 
+// Every signup is auto-enrolled in the free plan as "active". Once a paid
+// plan actually activates, that free row must stop being active too —
+// otherwise the profile ends up with two simultaneously "active"
+// subscriptions, which confuses admin reporting and re-blocks future
+// upgrades (the checkout guard only exempts the free plan, not a mix).
+async function supersedeFreePlan(supabase: any, profileId: string, keepSubscriptionId: string | null) {
+  let query = supabase
+    .from("subscriptions")
+    .update({ status: "inactive", updated_at: new Date().toISOString() })
+    .eq("profile_id", profileId)
+    .eq("plan_id", "free")
+    .eq("status", "active");
+  if (keepSubscriptionId) query = query.neq("id", keepSubscriptionId);
+  await query;
+}
+
 async function consumeDiscountCode(supabase: any, discountCodeId: string, profileId: string, discountAmount: number) {
   const { error: rpcError } = await supabase.rpc("increment_discount_usage", { code_id: discountCodeId });
   if (rpcError) {
@@ -137,6 +153,7 @@ serve(async (req) => {
             .select("id")
             .maybeSingle();
           subscriptionId = updatedSub?.id ?? null;
+          if (subscriptionId) await supersedeFreePlan(supabase, metadata.profile_id, subscriptionId);
         }
 
         // Record the invoice. There's nothing to update yet (checkout never
@@ -215,6 +232,7 @@ serve(async (req) => {
             })
             .eq("profile_id", metadata.profile_id)
             .eq("status", "pending");
+          await supersedeFreePlan(supabase, metadata.profile_id, null);
         }
         break;
       }

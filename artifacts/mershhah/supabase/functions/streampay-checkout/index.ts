@@ -79,16 +79,19 @@ serve(async (req) => {
       });
     }
 
-    // 2. A profile may only have one active subscription at a time — block a
-    // second purchase instead of silently letting them stack (and get billed
-    // for both). A stale "pending" row (checkout started but abandoned before
-    // paying) doesn't count after 30 minutes, so an abandoned attempt can't
-    // lock the account out forever.
+    // 2. A profile may only have one *paid* active subscription at a time —
+    // block a second purchase instead of silently letting them stack (and
+    // get billed for both). The free plan doesn't count: every new signup
+    // is auto-enrolled in it, so it must never block upgrading off of it.
+    // A stale "pending" row (checkout started but abandoned before paying)
+    // doesn't count after 30 minutes, so an abandoned attempt can't lock
+    // the account out forever.
     const { data: recentSubs } = await supabase
       .from("subscriptions")
-      .select("id, plan_name, status, created_at")
+      .select("id, plan_id, plan_name, status, created_at")
       .eq("profile_id", user.id)
       .in("status", ["active", "pending"])
+      .neq("plan_id", "free")
       .order("created_at", { ascending: false })
       .limit(5);
 
