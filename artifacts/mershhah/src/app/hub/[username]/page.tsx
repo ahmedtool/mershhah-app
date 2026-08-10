@@ -546,7 +546,7 @@ export default function RestaurantHubPage() {
 
               <Link href={`/support/${username}`} className="block">
                 <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all h-16">
-                  <div className="w-11 h-11 flex items-center justify-center rounded-xl bg-purple-100 text-purple-600 shrink-0">
+                  <div className="w-11 h-11 flex items-center justify-center rounded-xl bg-blue-100 text-blue-600 shrink-0">
                     <Ticket className="h-5 w-5" />
                   </div>
                   <div className="flex-1 text-right min-w-0">

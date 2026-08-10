@@ -40,7 +40,7 @@ type TopRestaurant = {
 const activityConfig: Record<string, { label: string; icon: any; color: string }> = {
   restaurant_created: { label: 'إنشاء حساب', icon: UserPlus, color: 'bg-blue-50 text-blue-600' },
   subscription_started: { label: 'تفعيل اشتراك', icon: Sparkles, color: 'bg-emerald-50 text-emerald-600' },
-  logo_added: { label: 'إضافة شعار', icon: ImagePlus, color: 'bg-purple-50 text-purple-600' },
+  logo_added: { label: 'إضافة شعار', icon: ImagePlus, color: 'bg-rose-50 text-rose-600' },
 };
 
 export default function AdminDashboardPage() {
@@ -183,11 +183,11 @@ export default function AdminDashboardPage() {
         {[
           { label: 'المطاعم', value: stats.totalRestaurants, icon: ShoppingBag, color: 'bg-blue-50 text-blue-500' },
           { label: 'الاشتراكات', value: stats.totalSubscriptions, icon: Users, color: 'bg-emerald-50 text-emerald-500' },
-          { label: 'اشتراكات الشهر', value: stats.newSubscriptionsThisMonth, icon: TrendingUp, color: 'bg-purple-50 text-purple-500' },
+          { label: 'اشتراكات الشهر', value: stats.newSubscriptionsThisMonth, icon: TrendingUp, color: 'bg-cyan-50 text-cyan-500' },
           { label: 'الزيارات', value: stats.totalHubVisits, icon: Eye, color: 'bg-amber-50 text-amber-500' },
           { label: 'الأطباق', value: stats.totalMenuItems, icon: Utensils, color: 'bg-rose-50 text-rose-500' },
           { label: 'التقييمات', value: stats.totalReviews, icon: Star, color: 'bg-yellow-50 text-yellow-600' },
-          { label: 'العروض', value: stats.totalOffers, icon: Megaphone, color: 'bg-indigo-50 text-indigo-500' },
+          { label: 'العروض', value: stats.totalOffers, icon: Megaphone, color: 'bg-sky-50 text-sky-500' },
           { label: 'الفروع', value: stats.totalBranches, icon: MapPin, color: 'bg-teal-50 text-teal-500' },
         ].map((stat) => {
           const Icon = stat.icon;

@@ -339,7 +339,7 @@ export function EditBranchDialog({
                 />
                 <button type="button" onClick={handleParseMapsUrl} disabled={parsingMaps || !mapsUrl.trim()}
                   className="h-10 px-3 rounded-xl border border-gray-200 text-[11px] font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                  {parsingMaps ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5 text-purple-500" />}
+                  {parsingMaps ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5 text-blue-500" />}
                   استخراج
                 </button>
               </div>

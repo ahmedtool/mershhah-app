@@ -114,7 +114,7 @@ export default function AdminDiscountsPage() {
     switch (type) {
       case 'percentage': return <Percent className="h-4 w-4 text-blue-500" />;
       case 'fixed': return <DollarSign className="h-4 w-4 text-emerald-500" />;
-      case 'free_trial': return <Gift className="h-4 w-4 text-violet-500" />;
+      case 'free_trial': return <Gift className="h-4 w-4 text-amber-500" />;
       default: return <Tag className="h-4 w-4 text-gray-400" />;
     }
   };

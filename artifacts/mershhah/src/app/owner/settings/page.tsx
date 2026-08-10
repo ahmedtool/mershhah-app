@@ -345,7 +345,7 @@ export default function OwnerSettingsPage() {
                           وفّر {Math.round((1 - plan.price_yearly / (plan.price_monthly * 12)) * 100)}% سنوياً
                         </p>
                       )}
-                      {plan.trial_days > 0 && <p className="text-[9px] text-violet-600 font-bold mt-1">فترة تجربة {plan.trial_days} يوم</p>}
+                      {plan.trial_days > 0 && <p className="text-[9px] text-amber-600 font-bold mt-1">فترة تجربة {plan.trial_days} يوم</p>}
                     </div>
                     <button onClick={() => handleCheckout(plan.id)} disabled={isCurrentPlan || isCheckingOut === plan.id}
                       className={cn("w-full h-9 rounded-xl text-[11px] font-bold transition-colors mt-3 flex items-center justify-center gap-1",

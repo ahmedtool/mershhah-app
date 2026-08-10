@@ -62,7 +62,7 @@ export function MenuTable({ items, restaurantId, userId, onActionCompletion }: M
   const getClassification = (item: any) => {
     const map: Record<string, { label: string; color: string }> = {
       Star: { label: 'نجمة', color: 'bg-amber-50 text-amber-600' },
-      Puzzle: { label: 'لغز', color: 'bg-purple-50 text-purple-600' },
+      Puzzle: { label: 'لغز', color: 'bg-rose-50 text-rose-600' },
       'Plow-Horse': { label: 'حصان عمل', color: 'bg-blue-50 text-blue-600' },
       Dog: { label: 'يحتاج تحسين', color: 'bg-gray-50 text-gray-500' },
     };

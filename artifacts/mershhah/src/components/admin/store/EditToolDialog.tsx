@@ -208,7 +208,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
             </div>
             {!isEditing && (
               <button type="button" onClick={handleGenerateToolIdea} disabled={isGenerating || !selectedCategory}
-                className="h-8 px-3 rounded-lg bg-purple-50 text-purple-600 text-[11px] font-medium hover:bg-purple-100 transition-colors flex items-center gap-1.5 disabled:opacity-50">
+                className="h-8 px-3 rounded-lg bg-blue-50 text-blue-600 text-[11px] font-medium hover:bg-blue-100 transition-colors flex items-center gap-1.5 disabled:opacity-50">
                 {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                 اقترح فكرة
               </button>

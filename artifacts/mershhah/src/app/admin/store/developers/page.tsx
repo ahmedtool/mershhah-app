@@ -111,7 +111,7 @@ export default function StoreDevelopersPage() {
                 <h3 className="font-semibold text-foreground">الأيقونة والألوان</h3>
                 <ul className="list-disc pr-5 space-y-1">
                   <li>اختر أيقونة Lucide تعبّر عن وظيفة الأداة (مثل <code className="px-1 py-0.5 rounded bg-muted text-xs">BarChart3</code> للتحليلات).</li>
-                  <li>استخدم ألوان هادئة متناسقة مع هوية مرشح (primary / blue / violet).</li>
+                  <li>استخدم ألوان هادئة متناسقة مع هوية مرشح (primary / blue / emerald).</li>
                   <li>تجنّب استخدام ألوان تحذيرية (أحمر قوي) إلا للأدوات الحرجة.</li>
                 </ul>
               </div>

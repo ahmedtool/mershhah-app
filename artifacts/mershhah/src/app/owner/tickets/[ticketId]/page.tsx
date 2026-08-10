@@ -30,7 +30,7 @@ const statusText: Record<string, string> = {
 const categoryStyles: Record<string, string> = {
   complaint: 'bg-red-50 text-red-600 border-red-100',
   inquiry: 'bg-blue-50 text-blue-600 border-blue-100',
-  employment: 'bg-purple-50 text-purple-600 border-purple-100',
+  employment: 'bg-teal-50 text-teal-600 border-teal-100',
   suggestion: 'bg-amber-50 text-amber-600 border-amber-100',
   other: 'bg-gray-50 text-gray-500 border-gray-100',
 };

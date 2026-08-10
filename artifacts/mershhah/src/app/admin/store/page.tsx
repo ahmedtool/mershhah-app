@@ -77,7 +77,7 @@ export default function AdminStorePage() {
         {[
           { label: 'إجمالي الأدوات', value: tools.length, icon: Package, color: 'text-blue-500', bg: 'bg-blue-50' },
           { label: 'التفعيلات', value: activations, icon: Users, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-          { label: 'أدوات مجانية', value: tools.filter(t => t.price_label === 'مجاني' || !t.price_label).length, icon: BarChart3, color: 'text-violet-500', bg: 'bg-violet-50' },
+          { label: 'أدوات مجانية', value: tools.filter(t => t.price_label === 'مجاني' || !t.price_label).length, icon: BarChart3, color: 'text-cyan-500', bg: 'bg-cyan-50' },
           { label: 'أدوات مدفوعة', value: tools.filter(t => t.price_label && t.price_label !== 'مجاني').length, icon: BarChart3, color: 'text-amber-500', bg: 'bg-amber-50' },
         ].map((stat, i) => (
           <div key={i} className="bg-white border border-gray-100 rounded-2xl p-4">

@@ -393,7 +393,7 @@ export default function ReviewsPage() {
                 <div key={d.day} className="flex items-center gap-2">
                   <span className="text-[10px] font-medium text-gray-500 w-12">{d.day}</span>
                   <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-400 rounded-full transition-all" style={{ width: `${d.pct}%` }} />
+                    <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${d.pct}%` }} />
                   </div>
                   <span className="text-[9px] text-gray-400 w-6 text-left">{d.count}</span>
                 </div>

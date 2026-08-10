@@ -84,8 +84,8 @@ export default function AdminSalesPage() {
           <div className="rounded-2xl border border-gray-100 overflow-hidden">
             <div className="px-5 pt-5 pb-4">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center">
-                  <Sparkles className="h-5 w-5 text-purple-500" />
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-blue-500" />
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-gray-900">ما هو مرشح؟</h2>

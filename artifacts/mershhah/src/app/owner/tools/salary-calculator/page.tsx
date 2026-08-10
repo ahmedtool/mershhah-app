@@ -125,8 +125,8 @@ export default function SalaryCalculatorPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center">
-            <Calculator className="h-6 w-6 text-violet-600" />
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center">
+            <Calculator className="h-6 w-6 text-emerald-600" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">حاسبة الرواتب</h1>

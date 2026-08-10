@@ -12,7 +12,7 @@ const typeConfig = {
   info: { icon: Info, className: "text-blue-500 border-blue-200 bg-blue-50" },
   warning: { icon: AlertTriangle, className: "text-yellow-500 border-yellow-200 bg-yellow-50" },
   success: { icon: CheckCircle, className: "text-green-500 border-green-200 bg-green-50" },
-  update: { icon: Bell, className: "text-purple-500 border-purple-200 bg-purple-50" },
+  update: { icon: Bell, className: "text-cyan-500 border-cyan-200 bg-cyan-50" },
 };
 
 export function AnnouncementBanner() {

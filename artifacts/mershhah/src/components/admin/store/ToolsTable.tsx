@@ -80,7 +80,7 @@ export function ToolsTable({ tools, onActionComplete }: ToolsTableProps) {
                     <TableCell><Badge variant="outline" className="font-mono">{tool.id}</Badge></TableCell>
                     <TableCell className="text-right">
                         <div className="flex items-center gap-1.5">
-                            {(tool as any).tool_type === 'external' ? <Globe className="h-3 w-3 text-blue-500" /> : <FileCode className="h-3 w-3 text-violet-500" />}
+                            {(tool as any).tool_type === 'external' ? <Globe className="h-3 w-3 text-blue-500" /> : <FileCode className="h-3 w-3 text-emerald-500" />}
                             <span className="text-xs">{(tool as any).tool_type === 'embedded' ? 'مدمجة' : 'خارجية'}</span>
                         </div>
                     </TableCell>
@@ -129,7 +129,7 @@ export function ToolsTable({ tools, onActionComplete }: ToolsTableProps) {
                         <Badge variant="outline" className="font-mono">{tool.id}</Badge>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
-                        <div><p className="text-xs text-muted-foreground">النوع</p><p className="flex items-center gap-1">{(tool as any).tool_type === 'external' ? <Globe className="h-3 w-3 text-blue-500" /> : <FileCode className="h-3 w-3 text-violet-500" />} {(tool as any).tool_type === 'embedded' ? 'مدمجة' : 'خارجية'}</p></div>
+                        <div><p className="text-xs text-muted-foreground">النوع</p><p className="flex items-center gap-1">{(tool as any).tool_type === 'external' ? <Globe className="h-3 w-3 text-blue-500" /> : <FileCode className="h-3 w-3 text-emerald-500" />} {(tool as any).tool_type === 'embedded' ? 'مدمجة' : 'خارجية'}</p></div>
                         <div><p className="text-xs text-muted-foreground">التصنيف</p><p>{tool.category}</p></div>
                         <div><p className="text-xs text-muted-foreground">السعر</p><p className="font-mono">{tool.price_label}</p></div>
                     </div>
