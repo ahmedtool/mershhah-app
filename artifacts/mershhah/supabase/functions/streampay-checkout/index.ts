@@ -6,6 +6,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function consumeDiscountCode(
+  supabase: any,
+  discountCodeId: string,
+  profileId: string,
+  subscriptionId: string | null,
+  discountAmount: number,
+) {
+  const { error: rpcError } = await supabase.rpc("increment_discount_usage", { code_id: discountCodeId });
+  if (rpcError) {
+    console.error("[StreamPay Checkout] Failed to increment discount usage:", rpcError);
+  }
+  await supabase.from("discount_code_usage").insert({
+    discount_code_id: discountCodeId,
+    profile_id: profileId,
+    subscription_id: subscriptionId,
+    discount_amount: discountAmount,
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -105,9 +124,10 @@ serve(async (req) => {
         .eq("id", user.id);
     }
 
-    // 3. Apply discount if provided
+    // 3. Validate discount (NOT consumed here — only once payment is actually confirmed)
     let discountAmount = 0;
-    let discountCodeId = null;
+    let discountCodeId: string | null = null;
+    const basePriceForValidation = billing_cycle === "yearly" ? plan.price_yearly : plan.price_monthly;
 
     if (discount_code) {
       const { data: dc } = await supabase
@@ -123,15 +143,16 @@ serve(async (req) => {
         const validUntil = dc.valid_until ? new Date(dc.valid_until) : null;
         const notExpired = !validUntil || validUntil > now;
         const withinUses = !dc.max_uses || dc.current_uses < dc.max_uses;
+        const appliesToPlan = !dc.applicable_plans?.length || dc.applicable_plans.includes(plan_id);
+        const meetsMinAmount = !dc.min_amount || basePriceForValidation >= dc.min_amount;
 
-        if (notExpired && withinUses && validFrom <= now) {
-          const price = billing_cycle === "yearly" ? plan.price_yearly : plan.price_monthly;
+        if (notExpired && withinUses && validFrom <= now && appliesToPlan && meetsMinAmount) {
           if (dc.discount_type === "percentage") {
-            discountAmount = Math.round((price * dc.discount_value) / 100);
+            discountAmount = Math.round((basePriceForValidation * dc.discount_value) / 100);
           } else if (dc.discount_type === "fixed") {
-            discountAmount = Math.min(dc.discount_value, price);
+            discountAmount = Math.min(dc.discount_value, basePriceForValidation);
           } else if (dc.discount_type === "free_trial") {
-            discountAmount = price;
+            discountAmount = basePriceForValidation;
           }
           discountCodeId = dc.id;
         }
@@ -139,13 +160,66 @@ serve(async (req) => {
     }
 
     // 4. Determine amount
-    const basePrice = billing_cycle === "yearly" ? plan.price_yearly : plan.price_monthly;
+    const basePrice = basePriceForValidation;
     const finalAmount = Math.max(0, basePrice - discountAmount);
+    const hasDiscount = discountAmount > 0;
 
-    // 5. Create StreamPay product for this plan if not exists
-    let productId = plan.streampay_product_id;
+    const endDate = new Date();
+    if (billing_cycle === "yearly") {
+      endDate.setFullYear(endDate.getFullYear() + 1);
+    } else {
+      endDate.setMonth(endDate.getMonth() + 1);
+    }
+
+    // 5. Fully-discounted (free trial) checkout: StreamPay requires amount >= 1,
+    // so there is nothing to charge — activate locally and skip the gateway entirely.
+    if (finalAmount <= 0) {
+      const { data: freeSub, error: freeSubError } = await supabase
+        .from("subscriptions")
+        .insert({
+          profile_id: user.id,
+          plan_id: plan_id,
+          plan_name: plan.name,
+          billing_cycle: billing_cycle,
+          amount: 0,
+          currency: "SAR",
+          status: "active",
+          discount_code_id: discountCodeId,
+          discount_amount: discountAmount,
+          start_date: new Date().toISOString(),
+          end_date: endDate.toISOString(),
+          next_billing_date: endDate.toISOString(),
+        })
+        .select()
+        .single();
+
+      if (freeSubError) {
+        console.error("[StreamPay Checkout] Failed to create free subscription:", freeSubError);
+        return new Response(JSON.stringify({ error: "Failed to activate subscription" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
+      }
+
+      if (discountCodeId) {
+        await consumeDiscountCode(supabase, discountCodeId, user.id, freeSub?.id ?? null, discountAmount);
+      }
+
+      const origin = req.headers.get("origin") || "https://www.mershhah.com";
+      return new Response(
+        JSON.stringify({ url: `${origin}/billing/success?status=free` }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // 6. Resolve a StreamPay product for this exact price.
+    // Only the canonical (non-discounted) product is cached on the plan row.
+    // A discounted checkout always gets its own product, so a coupon can never
+    // permanently change the price everyone else pays for that plan.
+    let productId: string | null = hasDiscount ? null : plan.streampay_product_id;
+
     if (!productId) {
-      console.log("[StreamPay Checkout] Creating product for plan:", plan.name);
+      console.log("[StreamPay Checkout] Creating product for plan:", plan.name, "amount:", finalAmount);
       const productRes = await fetch(`${streamApiBase}/products`, {
         method: "POST",
         headers: {
@@ -155,10 +229,9 @@ serve(async (req) => {
         body: JSON.stringify({
           name: `${plan.name} - ${billing_cycle === "yearly" ? "سنوي" : "شهري"}`,
           description: plan.description || `اشتراك ${plan.name}`,
-          price: finalAmount,
-          currency: "SAR",
           type: "RECURRING",
-          recurring_interval: billing_cycle === "yearly" ? "YEARLY" : "MONTHLY",
+          recurring_interval: billing_cycle === "yearly" ? "YEAR" : "MONTH",
+          prices: [{ currency: "SAR", amount: finalAmount }],
         }),
       });
 
@@ -175,13 +248,16 @@ serve(async (req) => {
       const product = JSON.parse(productBody);
       productId = product.id;
 
-      await supabase
-        .from("plans")
-        .update({ streampay_product_id: productId })
-        .eq("id", plan_id);
+      // Only cache the product on the plan when it reflects the plan's real price
+      if (!hasDiscount) {
+        await supabase
+          .from("plans")
+          .update({ streampay_product_id: productId })
+          .eq("id", plan_id);
+      }
     }
 
-    // 6. Create payment link
+    // 7. Create payment link
     const origin = req.headers.get("origin") || "https://www.mershhah.com";
     console.log("[StreamPay Checkout] Creating payment link, consumer:", consumerId, "product:", productId);
 
@@ -209,7 +285,6 @@ serve(async (req) => {
           discount_amount: discountAmount,
           description: `اشتراك ${plan.name} - ${billing_cycle === "yearly" ? "سنوي" : "شهري"}`,
         },
-        language: "ar",
       }),
     });
 
@@ -233,14 +308,8 @@ serve(async (req) => {
       );
     }
 
-    // 7. Record pending subscription
-    const endDate = new Date();
-    if (billing_cycle === "yearly") {
-      endDate.setFullYear(endDate.getFullYear() + 1);
-    } else {
-      endDate.setMonth(endDate.getMonth() + 1);
-    }
-
+    // 8. Record pending subscription. The discount code is only consumed once
+    // the webhook confirms the payment actually succeeded (see streampay-webhook).
     await supabase.from("subscriptions").insert({
       profile_id: user.id,
       plan_id: plan_id,
@@ -255,16 +324,6 @@ serve(async (req) => {
       end_date: endDate.toISOString(),
       next_billing_date: endDate.toISOString(),
     });
-
-    // 8. Update discount code usage
-    if (discountCodeId) {
-      await supabase.rpc("increment_discount_usage", { code_id: discountCodeId }).catch(() => {
-        supabase
-          .from("discount_codes")
-          .update({ current_uses: 1 })
-          .eq("id", discountCodeId);
-      });
-    }
 
     console.log("[StreamPay Checkout] Success! URL:", paymentLink.url);
     return new Response(
