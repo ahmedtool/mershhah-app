@@ -19,6 +19,7 @@ type Order = {
   startDate: string;
   endDate: string;
   hasRefundablePayment: boolean;
+  isSuspiciousFreeAccess: boolean;
 };
 
 export default function FinancialsOrdersPage() {
@@ -58,13 +59,18 @@ export default function FinancialsOrdersPage() {
         restaurant: restaurant?.name || profile?.restaurant_name || 'غير محدد',
         ownerName: profile?.full_name || 'غير محدد',
         plan: sub.plan_name,
-        // Actual amount charged (after discounts) — falls back to the plan's
-        // list price only for legacy rows created before `amount` was tracked.
-        amount: sub.amount || plan?.price || 0,
+        // Actual amount charged (after discounts). `0` is a real recorded
+        // value (nothing was charged) and must NOT be masked by the plan's
+        // list price — only genuinely missing (null/undefined) amounts,
+        // from legacy rows predating the `amount` column, fall back to it.
+        amount: sub.amount ?? plan?.price ?? 0,
         status: sub.status,
         startDate: sub.start_date,
         endDate: sub.end_date,
         hasRefundablePayment: refundableSubIds.has(sub.id),
+        // Active/paid-looking plan but nothing was ever actually charged —
+        // flag it so admins can catch free-access bugs instead of missing them.
+        isSuspiciousFreeAccess: sub.status === 'active' && !sub.amount && sub.plan_id !== 'free' && (plan?.price ?? 0) > 0,
       };
     }).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
 
@@ -244,9 +250,14 @@ export default function FinancialsOrdersPage() {
                   const statusInfo = statusConfig[order.status];
                   const StatusIcon = statusInfo.icon;
                   return (
-                    <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={order.id} className={`hover:bg-gray-50/50 transition-colors ${order.isSuspiciousFreeAccess ? 'bg-amber-50/50' : ''}`}>
                       <td className="px-5 py-3">
                         <span className="font-bold text-gray-700">{order.restaurant}</span>
+                        {order.isSuspiciousFreeAccess && (
+                          <span className="mr-2 inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700" title="اشتراك نشط بباقة مدفوعة لكن لم يُدفع أي مبلغ فعليًا">
+                            ⚠ وصول مجاني غير مبرر
+                          </span>
+                        )}
                       </td>
                       <td className="px-5 py-3">
                         <span className="text-gray-500">{order.ownerName}</span>
