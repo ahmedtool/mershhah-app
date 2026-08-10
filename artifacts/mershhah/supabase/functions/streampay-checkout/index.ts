@@ -128,7 +128,13 @@ serve(async (req) => {
     // 3. Validate discount (NOT consumed here — only once payment is actually confirmed)
     let discountAmount = 0;
     let discountCodeId: string | null = null;
-    const basePriceForValidation = billing_cycle === "yearly" ? plan.price_yearly : plan.price_monthly;
+    // Older plan rows only have the legacy `price` column populated —
+    // `price_monthly`/`price_yearly` default to 0 until backfilled. Fall back
+    // the same way the owner billing page already displays prices, so what
+    // the owner sees on screen matches what actually gets charged.
+    const basePriceForValidation = billing_cycle === "yearly"
+      ? plan.price_yearly
+      : (plan.price_monthly || plan.price || 0);
 
     if (discount_code) {
       const { data: dc } = await supabase
