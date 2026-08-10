@@ -79,7 +79,34 @@ serve(async (req) => {
       });
     }
 
-    // 2. Get or create StreamPay consumer
+    // 2. A profile may only have one active subscription at a time — block a
+    // second purchase instead of silently letting them stack (and get billed
+    // for both). A stale "pending" row (checkout started but abandoned before
+    // paying) doesn't count after 30 minutes, so an abandoned attempt can't
+    // lock the account out forever.
+    const { data: recentSubs } = await supabase
+      .from("subscriptions")
+      .select("id, plan_name, status, created_at")
+      .eq("profile_id", user.id)
+      .in("status", ["active", "pending"])
+      .order("created_at", { ascending: false })
+      .limit(5);
+
+    const pendingCutoff = Date.now() - 30 * 60 * 1000;
+    const blockingSub = (recentSubs || []).find((s) =>
+      s.status === "active" || (s.status === "pending" && new Date(s.created_at).getTime() > pendingCutoff)
+    );
+
+    if (blockingSub) {
+      return new Response(
+        JSON.stringify({
+          error: `لديك اشتراك ${blockingSub.status === "pending" ? "قيد الإتمام" : "نشط"} بالفعل (${blockingSub.plan_name}). ألغِ الاشتراك الحالي أولاً قبل الاشتراك بباقة جديدة.`,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 }
+      );
+    }
+
+    // 3. Get or create StreamPay consumer
     const { data: profile } = await supabase
       .from("profiles")
       .select("*")
@@ -125,7 +152,7 @@ serve(async (req) => {
         .eq("id", user.id);
     }
 
-    // 3. Validate discount (NOT consumed here — only once payment is actually confirmed)
+    // 4. Validate discount (NOT consumed here — only once payment is actually confirmed)
     let discountAmount = 0;
     let discountCodeId: string | null = null;
     // Older plan rows only have the legacy `price` column populated —
@@ -166,7 +193,7 @@ serve(async (req) => {
       }
     }
 
-    // 4. Determine amount
+    // 5. Determine amount
     const basePrice = basePriceForValidation;
     const finalAmount = Math.max(0, basePrice - discountAmount);
     const hasDiscount = discountAmount > 0;
@@ -178,7 +205,7 @@ serve(async (req) => {
       endDate.setMonth(endDate.getMonth() + 1);
     }
 
-    // 5. Fully-discounted (free trial) checkout: StreamPay requires amount >= 1,
+    // 6. Fully-discounted (free trial) checkout: StreamPay requires amount >= 1,
     // so there is nothing to charge — activate locally and skip the gateway entirely.
     if (finalAmount <= 0) {
       const { data: freeSub, error: freeSubError } = await supabase
@@ -219,7 +246,7 @@ serve(async (req) => {
       );
     }
 
-    // 6. Resolve a StreamPay product for this exact price.
+    // 7. Resolve a StreamPay product for this exact price.
     // Only the canonical (non-discounted) product is cached on the plan row.
     // A discounted checkout always gets its own product, so a coupon can never
     // permanently change the price everyone else pays for that plan.
@@ -264,7 +291,7 @@ serve(async (req) => {
       }
     }
 
-    // 7. Create payment link
+    // 8. Create payment link
     const origin = req.headers.get("origin") || "https://www.mershhah.com";
     console.log("[StreamPay Checkout] Creating payment link, consumer:", consumerId, "product:", productId);
 
@@ -315,7 +342,7 @@ serve(async (req) => {
       );
     }
 
-    // 8. Record pending subscription. The discount code is only consumed once
+    // 9. Record pending subscription. The discount code is only consumed once
     // the webhook confirms the payment actually succeeded (see streampay-webhook).
     await supabase.from("subscriptions").insert({
       profile_id: user.id,
