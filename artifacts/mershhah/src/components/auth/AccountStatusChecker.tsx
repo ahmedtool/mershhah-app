@@ -1,38 +1,56 @@
 'use client';
 
 import { useUser } from '@/hooks/useUser';
-import { Loader2, ShieldAlert, BadgeInfo } from 'lucide-react';
+import { Loader2, ShieldAlert, BadgeInfo, Check, X, Tag } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Link } from 'wouter';
 import { useState, useEffect } from 'react';
-import type { Plan, Subscription } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Separator } from '../ui/separator';
+import type { Subscription } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { getPlanFeatures } from '@/lib/plan-features';
 import { supabase } from '@/lib/supabase';
-import { Check, X } from 'lucide-react';
+
+type OnboardingPlan = {
+    id: string;
+    name: string;
+    description: string;
+    price_monthly: number;
+    price_yearly: number;
+    trial_days: number;
+    is_featured: boolean;
+    features?: Record<string, boolean | number>;
+};
+
+// `plans.features` keys are English identifiers (seeded outside the admin
+// editor, which writes Arabic labels directly) — translate the known ones
+// for display instead of leaking raw keys like "ai_analysis" into the UI.
+const FEATURE_LABELS: Record<string, string> = {
+    menu: 'قائمة المنيو الرقمية',
+    offers: 'العروض والحملات',
+    branches: 'الفروع المتعددة',
+    ai_analysis: 'تحليل وتوصيات ذكية',
+    custom_domain: 'نطاق مخصص',
+    api_access: 'الوصول عبر API',
+    white_label: 'بدون شعار مرشح',
+    priority_support: 'دعم فني ذو أولوية',
+};
+
+function describeFeature(key: string, value: boolean | number): { label: string; included: boolean } {
+    const baseLabel = FEATURE_LABELS[key] || key;
+    if (typeof value === 'number') {
+        return { label: value > 0 ? `${baseLabel} (حتى ${value})` : baseLabel, included: value > 0 };
+    }
+    return { label: baseLabel, included: value };
+}
 
 const FullPageLoader = () => (
     <div className="flex items-center justify-center h-full min-h-[50vh]">
-        <Loader2 className="animate-spin h-10 w-10 text-primary" />
+        <Loader2 className="animate-spin h-10 w-10 text-gray-900" />
     </div>
 );
 
 const CenteredMessage = ({ icon: Icon, title, children }: { icon: React.ElementType, title: string, children: React.ReactNode }) => (
     <div className="flex flex-col items-center justify-center h-full min-h-[50vh] text-center p-6 bg-background rounded-lg">
-        <Icon className="w-16 h-16 text-primary mb-4" />
+        <Icon className="w-16 h-16 text-gray-900 mb-4" />
         <h2 className="text-2xl font-bold mb-2">{title}</h2>
         <div className="max-w-md text-muted-foreground">{children}</div>
     </div>
@@ -40,11 +58,12 @@ const CenteredMessage = ({ icon: Icon, title, children }: { icon: React.ElementT
 
 export function AccountStatusChecker({ children }: { children: React.ReactNode }) {
     const { user, isLoading: isUserLoading } = useUser();
-    const [plans, setPlans] = useState<Plan[]>([]);
+    const [plans, setPlans] = useState<OnboardingPlan[]>([]);
     const [isLoadingPlans, setIsLoadingPlans] = useState(true);
     const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
     const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
-    const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<Plan | null>(null);
+    const [checkingOutId, setCheckingOutId] = useState<string | null>(null);
+    const [couponCode, setCouponCode] = useState('');
     const { toast } = useToast();
 
     useEffect(() => {
@@ -53,14 +72,14 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
             try {
                 const { data, error } = await supabase
                     .from('plans')
-                    .select('*')
+                    .select('id, name, description, price_monthly, price_yearly, trial_days, is_featured, features')
                     .eq('is_active', true);
                 if (error) throw error;
-                const fetchedPlans = (data || []) as Plan[];
+                const fetchedPlans = (data || []) as OnboardingPlan[];
                 fetchedPlans.sort((a, b) => {
                     if (a.is_featured && !b.is_featured) return -1;
                     if (!a.is_featured && b.is_featured) return 1;
-                    return a.price - b.price;
+                    return (a.price_monthly || 0) - (b.price_monthly || 0);
                 });
                 setPlans(fetchedPlans);
             } catch (error) {
@@ -131,9 +150,36 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
         checkAndMigrateSubscription();
     }, [user, isUserLoading, toast]);
 
-    const handleChoosePlan = (plan: Plan) => {
-        if (!user?.uid) return;
-        setSelectedPlanForPayment(plan);
+    const handleCheckout = async (planId: string, cycle: 'monthly' | 'yearly') => {
+        setCheckingOutId(`${planId}-${cycle}`);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const res = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/streampay-checkout`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${session?.access_token}`,
+                    },
+                    body: JSON.stringify({
+                        plan_id: planId,
+                        billing_cycle: cycle,
+                        discount_code: couponCode || undefined,
+                    }),
+                }
+            );
+            const data = await res.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                toast({ variant: 'destructive', title: 'تعذّر بدء الدفع', description: data.error || 'فشل إنشاء رابط الدفع' });
+                setCheckingOutId(null);
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'خطأ', description: error.message });
+            setCheckingOutId(null);
+        }
     };
 
     const isLoading = isUserLoading || isLoadingPlans || isCheckingSubscription;
@@ -160,88 +206,94 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
 
     if (needsToPay) {
         return (
-            <>
-                <div className="w-full max-w-5xl mx-auto p-4 py-8">
-                    <div className="text-center mb-10">
-                        <h2 className="text-3xl font-bold font-headline mb-2">باقي خطوة واحدة لتفعيل حسابك!</h2>
-                        <p className="text-muted-foreground max-w-2xl mx-auto">شكراً لتسجيلك في مرشح. اختر الباقة التي تناسب مرحلة نمو مشروعك.</p>
-                    </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-                        {plans.map(plan => {
-                            const features = getPlanFeatures(plan.id);
-                            return (
-                                <Card key={plan.id} className={`flex flex-col text-right ${plan.is_featured ? "border-2 border-primary shadow-lg" : ""}`}>
-                                    <CardHeader>
-                                        {plan.is_featured && <Badge className="mb-2 w-fit bg-primary/10 text-primary border-primary/20">الأكثر انتشاراً</Badge>}
-                                        <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
-                                        <CardDescription>{plan.description}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="flex-1 space-y-4">
-                                        <div className="flex items-baseline gap-2 justify-end mb-4">
-                                            <span className="text-5xl font-black text-primary">{plan.price}</span>
-                                            <span className="text-xl font-semibold text-muted-foreground">ر.س</span>
-                                        </div>
-                                        <span className="block text-sm text-muted-foreground text-right -mt-4">
-                                            {plan.price === 0 ? 'دائماً' : `/ لكل ${plan.duration_months} أشهر`}
-                                        </span>
-                                        <Separator className="my-4" />
-                                        <ul className="space-y-3 text-sm">
-                                            {Object.entries(features).map(([feature, included]) => (
-                                                <li key={feature} className={`flex items-center gap-3 ${!included ? 'text-muted-foreground line-through opacity-70' : 'font-medium'}`}>
-                                                    {included ? <Check className="h-5 w-5 text-green-500" /> : <X className="h-5 w-5 text-muted-foreground/50" />}
-                                                    <span>{feature}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </CardContent>
-                                    <CardFooter>
-                                        <Button onClick={() => handleChoosePlan(plan)} className="w-full h-12 text-lg" variant={plan.is_featured ? 'default' : 'outline'}>
-                                            اختر هذه الباقة
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            );
-                        })}
-                    </div>
+            <div className="w-full max-w-5xl mx-auto p-4 py-10" dir="rtl">
+                <div className="text-center mb-10">
+                    <h2 className="text-3xl font-bold mb-2 text-gray-900">باقي خطوة واحدة لتفعيل حسابك!</h2>
+                    <p className="text-gray-400 max-w-2xl mx-auto">شكراً لتسجيلك في مرشح. اختر الباقة التي تناسب مرحلة نمو مشروعك.</p>
                 </div>
 
-                <AlertDialog open={!!selectedPlanForPayment} onOpenChange={(isOpen) => !isOpen && setSelectedPlanForPayment(null)}>
-                    <AlertDialogContent dir="rtl">
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>إتمام عملية الدفع</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                لإتمام تفعيل باقة "{selectedPlanForPayment?.name}", الرجاء إتمام الدفع عبر الرابط التالي.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        {selectedPlanForPayment?.payment_link ? (
-                            <>
-                                <div className="py-4">
-                                    <p className="text-sm font-bold mb-2">رابط الدفع:</p>
-                                    <div className="p-2 bg-muted rounded-md text-center font-mono text-sm break-all" dir="ltr">
-                                        {selectedPlanForPayment.payment_link}
+                {/* Coupon */}
+                <div className="max-w-xs mx-auto mb-8 bg-white border border-gray-100 rounded-2xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                        <Tag className="h-4 w-4 text-gray-400" />
+                        <span className="text-xs font-bold text-gray-700">كوبون خصم (اختياري)</span>
+                    </div>
+                    <input
+                        type="text"
+                        placeholder="أدخل الكوبون"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-center font-bold tracking-wider placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                        dir="ltr"
+                    />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+                    {plans.map(plan => {
+                        const features = Object.entries(plan.features || {});
+                        const isCheckingOutMonthly = checkingOutId === `${plan.id}-monthly`;
+                        const isCheckingOutYearly = checkingOutId === `${plan.id}-yearly`;
+                        return (
+                            <div key={plan.id} className={`flex flex-col rounded-2xl border overflow-hidden ${plan.is_featured ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-100'}`}>
+                                <div className={`px-6 pt-6 pb-5 ${plan.is_featured ? 'bg-gray-900' : 'bg-gray-50'}`}>
+                                    {plan.is_featured && (
+                                        <span className="text-[10px] font-medium text-gray-300 bg-white/10 px-2 py-0.5 rounded-full">الأكثر انتشاراً</span>
+                                    )}
+                                    <h3 className={`text-lg font-bold mt-2 ${plan.is_featured ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
+                                    {plan.description && (
+                                        <p className={`text-xs mt-1 ${plan.is_featured ? 'text-gray-300' : 'text-gray-400'}`}>{plan.description}</p>
+                                    )}
+                                </div>
+
+                                <div className="px-6 py-5 border-b border-gray-100 space-y-1">
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-3xl font-black text-gray-900">{plan.price_monthly || 0}</span>
+                                        <span className="text-xs text-gray-400">ر.س/شهر</span>
                                     </div>
-                                    <p className="text-xs text-muted-foreground mt-4">بعد الدفع، سيبقى حسابك "قيد المراجعة" حتى يتم تأكيد الدفع.</p>
+                                    {plan.trial_days > 0 && (
+                                        <p className="text-[10px] text-amber-600 font-bold">فترة تجربة {plan.trial_days} يوم</p>
+                                    )}
                                 </div>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                    <AlertDialogAction asChild>
-                                        <Link href={selectedPlanForPayment.payment_link} target="_blank">الانتقال إلى الدفع</Link>
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </>
-                        ) : (
-                            <>
-                                <div className="py-4">
-                                    <p className="text-center text-muted-foreground">لا يوجد رابط دفع متاح حالياً. تواصل مع الدعم.</p>
+
+                                <div className="px-6 py-5 flex-1 space-y-2.5">
+                                    {features.length === 0 ? (
+                                        <p className="text-xs text-gray-300 text-center py-2">لا توجد تفاصيل إضافية</p>
+                                    ) : (
+                                        features.map(([key, value]) => {
+                                            const { label, included } = describeFeature(key, value);
+                                            return (
+                                                <div key={key} className={`flex items-center gap-2.5 text-xs ${included ? 'text-gray-700 font-medium' : 'text-gray-300 line-through'}`}>
+                                                    {included ? <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> : <X className="h-3.5 w-3.5 text-gray-300 shrink-0" />}
+                                                    <span>{label}</span>
+                                                </div>
+                                            );
+                                        })
+                                    )}
                                 </div>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>حسناً</AlertDialogCancel>
-                                </AlertDialogFooter>
-                            </>
-                        )}
-                    </AlertDialogContent>
-                </AlertDialog>
-            </>
+
+                                <div className="px-6 pb-6 space-y-2">
+                                    <button
+                                        onClick={() => handleCheckout(plan.id, 'monthly')}
+                                        disabled={checkingOutId !== null}
+                                        className="w-full h-11 rounded-xl bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        {isCheckingOutMonthly ? <Loader2 className="h-4 w-4 animate-spin" /> : 'اشتراك شهري'}
+                                    </button>
+                                    {plan.price_yearly > 0 && (
+                                        <button
+                                            onClick={() => handleCheckout(plan.id, 'yearly')}
+                                            disabled={checkingOutId !== null}
+                                            className="w-full h-11 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            {isCheckingOutYearly ? <Loader2 className="h-4 w-4 animate-spin" /> : `اشتراك سنوي (${plan.price_yearly} ر.س)`}
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
         );
     }
 
