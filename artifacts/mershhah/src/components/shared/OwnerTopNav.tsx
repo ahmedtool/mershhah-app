@@ -22,6 +22,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  CreditCard,
 } from 'lucide-react';
 
 export function OwnerTopNav() {
@@ -195,6 +196,11 @@ export function OwnerTopNav() {
                   className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold text-gray-500 hover:bg-gray-50">
                   <Settings className="h-3.5 w-3.5 text-gray-400" />
                   الإعدادات
+                </Link>
+                <Link href="/owner/billing" onClick={() => setShowUserMenu(false)}
+                  className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold text-gray-500 hover:bg-gray-50">
+                  <CreditCard className="h-3.5 w-3.5 text-gray-400" />
+                  الفواتير والاشتراكات
                 </Link>
                 <button onClick={handleLogout}
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold text-red-500 hover:bg-red-50">
