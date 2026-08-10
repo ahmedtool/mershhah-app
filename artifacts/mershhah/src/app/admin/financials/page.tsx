@@ -17,6 +17,7 @@ type RevenueStats = {
   totalSubscriptions: number;
   activeSubscriptions: number;
   cancelledSubscriptions: number;
+  pendingSubscriptions: number;
   revenueByPlan: { plan: string; count: number; revenue: number }[];
   monthlyTrend: { month: string; revenue: number; refunded: number }[];
   recentPayments: {
@@ -35,7 +36,7 @@ const monthNames = ['يناير', 'فبراير', 'مارس', 'أبريل', 'م�
 export default function AdminFinancialsPage() {
   const [stats, setStats] = useState<RevenueStats>({
     totalRevenue: 0, monthlyRevenue: 0, lastMonthRevenue: 0, totalRefunded: 0, avgPerRestaurant: 0,
-    totalSubscriptions: 0, activeSubscriptions: 0, cancelledSubscriptions: 0,
+    totalSubscriptions: 0, activeSubscriptions: 0, cancelledSubscriptions: 0, pendingSubscriptions: 0,
     revenueByPlan: [], monthlyTrend: [], recentPayments: [],
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -65,6 +66,7 @@ export default function AdminFinancialsPage() {
 
       const activeSubs = subs.filter(s => s.status === 'active');
       const cancelledSubs = subs.filter(s => s.status === 'cancelled');
+      const pendingSubs = subs.filter(s => s.status === 'pending');
 
       const completedCharges = transactions.filter((t: any) => t.type === 'subscription' && t.status === 'completed');
       const completedRefunds = transactions.filter((t: any) => t.type === 'refund' && t.status === 'completed');
@@ -130,6 +132,7 @@ export default function AdminFinancialsPage() {
         totalSubscriptions: subs.length,
         activeSubscriptions: activeSubs.length,
         cancelledSubscriptions: cancelledSubs.length,
+        pendingSubscriptions: pendingSubs.length,
         revenueByPlan,
         monthlyTrend,
         recentPayments,
@@ -325,9 +328,9 @@ export default function AdminFinancialsPage() {
       </div>
 
       {/* Subscription Status */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)
         ) : (
           <>
             <div className="bg-white border border-gray-100 rounded-2xl p-4 text-center">
@@ -335,7 +338,11 @@ export default function AdminFinancialsPage() {
               <p className="text-[10px] text-gray-400 mt-1">نشط</p>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4 text-center">
-              <p className="text-2xl font-black text-gray-400">{stats.totalSubscriptions - stats.activeSubscriptions - stats.cancelledSubscriptions}</p>
+              <p className="text-2xl font-black text-amber-500">{stats.pendingSubscriptions}</p>
+              <p className="text-[10px] text-gray-400 mt-1">قيد الإتمام</p>
+            </div>
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 text-center">
+              <p className="text-2xl font-black text-gray-400">{stats.totalSubscriptions - stats.activeSubscriptions - stats.cancelledSubscriptions - stats.pendingSubscriptions}</p>
               <p className="text-[10px] text-gray-400 mt-1">منتهي</p>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4 text-center">

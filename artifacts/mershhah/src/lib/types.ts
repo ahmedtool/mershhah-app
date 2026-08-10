@@ -136,7 +136,7 @@ export type Subscription = {
     profile_id: string;
     plan_name: string;
     plan_id: string;
-    status: 'active' | 'inactive' | 'cancelled';
+    status: 'active' | 'inactive' | 'cancelled' | 'pending';
     start_date: any;
     end_date: any;
 };

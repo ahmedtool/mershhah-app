@@ -15,7 +15,7 @@ type Order = {
   ownerName: string;
   plan: string;
   amount: number;
-  status: 'active' | 'inactive' | 'cancelled';
+  status: 'active' | 'inactive' | 'cancelled' | 'pending';
   startDate: string;
   endDate: string;
   hasRefundablePayment: boolean;
@@ -26,7 +26,7 @@ export default function FinancialsOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'cancelled'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'cancelled' | 'pending'>('all');
   const [refundingId, setRefundingId] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -140,6 +140,7 @@ export default function FinancialsOrdersPage() {
     active: { label: 'نشط', icon: CheckCircle, color: 'bg-emerald-50 text-emerald-600' },
     inactive: { label: 'منتهي', icon: Clock, color: 'bg-gray-50 text-gray-500' },
     cancelled: { label: 'ملغي', icon: XCircle, color: 'bg-red-50 text-red-500' },
+    pending: { label: 'قيد الإتمام', icon: Clock, color: 'bg-amber-50 text-amber-600' },
   };
 
   const pathname = usePathname();
@@ -199,7 +200,7 @@ export default function FinancialsOrdersPage() {
           />
         </div>
         <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1">
-          {(['all', 'active', 'inactive', 'cancelled'] as const).map((status) => (
+          {(['all', 'active', 'pending', 'inactive', 'cancelled'] as const).map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
