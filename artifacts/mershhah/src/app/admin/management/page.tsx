@@ -19,8 +19,17 @@ import { format, addMonths, isAfter } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RestaurantsTable } from '@/components/admin/management/RestaurantsTable';
-import type { Profile, Plan, Subscription } from '@/lib/types';
+import type { Profile, Subscription } from '@/lib/types';
 import { cn } from '@/lib/utils';
+
+type ManagementPlan = {
+  id: string;
+  name: string;
+  price: number;
+  price_monthly: number;
+  duration_months: number;
+  is_featured: boolean;
+};
 
 const formSchema = z.object({
   restaurant_name: z.string().min(2, 'اسم المشروع مطلوب'),
@@ -46,7 +55,7 @@ function ProfileDetails({
   const [isSaving, startSaving] = useTransition();
   const [isActivating, startActivating] = useTransition();
   const { toast } = useToast();
-  const [activePlans, setActivePlans] = useState<Plan[]>([]);
+  const [activePlans, setActivePlans] = useState<ManagementPlan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -54,8 +63,10 @@ function ProfileDetails({
 
   useEffect(() => {
     const fetchPlans = async () => {
-      const { data } = await supabase.from('plans').select('*').eq('is_active', true);
-      const plans = (data || []) as Plan[];
+      const { data } = await supabase.from('plans')
+        .select('id, name, price, price_monthly, duration_months, is_featured')
+        .eq('is_active', true);
+      const plans = (data || []) as ManagementPlan[];
       setActivePlans(plans);
       if (plans.length > 0) {
         const featured = plans.find((p) => p.is_featured);
@@ -167,31 +178,53 @@ function ProfileDetails({
           if (restErr) throw restErr;
         }
 
-        // Expire all previous active subscriptions
-        const { error: expireErr } = await supabase
+        // Supersede (not delete) any previously active subscriptions — this
+        // is an admin override, but it must stay in the audit trail, and
+        // must not erase the history that /admin/financials reports on.
+        const { error: supersedeErr } = await supabase
           .from('subscriptions')
-          .delete()
+          .update({ status: 'inactive', updated_at: new Date().toISOString() })
           .eq('profile_id', profile.id)
           .eq('status', 'active');
-        if (expireErr) throw expireErr;
+        if (supersedeErr) throw supersedeErr;
 
         let startDate = new Date();
         const subEndDate = currentSub?.end_date ? new Date(currentSub.end_date) : null;
         if (currentSub && currentSub.plan_id !== 'free' && subEndDate && isAfter(subEndDate, startDate)) {
           startDate = subEndDate;
         }
-        const endDate = addMonths(startDate, selectedPlan.duration_months);
+        const endDate = addMonths(startDate, selectedPlan.duration_months || 1);
+        const planAmount = selectedPlan.price_monthly || selectedPlan.price || 0;
 
-        const { error: subErr } = await supabase.from('subscriptions').insert({
+        const { data: newSub, error: subErr } = await supabase.from('subscriptions').insert({
           id: crypto.randomUUID(),
           profile_id: profile.id,
           plan_name: selectedPlan.name,
           plan_id: selectedPlan.id,
           status: 'active',
+          billing_cycle: 'monthly',
+          amount: 0,
           start_date: startDate.toISOString(),
           end_date: endDate.toISOString(),
-        });
+          next_billing_date: endDate.toISOString(),
+        }).select('id').single();
         if (subErr) throw subErr;
+
+        // Record it as a $0 manual adjustment so it shows up in
+        // /admin/financials — a grant given outside StreamPay must never be
+        // invisible to the money trail, even though nothing was charged.
+        if (planAmount > 0) {
+          await supabase.from('transactions').insert({
+            profile_id: profile.id,
+            type: 'adjustment',
+            amount: 0,
+            currency: 'SAR',
+            status: 'completed',
+            description: `منح/تجديد يدوي من الإدارة — ${selectedPlan.name} (القيمة السوقية ${planAmount} ر.س)`,
+            reference_type: 'subscription',
+            reference_id: newSub?.id,
+          });
+        }
 
         toast({ title: 'تم تجديد/تفعيل الاشتراك بنجاح!' });
         setRefreshKey(k => k + 1);
@@ -304,7 +337,7 @@ function ProfileDetails({
               <SelectContent dir="rtl">
                 {activePlans.map((p) => (
                   <SelectItem key={p.id} value={p.id} className="text-xs">
-                    {p.name} — {p.price} ر.س / {p.duration_months} أشهر
+                    {p.name} — {p.price_monthly || p.price || 0} ر.س / {p.duration_months || 1} أشهر
                   </SelectItem>
                 ))}
               </SelectContent>
