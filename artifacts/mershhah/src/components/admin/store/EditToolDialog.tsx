@@ -22,6 +22,7 @@ const formSchema = z.object({
   description: z.string().min(10, "الوصف يجب أن يكون 10 أحرف على الأقل"),
   category: z.string().min(1, "الرجاء اختيار أو إدخال تصنيف."),
   price_label: z.string().min(1, "بطاقة السعر مطلوبة"),
+  price: z.coerce.number().min(0, "السعر لا يمكن أن يكون سالباً").default(0),
   icon: z.string().optional().default("Box"),
   color: z.string().optional().default("text-gray-600"),
   bg_color: z.string().optional().default("bg-gray-100"),
@@ -77,6 +78,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
       form.reset(isEditing ? {
         ...tool,
         id: tool.id,
+        price: (tool as any).price ?? 0,
         billing_type: tool.billing_type || "plan",
         period_months: tool.period_months ?? (tool.billing_type === "addon" ? 1 : null),
         tool_type: (tool as any).tool_type || "external",
@@ -91,6 +93,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
         description: "",
         category: "",
         price_label: "مجاني",
+        price: 0,
         icon: "Box",
         color: "text-primary",
         bg_color: "bg-primary/10",
@@ -151,6 +154,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
           description: values.description,
           category: values.category,
           price_label: values.price_label,
+          price: values.price,
           icon: values.icon,
           color: values.color,
           bg_color: values.bg_color,
@@ -163,9 +167,17 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
           developer_name: values.developer_name,
           developer_url: values.developer_url,
           version: values.version,
-          type: 'free',
+          // Derived from the actual numeric price, not a separate toggle —
+          // a tool can't be "free" with a price attached or vice versa.
+          type: values.price > 0 ? 'paid' : 'free',
           image_path: imagePath ?? null,
         };
+
+        // Reusing a StreamPay product across price edits would silently
+        // keep charging the old amount — force a fresh one next purchase.
+        if (isEditing && Number((tool as any).price ?? 0) !== values.price) {
+          dataToSave.streampay_product_id = null;
+        }
 
         if (isEditing) {
           const { error } = await supabase.from('tools').update(dataToSave).eq('id', tool!.id);
@@ -379,15 +391,31 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
             )} />
 
             {/* Price */}
-            <FormField control={form.control} name="price_label" render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs text-gray-500">بطاقة السعر</FormLabel>
-                <FormControl>
-                  <Input placeholder="مجاني أو 50 ر.س" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
-                </FormControl>
-                <FormMessage className="text-[10px]" />
-              </FormItem>
-            )} />
+            <div className="grid grid-cols-2 gap-3">
+              <FormField control={form.control} name="price" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-gray-500">السعر (ر.س) — 0 = مجانية</FormLabel>
+                  <FormControl>
+                    <Input type="number" min={0} step="0.01" {...field} className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
+                  </FormControl>
+                  <p className="text-[9px] text-gray-400 mt-1">
+                    {billingType === 'addon'
+                      ? `يُحصَّل فعليًا عبر StreamPay عند التفعيل${form.watch('period_months') ? ` كل ${form.watch('period_months')} شهر` : ''}`
+                      : 'مطلوب اشتراك مدفوع بالمنصة لتفعيلها — بدون تحصيل منفصل'}
+                  </p>
+                  <FormMessage className="text-[10px]" />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="price_label" render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs text-gray-500">بطاقة السعر (نص العرض)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="مجاني أو 50 ر.س/شهر" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
+                  </FormControl>
+                  <FormMessage className="text-[10px]" />
+                </FormItem>
+              )} />
+            </div>
 
             {/* Popular Toggle */}
             <FormField control={form.control} name="popular" render={({ field }) => (

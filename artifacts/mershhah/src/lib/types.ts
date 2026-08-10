@@ -212,6 +212,9 @@ export type Tool = {
   category: "marketing" | "operations" | "analytics";
   price_label: string;
   price_label_en?: string; // English price label
+  /** Real numeric price in SAR — 0 means free. Drives `type` and the StreamPay charge for addon tools. */
+  price?: number;
+  streampay_product_id?: string | null;
   icon: string;
   color: string;
   bg_color: string;

@@ -13,7 +13,9 @@ import {
     icons,
     Star,
     ArrowLeft,
+    Lock,
 } from 'lucide-react';
+import { Link } from 'wouter';
 import { useToast } from "@/hooks/use-toast";
 import { getTools } from '@/services/restaurant.service';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -43,6 +45,20 @@ export default function ToolsStorePage() {
   const platformExpiryDate = subscription
     ? new Date(subscription.end_date).toLocaleDateString('ar-SA')
     : "غير محدد";
+  const hasPaidPlan = !!subscription && subscription.plan_id !== 'free';
+
+  // Land back here after a real StreamPay tool purchase (success or failure)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get('tool_purchase');
+    if (!result) return;
+    if (result === 'success') {
+      toast({ title: 'تم الدفع بنجاح', description: 'جاري تفعيل الأداة...' });
+    } else if (result === 'failed') {
+      toast({ variant: 'destructive', title: 'فشل الدفع', description: 'لم تكتمل عملية الدفع. حاول مرة أخرى.' });
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+  }, [toast]);
 
   const fetchAllData = async () => {
     if (!user || !user.id) return;
@@ -86,49 +102,104 @@ export default function ToolsStorePage() {
     tool.title.includes(searchQuery) || tool.description.includes(searchQuery)
   );
 
-  const processFreeInstallation = (tool: any) => {
+  // Free tools, and paid-but-plan-bundled tools an owner already qualifies
+  // for, activate instantly with no charge.
+  const activateBundledOrFreeTool = async (tool: any) => {
     if (!user || !user.id) return;
     setInstalling(tool.id);
+    try {
+      const billingType = tool.billing_type || 'plan';
+      const now = new Date();
+      let expiresAt: string | null = null;
+      let humanExpiry = '';
 
-    setTimeout(async () => {
-        try {
-            const billingType = tool.billing_type || 'plan';
-            const now = new Date();
-            let expiresAt: string | null = null;
-            let humanExpiry = '';
+      if (billingType === 'plan') {
+        expiresAt = subscription?.end_date || null;
+        humanExpiry = expiresAt
+          ? new Date(expiresAt).toLocaleDateString('ar-SA')
+          : platformExpiryDate;
+      } else {
+        const months = tool.period_months && tool.period_months > 0 ? tool.period_months : 1;
+        const endDate = new Date(now);
+        endDate.setMonth(endDate.getMonth() + months);
+        expiresAt = endDate.toISOString();
+        humanExpiry = endDate.toLocaleDateString('ar-SA');
+      }
 
-            if (billingType === 'plan') {
-              expiresAt = subscription?.end_date || null;
-              humanExpiry = expiresAt
-                ? new Date(expiresAt).toLocaleDateString('ar-SA')
-                : platformExpiryDate;
-            } else {
-              const months = tool.period_months && tool.period_months > 0 ? tool.period_months : 1;
-              const endDate = new Date(now);
-              endDate.setMonth(endDate.getMonth() + months);
-              expiresAt = endDate.toISOString();
-              humanExpiry = endDate.toLocaleDateString('ar-SA');
-            }
+      const { error } = await supabase.from('activated_tools').upsert({
+        profile_id: user.id,
+        tool_id: tool.id,
+        billing_type: billingType,
+        period_months: billingType === 'addon' ? (tool.period_months || 1) : null,
+        status: 'active',
+        activated_at: now.toISOString(),
+        expires_at: expiresAt,
+      }, { onConflict: 'profile_id,tool_id' });
 
-            const { error } = await supabase.from('activated_tools').upsert({
-                profile_id: user.id,
-                tool_id: tool.id,
-                billing_type: billingType,
-                period_months: billingType === 'addon' ? (tool.period_months || 1) : null,
-                status: 'active',
-                activated_at: now.toISOString(),
-                expires_at: expiresAt,
-            }, { onConflict: 'profile_id,tool_id' });
+      if (error) throw error;
+      toast({ title: "تم التفعيل", description: `صالح حتى ${humanExpiry}` });
+      await fetchAllData();
+    } catch (error: any) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+    } finally {
+      setInstalling(null);
+    }
+  };
 
-            if (error) throw error;
-            toast({ title: "تم التفعيل", description: `صالح حتى ${humanExpiry}` });
-            await fetchAllData();
-        } catch(error: any) {
-            toast({ title: "خطأ", description: error.message, variant: "destructive" });
-        } finally {
-            setInstalling(null);
+  // Paid, independently-purchased tools go through a real StreamPay checkout
+  const purchaseTool = async (tool: any) => {
+    if (!user || !user.id) return;
+    setInstalling(tool.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/streampay-tool-checkout`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ tool_id: tool.id }),
         }
-    }, 1500);
+      );
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast({ variant: 'destructive', title: 'تعذّر بدء الدفع', description: data.error || 'فشل إنشاء رابط الدفع' });
+        setInstalling(null);
+      }
+    } catch (error: any) {
+      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      setInstalling(null);
+    }
+  };
+
+  const handleActivate = (tool: any) => {
+    if (!user || !user.id) return;
+    const billingType = tool.billing_type || 'plan';
+
+    if (tool.type !== 'paid') {
+      activateBundledOrFreeTool(tool);
+      return;
+    }
+
+    if (billingType === 'addon') {
+      purchaseTool(tool);
+      return;
+    }
+
+    // Paid + bundled with the platform plan: requires an active paid
+    // subscription (not the free plan) — no separate charge otherwise.
+    if (!hasPaidPlan) {
+      toast({
+        title: 'تحتاج باقة مدفوعة',
+        description: 'هذي الأداة متاحة فقط مع اشتراك مدفوع بالمنصة. رقّي باقتك أولاً من صفحة الفوترة.',
+      });
+      return;
+    }
+    activateBundledOrFreeTool(tool);
   };
 
   if (isLoading || isUserLoading) {
@@ -220,9 +291,14 @@ export default function ToolsStorePage() {
                       <Check className="h-3.5 w-3.5" />
                       تم التفعيل
                     </div>
+                  ) : tool.type === 'paid' && (tool.billing_type || 'plan') === 'plan' && !hasPaidPlan ? (
+                    <Link href="/owner/billing" className="w-full h-10 rounded-xl border border-gray-200 text-gray-500 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2">
+                      <Lock className="h-3.5 w-3.5" />
+                      يحتاج باقة مدفوعة
+                    </Link>
                   ) : (
                     <button
-                      onClick={() => processFreeInstallation(tool)}
+                      onClick={() => handleActivate(tool)}
                       disabled={!!installing}
                       className="w-full h-10 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                     >
@@ -231,7 +307,9 @@ export default function ToolsStorePage() {
                       ) : (
                         <Zap className="h-3.5 w-3.5" />
                       )}
-                      {installing === tool.id ? 'جاري التفعيل...' : 'تفعيل الأداة'}
+                      {installing === tool.id
+                        ? (tool.type === 'paid' && tool.billing_type === 'addon' ? 'جاري تحويلك للدفع...' : 'جاري التفعيل...')
+                        : (tool.type === 'paid' && tool.billing_type === 'addon' ? 'اشترك الآن' : 'تفعيل الأداة')}
                     </button>
                   )}
                 </div>

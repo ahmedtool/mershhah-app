@@ -137,6 +137,51 @@ serve(async (req) => {
         }
         if (!Number.isFinite(paidAmount)) paidAmount = 0;
 
+        // Tool purchases (streampay-tool-checkout) carry tool_id instead of
+        // plan_id — handle activation separately and stop, since none of the
+        // subscription/plan bookkeeping below applies to them.
+        if (metadata.tool_id && metadata.profile_id) {
+          const expiresAt = new Date();
+          expiresAt.setMonth(expiresAt.getMonth() + Number(metadata.period_months || 1));
+
+          await supabase.from("activated_tools").upsert({
+            profile_id: metadata.profile_id,
+            tool_id: metadata.tool_id,
+            billing_type: "addon",
+            period_months: Number(metadata.period_months || 1),
+            status: "active",
+            activated_at: new Date().toISOString(),
+            expires_at: expiresAt.toISOString(),
+          }, { onConflict: "profile_id,tool_id" });
+
+          if (invoice?.id) {
+            await supabase.from("invoices").insert({
+              profile_id: metadata.profile_id,
+              streampay_invoice_id: invoice.id,
+              streampay_payment_id: payment?.id,
+              amount: paidAmount,
+              currency: "SAR",
+              status: "paid",
+              description: metadata.description || "شراء أداة",
+              paid_at: new Date().toISOString(),
+            });
+          }
+
+          await supabase.from("transactions").insert({
+            profile_id: metadata.profile_id,
+            type: "tool_purchase",
+            amount: paidAmount,
+            currency: "SAR",
+            status: "completed",
+            description: metadata.description || "شراء أداة",
+            reference_type: "tool",
+            reference_id: metadata.tool_id,
+            streampay_payment_id: payment?.id,
+          });
+
+          break;
+        }
+
         // Activate the pending subscription created by streampay-checkout for
         // this profile. StreamPay doesn't echo our local subscription id back,
         // so this matches the same way SUBSCRIPTION_CREATED/ACTIVATED does below.
