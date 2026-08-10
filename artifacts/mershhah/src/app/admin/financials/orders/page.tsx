@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShoppingCart, Search, Filter, Download, Loader2, Eye, CheckCircle, Clock, XCircle, BarChart3, Package, Tag, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { ShoppingCart, Search, Filter, Download, Loader2, Eye, CheckCircle, Clock, XCircle, BarChart3, Package, Tag, Trash2, ToggleLeft, ToggleRight, Undo2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -18,6 +18,7 @@ type Order = {
   status: 'active' | 'inactive' | 'cancelled';
   startDate: string;
   endDate: string;
+  hasRefundablePayment: boolean;
 };
 
 export default function FinancialsOrdersPage() {
@@ -25,20 +26,23 @@ export default function FinancialsOrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'cancelled'>('all');
+  const [refundingId, setRefundingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const fetchOrders = async () => {
-    const [subsRes, plansRes, profilesRes, restaurantsRes] = await Promise.all([
+    const [subsRes, plansRes, profilesRes, restaurantsRes, invoicesRes] = await Promise.all([
       supabase.from('subscriptions').select('*'),
       supabase.from('plans').select('*'),
       supabase.from('profiles').select('*'),
       supabase.from('restaurants').select('*'),
+      supabase.from('invoices').select('subscription_id, status').eq('status', 'paid'),
     ]);
 
     const subs = (subsRes.data || []) as Subscription[];
     const plans = (plansRes.data || []) as Plan[];
     const profiles = (profilesRes.data || []) as Profile[];
     const restaurants = (restaurantsRes.data || []) as Restaurant[];
+    const refundableSubIds = new Set((invoicesRes.data || []).map((inv: any) => inv.subscription_id));
 
     const planMap = new Map(plans.map(p => [p.id, p]));
     const profileMap = new Map(profiles.map(p => [p.id, p]));
@@ -54,10 +58,13 @@ export default function FinancialsOrdersPage() {
         restaurant: restaurant?.name || profile?.restaurant_name || 'غير محدد',
         ownerName: profile?.full_name || 'غير محدد',
         plan: sub.plan_name,
-        amount: plan?.price || 0,
+        // Actual amount charged (after discounts) — falls back to the plan's
+        // list price only for legacy rows created before `amount` was tracked.
+        amount: sub.amount || plan?.price || 0,
         status: sub.status,
         startDate: sub.start_date,
         endDate: sub.end_date,
+        hasRefundablePayment: refundableSubIds.has(sub.id),
       };
     }).sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
 
@@ -88,6 +95,30 @@ export default function FinancialsOrdersPage() {
       toast({ title: 'تم الحذف', description: `تم حذف اشتراك ${order.restaurant}` });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'خطأ', description: error.message });
+    }
+  };
+
+  const refundOrder = async (order: Order) => {
+    if (!confirm(`هل أنت متأكد من استرجاع ${order.amount.toLocaleString()} ر.س لـ"${order.restaurant}"؟ سيتم إلغاء الاشتراك ووقف التجديد التلقائي.`)) return;
+    setRefundingId(order.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/streampay-refund`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ subscription_id: order.id, refund_reason: 'REQUESTED_BY_CUSTOMER' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'فشل الاسترجاع');
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: 'cancelled' as any, hasRefundablePayment: false } : o));
+      toast({ title: 'تم الاسترجاع', description: `تم استرجاع ${data.refunded_amount ?? order.amount} ر.س وإلغاء الاشتراك` });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'فشل الاسترجاع', description: error.message });
+    } finally {
+      setRefundingId(null);
     }
   };
 
@@ -243,6 +274,18 @@ export default function FinancialsOrdersPage() {
                           <button onClick={() => toggleStatus(order)} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors" title={order.status === 'active' ? 'إلغاء' : 'تفعيل'}>
                             {order.status === 'active' ? <ToggleRight className="h-4 w-4 text-emerald-500" /> : <ToggleLeft className="h-4 w-4 text-gray-300" />}
                           </button>
+                          {order.hasRefundablePayment && (
+                            <button
+                              onClick={() => refundOrder(order)}
+                              disabled={refundingId === order.id}
+                              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-amber-50 transition-colors disabled:opacity-50"
+                              title="استرجاع المبلغ"
+                            >
+                              {refundingId === order.id
+                                ? <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin" />
+                                : <Undo2 className="h-3.5 w-3.5 text-amber-500" />}
+                            </button>
+                          )}
                           <button onClick={() => deleteOrder(order)} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 transition-colors" title="حذف">
                             <Trash2 className="h-3.5 w-3.5 text-red-400" />
                           </button>

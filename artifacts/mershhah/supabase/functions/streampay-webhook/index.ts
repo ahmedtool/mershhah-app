@@ -41,6 +41,22 @@ async function verifyStreamPaySignature(secret: string, rawBody: string, signatu
   return diff === 0;
 }
 
+async function fetchStreamPayAmount(path: string): Promise<number> {
+  const key = Deno.env.get("STREAMPAY_API_KEY");
+  const secret = Deno.env.get("STREAMPAY_API_SECRET");
+  if (!key || !secret) return NaN;
+  try {
+    const res = await fetch(`https://stream-app-service.streampay.sa/api/v2${path}`, {
+      headers: { "x-api-key": btoa(`${key}:${secret}`) },
+    });
+    if (!res.ok) return NaN;
+    const data = await res.json();
+    return Number(data?.amount);
+  } catch {
+    return NaN;
+  }
+}
+
 async function consumeDiscountCode(supabase: any, discountCodeId: string, profileId: string, discountAmount: number) {
   const { error: rpcError } = await supabase.rpc("increment_discount_usage", { code_id: discountCodeId });
   if (rpcError) {
@@ -97,30 +113,47 @@ serve(async (req) => {
         const invoice = payload.data?.invoice;
         const metadata = payload.data?.metadata || {};
 
-        // Update invoice status
-        if (invoice?.id) {
-          await supabase
-            .from("invoices")
-            .update({
-              status: "paid",
-              streampay_payment_id: payment?.id,
-              paid_at: new Date().toISOString(),
-            })
-            .eq("streampay_invoice_id", invoice.id);
+        // The webhook payload only includes {id, url} for payment/invoice —
+        // the actual amount isn't in it, so fetch the authoritative figure.
+        let paidAmount = Number(payment?.amount);
+        if (!Number.isFinite(paidAmount) && payment?.id) {
+          paidAmount = await fetchStreamPayAmount(`/payments/${payment.id}`);
         }
+        if (!Number.isFinite(paidAmount)) paidAmount = 0;
 
         // Activate the pending subscription created by streampay-checkout for
         // this profile. StreamPay doesn't echo our local subscription id back,
         // so this matches the same way SUBSCRIPTION_CREATED/ACTIVATED does below.
+        let subscriptionId: string | null = null;
         if (metadata.profile_id) {
-          await supabase
+          const { data: updatedSub } = await supabase
             .from("subscriptions")
             .update({
               status: "active",
               updated_at: new Date().toISOString(),
             })
             .eq("profile_id", metadata.profile_id)
-            .eq("status", "pending");
+            .eq("status", "pending")
+            .select("id")
+            .maybeSingle();
+          subscriptionId = updatedSub?.id ?? null;
+        }
+
+        // Record the invoice. There's nothing to update yet (checkout never
+        // creates the row up front), so insert it directly here.
+        if (invoice?.id && metadata.profile_id) {
+          await supabase.from("invoices").insert({
+            profile_id: metadata.profile_id,
+            subscription_id: subscriptionId,
+            streampay_invoice_id: invoice.id,
+            streampay_payment_id: payment?.id,
+            amount: paidAmount,
+            currency: "SAR",
+            status: "paid",
+            description: metadata.description || "اشتراك باقة",
+            billing_period: metadata.billing_cycle,
+            paid_at: new Date().toISOString(),
+          });
         }
 
         // Create transaction record
@@ -128,11 +161,12 @@ serve(async (req) => {
           await supabase.from("transactions").insert({
             profile_id: metadata.profile_id,
             type: "subscription",
-            amount: parseFloat(payment?.amount || "0"),
+            amount: paidAmount,
             currency: "SAR",
             status: "completed",
             description: metadata.description || "اشتراك باقة",
             reference_type: "subscription",
+            reference_id: subscriptionId,
             streampay_payment_id: payment?.id,
           });
         }
