@@ -15,6 +15,7 @@ import { syncPublicPage } from '@/lib/public-pages';
 import { extractFromGoogleMapsUrl } from '@/lib/geocoding';
 import saGeodata from '@/data/sa-geodata.json';
 import type { Branch } from '@/lib/types';
+import { useUser } from '@/hooks/useUser';
 
 const schema = z.object({
   name: z.string().min(2, 'اسم الفرع مطلوب'),
@@ -61,6 +62,7 @@ export function EditBranchDialog({
   open, onOpenChange, branch, restaurantId, onSaved, children,
 }: EditBranchDialogProps) {
   const { toast } = useToast();
+  const { user } = useUser();
   const [saving, setSaving] = useState(false);
   const [mapsUrl, setMapsUrl] = useState('');
   const [parsingMaps, setParsingMaps] = useState(false);
@@ -168,6 +170,21 @@ export function EditBranchDialog({
         if (error) throw error;
         toast({ title: 'تم التحديث' });
       } else {
+        const maxBranches = user?.entitlements?.maxBranches ?? 1;
+        const { count } = await supabase
+          .from('branches')
+          .select('id', { count: 'exact', head: true })
+          .eq('restaurant_id', restaurantId);
+        if ((count ?? 0) >= maxBranches) {
+          toast({
+            variant: 'destructive',
+            title: 'وصلت للحد الأقصى من الفروع',
+            description: `باقتك الحالية (${user?.entitlements?.planName || ''}) تسمح بحد أقصى ${maxBranches} فرع. رقّي باقتك لإضافة المزيد.`,
+          });
+          setSaving(false);
+          return;
+        }
+
         const { error } = await supabase.from('branches').insert({ id: crypto.randomUUID(), ...data });
         if (error) throw error;
         toast({ title: 'تمت الإضافة' });

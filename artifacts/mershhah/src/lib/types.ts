@@ -344,6 +344,12 @@ export type Plan = {
      * إذا لم تكن موجودة، يتم استخدام DEFAULT_PLAN_FEATURES كافتراضي.
      */
     features?: Record<string, boolean>;
+    /** 0 = غير محدود */
+    max_branches?: number;
+    /** 0 = غير محدود */
+    max_menu_items?: number;
+    /** 0 = غير محدود */
+    max_tools?: number;
 };
 
 export type ActivationCode = {

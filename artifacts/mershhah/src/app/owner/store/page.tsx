@@ -106,6 +106,18 @@ export default function ToolsStorePage() {
   // for, activate instantly with no charge.
   const activateBundledOrFreeTool = async (tool: any) => {
     if (!user || !user.id) return;
+
+    const maxTools = user.entitlements?.maxTools ?? 2;
+    const activeToolsCount = allTools.filter(t => t.installed).length;
+    if (activeToolsCount >= maxTools) {
+      toast({
+        variant: 'destructive',
+        title: 'وصلت للحد الأقصى من الأدوات',
+        description: `باقتك الحالية (${user.entitlements?.planName || ''}) تسمح بحد أقصى ${maxTools} أدوات مفعّلة. رقّي باقتك لتفعيل المزيد.`,
+      });
+      return;
+    }
+
     setInstalling(tool.id);
     try {
       const billingType = tool.billing_type || 'plan';

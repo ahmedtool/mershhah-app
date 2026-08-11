@@ -18,6 +18,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import type { MenuItem } from '@/lib/types';
 import { syncPublicPage } from '@/lib/public-pages';
+import { useUser } from '@/hooks/useUser';
 
 const BUCKET = 'restaurant-assets';
 
@@ -82,6 +83,7 @@ export function EditMenuItemDialog({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [descGenerated, setDescGenerated] = useState(false);
   const { toast } = useToast();
+  const { user } = useUser();
   const isEditing = !!menuItem;
 
   const form = useForm<FormValues>({ resolver: zodResolver(formSchema) });
@@ -154,6 +156,19 @@ export function EditMenuItemDialog({
 
   async function onSubmit(values: FormValues) {
     if (!restaurantId || !userId) return;
+
+    if (!isEditing) {
+      const maxMenuItems = user?.entitlements?.maxMenuItems ?? 30;
+      if (itemCount >= maxMenuItems) {
+        toast({
+          variant: 'destructive',
+          title: 'وصلت للحد الأقصى من الأصناف',
+          description: `باقتك الحالية (${user?.entitlements?.planName || ''}) تسمح بحد أقصى ${maxMenuItems} صنف. رقّي باقتك لإضافة المزيد.`,
+        });
+        return;
+      }
+    }
+
     startSaving(async () => {
       try {
         let imgUrl = values.image_url;

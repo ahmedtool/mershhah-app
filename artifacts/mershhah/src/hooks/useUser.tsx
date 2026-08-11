@@ -11,7 +11,16 @@ export type Entitlements = {
   canUseAiAnalysis: boolean;
   canUseStudioImageGeneration: boolean;
   canUseDashboardAgent: boolean;
+  canUseCustomDomain: boolean;
+  canUseApiAccess: boolean;
+  canUseWhiteLabel: boolean;
+  canUsePrioritySupport: boolean;
+  maxBranches: number;
+  maxMenuItems: number;
+  maxTools: number;
 };
+
+const UNLIMITED = Number.MAX_SAFE_INTEGER;
 
 const defaultEntitlements: Entitlements = {
   planId: 'none',
@@ -20,15 +29,29 @@ const defaultEntitlements: Entitlements = {
   canUseAiAnalysis: false,
   canUseStudioImageGeneration: false,
   canUseDashboardAgent: false,
+  canUseCustomDomain: false,
+  canUseApiAccess: false,
+  canUseWhiteLabel: false,
+  canUsePrioritySupport: false,
+  maxBranches: 1,
+  maxMenuItems: 30,
+  maxTools: 2,
 };
 
-export type AppUser = Profile & Partial<Omit<Restaurant, 'id'>> & {
-  uid: string;
-  restaurantId?: string;
-  entitlements: Entitlements;
+type PlanRow = {
+  id: string;
+  max_branches?: number | null;
+  max_menu_items?: number | null;
+  max_tools?: number | null;
+  features?: Record<string, boolean | number> | null;
 };
 
-function computeEntitlements(subscriptions: Subscription[], profile: Profile): Entitlements {
+function featureFlag(features: Record<string, boolean | number> | null | undefined, key: string): boolean {
+  const value = features?.[key];
+  return typeof value === 'number' ? value > 0 : !!value;
+}
+
+export function pickActiveSubscription(subscriptions: Subscription[]): Subscription | null {
   const now = new Date();
   let activeSub: Subscription | null = null;
 
@@ -49,12 +72,24 @@ function computeEntitlements(subscriptions: Subscription[], profile: Profile): E
       }
     }
   }
+  return activeSub;
+}
 
+// The DB columns (max_branches/max_menu_items/max_tools) are the source of
+// truth for numeric limits — `plans.features` may also carry numbers for a
+// couple of legacy keys (branches/offers), but those are display-only and
+// intentionally not used for enforcement to avoid two limits disagreeing.
+function computeEntitlements(activeSub: Subscription | null, profile: Profile, plan: PlanRow | null): Entitlements {
   if (!activeSub) return defaultEntitlements;
 
   const isPaidPlan = activeSub.plan_id !== 'free' && activeSub.plan_id !== 'none';
   const hasTrial = !isPaidPlan && !profile.ai_trial_used;
-  const enableAi = isPaidPlan || hasTrial;
+  const planHasAi = featureFlag(plan?.features, 'ai_analysis');
+  const enableAi = planHasAi || hasTrial;
+
+  const rawMaxBranches = plan?.max_branches ?? defaultEntitlements.maxBranches;
+  const rawMaxMenuItems = plan?.max_menu_items ?? defaultEntitlements.maxMenuItems;
+  const rawMaxTools = plan?.max_tools ?? defaultEntitlements.maxTools;
 
   return {
     planId: activeSub.plan_id,
@@ -63,6 +98,15 @@ function computeEntitlements(subscriptions: Subscription[], profile: Profile): E
     canUseAiAnalysis: enableAi,
     canUseStudioImageGeneration: enableAi,
     canUseDashboardAgent: enableAi,
+    canUseCustomDomain: featureFlag(plan?.features, 'custom_domain'),
+    canUseApiAccess: featureFlag(plan?.features, 'api_access'),
+    canUseWhiteLabel: featureFlag(plan?.features, 'white_label'),
+    canUsePrioritySupport: featureFlag(plan?.features, 'priority_support'),
+    // 0 or unset historically meant "not customized" for these columns —
+    // treat it as unlimited rather than silently blocking everyone.
+    maxBranches: rawMaxBranches > 0 ? rawMaxBranches : UNLIMITED,
+    maxMenuItems: rawMaxMenuItems > 0 ? rawMaxMenuItems : UNLIMITED,
+    maxTools: rawMaxTools > 0 ? rawMaxTools : UNLIMITED,
   };
 }
 
@@ -123,7 +167,20 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       if (!mountedRef.current) return;
 
-      const entitlements = computeEntitlements(subscriptions || [], profile);
+      const activeSub = pickActiveSubscription(subscriptions || []);
+      let planRow: PlanRow | null = null;
+      if (activeSub) {
+        const { data: plan } = await supabase
+          .from('plans')
+          .select('id, max_branches, max_menu_items, max_tools, features')
+          .eq('id', activeSub.plan_id)
+          .maybeSingle();
+        planRow = plan;
+      }
+
+      if (!mountedRef.current) return;
+
+      const entitlements = computeEntitlements(activeSub, profile, planRow);
 
       const combinedUser: AppUser = {
         ...profile,

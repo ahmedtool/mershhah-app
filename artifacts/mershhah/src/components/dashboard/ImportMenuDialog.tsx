@@ -234,8 +234,21 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
             }
         }
 
-        if (toInsert.length > 0) {
-            const { error } = await supabase.from('menu_items').insert(toInsert);
+        const maxMenuItems = user?.entitlements?.maxMenuItems ?? 30;
+        const remainingCapacity = Math.max(0, maxMenuItems - (existingItems?.length ?? 0));
+        const planSkippedCount = Math.max(0, toInsert.length - remainingCapacity);
+        const toInsertCapped = toInsert.slice(0, remainingCapacity);
+
+        if (planSkippedCount > 0) {
+          toast({
+            variant: 'destructive',
+            title: 'وصلت للحد الأقصى من الأصناف',
+            description: `تم استيراد ${toInsertCapped.length} صنف فقط — باقتك تسمح بحد أقصى ${maxMenuItems} صنف، وتخطّينا ${planSkippedCount} صنف. رقّي باقتك لاستيراد الباقي.`,
+          });
+        }
+
+        if (toInsertCapped.length > 0) {
+            const { error } = await supabase.from('menu_items').insert(toInsertCapped);
             if (error) throw error;
         }
 
@@ -244,12 +257,12 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
             if (error) throw error;
         }
 
-        const skippedCount = extractedData.length - toInsert.length - toUpdate.length;
+        const unchangedCount = extractedData.length - toInsert.length - toUpdate.length;
 
         const messages: string[] = [];
-        if (toInsert.length > 0) messages.push(isRTL ? `${toInsert.length} جديد` : `${toInsert.length} new`);
+        if (toInsertCapped.length > 0) messages.push(isRTL ? `${toInsertCapped.length} جديد` : `${toInsertCapped.length} new`);
         if (toUpdate.length > 0) messages.push(isRTL ? `${toUpdate.length} محدّث` : `${toUpdate.length} updated`);
-        if (skippedCount > 0) messages.push(isRTL ? `${skippedCount} موجود` : `${skippedCount} unchanged`);
+        if (unchangedCount > 0) messages.push(isRTL ? `${unchangedCount} موجود` : `${unchangedCount} unchanged`);
 
         toast({
           title: isRTL ? "تم الحفظ!" : "Saved!",

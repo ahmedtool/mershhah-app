@@ -12,6 +12,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, CreditCard } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Plan } from '@/lib/types';
+import { FEATURE_LABELS } from '@/lib/plan-feature-labels';
+
+// The functional gates hooks/useUser.tsx actually enforces. Kept in sync
+// with FEATURE_LABELS so this editor, the pricing page, and enforcement
+// all read the exact same keys — editing a plan here used to silently
+// overwrite these with free-text marketing bullets instead.
+const TOGGLE_FEATURE_KEYS = ['ai_analysis', 'custom_domain', 'api_access', 'white_label', 'priority_support'] as const;
 
 const formSchema = z.object({
   name: z.string().min(3, 'اسم الباقة يجب أن يكون 3 أحرف على الأقل.'),
@@ -25,8 +32,14 @@ const formSchema = z.object({
     .or(z.literal('')),
   is_active: z.boolean().default(true),
   is_featured: z.boolean().default(false),
-  features_included: z.string().optional(),
-  features_excluded: z.string().optional(),
+  max_branches: z.coerce.number().int().min(0, '0 = غير محدود'),
+  max_menu_items: z.coerce.number().int().min(0, '0 = غير محدود'),
+  max_tools: z.coerce.number().int().min(0, '0 = غير محدود'),
+  ai_analysis: z.boolean().default(false),
+  custom_domain: z.boolean().default(false),
+  api_access: z.boolean().default(false),
+  white_label: z.boolean().default(false),
+  priority_support: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -37,6 +50,13 @@ interface EditPlanDialogProps {
   onSave?: () => void;
 }
 
+const defaultValues: FormValues = {
+  name: '', description: '', price: 0, duration_months: 1,
+  payment_link: '', is_active: true, is_featured: false,
+  max_branches: 1, max_menu_items: 30, max_tools: 2,
+  ai_analysis: false, custom_domain: false, api_access: false, white_label: false, priority_support: false,
+};
+
 export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSaving, startSaving] = useTransition();
@@ -45,31 +65,13 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      description: '',
-      price: 0,
-      duration_months: 1,
-      payment_link: '',
-      is_active: true,
-      is_featured: false,
-      features_included: '',
-      features_excluded: '',
-    },
+    defaultValues,
   });
 
   useEffect(() => {
     if (open) {
       if (isEditing && plan) {
-        const includedLines: string[] = [];
-        const excludedLines: string[] = [];
-        if (plan.features) {
-          Object.entries(plan.features).forEach(([label, included]) => {
-            if (!label.trim()) return;
-            if (included) includedLines.push(label);
-            else excludedLines.push(label);
-          });
-        }
+        const features = (plan.features || {}) as Record<string, boolean | number>;
         form.reset({
           name: plan.name,
           description: plan.description,
@@ -78,15 +80,17 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
           payment_link: plan.payment_link || '',
           is_active: plan.is_active,
           is_featured: plan.is_featured,
-          features_included: includedLines.join('\n'),
-          features_excluded: excludedLines.join('\n'),
+          max_branches: plan.max_branches ?? 1,
+          max_menu_items: plan.max_menu_items ?? 30,
+          max_tools: plan.max_tools ?? 2,
+          ai_analysis: !!features.ai_analysis,
+          custom_domain: !!features.custom_domain,
+          api_access: !!features.api_access,
+          white_label: !!features.white_label,
+          priority_support: !!features.priority_support,
         });
       } else {
-        form.reset({
-          name: '', description: '', price: 0, duration_months: 1,
-          payment_link: '', is_active: true, is_featured: false,
-          features_included: '', features_excluded: '',
-        });
+        form.reset(defaultValues);
       }
     }
   }, [open, plan, isEditing, form]);
@@ -94,19 +98,14 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
   async function onSubmit(values: FormValues) {
     startSaving(async () => {
       try {
-        const features: Record<string, boolean> = {};
-        const addLines = (text: string | undefined, included: boolean) => {
-          if (!text) return;
-          text.split('\n').map((l) => l.trim()).filter(Boolean).forEach((l) => { features[l] = included; });
-        };
-        addLines(values.features_included, true);
-        addLines(values.features_excluded, false);
+        const features: Record<string, boolean> = { menu: true };
+        TOGGLE_FEATURE_KEYS.forEach((key) => { features[key] = values[key]; });
 
-        const { features_included, features_excluded, ...rest } = values;
-        const payload: any = {
-          ...rest,
-          features: Object.keys(features).length > 0 ? features : undefined,
-        };
+        const {
+          ai_analysis, custom_domain, api_access, white_label, priority_support,
+          ...rest
+        } = values;
+        const payload: any = { ...rest, features };
 
         if (isEditing && plan) {
           const { error } = await supabase.from('plans').update(payload).eq('id', plan.id);
@@ -199,26 +198,56 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
               </FormItem>
             )} />
 
-            {/* Features */}
-            <FormField control={form.control} name="features_included" render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs text-gray-500">المميزات المشمولة</FormLabel>
-                <FormControl>
-                  <Textarea rows={3} placeholder={"كل ميزة في سطر مستقل:\nمساعد ذكي\nتحليلات متقدمة"} {...field} className="rounded-xl border-gray-200 text-sm resize-none" disabled={isSaving} />
-                </FormControl>
-                <FormMessage className="text-[10px]" />
-              </FormItem>
-            )} />
+            {/* Real, enforced limits */}
+            <div className="rounded-xl bg-gray-50 p-4 space-y-3">
+              <p className="text-xs font-bold text-gray-600">الحدود الفعلية (0 = غير محدود)</p>
+              <div className="grid grid-cols-3 gap-2">
+                <FormField control={form.control} name="max_branches" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] text-gray-400">الفروع</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={0} {...field} className="h-10 rounded-lg border-gray-200 text-xs" dir="ltr" disabled={isSaving} />
+                    </FormControl>
+                    <FormMessage className="text-[10px]" />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="max_menu_items" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] text-gray-400">أصناف المنيو</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={0} {...field} className="h-10 rounded-lg border-gray-200 text-xs" dir="ltr" disabled={isSaving} />
+                    </FormControl>
+                    <FormMessage className="text-[10px]" />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="max_tools" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] text-gray-400">الأدوات</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={0} {...field} className="h-10 rounded-lg border-gray-200 text-xs" dir="ltr" disabled={isSaving} />
+                    </FormControl>
+                    <FormMessage className="text-[10px]" />
+                  </FormItem>
+                )} />
+              </div>
+            </div>
 
-            <FormField control={form.control} name="features_excluded" render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs text-gray-500">مميزات غير مشمولة <span className="text-gray-300">(تظهر بخط مشطوب)</span></FormLabel>
-                <FormControl>
-                  <Textarea rows={2} placeholder={"مدير علاقات مخصص\nدعم فني 24/7"} {...field} className="rounded-xl border-gray-200 text-sm resize-none" disabled={isSaving} />
-                </FormControl>
-                <FormMessage className="text-[10px]" />
-              </FormItem>
-            )} />
+            {/* Feature gates */}
+            <div className="space-y-2">
+              <p className="text-xs font-bold text-gray-600">المزايا المفعّلة</p>
+              <div className="grid grid-cols-2 gap-2">
+                {TOGGLE_FEATURE_KEYS.map((key) => (
+                  <FormField key={key} control={form.control} name={key} render={({ field }) => (
+                    <FormItem>
+                      <button type="button" onClick={() => field.onChange(!field.value)}
+                        className={`w-full h-10 rounded-lg text-[11px] font-medium transition-all border ${field.value ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}>
+                        {FEATURE_LABELS[key]}
+                      </button>
+                    </FormItem>
+                  )} />
+                ))}
+              </div>
+            </div>
 
             {/* Toggles */}
             <div className="grid grid-cols-2 gap-3">
