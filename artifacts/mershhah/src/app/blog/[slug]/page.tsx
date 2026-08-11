@@ -6,13 +6,13 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, User, ArrowRight, Share2, Twitter, Linkedin, Bookmark } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
-import React, { use, useState, useEffect } from 'react';
-import { Link } from 'wouter';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams } from 'wouter';
 import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 
-export default function PostPage({ params }: { params: Promise<{ slug: string }> }) {
-  const resolvedParams = use(params);
+export default function PostPage() {
+  const resolvedParams = useParams() as { slug: string };
   const [post, setPost] = useState<{ slug: string; metadata: { title: string; description: string; publishedAt: string; readingTime: string }; content: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [formattedDate, setFormattedDate] = useState<string>('');
