@@ -88,7 +88,9 @@ export default function OwnerSettingsPage() {
     if (!user?.email) return;
     startSendingReset(async () => {
       try {
-        const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+        const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
         if (error) throw error;
         toast({ title: 'تم الإرسال', description: 'رابط إعادة التعيين أُرسل لبريدك.' });
       } catch (error: any) {

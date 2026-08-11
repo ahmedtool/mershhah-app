@@ -240,7 +240,9 @@ function ProfileDetails({
   const handleResetPassword = async () => {
     if (!profile?.email) return;
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(profile.email);
+      const { error } = await supabase.auth.resetPasswordForEmail(profile.email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
       if (error) throw error;
       toast({
         title: 'تم إرسال رابط التغيير',

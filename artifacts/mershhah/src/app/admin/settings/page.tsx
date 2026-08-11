@@ -55,7 +55,9 @@ export default function SettingsPage() {
     if (!user?.email) return;
     startSendingReset(async () => {
       try {
-        const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+        const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
         if (error) throw error;
         toast({ title: 'تم إرسال الرابط', description: 'أرسلنا رابط إعادة التعيين إلى بريدك.' });
       } catch (error: any) {

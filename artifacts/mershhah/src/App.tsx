@@ -12,6 +12,7 @@ import LoginPage from "@/app/login/page";
 import RegisterPage from "@/app/register/page";
 import RegisterAffiliatePage from "@/app/register-affiliate/page";
 import ForgotPasswordPage from "@/app/forgot-password/page";
+import ResetPasswordPage from "@/app/reset-password/page";
 import PricingPage from "@/app/pricing/page";
 import NotFoundPage from "@/app/not-found";
 
@@ -96,6 +97,7 @@ function Router() {
       <Route path="/register" component={RegisterPage} />
       <Route path="/register-affiliate" component={RegisterAffiliatePage} />
       <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/reset-password" component={ResetPasswordPage} />
       <Route path="/pricing" component={PricingPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/contact" component={ContactPage} />

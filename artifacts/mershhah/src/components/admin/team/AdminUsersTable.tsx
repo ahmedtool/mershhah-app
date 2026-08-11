@@ -27,7 +27,9 @@ export function AdminUsersTable({ admins, onActionComplete }: AdminUsersTablePro
   const handleResetPassword = (admin: Profile) => {
     startResetTransition(async () => {
       try {
-        const { error } = await supabase.auth.resetPasswordForEmail(admin.email);
+        const { error } = await supabase.auth.resetPasswordForEmail(admin.email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
         if (error) throw error;
         toast({ title: "تم إرسال الرابط", description: `تم إرسال رابط إعادة التعيين إلى ${admin.email}.` });
       } catch (error: any) {
