@@ -7,7 +7,6 @@ import { OtpGate } from "@/components/auth/OtpGate";
 import { useUser } from "@/hooks/useUser";
 import { useRouter } from '@/lib/navigation';
 import { Loader2 } from "lucide-react";
-import { SessionTimeout } from "@/components/shared/SessionTimeout";
 
 export default function AdminLayout({
   children,
@@ -41,7 +40,6 @@ export default function AdminLayout({
   return (
     <OtpGate>
       <div dir="rtl">
-        <SessionTimeout />
         <AdminTopNav />
         <main className="p-4 sm:p-6">
           <AdminAccountStatusChecker>

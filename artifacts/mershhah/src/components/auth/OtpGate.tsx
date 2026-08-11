@@ -7,6 +7,8 @@ import { Loader2, ShieldCheck, RotateCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const sessionKey = (uid: string) => `mershhah_otp_verified_${uid}`;
+const IDLE_RELOCK_MS = 15 * 60 * 1000;
+const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'mousedown', 'touchstart'];
 
 async function callOtpFunction(path: string, body: Record<string, unknown> = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -95,6 +97,37 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
     const t = setTimeout(() => setCooldown(c => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
+
+  // Replaces the old blunt "sign out after 15 idle minutes" timer with a
+  // security-equivalent that doesn't lose the tab's actual work: once idle
+  // this long, re-lock the dashboard behind a fresh OTP instead of a full
+  // sign-out. The Supabase session itself stays alive — verifying again
+  // drops them right back where they were.
+  useEffect(() => {
+    if (!needsOtp || !isVerified || !user) return;
+
+    let idleTimer: ReturnType<typeof setTimeout>;
+    const relock = () => {
+      sessionStorage.removeItem(sessionKey(user.uid));
+      sentForUid.current = user.uid; // the auto-send effect won't refire (isVerified isn't its dependency) — send directly instead
+      setIsVerified(false);
+      setCode(['', '', '', '']);
+      toast({ title: 'انتهت صلاحية الجلسة الآمنة', description: 'أعد إدخال كود التحقق لمتابعة العمل.' });
+      sendCode();
+    };
+    const resetIdleTimer = () => {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(relock, IDLE_RELOCK_MS);
+    };
+
+    ACTIVITY_EVENTS.forEach((event) => window.addEventListener(event, resetIdleTimer));
+    resetIdleTimer();
+
+    return () => {
+      clearTimeout(idleTimer);
+      ACTIVITY_EVENTS.forEach((event) => window.removeEventListener(event, resetIdleTimer));
+    };
+  }, [needsOtp, isVerified, user, toast]);
 
   const handleDigitChange = (index: number, value: string) => {
     if (!/^[0-9]?$/.test(value)) return;
