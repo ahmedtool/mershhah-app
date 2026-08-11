@@ -3,6 +3,7 @@
 import { OwnerTopNav } from "@/components/shared/OwnerTopNav";
 import React, { useEffect, useRef, memo } from "react";
 import { AccountStatusChecker } from "@/components/auth/AccountStatusChecker";
+import { OtpGate } from "@/components/auth/OtpGate";
 import { useUser } from "@/hooks/useUser";
 import { useRouter } from '@/lib/navigation';
 import { Loader2 } from "lucide-react";
@@ -38,17 +39,19 @@ function OwnerLayoutContent({ children }: { children: React.ReactNode }) {
   if (!user) return null;
 
   return (
-    <div dir={dir} className="min-h-screen bg-gray-50/50">
-      <SessionTimeout />
-      <OwnerTopNav />
-      <main className="p-4 sm:p-6">
-        <AnnouncementBanner />
-        <AccountStatusChecker>
-          {children}
-        </AccountStatusChecker>
-      </main>
-      <DashboardAssistant />
-    </div>
+    <OtpGate>
+      <div dir={dir} className="min-h-screen bg-gray-50/50">
+        <SessionTimeout />
+        <OwnerTopNav />
+        <main className="p-4 sm:p-6">
+          <AnnouncementBanner />
+          <AccountStatusChecker>
+            {children}
+          </AccountStatusChecker>
+        </main>
+        <DashboardAssistant />
+      </div>
+    </OtpGate>
   );
 }
 

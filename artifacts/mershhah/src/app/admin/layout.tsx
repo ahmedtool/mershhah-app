@@ -3,6 +3,7 @@
 import { AdminTopNav } from "@/components/shared/AdminTopNav";
 import React, { useEffect, useRef } from "react";
 import { AdminAccountStatusChecker } from "@/components/auth/AdminAccountStatusChecker";
+import { OtpGate } from "@/components/auth/OtpGate";
 import { useUser } from "@/hooks/useUser";
 import { useRouter } from '@/lib/navigation';
 import { Loader2 } from "lucide-react";
@@ -38,14 +39,16 @@ export default function AdminLayout({
   if (!user) return null;
 
   return (
-    <div dir="rtl">
-      <SessionTimeout />
-      <AdminTopNav />
-      <main className="p-4 sm:p-6">
-        <AdminAccountStatusChecker>
-          {children}
-        </AdminAccountStatusChecker>
-      </main>
-    </div>
+    <OtpGate>
+      <div dir="rtl">
+        <SessionTimeout />
+        <AdminTopNav />
+        <main className="p-4 sm:p-6">
+          <AdminAccountStatusChecker>
+            {children}
+          </AdminAccountStatusChecker>
+        </main>
+      </div>
+    </OtpGate>
   );
 }
