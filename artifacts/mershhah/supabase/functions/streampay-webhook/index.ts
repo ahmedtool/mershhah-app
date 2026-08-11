@@ -85,6 +85,57 @@ async function consumeDiscountCode(supabase: any, discountCodeId: string, profil
   });
 }
 
+const ADMIN_NOTIFICATION_EMAIL = Deno.env.get("ADMIN_NOTIFICATION_EMAIL") || "ahmedsupsa@gmail.com";
+
+async function sendEmail(to: string, subject: string, html: string) {
+  const sndrApiKey = Deno.env.get("SNDR_API_KEY");
+  const sndrFromEmail = Deno.env.get("SNDR_FROM_EMAIL") || "auth@mershhah.com";
+  if (!sndrApiKey) {
+    console.error("[StreamPay Webhook] SNDR_API_KEY not configured — skipping email:", subject);
+    return;
+  }
+  try {
+    const res = await fetch("https://api.sndr.sh/v1/send", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${sndrApiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: sndrFromEmail, to: [to], subject, html }),
+    });
+    if (!res.ok) {
+      console.error("[StreamPay Webhook] SNDR send failed:", res.status, await res.text());
+    }
+  } catch (err) {
+    console.error("[StreamPay Webhook] SNDR send threw:", err);
+  }
+}
+
+function emailWrap(inner: string) {
+  return `<div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; max-width: 440px; margin: 0 auto; padding: 32px 24px; background: #fafafa;">${inner}</div>`;
+}
+
+function paymentSuccessEmail(customerName: string, itemLabel: string, amount: number) {
+  return emailWrap(`
+    <div style="width:48px;height:48px;border-radius:14px;background:#ecfdf5;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:22px;">✅</div>
+    <p style="font-size: 14px; color: #6b7280; margin: 0 0 8px;">مرحباً ${customerName || ""}،</p>
+    <h2 style="font-size: 18px; color: #111827; margin: 0 0 16px;">تم الدفع بنجاح</h2>
+    <p style="font-size: 14px; color: #111827; margin: 0 0 4px;">${itemLabel}</p>
+    <p style="font-size: 24px; font-weight: 900; color: #111827; margin: 8px 0 20px;">${amount.toLocaleString("ar-SA")} ر.س</p>
+    <p style="font-size: 12px; color: #9ca3af; margin: 0;">يمكنك متابعة تفاصيل اشتراكك من لوحة تحكم مرشح.</p>
+  `);
+}
+
+function adminPaymentNotificationEmail(customerName: string, customerEmail: string, itemLabel: string, amount: number) {
+  return emailWrap(`
+    <div style="width:48px;height:48px;border-radius:14px;background:#eff6ff;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:22px;">💰</div>
+    <h2 style="font-size: 18px; color: #111827; margin: 0 0 16px;">عملية دفع ناجحة جديدة</h2>
+    <table style="width:100%; font-size: 13px; color: #111827; border-collapse: collapse;">
+      <tr><td style="padding:8px 0; color:#6b7280;">العميل</td><td style="padding:8px 0; font-weight:700;">${customerName || "غير محدد"}</td></tr>
+      <tr><td style="padding:8px 0; color:#6b7280;">البريد</td><td style="padding:8px 0; direction:ltr; text-align:right;">${customerEmail}</td></tr>
+      <tr><td style="padding:8px 0; color:#6b7280;">البند</td><td style="padding:8px 0; font-weight:700;">${itemLabel}</td></tr>
+      <tr><td style="padding:8px 0; color:#6b7280;">المبلغ</td><td style="padding:8px 0; font-weight:900; font-size:16px;">${amount.toLocaleString("ar-SA")} ر.س</td></tr>
+    </table>
+  `);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -137,6 +188,20 @@ serve(async (req) => {
         }
         if (!Number.isFinite(paidAmount)) paidAmount = 0;
 
+        // Looked up once and reused by whichever branch below actually runs —
+        // both the customer receipt and the admin notification need it.
+        let customerName = "";
+        let customerEmail = "";
+        if (metadata.profile_id) {
+          const { data: payingProfile } = await supabase
+            .from("profiles")
+            .select("full_name, email")
+            .eq("id", metadata.profile_id)
+            .single();
+          customerName = payingProfile?.full_name || "";
+          customerEmail = payingProfile?.email || "";
+        }
+
         // Tool purchases (streampay-tool-checkout) carry tool_id instead of
         // plan_id — handle activation separately and stop, since none of the
         // subscription/plan bookkeeping below applies to them.
@@ -178,6 +243,12 @@ serve(async (req) => {
             reference_id: metadata.tool_id,
             streampay_payment_id: payment?.id,
           });
+
+          const toolLabel = metadata.description || "شراء أداة";
+          if (customerEmail) {
+            await sendEmail(customerEmail, "تم الدفع بنجاح - مرشح", paymentSuccessEmail(customerName, toolLabel, paidAmount));
+          }
+          await sendEmail(ADMIN_NOTIFICATION_EMAIL, "💰 عملية دفع ناجحة جديدة - مرشح", adminPaymentNotificationEmail(customerName, customerEmail, toolLabel, paidAmount));
 
           break;
         }
@@ -238,6 +309,12 @@ serve(async (req) => {
         if (metadata.discount_code_id && metadata.profile_id) {
           await consumeDiscountCode(supabase, metadata.discount_code_id, metadata.profile_id, Number(metadata.discount_amount || 0));
         }
+
+        const planLabel = metadata.description || "اشتراك باقة";
+        if (customerEmail) {
+          await sendEmail(customerEmail, "تم الدفع بنجاح - مرشح", paymentSuccessEmail(customerName, planLabel, paidAmount));
+        }
+        await sendEmail(ADMIN_NOTIFICATION_EMAIL, "💰 عملية دفع ناجحة جديدة - مرشح", adminPaymentNotificationEmail(customerName, customerEmail, planLabel, paidAmount));
 
         break;
       }
