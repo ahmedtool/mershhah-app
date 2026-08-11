@@ -2,24 +2,62 @@
 'use client';
 
 import { notFound } from '@/lib/navigation';
-import { posts } from '@/blog/posts';
+import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Calendar, Clock, User, ArrowRight, Share2, Twitter, Linkedin, Bookmark } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import React, { use, useState, useEffect } from 'react';
 import { Link } from 'wouter';
 import { motion } from 'framer-motion';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PostPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = use(params);
-  const post = posts.find((post) => post.slug === resolvedParams.slug);
+  const [post, setPost] = useState<{ slug: string; metadata: { title: string; description: string; publishedAt: string; readingTime: string }; content: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [formattedDate, setFormattedDate] = useState<string>('');
+
+  useEffect(() => {
+    const fetchPost = async () => {
+      const { data } = await supabase
+        .from('blog_posts')
+        .select('slug, title, description, reading_time, published_at, content')
+        .eq('slug', resolvedParams.slug)
+        .eq('is_published', true)
+        .maybeSingle();
+
+      if (data) {
+        setPost({
+          slug: data.slug,
+          metadata: {
+            title: data.title,
+            description: data.description,
+            publishedAt: data.published_at,
+            readingTime: data.reading_time,
+          },
+          content: data.content,
+        });
+      }
+      setIsLoading(false);
+    };
+    fetchPost();
+  }, [resolvedParams.slug]);
 
   useEffect(() => {
     if (post) {
       setFormattedDate(new Date(post.metadata.publishedAt).toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' }));
     }
   }, [post]);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-16 space-y-6">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
+      </div>
+    );
+  }
 
   if (!post) {
     notFound();

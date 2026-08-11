@@ -18,6 +18,7 @@ import {
   DollarSign,
   BarChart3,
   ShoppingCart,
+  FileText,
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { supabase } from '@/lib/supabase';
@@ -42,6 +43,7 @@ export function AdminSidebar() {
     { href: '/admin/store-management', label: 'إدارة المتجر', icon: Store, permissionId: 'store-management' },
     { href: '/admin/applications', label: 'التطبيقات', icon: AppWindow, permissionId: 'applications' },
     { href: '/admin/announcements', label: 'الإعلانات', icon: Megaphone, permissionId: 'announcements' },
+    { href: '/admin/blog', label: 'المدونة', icon: FileText, permissionId: 'blog' },
     { href: '/admin/support', label: 'الدعم المباشر', icon: MessageSquare, permissionId: 'support' },
     { href: '/admin/team', label: 'الفريق', icon: Users, permissionId: 'team' },
     { href: '/admin/workflow', label: 'سير العمل', icon: Activity, permissionId: 'workflow' },

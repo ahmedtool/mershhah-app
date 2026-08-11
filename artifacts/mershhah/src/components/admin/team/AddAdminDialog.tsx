@@ -22,6 +22,7 @@ const permissions = [
   { id: 'store-management', label: 'إدارة المتجر' },
   { id: 'applications', label: 'التطبيقات' },
   { id: 'announcements', label: 'الإعلانات' },
+  { id: 'blog', label: 'المدونة' },
   { id: 'support', label: 'الدعم المباشر' },
   { id: 'team', label: 'إدارة الفريق' },
   { id: 'workflow', label: 'سير العمل' },

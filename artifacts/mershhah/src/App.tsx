@@ -53,6 +53,7 @@ import AdminTeamPage from "@/app/admin/team/page";
 import AdminSalesPage from "@/app/admin/sales/page";
 import AdminApplicationsPage from "@/app/admin/applications/page";
 import AdminAnnouncementsPage from "@/app/admin/announcements/page";
+import AdminBlogPage from "@/app/admin/blog/page";
 import AdminWorkflowPage from "@/app/admin/workflow/page";
 import AdminDiscountsPage from "@/app/admin/discounts/page";
 import AdminFinancialsPage from "@/app/admin/financials/page";
@@ -151,6 +152,7 @@ function Router() {
       <Route path="/admin/sales" component={() => <AdminLayout><AdminSalesPage /></AdminLayout>} />
       <Route path="/admin/applications" component={() => <AdminLayout><AdminApplicationsPage /></AdminLayout>} />
       <Route path="/admin/announcements" component={() => <AdminLayout><AdminAnnouncementsPage /></AdminLayout>} />
+      <Route path="/admin/blog" component={() => <AdminLayout><AdminBlogPage /></AdminLayout>} />
       <Route path="/admin/workflow" component={() => <AdminLayout><AdminWorkflowPage /></AdminLayout>} />
       <Route path="/admin/financials" component={() => <AdminLayout><AdminFinancialsPage /></AdminLayout>} />
       <Route path="/admin/financials/plans" component={() => <AdminLayout><AdminFinancialsPlansPage /></AdminLayout>} />

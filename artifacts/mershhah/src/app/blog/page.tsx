@@ -1,5 +1,6 @@
 
-import { posts } from '@/blog/posts';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import { BlogHeader } from '@/components/blog/BlogHeader';
 import { PostCard } from '@/components/blog/PostCard';
 import { Logo } from "@/components/shared/Logo";
@@ -7,9 +8,33 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { PublicFooter } from "@/components/shared/PublicFooter";
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function BlogPage() {
-  const sortedPosts = [...posts].sort((a, b) => new Date(b.metadata.publishedAt).getTime() - new Date(a.metadata.publishedAt).getTime());
+  const [posts, setPosts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      const { data } = await supabase
+        .from('blog_posts')
+        .select('slug, title, description, reading_time, published_at')
+        .eq('is_published', true)
+        .order('published_at', { ascending: false });
+
+      setPosts((data || []).map((p: any) => ({
+        slug: p.slug,
+        metadata: {
+          title: p.title,
+          description: p.description,
+          publishedAt: p.published_at,
+          readingTime: p.reading_time,
+        },
+      })));
+      setIsLoading(false);
+    };
+    fetchPosts();
+  }, []);
 
   return (
     <div className="min-h-screen overflow-x-hidden" dir="rtl">
@@ -28,11 +53,19 @@ export default function BlogPage() {
           description="دليلك المتكامل لبناء مشروع تجاري ناجح في قطاع الأغذية والمشروبات."
         />
 
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-12">
-          {sortedPosts.map((post) => (
-            <PostCard key={post.slug} post={post} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-12">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 rounded-2xl" />)}
+          </div>
+        ) : posts.length === 0 ? (
+          <p className="text-center text-gray-400 text-sm mt-16">لا توجد مقالات منشورة بعد</p>
+        ) : (
+          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-12">
+            {posts.map((post) => (
+              <PostCard key={post.slug} post={post} />
+            ))}
+          </div>
+        )}
 
         <div className="max-w-3xl mx-auto mt-16 bg-gray-900 rounded-2xl p-8 sm:p-12 text-center">
           <h2 className="text-lg font-black text-white mb-2">هل أنت صاحب مطعم أو مقهى؟</h2>
