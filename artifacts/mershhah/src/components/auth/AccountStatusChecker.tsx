@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import type { Subscription } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
+import { describeFeature } from '@/lib/plan-feature-labels';
 
 type OnboardingPlan = {
     id: string;
@@ -19,28 +20,6 @@ type OnboardingPlan = {
     is_featured: boolean;
     features?: Record<string, boolean | number>;
 };
-
-// `plans.features` keys are English identifiers (seeded outside the admin
-// editor, which writes Arabic labels directly) — translate the known ones
-// for display instead of leaking raw keys like "ai_analysis" into the UI.
-const FEATURE_LABELS: Record<string, string> = {
-    menu: 'قائمة المنيو الرقمية',
-    offers: 'العروض والحملات',
-    branches: 'الفروع المتعددة',
-    ai_analysis: 'تحليل وتوصيات ذكية',
-    custom_domain: 'نطاق مخصص',
-    api_access: 'الوصول عبر API',
-    white_label: 'بدون شعار مرشح',
-    priority_support: 'دعم فني ذو أولوية',
-};
-
-function describeFeature(key: string, value: boolean | number): { label: string; included: boolean } {
-    const baseLabel = FEATURE_LABELS[key] || key;
-    if (typeof value === 'number') {
-        return { label: value > 0 ? `${baseLabel} (حتى ${value})` : baseLabel, included: value > 0 };
-    }
-    return { label: baseLabel, included: value };
-}
 
 const FullPageLoader = () => (
     <div className="flex items-center justify-center h-full min-h-[50vh]">

@@ -9,6 +9,7 @@ import { PublicFooter } from "@/components/shared/PublicFooter";
 import { supabase } from "@/lib/supabase";
 import type { Plan } from "@/lib/types";
 import { getPlanFeatures } from "@/lib/plan-features";
+import { describeFeature } from "@/lib/plan-feature-labels";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function PricingPage() {
@@ -93,12 +94,15 @@ export default function PricingPage() {
                     </p>
                     <div className="border-t border-gray-100 pt-5 mb-6 flex-1">
                       <ul className="space-y-2.5">
-                        {Object.entries(features).map(([feature, included]) => (
-                          <li key={feature} className={`flex items-center gap-2.5 text-xs ${!included ? 'text-gray-300 line-through' : 'text-gray-600'}`}>
-                            <Check className={`h-3.5 w-3.5 shrink-0 ${included ? 'text-emerald-500' : 'text-gray-200'}`} />
-                            <span>{feature}</span>
-                          </li>
-                        ))}
+                        {Object.entries(features).map(([key, value]) => {
+                          const { label, included } = describeFeature(key, value as boolean | number);
+                          return (
+                            <li key={key} className={`flex items-center gap-2.5 text-xs ${!included ? 'text-gray-300 line-through' : 'text-gray-600'}`}>
+                              <Check className={`h-3.5 w-3.5 shrink-0 ${included ? 'text-emerald-500' : 'text-gray-200'}`} />
+                              <span>{label}</span>
+                            </li>
+                          );
+                        })}
                       </ul>
                     </div>
                     {isExternal ? (
