@@ -16,14 +16,12 @@ import {
   Activity,
   Megaphone,
   AppWindow,
-  Package,
   TrendingUp,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Tag,
-  BarChart3,
-  ShoppingCart,
+  FileText,
 } from 'lucide-react';
 
 const SUPER_ADMIN_EMAIL = 'ahmedsupsa@gmail.com';
@@ -35,8 +33,6 @@ export function AdminTopNav() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showFinancials, setShowFinancials] = useState(false);
-  const financialsRef = useRef<HTMLDivElement>(null);
 
   const navItems = [
     { href: '/admin/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard, permissionId: 'dashboard' },
@@ -44,17 +40,11 @@ export function AdminTopNav() {
     { href: '/admin/store-management', label: 'إدارة المتجر', icon: Store, permissionId: 'store-management' },
     { href: '/admin/applications', label: 'التطبيقات', icon: AppWindow, permissionId: 'applications' },
     { href: '/admin/announcements', label: 'الإعلانات', icon: Megaphone, permissionId: 'announcements' },
+    { href: '/admin/blog', label: 'المدونة', icon: FileText, permissionId: 'blog' },
     { href: '/admin/support', label: 'الدعم', icon: MessageSquare, permissionId: 'support', showBadge: true },
     { href: '/admin/team', label: 'الفريق', icon: Users, permissionId: 'team' },
     { href: '/admin/workflow', label: 'سير العمل', icon: Activity, permissionId: 'workflow' },
     { href: '/admin/sales', label: 'دليل المبيعات', icon: TrendingUp, permissionId: 'sales' },
-  ];
-
-  const financialsItems = [
-    { href: '/admin/financials', label: 'نظرة عامة', icon: BarChart3 },
-    { href: '/admin/plans', label: 'الباقات', icon: Package },
-    { href: '/admin/financials/orders', label: 'الطلبات', icon: ShoppingCart },
-    { href: '/admin/financials/discounts', label: 'أكواد الخصم', icon: Tag },
   ];
 
   useEffect(() => {
@@ -77,16 +67,6 @@ export function AdminTopNav() {
 
     return () => { supabase.removeChannel(channel); };
   }, [user]);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (financialsRef.current && !financialsRef.current.contains(e.target as Node)) {
-        setShowFinancials(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -153,48 +133,17 @@ export function AdminTopNav() {
             ))}
 
             {hasFinancials && (
-              <div ref={financialsRef} className="relative flex items-center">
-                <Link
-                  href="/admin/financials"
-                  className={`flex items-center gap-1.5 h-9 px-3 rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap ${
-                    isFinancialsActive
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                  }`}
-                >
-                  <Tag className="h-3.5 w-3.5 shrink-0" />
-                  <span className="hidden md:inline">المالية</span>
-                </Link>
-                <button
-                  onClick={() => setShowFinancials(!showFinancials)}
-                  className="h-9 px-1 flex items-center justify-center text-gray-400 hover:text-gray-600"
-                >
-                  <ChevronDown className={`h-3 w-3 transition-transform ${showFinancials ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showFinancials && (
-                  <div className="absolute top-full mt-1 right-0 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 min-w-[180px]">
-                    {financialsItems.map((item) => {
-                      const active = item.href === '/admin/financials'
-                        ? pathname === '/admin/financials'
-                        : pathname.startsWith(item.href);
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => setShowFinancials(false)}
-                          className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold transition-colors ${
-                            active ? 'bg-gray-50 text-gray-900' : 'text-gray-500 hover:bg-gray-50'
-                          }`}
-                        >
-                          <item.icon className="h-3.5 w-3.5 text-gray-400" />
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <Link
+                href="/admin/financials"
+                className={`flex items-center gap-1.5 h-9 px-3 rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap ${
+                  isFinancialsActive
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                }`}
+              >
+                <Tag className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden md:inline">المالية</span>
+              </Link>
             )}
           </div>
         </div>
