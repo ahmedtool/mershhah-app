@@ -41,10 +41,20 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
 
   const needsOtp = !!user && (user.role === 'owner' || user.role === 'admin');
 
+  // A fresh sign-in must never be treated as already-verified just because
+  // this browser tab verified a *previous* session for the same account —
+  // sessionStorage survives sign-out, so the flag has to be cleared the
+  // moment that sign-out actually happens, not just when the tab closes.
   useEffect(() => {
-    if (!user) return;
-    setIsVerified(sessionStorage.getItem(sessionKey(user.uid)) === '1');
-  }, [user]);
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        Object.keys(sessionStorage)
+          .filter((k) => k.startsWith('mershhah_otp_verified_'))
+          .forEach((k) => sessionStorage.removeItem(k));
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
 
   const sendCode = async () => {
     if (!user) return;
@@ -66,11 +76,19 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    if (needsOtp && !isVerified && user && sentForUid.current !== user.uid) {
+    if (!user) return;
+    // Compute verified synchronously and act on it immediately in the same
+    // pass — splitting this into "check" + "decide to send" as two separate
+    // effects raced: the send-effect ran with the stale (default false)
+    // isVerified before the check-effect's setIsVerified(true) had actually
+    // re-rendered, firing an OTP send that then got silently bypassed.
+    const verified = sessionStorage.getItem(sessionKey(user.uid)) === '1';
+    setIsVerified(verified);
+    if (needsOtp && !verified && sentForUid.current !== user.uid) {
       sentForUid.current = user.uid;
       sendCode();
     }
-  }, [needsOtp, isVerified, user]);
+  }, [needsOtp, user]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
