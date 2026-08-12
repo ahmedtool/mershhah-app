@@ -25,7 +25,7 @@ import OwnerBranchesPage from "@/app/owner/branches/page";
 import OwnerReviewsPage from "@/app/owner/reviews/page";
 import OwnerSettingsPage from "@/app/owner/settings/page";
 import OwnerStorePage from "@/app/owner/store/page";
-import OwnerPricingPage from "@/app/owner/pricing/page";
+import OwnerReportsPage from "@/app/owner/reports/page";
 import OwnerTicketsPage from "@/app/owner/tickets/page";
 import OwnerTicketDetailPage from "@/app/owner/tickets/[ticketId]/page";
 import OwnerToolsPage from "@/app/owner/tools/page";
@@ -128,7 +128,7 @@ function Router() {
       <Route path="/owner/reviews" component={() => <OW><OwnerReviewsPage /></OW>} />
       <Route path="/owner/settings" component={() => <OW><OwnerSettingsPage /></OW>} />
       <Route path="/owner/store" component={() => <OW><OwnerStorePage /></OW>} />
-      <Route path="/owner/pricing" component={() => <OW><OwnerPricingPage /></OW>} />
+      <Route path="/owner/reports" component={() => <OW><OwnerReportsPage /></OW>} />
       <Route path="/owner/tickets/:ticketId" component={() => <OW><OwnerTicketDetailPage /></OW>} />
       <Route path="/owner/tickets" component={() => <OW><OwnerTicketsPage /></OW>} />
       <Route path="/owner/tools/daily-pulse-dashboard" component={() => <OW><DailyPulsePage /></OW>} />

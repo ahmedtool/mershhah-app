@@ -43,7 +43,7 @@ export function OwnerSidebar() {
   const menuItems = [
     { href: '/owner/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
     { href: '/owner/menu', label: 'إدارة المنيو', icon: Utensils },
-    { href: '/owner/pricing', label: 'مركز التقارير', icon: BarChart3 },
+    { href: '/owner/reports', label: 'مركز التقارير', icon: BarChart3 },
     { href: '/owner/offers', label: 'إدارة العروض', icon: Megaphone },
     { href: '/owner/reviews', label: 'التقييمات', icon: Star },
     { href: '/owner/branches', label: 'إدارة الفروع', icon: Building2 },

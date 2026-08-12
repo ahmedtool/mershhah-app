@@ -38,7 +38,7 @@ export function OwnerTopNav() {
   const navItems = [
     { href: '/owner/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
     { href: '/owner/menu', label: 'المنيو', icon: Utensils },
-    { href: '/owner/pricing', label: 'التقارير', icon: BarChart3 },
+    { href: '/owner/reports', label: 'التقارير', icon: BarChart3 },
     { href: '/owner/offers', label: 'العروض', icon: Megaphone },
     { href: '/owner/reviews', label: 'التقييمات', icon: Star },
     { href: '/owner/branches', label: 'الفروع', icon: Building2 },

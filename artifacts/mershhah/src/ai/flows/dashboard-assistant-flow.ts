@@ -222,7 +222,7 @@ function detectIntent(msg: string, ctx: {
   if (match(msg, 'روح', 'روح ل', 'افتح', 'افتح صفحة', 'go to', 'open page')) {
     const pages: Record<string, string> = {
       'المنيو': '/owner/menu', 'menu': '/owner/menu',
-      'التقارير': '/owner/pricing', 'reports': '/owner/pricing',
+      'التقارير': '/owner/reports', 'reports': '/owner/reports',
       'العروض': '/owner/offers', 'offers': '/owner/offers',
       'التقييمات': '/owner/reviews', 'reviews': '/owner/reviews',
       'الفروع': '/owner/branches', 'branches': '/owner/branches',
