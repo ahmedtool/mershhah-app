@@ -32,6 +32,8 @@ import { Link } from 'wouter';
 import { cn } from '@/lib/utils';
 import { extractColorsFromImage } from '@/lib/extract-colors-from-image';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FONT_OPTIONS, RADIUS_PRESETS } from '@/lib/public-theme';
+import { Copy } from 'lucide-react';
 
 const SOCIAL_PLATFORMS = [
   { label: 'واتساب', value: 'whatsapp', icon: WhatsAppIcon, color: '#25D366' },
@@ -49,7 +51,9 @@ export default function CustomizePage() {
   const { toast } = useToast();
   const [settings, setSettings] = useState<any>(null);
   const [globalApps, setGlobalApps] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewKey, setPreviewKey] = useState(0);
   const [isSaving, startSaving] = useTransition();
   const [isSuggestingColors, setIsSuggestingColors] = useState(false);
 
@@ -92,6 +96,17 @@ export default function CustomizePage() {
             setGlobalApps(appsData || []);
         } catch (serverError: any) {
             console.error("Error fetching applications:", serverError);
+        }
+
+        try {
+            const { data: branchesData } = await supabase
+                .from('branches')
+                .select('id, name, applications')
+                .eq('restaurant_id', user.restaurantId)
+                .order('name');
+            setBranches((branchesData || []).map(b => ({ ...b, applications: Array.isArray(b.applications) ? b.applications : [] })));
+        } catch (serverError: any) {
+            console.error("Error fetching branches:", serverError);
         }
 
         setLoading(false);
@@ -227,7 +242,15 @@ export default function CustomizePage() {
           throw error;
         }
 
-        syncPublicPage(user.restaurantId!).catch((e) => {
+        if (branches.length > 0) {
+          const branchErrors = await Promise.all(
+            branches.map(b => supabase.from('branches').update({ applications: b.applications }).eq('id', b.id))
+          );
+          const failed = branchErrors.find(r => r.error);
+          if (failed?.error) throw failed.error;
+        }
+
+        await syncPublicPage(user.restaurantId!).catch((e) => {
           console.error('[Customize] syncPublicPage failed:', e);
         });
 
@@ -243,6 +266,7 @@ export default function CustomizePage() {
         }
 
         toast({ title: "تم الحفظ بنجاح!" });
+        setPreviewKey(k => k + 1);
 
       } catch (e: any) {
           toast({ title: 'خطأ', description: e.message, variant: 'destructive' });
@@ -313,6 +337,47 @@ export default function CustomizePage() {
         ...settings,
         applications: settings.applications.map((a: any) => a.id === appId ? { ...a, logo: previewUrl } : a)
     });
+  };
+
+  // Branch-aware app links: once a restaurant has branches, each branch
+  // can have its own link per platform (a single restaurant-wide link
+  // doesn't work — e.g. each branch has a different Careem storefront).
+  const isBranchAppActive = (platformId: string) =>
+    branches.some(b => b.applications?.some((a: any) => a.platformId === platformId));
+
+  const toggleBranchApp = (app: any) => {
+    const isActive = isBranchAppActive(app.id);
+    setBranches(branches.map(b => {
+      if (isActive) {
+        return { ...b, applications: b.applications.filter((a: any) => a.platformId !== app.id) };
+      }
+      if (b.applications.some((a: any) => a.platformId === app.id)) return b;
+      return {
+        ...b,
+        applications: [...b.applications, { id: `branch-app-${app.id}`, type: 'global', platformId: app.id, name: app.name, logo: app.logo_url, value: '' }],
+      };
+    }));
+  };
+
+  const updateBranchAppValue = (branchId: string, platformId: string, value: string) => {
+    setBranches(branches.map(b => b.id !== branchId ? b : {
+      ...b,
+      applications: b.applications.map((a: any) => a.platformId === platformId ? { ...a, value } : a),
+    }));
+  };
+
+  const copyAppLinkToAllBranches = (platformId: string) => {
+    const source = branches.find(b => b.applications?.some((a: any) => a.platformId === platformId && a.value?.trim()));
+    const value = source?.applications.find((a: any) => a.platformId === platformId)?.value ?? '';
+    if (!value) {
+      toast({ title: 'ما فيه رابط لنسخه', description: 'أدخل رابط بفرع واحد على الأقل أولاً.', variant: 'destructive' });
+      return;
+    }
+    setBranches(branches.map(b => ({
+      ...b,
+      applications: b.applications.map((a: any) => a.platformId === platformId ? { ...a, value } : a),
+    })));
+    toast({ title: 'تم النسخ لكل الفروع' });
   };
 
   const addSocialLink = (platform: string) => {
@@ -446,6 +511,55 @@ export default function CustomizePage() {
                                 <input type="color" value={settings.secondaryColor || '#ffffff'} onChange={e => setSettings({...settings, secondaryColor: e.target.value})}
                                   className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer" />
                             </div>
+                            <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                                <Label className="text-[11px] font-bold text-gray-600">لون نص الأزرار</Label>
+                                <input type="color" value={settings.buttonTextColor || '#ffffff'} onChange={e => setSettings({...settings, buttonTextColor: e.target.value})}
+                                  className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer" />
+                            </div>
+                        </div>
+
+                        {/* Font */}
+                        <div className="space-y-1.5">
+                            <Label className="text-[11px] text-gray-400">الخط</Label>
+                            <div className="grid grid-cols-3 gap-1.5">
+                                {FONT_OPTIONS.map(font => (
+                                    <button key={font.id} type="button"
+                                        onClick={() => setSettings({ ...settings, fontFamily: font.id })}
+                                        style={{ fontFamily: `'${font.id}', sans-serif` }}
+                                        className={cn(
+                                            "h-14 rounded-xl border text-center transition-colors flex flex-col items-center justify-center gap-0.5",
+                                            (settings.fontFamily || 'IBM Plex Sans Arabic') === font.id
+                                                ? "bg-gray-900 border-gray-900 text-white"
+                                                : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+                                        )}>
+                                        <span className="text-sm">{font.sample}</span>
+                                        <span className="text-[9px] opacity-70">{font.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Corner radius */}
+                        <div className="space-y-1.5">
+                            <Label className="text-[11px] text-gray-400">انحناء الحواف</Label>
+                            <div className="grid grid-cols-3 gap-1.5">
+                                {RADIUS_PRESETS.map(preset => (
+                                    <button key={preset.id} type="button"
+                                        onClick={() => setSettings({ ...settings, borderRadius: preset.value })}
+                                        className={cn(
+                                            "h-14 rounded-xl border text-center transition-colors flex flex-col items-center justify-center gap-1.5",
+                                            (settings.borderRadius ?? 16) === preset.value
+                                                ? "bg-gray-900 border-gray-900"
+                                                : "bg-white border-gray-200 hover:border-gray-300"
+                                        )}>
+                                        <span
+                                            className={cn("w-5 h-5 border-2", (settings.borderRadius ?? 16) === preset.value ? "border-white" : "border-gray-400")}
+                                            style={{ borderRadius: `${Math.min(preset.value, 10)}px` }}
+                                        />
+                                        <span className={cn("text-[9px]", (settings.borderRadius ?? 16) === preset.value ? "text-white/70" : "text-gray-400")}>{preset.label}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </AccordionContent>
                 </AccordionItem>
@@ -456,6 +570,65 @@ export default function CustomizePage() {
                         <div className="flex items-center gap-2"><AppWindow className="h-4 w-4 text-gray-400"/> التطبيقات</div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-5 pb-5 text-right">
+                      {branches.length > 0 ? (
+                        <>
+                          <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                              <p className="text-[11px] text-blue-700 leading-relaxed">
+                                  عندك أكثر من فرع، فروابط التطبيقات تُدار لكل فرع لحاله — كل فرع غالباً له رابط توصيل مختلف. فعّل التطبيق ثم عبّي رابط كل فرع تحته.
+                              </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2 justify-end">
+                              {globalApps.map(app => {
+                                  const isActive = isBranchAppActive(app.id);
+                                  return (
+                                      <button key={app.id} type="button"
+                                          className={cn(
+                                              "h-8 gap-1.5 text-[10px] font-bold rounded-lg px-3 flex items-center border transition-colors",
+                                              isActive ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                                          )}
+                                          onClick={() => toggleBranchApp(app)}
+                                      >
+                                          <div className="relative w-3.5 h-3.5 shrink-0">
+                                              <StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="14px" />
+                                          </div>
+                                          {app.name}
+                                      </button>
+                                  );
+                              })}
+                          </div>
+
+                          {globalApps.filter(app => isBranchAppActive(app.id)).map(app => (
+                              <div key={app.id} className="space-y-2 border-t border-gray-100 pt-3">
+                                  <div className="flex items-center justify-between">
+                                      <button type="button" onClick={() => copyAppLinkToAllBranches(app.id)}
+                                          className="text-[10px] font-bold text-gray-400 hover:text-gray-900 flex items-center gap-1 transition-colors">
+                                          <Copy className="h-3 w-3" /> نسخ لكل الفروع
+                                      </button>
+                                      <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
+                                          {app.name}
+                                          <div className="relative w-4 h-4 shrink-0"><StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="16px" /></div>
+                                      </h4>
+                                  </div>
+                                  <div className="space-y-1.5">
+                                      {branches.map(branch => {
+                                          const entry = branch.applications.find((a: any) => a.platformId === app.id);
+                                          return (
+                                              <div key={branch.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                                                  <span className="text-[10px] font-bold text-gray-500 w-16 shrink-0 truncate">{branch.name}</span>
+                                                  <Input dir="ltr" value={entry?.value || ''} onChange={e => updateBranchAppValue(branch.id, app.id, e.target.value)}
+                                                      placeholder="https://..." className="h-8 text-[10px] rounded-lg border-gray-200 flex-1" />
+                                              </div>
+                                          );
+                                      })}
+                                  </div>
+                              </div>
+                          ))}
+                          <p className="text-[10px] text-gray-300 pt-1">
+                              تبي تضيف فرع جديد أو تعدّل بياناته؟ <Link href="/owner/branches" className="text-gray-500 underline">من صفحة الفروع</Link>.
+                          </p>
+                        </>
+                      ) : (
+                        <>
                         <div className="flex flex-wrap gap-2 justify-end">
                             {globalApps.map(app => {
                                 const isAdded = settings.applications?.some((a: any) => a.platformId === app.id);
@@ -502,6 +675,8 @@ export default function CustomizePage() {
                                 </div>
                             ))}
                         </div>
+                        </>
+                      )}
                     </AccordionContent>
                 </AccordionItem>
 
@@ -551,7 +726,7 @@ export default function CustomizePage() {
               <div className="flex-1 min-h-0 w-full relative pt-2">
                 {settings?.username ? (
                   <iframe
-                    key={settings.username}
+                    key={`${settings.username}-${previewKey}`}
                     src={`/${settings.username}`}
                     title="معاينة"
                     className="w-full h-full min-h-[600px] border-0 rounded-b-[2rem] bg-white"

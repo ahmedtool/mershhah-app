@@ -16,6 +16,7 @@ import { Loader2, ChevronRight, CheckCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getPublicThemeStyle } from '@/lib/public-theme';
 
 const ticketSchema = z.object({
   name: z.string().min(2, 'الاسم مطلوب'),
@@ -130,8 +131,10 @@ export default function SupportPage() {
     );
   }
 
+  const themeStyle = getPublicThemeStyle(restaurant);
+
   return (
-    <div className="min-h-screen bg-white pb-16" dir="rtl">
+    <div className="min-h-screen pb-16" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir="rtl">
 
       {/* Header */}
       <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-4 flex items-center justify-between">
@@ -145,7 +148,7 @@ export default function SupportPage() {
       </div>
 
       <div className="max-w-lg mx-auto w-full px-5 pb-8 text-center space-y-3 text-right">
-        <div className="relative w-16 h-16 mx-auto rounded-2xl overflow-hidden">
+        <div className="relative w-16 h-16 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
             alt={restaurant.name}
@@ -181,7 +184,7 @@ export default function SupportPage() {
             </button>
           </div>
         ) : (
-          <div className="border border-gray-100 rounded-xl p-5">
+          <div className="border border-gray-100 p-5" style={{ borderRadius: 'var(--r-radius)' }}>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 text-right">
                 <FormField
@@ -289,8 +292,8 @@ export default function SupportPage() {
 
                 <Button
                   type="submit"
-                  className="w-full h-10 rounded-lg text-sm font-semibold text-white"
-                  style={{ backgroundColor: primaryColor }}
+                  className="w-full h-10 rounded-lg text-sm font-semibold"
+                  style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (

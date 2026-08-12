@@ -22,6 +22,7 @@ import { StorageImage } from '@/components/shared/StorageImage';
 import { InstagramIcon, TikTokIcon, SnapchatIcon, XIcon, WhatsAppIcon, WebsiteIcon, FacebookIcon, YoutubeIcon } from '@/components/shared/SocialIcons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trackAppClick, trackSocialClick, trackPageView } from '@/lib/event-tracker';
+import { getPublicThemeStyle } from '@/lib/public-theme';
 
 const SOCIAL_ICONS: { [key: string]: React.ElementType } = {
     whatsapp: WhatsAppIcon,
@@ -112,6 +113,7 @@ export default function RestaurantHubPage() {
         if (data) {
           setRestaurant(data.restaurant);
           setOffers(data.offers ?? []);
+          setBranches((data.branches ?? []).filter((b: any) => b.status === 'active'));
           setLoading(false);
           return;
         }
@@ -260,20 +262,25 @@ export default function RestaurantHubPage() {
 
   const primaryColor = restaurant.primaryColor || '#714dfa';
   const socialLinks = restaurant.social_links || restaurant.socialLinks || [];
+  const themeStyle = getPublicThemeStyle(restaurant);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex flex-col items-center" dir="rtl">
+    <div
+      className="min-h-screen flex flex-col items-center"
+      style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 45%, white), white 55%)' }}
+      dir="rtl"
+    >
       {/* Container principal - محدود العرض على الشاشات الكبيرة */}
       <div className="w-full max-w-lg mx-auto">
-        
+
         {/* Header - الشعار والاسم */}
-        <div className="relative bg-white border-b border-gray-100 px-5 py-8 text-center">
+        <div className="relative bg-white/60 border-b border-gray-100 px-5 py-8 text-center">
           {/* زر المشاركة */}
           <div className="absolute top-4 left-4">
-            <Button 
-              onClick={handleShare} 
-              size="icon" 
-              variant="ghost" 
+            <Button
+              onClick={handleShare}
+              size="icon"
+              variant="ghost"
               className="rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 h-10 w-10"
             >
               <Share2 className="h-4 w-4" />
@@ -281,8 +288,8 @@ export default function RestaurantHubPage() {
           </div>
 
           {/* الشعار */}
-          <div className="relative w-24 h-24 bg-white p-1.5 shadow-lg rounded-3xl overflow-hidden mx-auto mb-4 border border-gray-100">
-            <div className="w-full h-full relative overflow-hidden rounded-[1.7rem]">
+          <div className="relative w-24 h-24 bg-white p-1.5 shadow-lg overflow-hidden mx-auto mb-4 border border-gray-100" style={{ borderRadius: 'var(--r-radius)' }}>
+            <div className="w-full h-full relative overflow-hidden" style={{ borderRadius: 'calc(var(--r-radius) - 6px)' }}>
               <StorageImage 
                 imagePath={restaurant.logo} 
                 alt={restaurant.name} 
@@ -343,8 +350,8 @@ export default function RestaurantHubPage() {
                   <button
                     onClick={detectLocation}
                     disabled={locating}
-                    className="h-11 px-6 rounded-xl text-white text-sm font-bold transition-all flex items-center justify-center gap-2 mx-auto disabled:opacity-50"
-                    style={{ backgroundColor: primaryColor }}
+                    className="h-11 px-6 text-sm font-bold transition-all flex items-center justify-center gap-2 mx-auto disabled:opacity-50"
+                    style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)', borderRadius: 'var(--r-radius-sm)' }}
                   >
                     {locating ? (
                       <>
@@ -376,10 +383,10 @@ export default function RestaurantHubPage() {
                   </div>
 
                   {/* البطاقة الرئيسية */}
-                  <div className="bg-white border border-gray-100 rounded-2xl p-4 space-y-3">
+                  <div className="bg-white border border-gray-100 p-4 space-y-3" style={{ borderRadius: 'var(--r-radius)' }}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white" style={{ backgroundColor: primaryColor }}>
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}>
                           الأقرب لك
                         </span>
                         <h4 className="text-sm font-bold text-gray-900">{selectedBranch.name}</h4>
@@ -468,7 +475,7 @@ export default function RestaurantHubPage() {
                     onClick={() => handleOfferClick(offer)}
                     className="shrink-0 flex-[0_0_100%] snap-center text-right"
                   >
-                    <div className="relative rounded-2xl shadow-md overflow-hidden group" style={{ aspectRatio: '16/10' }}>
+                    <div className="relative shadow-md overflow-hidden group" style={{ aspectRatio: '16/10', borderRadius: 'var(--r-radius)' }}>
                       <StorageImage
                         imagePath={offer.image_url}
                         alt={offer.title}
@@ -493,11 +500,11 @@ export default function RestaurantHubPage() {
           <section className="space-y-3">
             {restaurant.is_paid_plan && (
               <Link href={`/ai/${username}`} className="block">
-                <div 
-                  className="flex items-center gap-4 p-4 rounded-2xl text-white shadow-md transition-all h-16"
-                  style={{ backgroundColor: primaryColor }}
+                <div
+                  className="flex items-center gap-4 p-4 shadow-md transition-all h-16"
+                  style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)', borderRadius: 'var(--r-radius)' }}
                 >
-                  <div className="w-11 h-11 flex items-center justify-center rounded-xl bg-white/20 backdrop-blur-md border border-white/30">
+                  <div className="w-11 h-11 flex items-center justify-center bg-white/20 backdrop-blur-md border border-white/30" style={{ borderRadius: 'var(--r-radius-sm)' }}>
                     <Bot className="h-6 w-6" />
                   </div>
                   <div className="flex-1 text-right">
@@ -509,10 +516,10 @@ export default function RestaurantHubPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <Link href={`/menu/${username}`} className="block">
-                <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all h-16">
-                  <div 
-                    className="w-11 h-11 flex items-center justify-center rounded-xl text-white shrink-0"
-                    style={{ backgroundColor: primaryColor }}
+                <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all h-16" style={{ borderRadius: 'var(--r-radius)' }}>
+                  <div
+                    className="w-11 h-11 flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)', borderRadius: 'var(--r-radius-sm)' }}
                   >
                     <Utensils className="h-5 w-5" />
                   </div>
@@ -523,7 +530,7 @@ export default function RestaurantHubPage() {
               </Link>
 
               <Link href={`/reviews/${username}`} className="block">
-                <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all h-16">
+                <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all h-16" style={{ borderRadius: 'var(--r-radius)' }}>
                   <div className="w-11 h-11 flex items-center justify-center rounded-xl bg-amber-100 text-amber-600 shrink-0">
                     <Star className="h-5 w-5 fill-current" />
                   </div>
@@ -534,7 +541,7 @@ export default function RestaurantHubPage() {
               </Link>
 
               <Link href={`/branches/${username}`} className="block">
-                <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all h-16">
+                <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all h-16" style={{ borderRadius: 'var(--r-radius)' }}>
                   <div className="w-11 h-11 flex items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 shrink-0">
                     <MapPin className="h-5 w-5" />
                   </div>
@@ -545,7 +552,7 @@ export default function RestaurantHubPage() {
               </Link>
 
               <Link href={`/support/${username}`} className="block">
-                <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm hover:shadow-md transition-all h-16">
+                <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all h-16" style={{ borderRadius: 'var(--r-radius)' }}>
                   <div className="w-11 h-11 flex items-center justify-center rounded-xl bg-blue-100 text-blue-600 shrink-0">
                     <Ticket className="h-5 w-5" />
                   </div>
@@ -568,7 +575,8 @@ export default function RestaurantHubPage() {
                   {activeApps.map((app: any, idx: number) => (
                     <a key={app.id || idx} href={app.value || '#'} target="_blank" rel="noopener noreferrer"
                       onClick={() => restaurant.id && trackAppClick(restaurant.id, app.name || 'unknown')}
-                      className="aspect-square bg-white border border-gray-100 rounded-2xl p-3 flex items-center justify-center hover:shadow-md transition-all">
+                      className="aspect-square bg-white border border-gray-100 p-3 flex items-center justify-center hover:shadow-md transition-all"
+                      style={{ borderRadius: 'var(--r-radius-sm)' }}>
                       <div className="relative w-full h-full">
                         <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain" sizes="64px" />
                       </div>

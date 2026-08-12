@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { getPublicThemeStyle } from '@/lib/public-theme';
 
 export default function PublicMenuPage() {
   const params = useParams();
@@ -212,9 +213,10 @@ export default function PublicMenuPage() {
   );
 
   const activeSuggestions = activeItem ? getSuggestionsForItem(activeItem, menuItems) : [];
+  const themeStyle = getPublicThemeStyle(restaurant);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white pb-16" dir="rtl">
+    <div className="flex flex-col min-h-screen pb-16" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir="rtl">
 
       {/* Header */}
       <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-4 flex items-center justify-between">
@@ -230,7 +232,7 @@ export default function PublicMenuPage() {
       </div>
 
       <div className="max-w-lg mx-auto w-full px-5 pb-6 text-center space-y-3 text-right">
-        <div className="relative w-16 h-16 mx-auto rounded-2xl overflow-hidden">
+        <div className="relative w-16 h-16 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
             alt={restaurant.name}
@@ -272,7 +274,7 @@ export default function PublicMenuPage() {
                   ? "text-white"
                   : "bg-gray-50 text-gray-500 hover:bg-gray-100"
               )}
-              style={activeCategory === cat ? { backgroundColor: primaryColor } : {}}
+              style={activeCategory === cat ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : {}}
             >
               {cat}
             </button>

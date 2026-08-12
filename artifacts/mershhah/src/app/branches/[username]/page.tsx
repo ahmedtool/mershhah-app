@@ -8,6 +8,7 @@ import { getPublicPage } from '@/lib/public-pages';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trackMapsClick, trackWhatsappClick, trackPhoneClick, trackBranchView } from '@/lib/event-tracker';
+import { getPublicThemeStyle } from '@/lib/public-theme';
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -169,8 +170,10 @@ export default function PublicBranchesPage() {
     );
   }
 
+  const themeStyle = getPublicThemeStyle(restaurant);
+
   return (
-    <div className="min-h-screen bg-white pb-16" dir="rtl">
+    <div className="min-h-screen pb-16" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir="rtl">
 
       {/* Header */}
       <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-4 flex items-center justify-between">
@@ -184,7 +187,7 @@ export default function PublicBranchesPage() {
       </div>
 
       <div className="max-w-lg mx-auto w-full px-5 pb-6 text-center space-y-3 text-right">
-        <div className="relative w-16 h-16 mx-auto rounded-2xl overflow-hidden">
+        <div className="relative w-16 h-16 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
             alt={restaurant.name}
@@ -221,8 +224,11 @@ export default function PublicBranchesPage() {
             return (
               <div
                 key={branch.id}
-                className="border border-gray-100 rounded-xl overflow-hidden transition-all"
-                style={isExpanded ? { borderColor: `${primaryColor}30` } : isNearest ? { borderColor: `${primaryColor}20`, backgroundColor: `${primaryColor}03` } : {}}
+                className="border border-gray-100 overflow-hidden transition-all"
+                style={{
+                  borderRadius: 'var(--r-radius)',
+                  ...(isExpanded ? { borderColor: `${primaryColor}30` } : isNearest ? { borderColor: `${primaryColor}20`, backgroundColor: `${primaryColor}03` } : {}),
+                }}
               >
                 {/* Branch Header */}
                 <button
@@ -235,8 +241,8 @@ export default function PublicBranchesPage() {
                 >
                   {/* Number badge */}
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white text-sm font-bold"
-                    style={{ backgroundColor: primaryColor }}
+                    className="w-10 h-10 flex items-center justify-center shrink-0 text-sm font-bold"
+                    style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)', borderRadius: 'var(--r-radius-sm)' }}
                   >
                     {index + 1}
                   </div>
@@ -245,7 +251,7 @@ export default function PublicBranchesPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-sm font-bold text-gray-900 truncate">{branch.name}</h3>
                       {isNearest && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: primaryColor }}>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}>
                           الأقرب لك
                         </span>
                       )}
@@ -314,8 +320,8 @@ export default function PublicBranchesPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={() => restaurant?.id && trackMapsClick(restaurant.id)}
-                          className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-xs font-semibold text-white transition-opacity hover:opacity-90"
-                          style={{ backgroundColor: primaryColor }}
+                          className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90"
+                          style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
                         >
                           <Navigation className="h-3.5 w-3.5" />
                           الذهاب
