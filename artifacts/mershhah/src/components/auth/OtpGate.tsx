@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from '@/lib/navigation';
 import { Loader2, ShieldCheck, RotateCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const sessionKey = (uid: string) => `mershhah_otp_verified_${uid}`;
-const IDLE_RELOCK_MS = 15 * 60 * 1000;
+const IDLE_SIGNOUT_MS = 60 * 60 * 1000;
 const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'mousedown', 'touchstart'];
 
 async function callOtpFunction(path: string, body: Record<string, unknown> = {}) {
@@ -26,6 +27,7 @@ async function callOtpFunction(path: string, body: Record<string, unknown> = {})
 export function OtpGate({ children }: { children: React.ReactNode }) {
   const { user, isLoading: isUserLoading } = useUser();
   const { toast } = useToast();
+  const router = useRouter();
   const [isVerified, setIsVerified] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [maskedEmail, setMaskedEmail] = useState('');
@@ -98,26 +100,23 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  // Replaces the old blunt "sign out after 15 idle minutes" timer with a
-  // security-equivalent that doesn't lose the tab's actual work: once idle
-  // this long, re-lock the dashboard behind a fresh OTP instead of a full
-  // sign-out. The Supabase session itself stays alive — verifying again
-  // drops them right back where they were.
+  // After an hour with no mouse/keyboard/touch activity, sign the user out
+  // completely instead of just re-locking behind a fresh OTP — no session
+  // means no more codes sent until they actually log back in.
   useEffect(() => {
     if (!needsOtp || !isVerified || !user) return;
 
     let idleTimer: ReturnType<typeof setTimeout>;
-    const relock = () => {
+    const signOutIdle = async () => {
       sessionStorage.removeItem(sessionKey(user.uid));
-      sentForUid.current = user.uid; // the auto-send effect won't refire (isVerified isn't its dependency) — send directly instead
-      setIsVerified(false);
-      setCode(['', '', '', '']);
-      toast({ title: 'انتهت صلاحية الجلسة الآمنة', description: 'أعد إدخال كود التحقق لمتابعة العمل.' });
-      sendCode();
+      await supabase.auth.signOut();
+      toast({ title: 'تم تسجيل الخروج', description: 'انتهت الجلسة بعد ساعة من عدم النشاط.' });
+      router.push('/login');
+      router.refresh();
     };
     const resetIdleTimer = () => {
       clearTimeout(idleTimer);
-      idleTimer = setTimeout(relock, IDLE_RELOCK_MS);
+      idleTimer = setTimeout(signOutIdle, IDLE_SIGNOUT_MS);
     };
 
     ACTIVITY_EVENTS.forEach((event) => window.addEventListener(event, resetIdleTimer));
@@ -127,7 +126,7 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
       clearTimeout(idleTimer);
       ACTIVITY_EVENTS.forEach((event) => window.removeEventListener(event, resetIdleTimer));
     };
-  }, [needsOtp, isVerified, user, toast]);
+  }, [needsOtp, isVerified, user, toast, router]);
 
   const handleDigitChange = (index: number, value: string) => {
     if (!/^[0-9]?$/.test(value)) return;

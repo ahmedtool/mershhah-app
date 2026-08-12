@@ -23,6 +23,7 @@ import { InstagramIcon, TikTokIcon, SnapchatIcon, XIcon, WhatsAppIcon, WebsiteIc
 import { Skeleton } from '@/components/ui/skeleton';
 import { trackAppClick, trackSocialClick, trackPageView } from '@/lib/event-tracker';
 import { getPublicThemeStyle } from '@/lib/public-theme';
+import { useToast } from '@/hooks/use-toast';
 
 const SOCIAL_ICONS: { [key: string]: React.ElementType } = {
     whatsapp: WhatsAppIcon,
@@ -62,6 +63,7 @@ export default function RestaurantHubPage() {
   const params = useParams();
   const username = params.username as string;
   const router = useRouter();
+  const { toast } = useToast();
 
   const [restaurant, setRestaurant] = useState<any>(null);
   const [offers, setOffers] = useState<any[]>([]);
@@ -221,9 +223,16 @@ export default function RestaurantHubPage() {
           text: restaurant?.description,
           url: window.location.href,
         });
-      } catch (error) {
-        console.error('Error sharing:', error);
+      } catch (error: any) {
+        if (error?.name !== 'AbortError') console.error('Error sharing:', error);
       }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast({ title: 'تم نسخ الرابط' });
+    } catch {
+      toast({ variant: 'destructive', title: 'تعذّر نسخ الرابط' });
     }
   };
 
