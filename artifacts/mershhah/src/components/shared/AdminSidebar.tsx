@@ -105,7 +105,7 @@ export function AdminSidebar() {
             <div key={item.href}>
               {showGroupHeader && (
                 <div className="pt-3 pb-1 px-3">
-                  <span className="text-[9px] font-bold text-gray-300 uppercase tracking-wider">{item.group}</span>
+                  <span className="text-[9px] font-bold text-gray-300">{item.group}</span>
                 </div>
               )}
               <Link

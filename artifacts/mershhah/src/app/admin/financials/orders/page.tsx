@@ -234,14 +234,14 @@ export default function FinancialsOrdersPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">المطعم</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">المالك</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">الباقة</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">المبلغ</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">تاريخ البداية</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">تاريخ النهاية</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">الحالة</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">إجراءات</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">المطعم</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">المالك</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الباقة</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">المبلغ</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">تاريخ البداية</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">تاريخ النهاية</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الحالة</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">إجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">

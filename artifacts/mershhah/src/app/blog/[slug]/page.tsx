@@ -76,7 +76,7 @@ export default function PostPage() {
 
         {/* Post Header */}
         <header className="space-y-10 mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/5 text-primary rounded-full text-xs font-black uppercase tracking-widest">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/5 text-primary rounded-full text-xs font-black">
                 <Bookmark className="h-3.5 w-3.5 fill-current" />
                 أطروحة استراتيجية
             </div>

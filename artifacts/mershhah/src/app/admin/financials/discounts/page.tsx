@@ -181,13 +181,13 @@ export default function FinancialsDiscountsPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">الكود</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">الخصم</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">الاستخدام</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">الحد الأدنى</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">الصلاحية</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">الحالة</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">إجراءات</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الكود</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الخصم</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الاستخدام</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الحد الأدنى</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الصلاحية</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الحالة</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">إجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">

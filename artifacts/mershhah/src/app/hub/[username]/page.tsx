@@ -651,7 +651,7 @@ export default function RestaurantHubPage() {
                 href="/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-[0.2em] transition-colors"
+                className="text-[10px] font-black text-gray-400 hover:text-gray-600 transition-colors"
               >
                 مدعوم بواسطة مرشح
               </Link>

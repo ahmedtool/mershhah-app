@@ -382,11 +382,11 @@ export default function AdminFinancialsPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-t border-gray-100">
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">المطعم</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">الوصف</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">المبلغ</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">التاريخ</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">الحالة</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">المطعم</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الوصف</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">المبلغ</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">التاريخ</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الحالة</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
