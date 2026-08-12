@@ -275,15 +275,28 @@ export default function RestaurantHubPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center"
+      className="min-h-screen flex flex-col items-center relative overflow-x-hidden"
       style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 45%, white), white 55%)' }}
       dir="rtl"
     >
+      {/* على الشاشات الواسعة، العمود المركزي يترك فراغ فاضي على الجنبين —
+          نملأه بتوهج خفيف بلون هوية المطعم بدل ما يبقى فاضي بالكامل */}
+      <div
+        aria-hidden
+        className="hidden lg:block fixed -top-24 -right-24 w-[420px] h-[420px] rounded-full blur-[110px] pointer-events-none"
+        style={{ backgroundColor: 'color-mix(in srgb, var(--r-primary) 22%, transparent)' }}
+      />
+      <div
+        aria-hidden
+        className="hidden lg:block fixed -bottom-32 -left-24 w-[380px] h-[380px] rounded-full blur-[110px] pointer-events-none"
+        style={{ backgroundColor: 'color-mix(in srgb, var(--r-primary) 14%, transparent)' }}
+      />
+
       {/* Container principal - محدود العرض على الشاشات الكبيرة */}
-      <div className="w-full max-w-lg mx-auto">
+      <div className="w-full max-w-lg mx-auto relative">
 
         {/* Header - الشعار والاسم */}
-        <div className="relative bg-white/60 border-b border-gray-100 px-5 py-8 text-center">
+        <div className="relative px-5 py-8 text-center">
           {/* زر المشاركة */}
           <div className="absolute top-4 left-4">
             <Button
