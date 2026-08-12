@@ -352,6 +352,26 @@ export type Plan = {
     max_tools?: number;
 };
 
+// Mirrors public.discount_codes (see streampay_financial.sql) — column
+// names here must match exactly, since Supabase rejects insert/update
+// payloads that reference a column the table doesn't have.
+export type DiscountCode = {
+    id: string;
+    code: string;
+    description?: string | null;
+    discount_type: 'percentage' | 'fixed' | 'free_trial';
+    discount_value: number;
+    max_uses?: number | null;
+    current_uses: number;
+    applicable_plans?: string[] | null;
+    min_amount?: number | null;
+    valid_from: string;
+    valid_until?: string | null;
+    is_active: boolean;
+    created_by?: string | null;
+    created_at: string;
+};
+
 export type ActivationCode = {
     id: string;
     tool_id: string;

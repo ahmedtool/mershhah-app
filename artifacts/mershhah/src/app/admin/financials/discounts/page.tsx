@@ -79,9 +79,9 @@ export default function FinancialsDiscountsPage() {
 
   const getStatus = (code: DiscountCode) => {
     if (!code.is_active) return { label: 'معطّل', color: 'bg-gray-50 text-gray-500' };
-    if (code.max_uses && code.used_count >= code.max_uses) return { label: 'منتهي', color: 'bg-red-50 text-red-500' };
-    if (code.expires_at && new Date(code.expires_at) < new Date()) return { label: 'منتهي', color: 'bg-red-50 text-red-500' };
-    if (code.starts_at && new Date(code.starts_at) > new Date()) return { label: 'لم يبدأ', color: 'bg-amber-50 text-amber-600' };
+    if (code.max_uses && code.current_uses >= code.max_uses) return { label: 'منتهي', color: 'bg-red-50 text-red-500' };
+    if (code.valid_until && new Date(code.valid_until) < new Date()) return { label: 'منتهي', color: 'bg-red-50 text-red-500' };
+    if (code.valid_from && new Date(code.valid_from) > new Date()) return { label: 'لم يبدأ', color: 'bg-amber-50 text-amber-600' };
     return { label: 'نشط', color: 'bg-emerald-50 text-emerald-600' };
   };
 
@@ -148,7 +148,7 @@ export default function FinancialsDiscountsPage() {
               <p className="text-[10px] text-gray-400 mt-1">نشط</p>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4 text-center">
-              <p className="text-2xl font-black text-gray-900">{codes.reduce((sum, c) => sum + c.used_count, 0)}</p>
+              <p className="text-2xl font-black text-gray-900">{codes.reduce((sum, c) => sum + c.current_uses, 0)}</p>
               <p className="text-[10px] text-gray-400 mt-1">مرّات الاستخدام</p>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4 text-center">
@@ -211,7 +211,7 @@ export default function FinancialsDiscountsPage() {
                       </td>
                       <td className="px-5 py-3">
                         <span className="text-gray-600">
-                          {code.used_count}{code.max_uses ? ` / ${code.max_uses}` : ''}
+                          {code.current_uses}{code.max_uses ? ` / ${code.max_uses}` : ''}
                         </span>
                       </td>
                       <td className="px-5 py-3">

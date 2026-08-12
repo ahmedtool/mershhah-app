@@ -89,17 +89,17 @@ export default function OwnerUpgradePage() {
 
             const code = data as DiscountCode;
 
-            if (code.expires_at && new Date(code.expires_at) < new Date()) {
+            if (code.valid_until && new Date(code.valid_until) < new Date()) {
                 setDiscountError('كود الخصم منتهي الصلاحية');
                 return;
             }
 
-            if (code.max_uses && code.used_count >= code.max_uses) {
+            if (code.max_uses && code.current_uses >= code.max_uses) {
                 setDiscountError('كود الخصم وصل للحد الأقصى من الاستخدام');
                 return;
             }
 
-            if (code.starts_at && new Date(code.starts_at) > new Date()) {
+            if (code.valid_from && new Date(code.valid_from) > new Date()) {
                 setDiscountError('كود الخصم لم يبدأ بعد');
                 return;
             }

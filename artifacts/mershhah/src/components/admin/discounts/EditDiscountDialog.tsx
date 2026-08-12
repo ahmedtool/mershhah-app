@@ -25,8 +25,8 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
     max_uses: code?.max_uses || '',
     min_amount: code?.min_amount || '',
     applicable_plans: code?.applicable_plans?.join(', ') || '',
-    starts_at: code?.starts_at ? new Date(code.starts_at).toISOString().slice(0, 16) : '',
-    expires_at: code?.expires_at ? new Date(code.expires_at).toISOString().slice(0, 16) : '',
+    valid_from: code?.valid_from ? new Date(code.valid_from).toISOString().slice(0, 16) : '',
+    valid_until: code?.valid_until ? new Date(code.valid_until).toISOString().slice(0, 16) : '',
   });
 
   const handleSave = async () => {
@@ -53,8 +53,8 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
         max_uses: form.max_uses ? Number(form.max_uses) : null,
         min_amount: form.min_amount ? Number(form.min_amount) : 0,
         applicable_plans: form.applicable_plans ? form.applicable_plans.split(',').map(s => s.trim()).filter(Boolean) : null,
-        starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : new Date().toISOString(),
-        expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+        valid_from: form.valid_from ? new Date(form.valid_from).toISOString() : new Date().toISOString(),
+        valid_until: form.valid_until ? new Date(form.valid_until).toISOString() : null,
       };
 
       if (code) {
@@ -191,8 +191,8 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
                   <label className="block text-[11px] font-bold text-gray-600 mb-1.5">تاريخ البداية</label>
                   <input
                     type="datetime-local"
-                    value={form.starts_at}
-                    onChange={(e) => setForm(prev => ({ ...prev, starts_at: e.target.value }))}
+                    value={form.valid_from}
+                    onChange={(e) => setForm(prev => ({ ...prev, valid_from: e.target.value }))}
                     className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right focus:outline-none focus:border-gray-300"
                   />
                 </div>
@@ -200,8 +200,8 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
                   <label className="block text-[11px] font-bold text-gray-600 mb-1.5">تاريخ الانتهاء</label>
                   <input
                     type="datetime-local"
-                    value={form.expires_at}
-                    onChange={(e) => setForm(prev => ({ ...prev, expires_at: e.target.value }))}
+                    value={form.valid_until}
+                    onChange={(e) => setForm(prev => ({ ...prev, valid_until: e.target.value }))}
                     className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right focus:outline-none focus:border-gray-300"
                   />
                 </div>
