@@ -16,6 +16,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useCouponCheck } from '@/hooks/useCouponCheck';
+import { usePlanCheckout } from '@/hooks/usePlanCheckout';
 
 const profileFormSchema = z.object({
   full_name: z.string().min(3, { message: 'الاسم يجب أن يكون 3 أحرف على الأقل.' }),
@@ -33,11 +35,15 @@ export default function OwnerSettingsPage() {
   const [subscription, setSubscription] = useState<any>(null);
   const [plans, setPlans] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
-  const [couponCode, setCouponCode] = useState('');
-  const [couponDiscount, setCouponDiscount] = useState<any>(null);
-  const [isCheckingCoupon, setIsCheckingCoupon] = useState(false);
   const [selectedCycle, setSelectedCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isBillingLoading, setIsBillingLoading] = useState(true);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, startChangingPassword] = useTransition();
+  const { couponCode, setCouponCode, couponDiscount, isCheckingCoupon, checkCoupon, applyDiscount } = useCouponCheck();
+  const { checkout, isCheckingOut: isPlanCheckingOut, isCheckoutInProgress } = usePlanCheckout();
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -99,53 +105,33 @@ export default function OwnerSettingsPage() {
     });
   };
 
-  const handleCheckCoupon = async () => {
-    if (!couponCode.trim()) return;
-    setIsCheckingCoupon(true);
-    try {
-      const { data, error } = await supabase.from('discount_codes').select('*').eq('code', couponCode.toUpperCase()).eq('is_active', true).single();
-      if (error || !data) { toast({ variant: 'destructive', title: 'كوبون غير صالح' }); setCouponDiscount(null); return; }
-      const now = new Date();
-      const validUntil = data.valid_until ? new Date(data.valid_until) : null;
-      if (validUntil && validUntil < now) { toast({ variant: 'destructive', title: 'الكوبون منتهي الصلاحية' }); setCouponDiscount(null); return; }
-      if (data.max_uses && data.current_uses >= data.max_uses) { toast({ variant: 'destructive', title: 'الكوبون استُنفد' }); setCouponDiscount(null); return; }
-      setCouponDiscount(data);
-      toast({ title: 'كوبون صالح ✓', description: data.discount_type === 'percentage' ? `خصم ${data.discount_value}%` : data.discount_type === 'fixed' ? `خصم ${data.discount_value} ر.س` : 'فترة مجانية' });
-    } catch { toast({ variant: 'destructive', title: 'خطأ' }); } finally { setIsCheckingCoupon(false); }
-  };
-
-  const [isCheckingOut, setIsCheckingOut] = useState<string | null>(null);
-
-  const handleCheckout = async (planId: string) => {
-    setIsCheckingOut(planId);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/streampay-checkout`;
-      console.log('[Checkout] Calling:', url);
-      console.log('[Checkout] Token:', session?.access_token ? 'exists' : 'MISSING');
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ plan_id: planId, billing_cycle: selectedCycle, discount_code: couponCode || undefined }),
-      });
-      console.log('[Checkout] Status:', res.status);
-      const rawText = await res.text();
-      console.log('[Checkout] Raw response:', rawText);
+  const handleChangePassword = () => {
+    if (!user?.email) return;
+    if (newPassword.length < 6) {
+      toast({ variant: 'destructive', title: 'كلمة المرور الجديدة قصيرة', description: 'يجب أن تكون 6 أحرف على الأقل.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast({ variant: 'destructive', title: 'كلمتا المرور غير متطابقتين' });
+      return;
+    }
+    startChangingPassword(async () => {
       try {
-        const data = JSON.parse(rawText);
-        if (data.url) {
-          window.location.href = data.url;
-        } else {
-          const errorMsg = data.error || 'فشل إنشاء رابط الدفع';
-          console.error('[Checkout] Error from function:', errorMsg);
-          toast({ variant: 'destructive', title: 'خطأ في الدفع', description: typeof errorMsg === 'string' ? errorMsg.slice(0, 200) : 'خطأ غير معروف' });
-        }
-      } catch {
-        toast({ variant: 'destructive', title: 'خطأ', description: `رد غير متوقع (${res.status}): ${rawText.slice(0, 200)}` });
+        const { error: signInError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
+        if (signInError) throw new Error('كلمة المرور الحالية غير صحيحة.');
+        const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+        if (updateError) throw updateError;
+        toast({ title: 'تم تغيير كلمة المرور بنجاح' });
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setShowPasswordForm(false);
+      } catch (error: any) {
+        toast({ title: 'تعذّر تغيير كلمة المرور', description: error.message, variant: 'destructive' });
       }
-    } catch (error: any) { console.error('[Checkout] Error:', error); toast({ variant: 'destructive', title: 'خطأ', description: error.message }); }
-    finally { setIsCheckingOut(null); }
+    });
   };
+
 
   if (isUserLoading) {
     return (<div className="space-y-5"><Skeleton className="h-10 w-1/3" /><div className="grid md:grid-cols-2 gap-5"><Skeleton className="h-64 rounded-2xl" /><Skeleton className="h-64 rounded-2xl" /></div></div>);
@@ -266,13 +252,41 @@ export default function OwnerSettingsPage() {
                 <div className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center"><KeyRound className="h-3.5 w-3.5 text-gray-400" /></div>
                 الأمان وكلمة المرور
               </h3>
-              <p className="text-[11px] text-gray-400 mt-1">سنرسل رابطاً آمناً إلى <span className="font-bold text-gray-600">{user?.email}</span> لإنشاء كلمة مرور جديدة</p>
+              <p className="text-[11px] text-gray-400 mt-1">غيّر كلمة المرور مباشرة، أو استلمها عبر رابط يُرسل إلى <span className="font-bold text-gray-600">{user?.email}</span></p>
             </div>
-            <button onClick={handlePasswordReset} disabled={isSendingReset} className="h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2 shrink-0">
-              {isSendingReset && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              إرسال رابط التغيير
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <button onClick={() => setShowPasswordForm((v) => !v)} className="h-9 px-4 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors">
+                {showPasswordForm ? 'إلغاء' : 'تغيير كلمة المرور'}
+              </button>
+              <button onClick={handlePasswordReset} disabled={isSendingReset} className="h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2">
+                {isSendingReset && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                إرسال رابط بالبريد
+              </button>
+            </div>
           </div>
+          {showPasswordForm && (
+            <div className="px-5 pb-5 pt-1 grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-gray-50">
+              <div className="space-y-1.5 pt-4">
+                <Label className="text-[11px] text-gray-400 font-bold">كلمة المرور الحالية</Label>
+                <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="h-10 rounded-xl border-gray-200 text-xs" />
+              </div>
+              <div className="space-y-1.5 pt-4">
+                <Label className="text-[11px] text-gray-400 font-bold">كلمة المرور الجديدة</Label>
+                <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="h-10 rounded-xl border-gray-200 text-xs" />
+              </div>
+              <div className="space-y-1.5 pt-4">
+                <Label className="text-[11px] text-gray-400 font-bold">تأكيد كلمة المرور الجديدة</Label>
+                <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="h-10 rounded-xl border-gray-200 text-xs" />
+              </div>
+              <div className="sm:col-span-3">
+                <button onClick={handleChangePassword} disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
+                  className="h-10 px-5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2">
+                  {isChangingPassword && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  حفظ كلمة المرور الجديدة
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -297,7 +311,7 @@ export default function OwnerSettingsPage() {
         <div className="flex gap-2">
           <input type="text" placeholder="كوبون خصم (اختياري)" value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
             className="flex-1 h-10 px-3 rounded-xl border border-gray-200 text-xs text-center font-bold tracking-wider placeholder:text-gray-300 focus:outline-none focus:border-gray-300" dir="ltr" />
-          <button onClick={handleCheckCoupon} disabled={isCheckingCoupon || !couponCode} className="h-10 px-4 rounded-xl bg-gray-100 text-xs font-bold text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50">
+          <button onClick={checkCoupon} disabled={isCheckingCoupon || !couponCode} className="h-10 px-4 rounded-xl bg-gray-100 text-xs font-bold text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50">
             تحقق
           </button>
         </div>
@@ -316,13 +330,8 @@ export default function OwnerSettingsPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {plans.map((plan) => {
-              let price = selectedCycle === 'yearly' ? (plan.price_yearly || 0) : (plan.price_monthly || plan.price || 0);
-              if (couponDiscount) {
-                if (couponDiscount.discount_type === 'percentage') price = Math.round(price * (1 - couponDiscount.discount_value / 100));
-                else if (couponDiscount.discount_type === 'fixed') price = Math.max(0, price - couponDiscount.discount_value);
-                else if (couponDiscount.discount_type === 'free_trial') price = 0;
-              }
               const originalPrice = selectedCycle === 'yearly' ? (plan.price_yearly || 0) : (plan.price_monthly || plan.price || 0);
+              const price = applyDiscount(originalPrice);
               const isCurrentPlan = subscription?.plan_id === plan.id && !isExpired;
 
               return (
@@ -349,10 +358,10 @@ export default function OwnerSettingsPage() {
                       )}
                       {plan.trial_days > 0 && <p className="text-[9px] text-amber-600 font-bold mt-1">فترة تجربة {plan.trial_days} يوم</p>}
                     </div>
-                    <button onClick={() => handleCheckout(plan.id)} disabled={isCurrentPlan || isCheckingOut === plan.id}
+                    <button onClick={() => checkout(plan.id, selectedCycle, couponCode)} disabled={isCurrentPlan || isPlanCheckingOut(plan.id, selectedCycle)}
                       className={cn("w-full h-9 rounded-xl text-[11px] font-bold transition-colors mt-3 flex items-center justify-center gap-1",
-                        isCurrentPlan ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : isCheckingOut === plan.id ? 'bg-gray-400 text-white cursor-wait' : plan.is_featured ? 'bg-gray-900 text-white hover:bg-gray-800' : 'border border-gray-200 text-gray-600 hover:bg-gray-50')}>
-                      {isCurrentPlan ? 'الباقة الحالية' : isCheckingOut === plan.id ? <><Loader2 className="h-3 w-3 animate-spin" /> جاري التوجيه...</> : <>{selectedCycle === 'yearly' ? 'اشتراك سنوي' : 'اشتراك شهري'} <ArrowRight className="h-3 w-3" /></>}
+                        isCurrentPlan ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : isPlanCheckingOut(plan.id, selectedCycle) ? 'bg-gray-400 text-white cursor-wait' : plan.is_featured ? 'bg-gray-900 text-white hover:bg-gray-800' : 'border border-gray-200 text-gray-600 hover:bg-gray-50')}>
+                      {isCurrentPlan ? 'الباقة الحالية' : isPlanCheckingOut(plan.id, selectedCycle) ? <><Loader2 className="h-3 w-3 animate-spin" /> جاري التوجيه...</> : <>{selectedCycle === 'yearly' ? 'اشتراك سنوي' : 'اشتراك شهري'} <ArrowRight className="h-3 w-3" /></>}
                     </button>
                   </div>
                 </div>

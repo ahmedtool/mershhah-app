@@ -10,6 +10,7 @@ import { useRouter } from '@/lib/navigation';
 import { useState, useEffect } from 'react';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { FREE_PLAN_ID, freeSubscriptionEndDate } from '@/lib/free-plan';
 
 const ADMIN_EMAIL = 'ahmedsupsa@gmail.com';
 const DEMO_EMAIL = 'demo@mershhah.com';
@@ -115,12 +116,10 @@ export function RegisterForm() {
         });
 
         const startDate = new Date();
-        const endDate = new Date();
-        endDate.setFullYear(startDate.getFullYear() + 100);
         await supabase.from('subscriptions').insert({
-          id: crypto.randomUUID(), profile_id: userId, plan_id: 'free',
+          id: crypto.randomUUID(), profile_id: userId, plan_id: FREE_PLAN_ID,
           plan_name: 'الباقة المجانية', status: 'active',
-          start_date: startDate.toISOString(), end_date: endDate.toISOString(),
+          start_date: startDate.toISOString(), end_date: freeSubscriptionEndDate(startDate).toISOString(),
         });
 
         await supabase.from('activity').insert([

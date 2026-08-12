@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CreditCard, Clock, CheckCircle, AlertCircle, Zap, ArrowRight, Tag, Calendar, Receipt } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useCouponCheck } from "@/hooks/useCouponCheck";
+import { usePlanCheckout } from "@/hooks/usePlanCheckout";
 
 export default function BillingPage() {
   const { user } = useUser();
@@ -17,9 +19,8 @@ export default function BillingPage() {
   const [plans, setPlans] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [couponCode, setCouponCode] = useState("");
-  const [isCheckingCoupon, setIsCheckingCoupon] = useState(false);
-  const [couponDiscount, setCouponDiscount] = useState<any>(null);
+  const { couponCode, setCouponCode, couponDiscount, isCheckingCoupon, checkCoupon, applyDiscount } = useCouponCheck();
+  const { checkout } = usePlanCheckout();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,71 +58,6 @@ export default function BillingPage() {
     };
     fetchData();
   }, [user]);
-
-  const handleCheckout = async (planId: string, cycle: "monthly" | "yearly") => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/streampay-checkout`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({
-            plan_id: planId,
-            billing_cycle: cycle,
-            discount_code: couponCode || undefined,
-          }),
-        }
-      );
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        toast({ variant: "destructive", title: "خطأ", description: data.error || "فشل إنشاء رابط الدفع" });
-      }
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "خطأ", description: error.message });
-    }
-  };
-
-  const handleCheckCoupon = async () => {
-    if (!couponCode.trim()) return;
-    setIsCheckingCoupon(true);
-    try {
-      const { data, error } = await supabase
-        .from("discount_codes")
-        .select("*")
-        .eq("code", couponCode.toUpperCase())
-        .eq("is_active", true)
-        .single();
-      if (error || !data) {
-        toast({ variant: "destructive", title: "كوبون غير صالح" });
-        setCouponDiscount(null);
-        return;
-      }
-      const now = new Date();
-      const validUntil = data.valid_until ? new Date(data.valid_until) : null;
-      if (validUntil && validUntil < now) {
-        toast({ variant: "destructive", title: "الكوبون منتهي الصلاحية" });
-        setCouponDiscount(null);
-        return;
-      }
-      if (data.max_uses && data.current_uses >= data.max_uses) {
-        toast({ variant: "destructive", title: "الكوبون استُنفد" });
-        setCouponDiscount(null);
-        return;
-      }
-      setCouponDiscount(data);
-      toast({ title: "كوبون صالح", description: data.discount_type === "percentage" ? `خصم ${data.discount_value}%` : data.discount_type === "fixed" ? `خصم ${data.discount_value} ر.س` : "فترة مجانية" });
-    } catch {
-      toast({ variant: "destructive", title: "خطأ" });
-    } finally {
-      setIsCheckingCoupon(false);
-    }
-  };
 
   const isExpired = subscription?.end_date && new Date(subscription.end_date) < new Date();
   const daysLeft = subscription?.end_date ? Math.max(0, Math.ceil((new Date(subscription.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
@@ -212,7 +148,7 @@ export default function BillingPage() {
               dir="ltr"
             />
             <button
-              onClick={handleCheckCoupon}
+              onClick={checkCoupon}
               disabled={isCheckingCoupon || !couponCode}
               className="h-10 px-4 rounded-xl bg-gray-100 text-xs font-bold text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
             >
@@ -232,20 +168,8 @@ export default function BillingPage() {
         <h2 className="text-sm font-bold text-gray-900 mb-3">الباقات المتاحة</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {plans.map((plan) => {
-            let monthlyPrice = plan.price_monthly || plan.price || 0;
-            let yearlyPrice = plan.price_yearly || 0;
-            if (couponDiscount) {
-              if (couponDiscount.discount_type === "percentage") {
-                monthlyPrice = Math.round(monthlyPrice * (1 - couponDiscount.discount_value / 100));
-                yearlyPrice = Math.round(yearlyPrice * (1 - couponDiscount.discount_value / 100));
-              } else if (couponDiscount.discount_type === "fixed") {
-                monthlyPrice = Math.max(0, monthlyPrice - couponDiscount.discount_value);
-                yearlyPrice = Math.max(0, yearlyPrice - couponDiscount.discount_value);
-              } else if (couponDiscount.discount_type === "free_trial") {
-                monthlyPrice = 0;
-                yearlyPrice = 0;
-              }
-            }
+            const monthlyPrice = applyDiscount(plan.price_monthly || plan.price || 0);
+            const yearlyPrice = applyDiscount(plan.price_yearly || 0);
             return (
               <div key={plan.id} className={`rounded-2xl border overflow-hidden ${plan.is_featured ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-100'}`}>
                 <div className={`px-5 pt-5 pb-4 ${plan.is_featured ? 'bg-gray-900' : 'bg-gray-50'}`}>
@@ -280,14 +204,14 @@ export default function BillingPage() {
                   )}
                   <div className="space-y-1.5 pt-2">
                     <button
-                      onClick={() => handleCheckout(plan.id, "monthly")}
+                      onClick={() => checkout(plan.id, "monthly", couponCode)}
                       className="w-full h-10 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors"
                     >
                       اشتراك شهري
                     </button>
                     {yearlyPrice > 0 && (
                       <button
-                        onClick={() => handleCheckout(plan.id, "yearly")}
+                        onClick={() => checkout(plan.id, "yearly", couponCode)}
                         className="w-full h-10 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
                       >
                         اشتراك سنوي

@@ -9,6 +9,8 @@ import type { Subscription } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { describeFeature } from '@/lib/plan-feature-labels';
+import { FREE_PLAN_ID, freeSubscriptionEndDate } from '@/lib/free-plan';
+import { usePlanCheckout } from '@/hooks/usePlanCheckout';
 
 type OnboardingPlan = {
     id: string;
@@ -41,9 +43,9 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
     const [isLoadingPlans, setIsLoadingPlans] = useState(true);
     const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
     const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
-    const [checkingOutId, setCheckingOutId] = useState<string | null>(null);
     const [couponCode, setCouponCode] = useState('');
     const { toast } = useToast();
+    const { checkout, isCheckingOut, isCheckoutInProgress } = usePlanCheckout();
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -100,16 +102,14 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
                     // Migration: old user with active account but no subscription row
                     if (user.account_status === 'active' && (!subs || subs.length === 0)) {
                         const startDate = new Date();
-                        const endDate = new Date();
-                        endDate.setFullYear(startDate.getFullYear() + 100);
 
                         const { error: insertError } = await supabase.from('subscriptions').insert({
                             profile_id: user.uid,
-                            plan_id: 'free',
+                            plan_id: FREE_PLAN_ID,
                             plan_name: 'الباقة المجانية',
                             status: 'active',
                             start_date: startDate.toISOString(),
-                            end_date: endDate.toISOString(),
+                            end_date: freeSubscriptionEndDate(startDate).toISOString(),
                         });
 
                         if (!insertError) {
@@ -128,38 +128,6 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
 
         checkAndMigrateSubscription();
     }, [user, isUserLoading, toast]);
-
-    const handleCheckout = async (planId: string, cycle: 'monthly' | 'yearly') => {
-        setCheckingOutId(`${planId}-${cycle}`);
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const res = await fetch(
-                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/streampay-checkout`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${session?.access_token}`,
-                    },
-                    body: JSON.stringify({
-                        plan_id: planId,
-                        billing_cycle: cycle,
-                        discount_code: couponCode || undefined,
-                    }),
-                }
-            );
-            const data = await res.json();
-            if (data.url) {
-                window.location.href = data.url;
-            } else {
-                toast({ variant: 'destructive', title: 'تعذّر بدء الدفع', description: data.error || 'فشل إنشاء رابط الدفع' });
-                setCheckingOutId(null);
-            }
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'خطأ', description: error.message });
-            setCheckingOutId(null);
-        }
-    };
 
     const isLoading = isUserLoading || isLoadingPlans || isCheckingSubscription;
 
@@ -210,8 +178,8 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
                     {plans.map(plan => {
                         const features = Object.entries(plan.features || {});
-                        const isCheckingOutMonthly = checkingOutId === `${plan.id}-monthly`;
-                        const isCheckingOutYearly = checkingOutId === `${plan.id}-yearly`;
+                        const isCheckingOutMonthly = isCheckingOut(plan.id, 'monthly');
+                        const isCheckingOutYearly = isCheckingOut(plan.id, 'yearly');
                         return (
                             <div key={plan.id} className={`flex flex-col rounded-2xl border overflow-hidden ${plan.is_featured ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-100'}`}>
                                 <div className={`px-6 pt-6 pb-5 ${plan.is_featured ? 'bg-gray-900' : 'bg-gray-50'}`}>
@@ -252,16 +220,16 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
 
                                 <div className="px-6 pb-6 space-y-2">
                                     <button
-                                        onClick={() => handleCheckout(plan.id, 'monthly')}
-                                        disabled={checkingOutId !== null}
+                                        onClick={() => checkout(plan.id, 'monthly', couponCode)}
+                                        disabled={isCheckoutInProgress}
                                         className="w-full h-11 rounded-xl bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                                     >
                                         {isCheckingOutMonthly ? <Loader2 className="h-4 w-4 animate-spin" /> : 'اشتراك شهري'}
                                     </button>
                                     {plan.price_yearly > 0 && (
                                         <button
-                                            onClick={() => handleCheckout(plan.id, 'yearly')}
-                                            disabled={checkingOutId !== null}
+                                            onClick={() => checkout(plan.id, 'yearly', couponCode)}
+                                            disabled={isCheckoutInProgress}
                                             className="w-full h-11 rounded-xl border border-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                                         >
                                             {isCheckingOutYearly ? <Loader2 className="h-4 w-4 animate-spin" /> : `اشتراك سنوي (${plan.price_yearly} ر.س)`}
