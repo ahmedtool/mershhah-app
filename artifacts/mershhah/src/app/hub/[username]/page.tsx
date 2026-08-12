@@ -625,9 +625,14 @@ export default function RestaurantHubPage() {
           {/* الفوتر */}
           {!restaurant.is_paid_plan && (
             <div className="pt-6 border-t border-gray-200 text-center pb-6">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+              <Link
+                href="/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-[0.2em] transition-colors"
+              >
                 مدعوم بواسطة مرشح
-              </p>
+              </Link>
             </div>
           )}
         </div>
