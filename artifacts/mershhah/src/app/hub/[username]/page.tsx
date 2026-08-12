@@ -300,7 +300,13 @@ export default function RestaurantHubPage() {
           </div>
 
           {/* الشعار */}
-          <div className="relative w-24 h-24 bg-white p-1.5 shadow-lg overflow-hidden mx-auto mb-4 border border-gray-100" style={{ borderRadius: 'var(--r-radius)' }}>
+          <div
+            className="relative w-24 h-24 bg-white p-1.5 overflow-hidden mx-auto mb-4"
+            style={{
+              borderRadius: 'var(--r-radius)',
+              boxShadow: '0 10px 28px -6px color-mix(in srgb, var(--r-primary) 30%, transparent), 0 1px 3px color-mix(in srgb, var(--r-primary) 12%, transparent)',
+            }}
+          >
             <div className="w-full h-full relative overflow-hidden" style={{ borderRadius: 'calc(var(--r-radius) - 6px)' }}>
               <StorageImage 
                 imagePath={restaurant.logo} 

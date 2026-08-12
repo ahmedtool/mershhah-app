@@ -245,7 +245,7 @@ export default function PublicReviewsPage() {
       </div>
 
       <div className="max-w-lg mx-auto w-full px-5 pb-6 text-center space-y-3 text-right relative">
-        <div className="relative w-16 h-16 mx-auto overflow-hidden border border-gray-100" style={{ borderRadius: 'var(--r-radius)' }}>
+        <div className="relative w-16 h-16 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
             alt={restaurant.name}
