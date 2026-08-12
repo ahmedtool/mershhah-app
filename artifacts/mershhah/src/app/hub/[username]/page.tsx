@@ -378,6 +378,30 @@ export default function RestaurantHubPage() {
                   {locationDenied && (
                     <p className="text-[10px] text-red-400">يرجى تفعيل خدمات الموقع من إعدادات المتصفح</p>
                   )}
+
+                  <div className="flex items-center gap-2 pt-1 max-w-xs mx-auto">
+                    <span className="flex-1 h-px bg-gray-100" />
+                    <span className="text-[10px] text-gray-300">أو اختر يدوياً</span>
+                    <span className="flex-1 h-px bg-gray-100" />
+                  </div>
+
+                  <select
+                    defaultValue=""
+                    onChange={(e) => {
+                      const branch = branches.find((b: any) => b.id === e.target.value);
+                      if (branch) setSelectedBranch(branch);
+                    }}
+                    dir="rtl"
+                    className="w-full max-w-xs mx-auto h-11 px-4 border border-gray-200 bg-white text-sm text-gray-600 focus:outline-none"
+                    style={{ borderRadius: 'var(--r-radius-sm)' }}
+                  >
+                    <option value="" disabled>اختر فرعك من القائمة</option>
+                    {branches.map((b: any) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}{(b.city || b.district) ? ` — ${[b.city, b.district].filter(Boolean).join('، ')}` : ''}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               ) : (
                 <div className="space-y-3">
