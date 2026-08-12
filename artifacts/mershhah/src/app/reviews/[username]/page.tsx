@@ -15,6 +15,8 @@ import { cn } from '@/lib/utils';
 import { Link } from 'wouter';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getPublicThemeStyle, getContrastTextColor } from '@/lib/public-theme';
+import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 
 interface Review {
   id: string;
@@ -219,12 +221,18 @@ export default function PublicReviewsPage() {
   }
 
   const reviewsWithComments = reviews.filter(r => r.comment);
+  const primaryColor = restaurant?.primaryColor || '#111827';
+  const themeStyle = getPublicThemeStyle(restaurant);
+  // Dialog portals its content outside this page's themed root in the DOM,
+  // so var(--r-button-text) wouldn't inherit there - compute it directly.
+  const buttonTextColor = restaurant?.buttonTextColor || getContrastTextColor(primaryColor);
 
   return (
-    <div className="min-h-screen bg-white pb-16" dir="rtl">
+    <div className="min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir="rtl">
+      <PublicPageBackdrop />
 
       {/* Header */}
-      <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-4 flex items-center justify-between">
+      <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-4 flex items-center justify-between relative">
         <Button
           variant="ghost"
           size="icon"
@@ -236,8 +244,8 @@ export default function PublicReviewsPage() {
         <div className="w-9" />
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-5 pb-6 text-center space-y-3 text-right">
-        <div className="relative w-16 h-16 mx-auto rounded-2xl overflow-hidden border border-gray-100">
+      <div className="max-w-lg mx-auto w-full px-5 pb-6 text-center space-y-3 text-right relative">
+        <div className="relative w-16 h-16 mx-auto overflow-hidden border border-gray-100" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
             alt={restaurant.name}
@@ -252,10 +260,10 @@ export default function PublicReviewsPage() {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-5 space-y-6">
+      <div className="max-w-lg mx-auto w-full px-5 space-y-6 relative">
 
         {/* Rating Summary */}
-        <div className="border border-gray-100 rounded-2xl p-5">
+        <div className="border border-gray-100 p-5" style={{ borderRadius: 'var(--r-radius)' }}>
           <div className="flex items-start gap-6">
             {/* Big number */}
             <div className="text-center shrink-0">
@@ -275,7 +283,7 @@ export default function PublicReviewsPage() {
                   <div key={star} className="flex items-center gap-2">
                     <span className="text-[11px] text-gray-400 w-3 text-center shrink-0">{star}</span>
                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-500 bg-gray-900" style={{ width: `${pct}%` }} />
+                      <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: primaryColor }} />
                     </div>
                     <span className="text-[10px] text-gray-300 w-5 text-left">{count}</span>
                   </div>
@@ -286,7 +294,8 @@ export default function PublicReviewsPage() {
 
           <button
             onClick={() => setDialogOpen(true)}
-            className="w-full h-11 rounded-xl text-sm font-bold text-white mt-5 bg-gray-900 hover:bg-gray-800 transition-colors"
+            className="w-full h-11 rounded-xl text-sm font-bold mt-5 transition-opacity hover:opacity-90"
+            style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
           >
             أضف تقييمك
           </button>
@@ -314,10 +323,9 @@ export default function PublicReviewsPage() {
                     onClick={() => setFilterTag(isActive ? null : tag.id)}
                     className={cn(
                       "shrink-0 flex items-center gap-1.5 px-3.5 h-8 rounded-full text-xs font-medium transition-all border",
-                      isActive
-                        ? "text-white border-transparent bg-gray-900"
-                        : "bg-white text-gray-500 border-gray-100 hover:border-gray-200"
+                      isActive ? "border-transparent" : "bg-white text-gray-500 border-gray-100 hover:border-gray-200"
                     )}
+                    style={isActive ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : {}}
                   >
                     <span className="text-[10px]">{tag.icon}</span>
                     {tag.label}
@@ -341,7 +349,8 @@ export default function PublicReviewsPage() {
               <p className="text-sm text-gray-400">لا توجد تعليقات بعد</p>
               <button
                 onClick={() => setDialogOpen(true)}
-                className="text-xs font-bold text-gray-900 mt-2"
+                className="text-xs font-bold mt-2"
+                style={{ color: primaryColor }}
               >
                 كن أول من يقيّم
               </button>
@@ -355,7 +364,7 @@ export default function PublicReviewsPage() {
                   return tag?.keywords.some(kw => (r.comment || '').includes(kw));
                 })
                 .map((review) => (
-                <div key={review.id} className="border border-gray-100 rounded-2xl p-4 text-right">
+                <div key={review.id} className="border border-gray-100 p-4 text-right" style={{ borderRadius: 'var(--r-radius)' }}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
@@ -439,7 +448,8 @@ export default function PublicReviewsPage() {
             <Button
               onClick={handleSubmit}
               disabled={rating === 0 || isSubmitting}
-              className="rounded-xl text-sm h-10 flex-1 bg-gray-900 text-white hover:bg-gray-800 font-bold"
+              style={{ backgroundColor: primaryColor, color: buttonTextColor }}
+              className="rounded-xl text-sm h-10 flex-1 font-bold hover:opacity-90"
             >
               {isSubmitting ? 'جاري...' : 'إرسال'}
             </Button>

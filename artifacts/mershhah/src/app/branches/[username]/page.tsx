@@ -9,6 +9,7 @@ import { StorageImage } from '@/components/shared/StorageImage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trackMapsClick, trackWhatsappClick, trackPhoneClick, trackBranchView } from '@/lib/event-tracker';
 import { getPublicThemeStyle } from '@/lib/public-theme';
+import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -173,7 +174,8 @@ export default function PublicBranchesPage() {
   const themeStyle = getPublicThemeStyle(restaurant);
 
   return (
-    <div className="min-h-screen pb-16" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir="rtl">
+    <div className="min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir="rtl">
+      <PublicPageBackdrop />
 
       {/* Header */}
       <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-4 flex items-center justify-between">

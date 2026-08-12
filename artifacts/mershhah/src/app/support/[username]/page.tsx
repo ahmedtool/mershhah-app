@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPublicThemeStyle } from '@/lib/public-theme';
+import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 
 const ticketSchema = z.object({
   name: z.string().min(2, 'الاسم مطلوب'),
@@ -134,7 +135,8 @@ export default function SupportPage() {
   const themeStyle = getPublicThemeStyle(restaurant);
 
   return (
-    <div className="min-h-screen pb-16" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir="rtl">
+    <div className="min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir="rtl">
+      <PublicPageBackdrop />
 
       {/* Header */}
       <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-4 flex items-center justify-between">

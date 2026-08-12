@@ -23,6 +23,7 @@ import { InstagramIcon, TikTokIcon, SnapchatIcon, XIcon, WhatsAppIcon, WebsiteIc
 import { Skeleton } from '@/components/ui/skeleton';
 import { trackAppClick, trackSocialClick, trackPageView } from '@/lib/event-tracker';
 import { getPublicThemeStyle } from '@/lib/public-theme';
+import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useToast } from '@/hooks/use-toast';
 
 const SOCIAL_ICONS: { [key: string]: React.ElementType } = {
@@ -279,18 +280,7 @@ export default function RestaurantHubPage() {
       style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 45%, white), white 55%)' }}
       dir="rtl"
     >
-      {/* على الشاشات الواسعة، العمود المركزي يترك فراغ فاضي على الجنبين —
-          نملأه بتوهج خفيف بلون هوية المطعم بدل ما يبقى فاضي بالكامل */}
-      <div
-        aria-hidden
-        className="hidden lg:block fixed -top-24 -right-24 w-[420px] h-[420px] rounded-full blur-[110px] pointer-events-none"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--r-primary) 22%, transparent)' }}
-      />
-      <div
-        aria-hidden
-        className="hidden lg:block fixed -bottom-32 -left-24 w-[380px] h-[380px] rounded-full blur-[110px] pointer-events-none"
-        style={{ backgroundColor: 'color-mix(in srgb, var(--r-primary) 14%, transparent)' }}
-      />
+      <PublicPageBackdrop />
 
       {/* Container principal - محدود العرض على الشاشات الكبيرة */}
       <div className="w-full max-w-lg mx-auto relative">
