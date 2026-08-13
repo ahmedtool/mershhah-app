@@ -4,15 +4,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // Fallback layer for the restaurant chat widget: called only when the free,
 // local rule-based engine (restaurant-chat-flow.ts) doesn't match anything.
 // Guarded by a hard daily cap enforced here, server-side, so a bug or a
-// traffic spike can never turn into a surprise bill — the Google AI Studio
-// key behind this has no billing account attached, so exceeding the free
-// tier fails the request rather than charging anything; this cap exists as
-// a second, independent line of defense that fails closed even earlier.
-const DAILY_CAP = 200;
-// Alias that always resolves to Google's current stable Flash model, so
-// this never needs a manual bump when a dated model version gets retired
-// (which is exactly what broke this the first time).
-const MODEL = "gemini-flash-latest";
+// traffic spike can never turn into a surprise bill.
+//
+// Uses OpenRouter's free tier: a $0-balance account calling a model with a
+// `:free` suffix is rate-limited (50 req/day, 20/min) rather than billed -
+// see https://openrouter.ai/docs/api-reference/limits. Pinned to a specific
+// model (rather than the `openrouter/free` auto-router) because quality
+// varies a lot between the auto-picked models for natural Arabic
+// conversation - Gemma tested noticeably better than the coding-focused
+// models that dominate the free catalog.
+const DAILY_CAP = 45; // stays under OpenRouter's 50/day zero-balance limit with margin
+const MODEL = "google/gemma-4-26b-a4b-it:free";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,15 +33,15 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  // Any failure path returns { fallback: true } with a 200 — the caller
+  // Any failure path returns { fallback: true } with a 200 - the caller
   // always has a local reply ready and should just use it silently. A
   // customer-facing chat widget must never surface a raw error.
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    const openRouterKey = Deno.env.get("OPENROUTER_API_KEY");
 
-    if (!geminiKey) {
+    if (!openRouterKey) {
       return json({ fallback: true });
     }
 
@@ -61,7 +63,7 @@ serve(async (req) => {
 
     const currentCount = usageRow?.request_count ?? 0;
     if (currentCount >= DAILY_CAP) {
-      console.warn("[ai-chat-gemini] Daily cap reached:", currentCount);
+      console.warn("[ai-chat-fallback] Daily cap reached:", currentCount);
       return json({ fallback: true });
     }
 
@@ -90,7 +92,7 @@ serve(async (req) => {
       .map((b: any) => `- ${b.name || ""}${b.address ? `, ${b.address}` : ""}${b.opening_hours ? ` (${b.opening_hours})` : ""}`)
       .join("\n");
 
-    const systemPrompt = `You are the friendly chat assistant for the restaurant "${restaurant.name || ""}", embedded in its digital menu page. ${isArabic ? "Reply only in Saudi-casual Arabic." : "Reply in English."} Keep replies short (2-4 sentences max), warm, and use at most 1-2 emojis. Only mention menu items, prices, offers, or branches that appear in the data below — never invent items, prices, or promises that aren't listed. If the answer truly isn't in the data, say so briefly and suggest they ask about the menu, offers, or branches instead.
+    const systemPrompt = `You are the friendly chat assistant for the restaurant "${restaurant.name || ""}", embedded in its digital menu page. ${isArabic ? "Reply only in Saudi-casual Arabic." : "Reply in English."} Keep replies short (2-4 sentences max), warm, and use at most 1-2 emojis. Only mention menu items, prices, offers, or branches that appear in the data below - never invent items, prices, or promises that aren't listed. If the answer truly isn't in the data, say so briefly and suggest they ask about the menu, offers, or branches instead.
 
 MENU:
 ${menuLines || "(no items listed)"}
@@ -99,29 +101,32 @@ OFFERS:
 ${offerLines || "(no active offers)"}
 
 BRANCHES:
-${branchLines || "(no branches listed)"}
+${branchLines || "(no branches listed)"}`;
 
-Customer message: "${customerMessage}"`;
+    const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openRouterKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: customerMessage },
+        ],
+        max_tokens: 220,
+        temperature: 0.7,
+      }),
+    });
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: systemPrompt }] }],
-          generationConfig: { temperature: 0.7, maxOutputTokens: 220 },
-        }),
-      }
-    );
-
-    if (!geminiRes.ok) {
-      console.error("[ai-chat-gemini] Gemini API error:", geminiRes.status, await geminiRes.text());
+    if (!orRes.ok) {
+      console.error("[ai-chat-fallback] OpenRouter API error:", orRes.status, await orRes.text());
       return json({ fallback: true });
     }
 
-    const geminiData = await geminiRes.json();
-    const text = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const orData = await orRes.json();
+    const text = orData?.choices?.[0]?.message?.content?.trim();
 
     if (!text) {
       return json({ fallback: true });
@@ -129,7 +134,7 @@ Customer message: "${customerMessage}"`;
 
     return json({ smartReply: text });
   } catch (error) {
-    console.error("[ai-chat-gemini] Fatal error:", error);
+    console.error("[ai-chat-fallback] Fatal error:", error);
     return json({ fallback: true });
   }
 });
