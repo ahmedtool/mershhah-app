@@ -89,11 +89,24 @@ serve(async (req) => {
         to: [profile.email],
         subject: `${code} هو كود تسجيل الدخول لمرشح`,
         html: `
-          <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; max-width: 420px; margin: 0 auto; padding: 32px 24px; background: #fafafa;">
-            <p style="font-size: 14px; color: #6b7280; margin: 0 0 24px;">مرحباً ${profile.full_name || ""}،</p>
-            <p style="font-size: 14px; color: #111827; margin: 0 0 8px;">كود تسجيل الدخول إلى لوحة تحكم مرشح:</p>
-            <div style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #111827; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; text-align: center; margin: 16px 0; direction: ltr;">${code}</div>
-            <p style="font-size: 12px; color: #9ca3af; margin: 0;">صالح لمدة ${OTP_TTL_MINUTES} دقائق. إذا لم تطلب تسجيل الدخول، تجاهل هذا البريد.</p>
+          <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; background:#f4f4f5; padding: 40px 16px;">
+            <div style="max-width: 440px; margin: 0 auto; background:#ffffff; border-radius: 20px; padding: 36px 28px; border: 1px solid #ececec;">
+              <div style="text-align:center; padding-bottom: 22px; margin-bottom: 22px; border-bottom: 1px solid #f0f0f0;">
+                <img src="https://www.mershhah.com/logo.jpg" width="44" height="44" alt="مرشح" style="border-radius: 12px; display: inline-block;" />
+              </div>
+              <p style="font-size: 14px; color: #6b7280; margin: 0 0 24px;">مرحباً ${profile.full_name || ""}،</p>
+              <p style="font-size: 14px; color: #111827; margin: 0 0 8px;">كود تسجيل الدخول إلى لوحة تحكم مرشح:</p>
+              <div style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #111827; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; text-align: center; margin: 16px 0; direction: ltr;">${code}</div>
+              <p style="font-size: 12px; color: #9ca3af; margin: 0;">صالح لمدة ${OTP_TTL_MINUTES} دقائق. إذا لم تطلب تسجيل الدخول، تجاهل هذا البريد.</p>
+              <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #f0f0f0;">
+                <p style="font-size: 13px; color: #374151; margin: 0 0 2px; font-weight: 700;">فريق مرشح</p>
+                <p style="font-size: 11px; color: #9ca3af; margin: 0 0 14px;">نساعدك تدير مطعمك بذكاء</p>
+                <p style="font-size: 10px; color: #c1c5cb; margin: 0;">
+                  <a href="https://mershhah.com" style="color: #9ca3af; text-decoration: none;">mershhah.com</a>
+                  &nbsp;·&nbsp; © ${new Date().getFullYear()} مرشح
+                </p>
+              </div>
+            </div>
           </div>
         `,
       }),

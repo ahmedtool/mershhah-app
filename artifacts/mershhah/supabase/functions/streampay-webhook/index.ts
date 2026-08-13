@@ -109,7 +109,24 @@ async function sendEmail(to: string, subject: string, html: string) {
 }
 
 function emailWrap(inner: string) {
-  return `<div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; max-width: 440px; margin: 0 auto; padding: 32px 24px; background: #fafafa;">${inner}</div>`;
+  return `
+    <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; background:#f4f4f5; padding: 40px 16px;">
+      <div style="max-width: 440px; margin: 0 auto; background:#ffffff; border-radius: 20px; padding: 36px 28px; border: 1px solid #ececec;">
+        <div style="text-align:center; padding-bottom: 22px; margin-bottom: 22px; border-bottom: 1px solid #f0f0f0;">
+          <img src="https://www.mershhah.com/logo.jpg" width="44" height="44" alt="مرشح" style="border-radius: 12px; display: inline-block;" />
+        </div>
+        ${inner}
+        <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #f0f0f0;">
+          <p style="font-size: 13px; color: #374151; margin: 0 0 2px; font-weight: 700;">فريق مرشح</p>
+          <p style="font-size: 11px; color: #9ca3af; margin: 0 0 14px;">نساعدك تدير مطعمك بذكاء</p>
+          <p style="font-size: 10px; color: #c1c5cb; margin: 0;">
+            <a href="https://mershhah.com" style="color: #9ca3af; text-decoration: none;">mershhah.com</a>
+            &nbsp;·&nbsp; © ${new Date().getFullYear()} مرشح
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function paymentSuccessEmail(customerName: string, itemLabel: string, amount: number) {

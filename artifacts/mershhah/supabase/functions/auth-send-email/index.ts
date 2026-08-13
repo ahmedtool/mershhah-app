@@ -20,11 +20,34 @@ interface HookEmailData {
   token_hash_new: string;
 }
 
-const BRAND = {
-  wrapOpen: `<div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; max-width: 420px; margin: 0 auto; padding: 32px 24px; background: #fafafa;">`,
-  wrapClose: `</div>`,
-  footer: `<p style="font-size: 12px; color: #9ca3af; margin: 24px 0 0;">إذا لم تطلب هذا الإجراء، تجاهل هذا البريد بأمان.</p>`,
-};
+const LOGO_URL = "https://www.mershhah.com/logo.jpg";
+const SAFE_TO_IGNORE_NOTE = `<p style="font-size: 12px; color: #9ca3af; margin: 20px 0 0;">إذا لم تطلب هذا الإجراء، تجاهل هذا البريد بأمان.</p>`;
+
+// Shared chrome for every auth email: logo header, the caller's content in
+// the middle, a signature/footer at the bottom. Kept self-contained in this
+// file (not a `_shared` import) since the CLI here deploys each function's
+// entrypoint independently.
+function emailShell(inner: string, footerNote = SAFE_TO_IGNORE_NOTE) {
+  return `
+    <div dir="rtl" style="font-family: Tahoma, Arial, sans-serif; background:#f4f4f5; padding: 40px 16px;">
+      <div style="max-width: 440px; margin: 0 auto; background:#ffffff; border-radius: 20px; padding: 36px 28px; border: 1px solid #ececec;">
+        <div style="text-align:center; padding-bottom: 22px; margin-bottom: 22px; border-bottom: 1px solid #f0f0f0;">
+          <img src="${LOGO_URL}" width="44" height="44" alt="مرشح" style="border-radius: 12px; display: inline-block;" />
+        </div>
+        ${inner}
+        ${footerNote}
+        <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #f0f0f0;">
+          <p style="font-size: 13px; color: #374151; margin: 0 0 2px; font-weight: 700;">فريق مرشح</p>
+          <p style="font-size: 11px; color: #9ca3af; margin: 0 0 14px;">نساعدك تدير مطعمك بذكاء</p>
+          <p style="font-size: 10px; color: #c1c5cb; margin: 0;">
+            <a href="https://mershhah.com" style="color: #9ca3af; text-decoration: none;">mershhah.com</a>
+            &nbsp;·&nbsp; © ${new Date().getFullYear()} مرشح
+          </p>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
 function buttonHtml(url: string, label: string) {
   return `<a href="${url}" style="display:block;text-align:center;background:#111827;color:#fff;text-decoration:none;font-weight:900;font-size:14px;border-radius:12px;padding:14px;margin:16px 0;">${label}</a>`;
@@ -49,37 +72,37 @@ function templateFor(actionType: string, name: string, linkOrCode: { url?: strin
     case "signup":
       return {
         subject: "تأكيد إنشاء حسابك في مرشح",
-        html: `${BRAND.wrapOpen}${greeting}<p style="font-size:14px;color:#111827;margin:0 0 8px;">أكمل إنشاء حسابك بالضغط على الزر التالي:</p>${buttonHtml(linkOrCode.url!, "تأكيد الحساب")}${BRAND.footer}${BRAND.wrapClose}`,
+        html: emailShell(`${greeting}<p style="font-size:14px;color:#111827;margin:0 0 8px;">أكمل إنشاء حسابك بالضغط على الزر التالي:</p>${buttonHtml(linkOrCode.url!, "تأكيد الحساب")}`),
       };
     case "recovery":
       return {
         subject: "طلب استعادة كلمة المرور - مرشح",
-        html: `${BRAND.wrapOpen}${greeting}<p style="font-size:14px;color:#111827;margin:0 0 8px;">وصلنا طلب لاستعادة كلمة مرور حسابك. اضغط الزر التالي لاختيار كلمة مرور جديدة:</p>${buttonHtml(linkOrCode.url!, "إعادة تعيين كلمة المرور")}${BRAND.footer}${BRAND.wrapClose}`,
+        html: emailShell(`${greeting}<p style="font-size:14px;color:#111827;margin:0 0 8px;">وصلنا طلب لاستعادة كلمة مرور حسابك. اضغط الزر التالي لاختيار كلمة مرور جديدة:</p>${buttonHtml(linkOrCode.url!, "إعادة تعيين كلمة المرور")}`),
       };
     case "magiclink":
       return {
         subject: "رابط تسجيل الدخول - مرشح",
-        html: `${BRAND.wrapOpen}${greeting}<p style="font-size:14px;color:#111827;margin:0 0 8px;">اضغط الزر التالي لتسجيل الدخول مباشرة:</p>${buttonHtml(linkOrCode.url!, "تسجيل الدخول")}${BRAND.footer}${BRAND.wrapClose}`,
+        html: emailShell(`${greeting}<p style="font-size:14px;color:#111827;margin:0 0 8px;">اضغط الزر التالي لتسجيل الدخول مباشرة:</p>${buttonHtml(linkOrCode.url!, "تسجيل الدخول")}`),
       };
     case "invite":
       return {
         subject: "تمت دعوتك للانضمام إلى مرشح",
-        html: `${BRAND.wrapOpen}${greeting}<p style="font-size:14px;color:#111827;margin:0 0 8px;">تمت دعوتك لإنشاء حساب في مرشح. اضغط الزر التالي لقبول الدعوة:</p>${buttonHtml(linkOrCode.url!, "قبول الدعوة")}${BRAND.footer}${BRAND.wrapClose}`,
+        html: emailShell(`${greeting}<p style="font-size:14px;color:#111827;margin:0 0 8px;">تمت دعوتك لإنشاء حساب في مرشح. اضغط الزر التالي لقبول الدعوة:</p>${buttonHtml(linkOrCode.url!, "قبول الدعوة")}`),
       };
     case "email_change":
       return {
         subject: "تأكيد تغيير البريد الإلكتروني - مرشح",
-        html: `${BRAND.wrapOpen}${greeting}<p style="font-size:14px;color:#111827;margin:0 0 8px;">وصلنا طلب لتغيير البريد الإلكتروني المرتبط بحسابك. اضغط الزر التالي للتأكيد:</p>${buttonHtml(linkOrCode.url!, "تأكيد البريد الجديد")}${BRAND.footer}${BRAND.wrapClose}`,
+        html: emailShell(`${greeting}<p style="font-size:14px;color:#111827;margin:0 0 8px;">وصلنا طلب لتغيير البريد الإلكتروني المرتبط بحسابك. اضغط الزر التالي للتأكيد:</p>${buttonHtml(linkOrCode.url!, "تأكيد البريد الجديد")}`),
       };
     case "reauthentication":
       return {
         subject: `${linkOrCode.code} هو كود التحقق لمرشح`,
-        html: `${BRAND.wrapOpen}${greeting}<p style="font-size:14px;color:#111827;margin:0 0 8px;">استخدم الكود التالي لتأكيد هويتك:</p>${codeHtml(linkOrCode.code!)}${BRAND.footer}${BRAND.wrapClose}`,
+        html: emailShell(`${greeting}<p style="font-size:14px;color:#111827;margin:0 0 8px;">استخدم الكود التالي لتأكيد هويتك:</p>${codeHtml(linkOrCode.code!)}`),
       };
     default:
       return {
         subject: "إشعار من مرشح",
-        html: `${BRAND.wrapOpen}${greeting}<p style="font-size:14px;color:#111827;">${linkOrCode.url ? buttonHtml(linkOrCode.url, "المتابعة") : linkOrCode.code}</p>${BRAND.wrapClose}`,
+        html: emailShell(`${greeting}<p style="font-size:14px;color:#111827;">${linkOrCode.url ? buttonHtml(linkOrCode.url, "المتابعة") : linkOrCode.code}</p>`),
       };
   }
 }
