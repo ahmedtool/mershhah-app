@@ -84,6 +84,17 @@ function templateFor(actionType: string, name: string, linkOrCode: { url?: strin
   }
 }
 
+// signup/invite read as an invitation to join — everything else is a
+// security/identity action. Two different inboxes, two different senders.
+const WELCOME_ACTION_TYPES = new Set(["signup", "invite"]);
+
+function fromFor(actionType: string): string {
+  if (WELCOME_ACTION_TYPES.has(actionType)) {
+    return `مرشح <${Deno.env.get("SNDR_FROM_WELCOME") || "welcome@mershhah.com"}>`;
+  }
+  return `مرشح <${Deno.env.get("SNDR_FROM_AUTH") || "auth@mershhah.com"}>`;
+}
+
 async function sendViaSndr(apiKey: string, from: string, to: string, subject: string, html: string) {
   const res = await fetch("https://api.sndr.sh/v1/send", {
     method: "POST",
@@ -103,7 +114,6 @@ Deno.serve(async (req) => {
 
   const hookSecretRaw = Deno.env.get("SEND_EMAIL_HOOK_SECRET");
   const sndrApiKey = Deno.env.get("SNDR_API_KEY");
-  const sndrFromEmail = Deno.env.get("SNDR_FROM_EMAIL") || "auth@mershhah.com";
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
   if (!hookSecretRaw || !sndrApiKey) {
@@ -130,6 +140,7 @@ Deno.serve(async (req) => {
 
     const name = user.user_metadata?.full_name || "";
     const actionType = email_data.email_action_type;
+    const sndrFromEmail = fromFor(actionType);
 
     if (actionType === "reauthentication") {
       const { subject, html } = templateFor(actionType, name, { code: email_data.token });
