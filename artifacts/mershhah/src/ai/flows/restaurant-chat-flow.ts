@@ -10,6 +10,10 @@ export type RestaurantChatOutput = {
   branchCards?: BranchCard[];
   offerCards?: OfferCard[];
   totalBudget?: number;
+  /** true when nothing in the local rule set matched — the caller may
+   * choose to escalate to a real model instead of showing this canned
+   * "didn't understand" reply. */
+  isFallback?: boolean;
 };
 
 interface RestaurantData {
@@ -533,5 +537,7 @@ export async function restaurantChat(input: RestaurantChatInput): Promise<Restau
   };
 
   const handler = replies[intent] || replies.unknown;
-  return handler();
+  const output = handler();
+  if (intent === 'unknown') output.isFallback = true;
+  return output;
 }

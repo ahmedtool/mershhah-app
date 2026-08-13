@@ -213,11 +213,38 @@ export default function AiAssistantPage() {
         restaurantData: JSON.stringify(restaurantContextData)
       });
 
+      // Local rule set didn't match anything — try the capped Gemini
+      // fallback for a real reply instead of the canned "didn't understand"
+      // message. Any failure there just keeps the local reply as-is.
+      let finalReply = aiResponse.smartReply;
+      if (aiResponse.isFallback) {
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-gemini`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+              ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            },
+            body: JSON.stringify({
+              customerMessage: userMsgContent,
+              restaurantData: JSON.stringify(restaurantContextData),
+              locale: 'ar',
+            }),
+          });
+          const geminiData = await res.json().catch(() => null);
+          if (geminiData?.smartReply) finalReply = geminiData.smartReply;
+        } catch {
+          // stay on the local canned reply
+        }
+      }
+
       const botId = (Date.now() + 1).toString();
       const botMsg = {
         id: botId,
         sender: 'bot' as const,
-        text: aiResponse.smartReply,
+        text: finalReply,
         timestamp: new Date(),
         session_id: sessionId,
         showApplications: aiResponse.showApplications === true,
