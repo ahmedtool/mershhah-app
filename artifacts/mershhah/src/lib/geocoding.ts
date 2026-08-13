@@ -9,17 +9,28 @@ interface GeocodingResult {
 // ── Extract coordinates from any Google Maps URL ────────────────────────────
 
 function extractCoordsFromUrl(url: string): { latitude: number; longitude: number } | null {
-  // Pattern 1: /maps/@lat,lng,zoom
-  const atMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
-  if (atMatch) return { latitude: parseFloat(atMatch[1]), longitude: parseFloat(atMatch[2]) };
+  // Checked most-precise first. A single "place" URL commonly contains BOTH
+  // an `@lat,lng` (wherever the map viewport happened to be scrolled/zoomed
+  // to when the link was copied - can be well off the actual pin) AND the
+  // exact place coordinates embedded as `!3d<lat>!4d<lng>`. Matching `@`
+  // first silently returns the imprecise one even when the real pin
+  // location is sitting right there in the same URL.
 
-  // Pattern 2: ?q=lat,lng or &q=lat,lng
+  // Pattern 1: !3d and !4d - the actual pinned place (most precise)
+  const embedMatch = url.match(/!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/);
+  if (embedMatch) return { latitude: parseFloat(embedMatch[1]), longitude: parseFloat(embedMatch[2]) };
+
+  // Pattern 2: ?destination=lat,lng or &destination=lat,lng (maps/dir/?api=1&destination=...)
+  const destMatch = url.match(/[?&]destination=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (destMatch) return { latitude: parseFloat(destMatch[1]), longitude: parseFloat(destMatch[2]) };
+
+  // Pattern 3: ?q=lat,lng or &q=lat,lng
   const qMatch = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
   if (qMatch) return { latitude: parseFloat(qMatch[1]), longitude: parseFloat(qMatch[2]) };
 
-  // Pattern 3: !3d and !4d (embedded in encoded URLs)
-  const embedMatch = url.match(/!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/);
-  if (embedMatch) return { latitude: parseFloat(embedMatch[1]), longitude: parseFloat(embedMatch[2]) };
+  // Pattern 4: /maps/@lat,lng,zoom - map viewport center (least precise, last resort)
+  const atMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (atMatch) return { latitude: parseFloat(atMatch[1]), longitude: parseFloat(atMatch[2]) };
 
   return null;
 }
