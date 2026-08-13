@@ -113,9 +113,9 @@ const WELCOME_ACTION_TYPES = new Set(["signup", "invite"]);
 
 function fromFor(actionType: string): string {
   if (WELCOME_ACTION_TYPES.has(actionType)) {
-    return `مرشح <${Deno.env.get("SNDR_FROM_WELCOME") || "welcome@mershhah.com"}>`;
+    return Deno.env.get("SNDR_FROM_WELCOME") || "welcome@mershhah.com";
   }
-  return `مرشح <${Deno.env.get("SNDR_FROM_AUTH") || "auth@mershhah.com"}>`;
+  return Deno.env.get("SNDR_FROM_AUTH") || "auth@mershhah.com";
 }
 
 async function sendViaSndr(apiKey: string, from: string, to: string, subject: string, html: string) {
