@@ -88,6 +88,16 @@ export type MenuItemSize = {
   calories?: number;
 };
 
+export type SharedMenuProduct = {
+  id: string;
+  name: string;
+  category?: string;
+  calories?: number;
+  image_path?: string;
+  created_at?: any;
+  updated_at?: any;
+};
+
 export type MenuItem = {
   id: string;
   name: string;
@@ -125,6 +135,7 @@ export type Offer = {
   valid_until: any; // Stored as ISO string or Timestamp
   status: 'active' | 'expired';
   restaurant_id: string; // FK to restaurants.id
+  branch_id?: string | null; // null = applies to all branches
   items?: string[];
   views_count?: number;
   clicks_count?: number;

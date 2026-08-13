@@ -17,6 +17,7 @@ import {
 import { EditOfferDialog } from '@/components/dashboard/EditOfferDialog';
 import { supabase } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { Branch } from '@/lib/types';
 
 export default function OffersPage() {
   const { user, isLoading: isUserLoading } = useUser();
@@ -25,6 +26,7 @@ export default function OffersPage() {
   const { toast } = useToast();
 
   const [offers, setOffers] = useState<any[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
   const [restaurantId, setRestaurantId] = useState<string | null>(null);
   const [isFetchingData, setIsFetchingData] = useState(true);
 
@@ -39,6 +41,7 @@ export default function OffersPage() {
       setRestaurantId(restId);
       setIsFetchingData(true);
       fetchOffers(restId).finally(() => setIsFetchingData(false));
+      supabase.from('branches').select('*').eq('restaurant_id', restId).then(({ data }) => setBranches((data || []) as Branch[]));
 
       const channel = supabase
         .channel(`offers-${restId}`)
@@ -72,7 +75,7 @@ export default function OffersPage() {
     <>
       <div className="space-y-5">
         <PageHeader title="إدارة العروض" description="سوّ عروض ترويجية عشان تجذب زباين أكثر.">
-          <EditOfferDialog restaurantId={restaurantId!} userId={user?.uid} onSave={() => restaurantId && fetchOffers(restaurantId)}>
+          <EditOfferDialog restaurantId={restaurantId!} userId={user?.uid} branches={branches} onSave={() => restaurantId && fetchOffers(restaurantId)}>
             <button disabled={loadingData || !restaurantId}
               className="h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2">
               <PlusCircle className="h-3.5 w-3.5" />
@@ -104,6 +107,7 @@ export default function OffersPage() {
             <OfferCard
               key={offer.id}
               offer={offer}
+              branches={branches}
               onDelete={() => setOfferToDelete(offer)}
               restaurantId={restaurantId}
               onActionCompletion={() => fetchOffers(restaurantId)}

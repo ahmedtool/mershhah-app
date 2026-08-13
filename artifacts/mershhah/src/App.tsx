@@ -47,6 +47,7 @@ import AdminPlansPage from "@/app/admin/plans/page";
 import AdminStorePage from "@/app/admin/store/page";
 import AdminStoreDevelopersPage from "@/app/admin/store/developers/page";
 import AdminStoreManagementPage from "@/app/admin/store-management/page";
+import AdminSharedProductsPage from "@/app/admin/shared-products/page";
 import AdminSupportPage from "@/app/admin/support/page";
 import AdminSupportChatPage from "@/app/admin/support/[chatId]/page";
 import AdminSettingsPage from "@/app/admin/settings/page";
@@ -147,6 +148,7 @@ function Router() {
       <Route path="/admin/store" component={() => <AdminLayout><AdminStorePage /></AdminLayout>} />
       <Route path="/admin/store/developers" component={() => <AdminLayout><AdminStoreDevelopersPage /></AdminLayout>} />
       <Route path="/admin/store-management" component={() => <AdminLayout><AdminStoreManagementPage /></AdminLayout>} />
+      <Route path="/admin/shared-products" component={() => <AdminLayout><AdminSharedProductsPage /></AdminLayout>} />
       <Route path="/admin/support/:chatId" component={() => <AdminLayout><AdminSupportChatPage /></AdminLayout>} />
       <Route path="/admin/support" component={() => <AdminLayout><AdminSupportPage /></AdminLayout>} />
       <Route path="/admin/settings" component={() => <AdminLayout><AdminSettingsPage /></AdminLayout>} />

@@ -20,6 +20,7 @@ const permissions = [
   { id: 'management', label: 'إدارة المشتركين' },
   { id: 'financials', label: 'القسم المالي' },
   { id: 'store-management', label: 'إدارة المتجر' },
+  { id: 'shared-products', label: 'مكتبة المنتجات' },
   { id: 'applications', label: 'التطبيقات' },
   { id: 'announcements', label: 'الإعلانات' },
   { id: 'blog', label: 'المدونة' },

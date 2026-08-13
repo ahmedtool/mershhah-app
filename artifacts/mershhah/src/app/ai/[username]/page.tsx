@@ -101,6 +101,17 @@ export default function AiAssistantPage() {
   }, [username, sessionId]);
 
   useEffect(() => {
+    // ai_session_messages has a FK on session_id -> ai_sessions.id; the client
+    // mints sessionId itself (localStorage), so the parent row must exist
+    // before any message insert or it fails with a 409 FK violation. 23505
+    // (duplicate id) is expected on repeat visits within the same session.
+    if (!sessionId || !restaurant?.id) return;
+    supabase.from('ai_sessions').insert({ id: sessionId, restaurant_id: restaurant.id }).then(({ error }) => {
+      if (error && error.code !== '23505') console.error('[ai_sessions] insert failed', error);
+    });
+  }, [sessionId, restaurant?.id]);
+
+  useEffect(() => {
     const scrollToBottom = () => {
       requestAnimationFrame(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });

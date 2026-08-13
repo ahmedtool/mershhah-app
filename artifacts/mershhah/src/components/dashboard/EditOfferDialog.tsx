@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { supabase } from "@/lib/supabase";
 import { syncPublicPage } from '@/lib/public-pages';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import type { MenuItem } from "@/lib/types";
+import type { MenuItem, Branch } from "@/lib/types";
 import { Badge } from "../ui/badge";
 import { Dialog as GalleryDialog, DialogContent as GalleryDialogContent } from "@/components/ui/dialog";
 import { StorageImage } from "../shared/StorageImage";
@@ -31,6 +31,7 @@ const formSchema = z.object({
   valid_until: z.date({ required_error: "تاريخ الانتهاء مطلوب" }),
   status: z.enum(['active', 'expired']).default('active'),
   items: z.array(z.string()).optional(),
+  branch_id: z.string().nullable().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -41,9 +42,10 @@ interface EditOfferDialogProps {
   onSave?: () => void;
   restaurantId?: string;
   userId?: string;
+  branches?: Branch[];
 }
 
-export function EditOfferDialog({ children, offer, onSave, restaurantId, userId }: EditOfferDialogProps) {
+export function EditOfferDialog({ children, offer, onSave, restaurantId, userId, branches = [] }: EditOfferDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSaving, startSaving] = useTransition();
   const { toast } = useToast();
@@ -77,6 +79,7 @@ export function EditOfferDialog({ children, offer, onSave, restaurantId, userId 
         items: offer.items || [],
         image_url: offer.image_url || "",
         external_link: offer.external_link || "",
+        branch_id: offer.branch_id ?? null,
       } : {
         title: "",
         description: "",
@@ -85,6 +88,7 @@ export function EditOfferDialog({ children, offer, onSave, restaurantId, userId 
         valid_until: undefined,
         status: 'active',
         items: [],
+        branch_id: null,
       });
       setImageFile(null);
       setImagePreview(offer?.image_url || null);
@@ -341,6 +345,46 @@ export function EditOfferDialog({ children, offer, onSave, restaurantId, userId 
                   </FormItem>
                 )}
               />
+
+              {/* Branch targeting */}
+              {branches.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="branch_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs text-gray-500">يظهر في <span className="text-gray-300">(اختياري)</span></FormLabel>
+                      <div className="flex flex-wrap gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => field.onChange(null)}
+                          className={cn(
+                            "px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors",
+                            !field.value ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                          )}
+                        >
+                          كل الفروع
+                        </button>
+                        {branches.map((branch) => (
+                          <button
+                            key={branch.id}
+                            type="button"
+                            onClick={() => field.onChange(branch.id)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors",
+                              field.value === branch.id ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                            )}
+                          >
+                            {branch.name}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-gray-300">حدد فرعاً ليظهر العرض لزوّاره فقط، عبر رابط الفرع الخاص به</p>
+                      <FormMessage className="text-[10px]" />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* Date */}
               <FormField

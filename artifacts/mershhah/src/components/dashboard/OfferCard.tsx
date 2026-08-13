@@ -5,19 +5,21 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Pencil, Trash2, Eye, MousePointer2, ExternalLink } from "lucide-react";
 import { EditOfferDialog } from "./EditOfferDialog";
 import { StorageImage } from "../shared/StorageImage";
-import type { Offer } from "@/lib/types";
+import type { Offer, Branch } from "@/lib/types";
 
 interface OfferCardProps {
     offer: Offer;
     onDelete: () => void;
     restaurantId?: string;
+    branches?: Branch[];
     onActionCompletion?: () => void;
 }
 
-export function OfferCard({ offer, onDelete, restaurantId, onActionCompletion }: OfferCardProps) {
+export function OfferCard({ offer, onDelete, restaurantId, branches = [], onActionCompletion }: OfferCardProps) {
     const validUntilDate = offer.valid_until?.toDate ? offer.valid_until.toDate() : new Date();
     const timeRemaining = Math.round((validUntilDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24));
     const isExpired = timeRemaining < 0;
+    const targetBranch = offer.branch_id ? branches.find(b => b.id === offer.branch_id) : null;
 
     return (
         <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden flex flex-col">
@@ -39,7 +41,14 @@ export function OfferCard({ offer, onDelete, restaurantId, onActionCompletion }:
 
             {/* Content */}
             <div className="p-4 flex-1">
-                <h3 className="text-sm font-bold text-gray-900 mb-1">{offer.title}</h3>
+                <div className="flex items-center gap-1.5 mb-1">
+                    <h3 className="text-sm font-bold text-gray-900">{offer.title}</h3>
+                    {targetBranch && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 shrink-0">
+                            {targetBranch.name}
+                        </span>
+                    )}
+                </div>
                 <p className="text-[11px] text-gray-400 line-clamp-2 mb-3">{offer.description}</p>
 
                 {offer.external_link && (
@@ -81,7 +90,7 @@ export function OfferCard({ offer, onDelete, restaurantId, onActionCompletion }:
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="border-gray-100">
-                        <EditOfferDialog offer={offer} restaurantId={restaurantId} onSave={onActionCompletion}>
+                        <EditOfferDialog offer={offer} restaurantId={restaurantId} branches={branches} onSave={onActionCompletion}>
                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-xs gap-2">
                                 <Pencil className="h-3 w-3" />
                                 تعديل

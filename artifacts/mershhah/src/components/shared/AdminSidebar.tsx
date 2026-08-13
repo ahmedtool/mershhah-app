@@ -19,6 +19,7 @@ import {
   BarChart3,
   ShoppingCart,
   FileText,
+  CupSoda,
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { supabase } from '@/lib/supabase';
@@ -41,6 +42,7 @@ export function AdminSidebar() {
     { href: '/admin/financials/orders', label: 'الطلبات', icon: ShoppingCart, permissionId: 'financials', group: 'المالية' },
     { href: '/admin/financials/discounts', label: 'أكواد الخصم', icon: Tag, permissionId: 'financials', group: 'المالية' },
     { href: '/admin/store-management', label: 'إدارة المتجر', icon: Store, permissionId: 'store-management' },
+    { href: '/admin/shared-products', label: 'مكتبة المنتجات', icon: CupSoda, permissionId: 'shared-products' },
     { href: '/admin/applications', label: 'التطبيقات', icon: AppWindow, permissionId: 'applications' },
     { href: '/admin/announcements', label: 'الإعلانات', icon: Megaphone, permissionId: 'announcements' },
     { href: '/admin/blog', label: 'المدونة', icon: FileText, permissionId: 'blog' },

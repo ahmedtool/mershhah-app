@@ -18,6 +18,12 @@ export default function BranchesPage() {
   const [addOpen, setAddOpen] = useState(false);
 
   const restaurantId = user?.restaurantId ?? '';
+  const [username, setUsername] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!restaurantId) return;
+    supabase.from('restaurants').select('username').eq('id', restaurantId).single().then(({ data }) => setUsername(data?.username ?? null));
+  }, [restaurantId]);
 
   const fetchBranches = async () => {
     if (!restaurantId) { setLoading(false); return; }
@@ -61,7 +67,7 @@ export default function BranchesPage() {
       {loading ? (
         <Skeleton className="h-48 w-full rounded-2xl" />
       ) : (
-        <BranchesList branches={branches} restaurantId={restaurantId} onChanged={fetchBranches} />
+        <BranchesList branches={branches} restaurantId={restaurantId} username={username} onChanged={fetchBranches} />
       )}
 
       {restaurantId && (

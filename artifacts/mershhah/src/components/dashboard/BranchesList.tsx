@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, MapPin, Phone, Layers, MoreVertical, Clock } from 'lucide-react';
+import { Pencil, Trash2, MapPin, Phone, Layers, MoreVertical, Clock, Link2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
@@ -23,16 +23,24 @@ import type { Branch } from '@/lib/types';
 interface BranchesListProps {
   branches: Branch[];
   restaurantId: string;
+  username?: string | null;
   onChanged?: () => void;
 }
 
-export function BranchesList({ branches, restaurantId, onChanged }: BranchesListProps) {
+export function BranchesList({ branches, restaurantId, username, onChanged }: BranchesListProps) {
   const { toast } = useToast();
   const [editBranch, setEditBranch] = useState<Branch | null>(null);
   const [deleteBranch, setDeleteBranch] = useState<Branch | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+
+  const handleCopyBranchLink = (branch: Branch) => {
+    if (!username) return;
+    const link = `${window.location.origin}/${username}?branch=${branch.id}`;
+    navigator.clipboard.writeText(link);
+    toast({ title: 'تم نسخ رابط الفرع', description: 'اطبعه كرمز QR أو شاركه — العروض الخاصة بهذا الفرع تظهر لمن يفتحه' });
+  };
 
   const handleDelete = async () => {
     if (!deleteBranch || !restaurantId) return;
@@ -139,6 +147,16 @@ export function BranchesList({ branches, restaurantId, onChanged }: BranchesList
                 >
                   <Pencil className="h-3.5 w-3.5" />
                   تعديل
+                </button>
+                <div className="w-px h-4 bg-gray-100" />
+                <button
+                  onClick={() => handleCopyBranchLink(branch)}
+                  disabled={!username}
+                  title="نسخ رابط خاص بهذا الفرع"
+                  className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-40"
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                  رابط الفرع
                 </button>
                 <div className="w-px h-4 bg-gray-100" />
                 <button

@@ -6,27 +6,20 @@ import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CreditCard, Clock, CheckCircle, AlertCircle, Zap, ArrowRight, Tag, Calendar, Receipt } from "lucide-react";
-import { Link } from "wouter";
-import { useToast } from "@/hooks/use-toast";
-import { useCouponCheck } from "@/hooks/useCouponCheck";
-import { usePlanCheckout } from "@/hooks/usePlanCheckout";
+import { CreditCard, Clock, CheckCircle, AlertCircle, Zap, Calendar, Receipt, Tag } from "lucide-react";
+import { PlanPricingGrid } from "@/components/dashboard/PlanPricingGrid";
 
 export default function BillingPage() {
   const { user } = useUser();
-  const { toast } = useToast();
   const [subscription, setSubscription] = useState<any>(null);
-  const [plans, setPlans] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { couponCode, setCouponCode, couponDiscount, isCheckingCoupon, checkCoupon, applyDiscount } = useCouponCheck();
-  const { checkout } = usePlanCheckout();
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user?.id) return;
       try {
-        const [subRes, plansRes, invRes] = await Promise.all([
+        const [subRes, invRes] = await Promise.all([
           supabase
             .from("subscriptions")
             .select("*, plans(*)")
@@ -36,11 +29,6 @@ export default function BillingPage() {
             .limit(1)
             .maybeSingle(),
           supabase
-            .from("plans")
-            .select("*")
-            .eq("is_active", true)
-            .order("price_monthly"),
-          supabase
             .from("invoices")
             .select("*")
             .eq("profile_id", user.id)
@@ -48,7 +36,6 @@ export default function BillingPage() {
             .limit(10),
         ]);
         setSubscription(subRes.data);
-        setPlans(plansRes.data || []);
         setInvoices(invRes.data || []);
       } catch (error) {
         console.error(error);
@@ -131,98 +118,10 @@ export default function BillingPage() {
         </Card>
       )}
 
-      {/* Coupon */}
-      <Card className="border-gray-100">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2">
-            <Tag className="h-4 w-4 text-gray-400" />
-            <span className="text-xs font-bold text-gray-700">كوبون خصم</span>
-          </div>
-          <div className="flex gap-2 mt-3">
-            <input
-              type="text"
-              placeholder="أدخل الكوبون"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-              className="flex-1 h-10 px-3 rounded-xl border border-gray-200 text-xs text-center font-bold tracking-wider placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
-              dir="ltr"
-            />
-            <button
-              onClick={checkCoupon}
-              disabled={isCheckingCoupon || !couponCode}
-              className="h-10 px-4 rounded-xl bg-gray-100 text-xs font-bold text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
-            >
-              تحقق
-            </button>
-          </div>
-          {couponDiscount && (
-            <div className="mt-2 text-[11px] text-emerald-600 font-medium">
-              ✓ {couponDiscount.discount_type === "percentage" ? `خصم ${couponDiscount.discount_value}%` : couponDiscount.discount_type === "fixed" ? `خصم ثابت ${couponDiscount.discount_value} ر.س` : "فترة مجانية"}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Plans */}
       <div>
         <h2 className="text-sm font-bold text-gray-900 mb-3">الباقات المتاحة</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {plans.map((plan) => {
-            const monthlyPrice = applyDiscount(plan.price_monthly || plan.price || 0);
-            const yearlyPrice = applyDiscount(plan.price_yearly || 0);
-            return (
-              <div key={plan.id} className={`rounded-2xl border overflow-hidden ${plan.is_featured ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-100'}`}>
-                <div className={`px-5 pt-5 pb-4 ${plan.is_featured ? 'bg-gray-900' : 'bg-gray-50'}`}>
-                  {plan.is_featured && <span className="text-[10px] font-medium text-gray-400 bg-white/10 px-2 py-0.5 rounded-full">مميز</span>}
-                  <h3 className={`text-base font-bold mt-2 ${plan.is_featured ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
-                  {plan.description && <p className={`text-xs mt-1 ${plan.is_featured ? 'text-gray-300' : 'text-gray-400'}`}>{plan.description}</p>}
-                </div>
-                <div className="px-5 py-4 space-y-3">
-                  {/* Monthly */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-gray-400">شهري</span>
-                    <div className="flex items-baseline gap-1">
-                      {couponDiscount && monthlyPrice !== (plan.price_monthly || plan.price) && (
-                        <span className="text-[10px] text-gray-300 line-through">{plan.price_monthly || plan.price}</span>
-                      )}
-                      <span className="text-lg font-bold text-gray-900">{monthlyPrice}</span>
-                      <span className="text-[10px] text-gray-400">ر.س</span>
-                    </div>
-                  </div>
-                  {/* Yearly */}
-                  {yearlyPrice > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] text-gray-400">سنوي</span>
-                      <div className="flex items-baseline gap-1">
-                        {couponDiscount && yearlyPrice !== plan.price_yearly && (
-                          <span className="text-[10px] text-gray-300 line-through">{plan.price_yearly}</span>
-                        )}
-                        <span className="text-lg font-bold text-gray-900">{yearlyPrice}</span>
-                        <span className="text-[10px] text-gray-400">ر.س</span>
-                      </div>
-                    </div>
-                  )}
-                  <div className="space-y-1.5 pt-2">
-                    <button
-                      onClick={() => checkout(plan.id, "monthly", couponCode)}
-                      className="w-full h-10 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors"
-                    >
-                      اشتراك شهري
-                    </button>
-                    {yearlyPrice > 0 && (
-                      <button
-                        onClick={() => checkout(plan.id, "yearly", couponCode)}
-                        className="w-full h-10 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
-                      >
-                        اشتراك سنوي
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <PlanPricingGrid currentPlanId={subscription?.plan_id} isCurrentSubscriptionExpired={isExpired} />
       </div>
 
       {/* Invoices History */}

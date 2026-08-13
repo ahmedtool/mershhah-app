@@ -59,6 +59,10 @@ export default function RestaurantHubPage() {
   const recordedViewOfferIds = useRef<Set<string>>(new Set());
   const searchParams = useSearchParams();
   const hubVisitRecorded = useRef(false);
+  const branchParam = searchParams.get('branch');
+  // Offers with a branch_id only show to visitors known to be at that branch
+  // (via a branch-specific link/QR); offers with no branch_id always show.
+  const visibleOffers = branchParam ? offers.filter((o) => !o.branch_id || o.branch_id === branchParam) : offers;
 
   useEffect(() => {
     if (!restaurant?.id || hubVisitRecorded.current) return;
@@ -73,9 +77,8 @@ export default function RestaurantHubPage() {
   }, [restaurant?.id, searchParams]);
 
   useEffect(() => {
-    if (!restaurant?.id || !offers.length) return;
-    const restId = restaurant.id;
-    offers.forEach(async (offer) => {
+    if (!restaurant?.id || !visibleOffers.length) return;
+    visibleOffers.forEach(async (offer) => {
       if (recordedViewOfferIds.current.has(offer.id)) return;
       recordedViewOfferIds.current.add(offer.id);
       const { data: current } = await supabase
@@ -86,7 +89,7 @@ export default function RestaurantHubPage() {
       const newCount = (current?.views_count || 0) + 1;
       supabase.from('offers').update({ views_count: newCount }).eq('id', offer.id).then(() => {});
     });
-  }, [restaurant?.id, offers]);
+  }, [restaurant?.id, visibleOffers]);
 
   useEffect(() => {
     if (!username) return;
@@ -278,10 +281,10 @@ export default function RestaurantHubPage() {
         <div className="px-4 py-6 space-y-6">
 
           {/* العروض */}
-          {offers.length > 0 && (
+          {visibleOffers.length > 0 && (
             <section className="space-y-3">
               <div className="flex overflow-x-auto no-scrollbar pb-1 snap-x snap-mandatory gap-3">
-                {offers.map((offer) => (
+                {visibleOffers.map((offer) => (
                   <button
                     key={offer.id}
                     type="button"
