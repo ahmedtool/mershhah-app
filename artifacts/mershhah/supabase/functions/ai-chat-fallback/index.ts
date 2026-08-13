@@ -8,13 +8,22 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 //
 // Uses OpenRouter's free tier: a $0-balance account calling a model with a
 // `:free` suffix is rate-limited (50 req/day, 20/min) rather than billed -
-// see https://openrouter.ai/docs/api-reference/limits. Pinned to a specific
-// model (rather than the `openrouter/free` auto-router) because quality
-// varies a lot between the auto-picked models for natural Arabic
-// conversation - Gemma tested noticeably better than the coding-focused
-// models that dominate the free catalog.
+// see https://openrouter.ai/docs/api-reference/limits.
+//
+// Two things measured live before landing here:
+// 1. Pinning to a single model (google/gemma-4-26b-a4b-it:free) had ~66%
+//    failure rate - that model's latency under real load regularly
+//    exceeded any reasonable timeout.
+// 2. The `openrouter/free` auto-router improved availability but sometimes
+//    routed to a model unsuited for conversation - one leaked its raw
+//    chain-of-thought into the reply, another returned literally
+//    "User Safety: safe". Worse than no reply for a customer.
+// The `models` array (OpenRouter tries each in order, falling back on
+// failure) gets both: only curated, conversational models ever answer, and
+// 4/4 live tests succeeded vs 1/3 for a single pinned model.
 const DAILY_CAP = 45; // stays under OpenRouter's 50/day zero-balance limit with margin
-const MODEL = "google/gemma-4-26b-a4b-it:free";
+const MODELS = ["google/gemma-4-26b-a4b-it:free", "openai/gpt-oss-20b:free"];
+const REQUEST_TIMEOUT_MS = 15000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -103,22 +112,37 @@ ${offerLines || "(no active offers)"}
 BRANCHES:
 ${branchLines || "(no branches listed)"}`;
 
-    const orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${openRouterKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: customerMessage },
-        ],
-        max_tokens: 220,
-        temperature: 0.7,
-      }),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let orRes: Response;
+    try {
+      orRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openRouterKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          models: MODELS,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: customerMessage },
+          ],
+          max_tokens: 220,
+          temperature: 0.7,
+        }),
+        signal: controller.signal,
+      });
+    } catch (fetchErr) {
+      // Covers both the abort (slow/congested free model) and genuine
+      // network failures - either way, the customer just gets the local
+      // reply instead of waiting indefinitely.
+      console.error("[ai-chat-fallback] OpenRouter request failed or timed out:", fetchErr);
+      return json({ fallback: true });
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!orRes.ok) {
       console.error("[ai-chat-fallback] OpenRouter API error:", orRes.status, await orRes.text());
