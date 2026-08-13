@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { User, Building2, KeyRound, Loader2, CreditCard, Clock, Trash2, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabase';
+import { syncPublicPage } from '@/lib/public-pages';
 import { format, addMonths, isAfter } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -148,6 +149,7 @@ function ProfileDetails({
         if (profile.restaurant_id) {
           const { error: restErr } = await supabase.from('restaurants').update({ name: values.restaurant_name }).eq('id', profile.restaurant_id);
           if (restErr) throw restErr;
+          syncPublicPage(profile.restaurant_id).catch(() => {});
         }
 
         toast({ title: `تم تحديث بيانات "${values.restaurant_name}" بنجاح` });
@@ -224,6 +226,15 @@ function ProfileDetails({
             reference_type: 'subscription',
             reference_id: newSub?.id,
           });
+        }
+
+        // The public hub page reads a denormalized snapshot (public_pages),
+        // not the restaurants row directly — without this, is_paid_plan
+        // flips in the database but the customer-facing page (and features
+        // gated on it, like the AI assistant) keeps showing the stale value
+        // until something else happens to trigger a resync.
+        if (profile.restaurant_id) {
+          syncPublicPage(profile.restaurant_id).catch(() => {});
         }
 
         toast({ title: 'تم تجديد/تفعيل الاشتراك بنجاح!' });
