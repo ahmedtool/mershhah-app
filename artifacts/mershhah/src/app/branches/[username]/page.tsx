@@ -114,10 +114,6 @@ export default function PublicBranchesPage() {
     );
   };
 
-  useEffect(() => {
-    requestLocation();
-  }, []);
-
   const isBranchOpen = (hours?: string | null) => {
     if (!hours) return null;
     try {
@@ -201,11 +197,21 @@ export default function PublicBranchesPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
           <p className="text-sm text-gray-400 mt-0.5">{branches.length > 0 ? `${branches.length} فروع` : 'الفروع'}</p>
-          {userLocation && (
+          {userLocation ? (
             <p className="text-[10px] text-gray-300 mt-1 flex items-center justify-center gap-1">
               <Navigation className="h-2.5 w-2.5" />
               مرتب حسب القرب منك
             </p>
+          ) : branches.length > 1 && (
+            <button
+              onClick={requestLocation}
+              disabled={locating}
+              className="text-[10px] font-bold mt-1.5 flex items-center justify-center gap-1 mx-auto disabled:opacity-50"
+              style={{ color: primaryColor }}
+            >
+              <Navigation className="h-2.5 w-2.5" />
+              {locating ? 'جاري تحديد الموقع...' : 'رتب حسب الأقرب لي'}
+            </button>
           )}
         </div>
       </div>
