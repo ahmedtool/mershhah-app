@@ -3,17 +3,19 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'wouter';
 import { useRouter } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Search, Info } from 'lucide-react';
+import { ChevronRight, Search, Info, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { getPublicPage } from '@/lib/public-pages';
+import { getPublicPage, syncPublicPage } from '@/lib/public-pages';
 import { StorageImage } from '@/components/shared/StorageImage';
 import type { MenuItem } from '@/lib/types';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
+import { useToast } from '@/hooks/use-toast';
 
 export default function PublicMenuPage() {
   const params = useParams();
@@ -28,6 +30,45 @@ export default function PublicMenuPage() {
   const [loading, setLoading] = useState(true);
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
   const [selectedSize, setSelectedSize] = useState<any>(null);
+  const [showRatingForm, setShowRatingForm] = useState(false);
+  const [itemRating, setItemRating] = useState(0);
+  const [itemHoverRating, setItemHoverRating] = useState(0);
+  const [itemComment, setItemComment] = useState('');
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const { toast } = useToast();
+
+  const openItem = (item: MenuItem) => {
+    setActiveItem(item);
+    setSelectedSize(item.sizes?.[0] || null);
+    setShowRatingForm(false);
+    setItemRating(0);
+    setItemComment('');
+  };
+
+  const handleSubmitItemRating = async () => {
+    if (!activeItem || !restaurant?.id || itemRating === 0) return;
+    setIsSubmittingRating(true);
+    try {
+      const { error } = await supabase.from('menu_item_reviews').insert({
+        menu_item_id: activeItem.id,
+        restaurant_id: restaurant.id,
+        rating: itemRating,
+        comment: itemComment || null,
+        is_visible: true,
+        created_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+      toast({ title: 'شكراً لتقييمك!' });
+      setShowRatingForm(false);
+      setItemRating(0);
+      setItemComment('');
+      syncPublicPage(restaurant.id).catch(() => {});
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
 
   const applySort = (items: MenuItem[]): MenuItem[] => {
     const hasPositions = items.some(item => item.position != null);
@@ -301,7 +342,7 @@ export default function PublicMenuPage() {
                 {itemsInCategory.map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => { recordItemClick(item); setActiveItem(item); setSelectedSize(item.sizes?.[0] || null); }}
+                    onClick={() => { recordItemClick(item); openItem(item); }}
                     className="w-full flex items-center gap-4 p-3 -mx-3 rounded-xl hover:bg-gray-50 transition-colors text-right"
                   >
                     <div className="flex-1 min-w-0">
@@ -309,9 +350,17 @@ export default function PublicMenuPage() {
                       {item.description && (
                         <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{item.description}</p>
                       )}
-                      <p className="text-xs font-medium mt-1.5" style={{ color: primaryColor }}>
-                        {getPriceDisplay(item)}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <p className="text-xs font-medium" style={{ color: primaryColor }}>
+                          {getPriceDisplay(item)}
+                        </p>
+                        {!!item.review_count && (
+                          <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
+                            <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
+                            {item.rating?.toFixed(1)} ({item.review_count})
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0">
                       <StorageImage
@@ -374,6 +423,76 @@ export default function PublicMenuPage() {
                 </span>
               </div>
 
+              {/* Rating */}
+              <div dir="rtl" className="flex items-center justify-between">
+                {activeItem.review_count ? (
+                  <div className="flex items-center gap-1.5">
+                    <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                    <span className="text-sm font-bold text-gray-900">{activeItem.rating?.toFixed(1)}</span>
+                    <span className="text-xs text-gray-400">({activeItem.review_count} تقييم)</span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-300">لا يوجد تقييم بعد</span>
+                )}
+                {!showRatingForm && (
+                  <button
+                    type="button"
+                    onClick={() => setShowRatingForm(true)}
+                    className="text-xs font-bold"
+                    style={{ color: primaryColor }}
+                  >
+                    قيّم هذا الصنف
+                  </button>
+                )}
+              </div>
+
+              {showRatingForm && (
+                <div dir="rtl" className="rounded-xl border border-gray-100 p-4 space-y-3">
+                  <div className="flex justify-center gap-1 flex-row-reverse">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onMouseEnter={() => setItemHoverRating(star)}
+                        onMouseLeave={() => setItemHoverRating(0)}
+                        onClick={() => setItemRating(star)}
+                        className="p-0.5 transition-transform hover:scale-110"
+                      >
+                        <Star
+                          className="h-7 w-7 transition-colors"
+                          fill={star <= (itemHoverRating || itemRating) ? '#f59e0b' : 'none'}
+                          stroke={star <= (itemHoverRating || itemRating) ? '#f59e0b' : '#d1d5db'}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <Textarea
+                    placeholder="اترك تعليقك (اختياري)"
+                    value={itemComment}
+                    onChange={(e) => setItemComment(e.target.value)}
+                    className="text-sm min-h-[70px] resize-none rounded-xl"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowRatingForm(false)}
+                      className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600"
+                    >
+                      إلغاء
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSubmitItemRating}
+                      disabled={itemRating === 0 || isSubmittingRating}
+                      style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
+                      className="flex-1 h-10 rounded-xl text-sm font-bold disabled:opacity-50"
+                    >
+                      {isSubmittingRating ? 'جاري...' : 'إرسال'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Sizes */}
               {Array.isArray(activeItem.sizes) && activeItem.sizes.length > 0 && (
                 <div dir="rtl" className="space-y-3">
@@ -417,7 +536,7 @@ export default function PublicMenuPage() {
                     {activeSuggestions.map((sug) => (
                       <button
                         key={sug.id}
-                        onClick={() => { recordItemClick(sug); setActiveItem(sug); setSelectedSize(sug.sizes?.[0] || null); }}
+                        onClick={() => { recordItemClick(sug); openItem(sug); }}
                         className="text-right group"
                       >
                         <div className="relative w-full aspect-square rounded-xl overflow-hidden mb-2">

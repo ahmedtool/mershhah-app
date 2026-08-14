@@ -57,13 +57,48 @@ const EVENT_LABELS: Record<string, { label: string; icon: React.ReactNode; color
   branch_view: { label: 'فرع', icon: <MapPin className="h-3.5 w-3.5" />, color: '#8b5cf6' },
 };
 
+interface MenuItemReview {
+  id: string;
+  menu_item_id: string;
+  rating: number;
+  comment?: string;
+  created_at: string | null;
+  is_visible?: boolean;
+}
+
 export default function ReviewsPage() {
   const { user, isLoading: isUserLoading } = useUser();
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [itemReviews, setItemReviews] = useState<MenuItemReview[]>([]);
+  const [itemNames, setItemNames] = useState<Record<string, string>>({});
   const [events, setEvents] = useState<PageEvent[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [updatingVisibility, startVisibilityUpdate] = useTransition();
-  const [activeTab, setActiveTab] = useState<'overview' | 'sources' | 'events' | 'reviews'>('overview');
+  const [updatingItemVisibility, startItemVisibilityUpdate] = useTransition();
+  const [activeTab, setActiveTab] = useState<'overview' | 'sources' | 'events' | 'reviews' | 'products'>('overview');
+
+  const fetchItemReviews = async () => {
+    if (!user?.restaurantId) return;
+    const [itemReviewsRes, itemsRes] = await Promise.all([
+      supabase.from('menu_item_reviews').select('*').eq('restaurant_id', user.restaurantId).order('created_at', { ascending: false }),
+      supabase.from('menu_items').select('id, name').eq('restaurant_id', user.restaurantId),
+    ]);
+    if (!itemReviewsRes.error) setItemReviews((itemReviewsRes.data || []) as MenuItemReview[]);
+    if (!itemsRes.error) {
+      const names: Record<string, string> = {};
+      (itemsRes.data || []).forEach((i: any) => { names[i.id] = i.name; });
+      setItemNames(names);
+    }
+  };
+
+  const handleItemVisibilityToggle = (reviewId: string, newVisibility: boolean) => {
+    startItemVisibilityUpdate(async () => {
+      const { error } = await supabase.from('menu_item_reviews').update({ is_visible: newVisibility }).eq('id', reviewId);
+      if (error) return;
+      fetchItemReviews();
+      if (user?.restaurantId) syncPublicPage(user.restaurantId).catch(() => {});
+    });
+  };
 
   const fetchReviews = async () => {
     if (!user?.restaurantId) return;
@@ -92,6 +127,7 @@ export default function ReviewsPage() {
     if (user?.restaurantId) {
       fetchReviews();
       fetchEvents();
+      fetchItemReviews();
       const channel = supabase
         .channel(`reviews-${user.restaurantId}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'reviews', filter: `restaurant_id=eq.${user.restaurantId}` }, fetchReviews)
@@ -100,10 +136,15 @@ export default function ReviewsPage() {
         .channel(`events-${user.restaurantId}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: 'page_events', filter: `restaurant_id=eq.${user.restaurantId}` }, fetchEvents)
         .subscribe();
-      return () => { supabase.removeChannel(channel); supabase.removeChannel(eventsChannel); };
+      const itemReviewsChannel = supabase
+        .channel(`item-reviews-${user.restaurantId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_item_reviews', filter: `restaurant_id=eq.${user.restaurantId}` }, fetchItemReviews)
+        .subscribe();
+      return () => { supabase.removeChannel(channel); supabase.removeChannel(eventsChannel); supabase.removeChannel(itemReviewsChannel); };
     } else if (!isUserLoading) {
       setIsLoadingData(false);
     }
+    return undefined;
   }, [user, isUserLoading]);
 
   const stats = useMemo(() => {
@@ -222,6 +263,7 @@ export default function ReviewsPage() {
           { id: 'sources', label: 'المصادر' },
           { id: 'events', label: 'الأحداث' },
           { id: 'reviews', label: 'التقييمات' },
+          { id: 'products', label: 'تقييمات المنتجات' },
         ].map(tab => (
           <button
             key={tab.id}
@@ -458,6 +500,47 @@ export default function ReviewsPage() {
                     <button
                       onClick={() => handleVisibilityToggle(review.id, !isVisible)}
                       disabled={updatingVisibility}
+                      className={`relative w-9 h-5 rounded-full transition-colors ${isVisible ? 'bg-gray-900' : 'bg-gray-200'}`}
+                    >
+                      <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${isVisible ? 'right-0.5' : 'right-[18px]'}`} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'products' && (
+        <div className="bg-white border border-gray-100 rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-gray-900 mb-4">تقييمات المنتجات</h3>
+          <div className="space-y-3 max-h-[32rem] overflow-y-auto">
+            {itemReviews.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-8">لا توجد تقييمات منتجات بعد.</p>
+            ) : itemReviews.map(review => {
+              const isVisible = review.is_visible !== false;
+              return (
+                <div key={review.id} className="border border-gray-100 rounded-xl p-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map(s => (
+                          <Star key={s} className={`h-3 w-3 ${review.rating >= s ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} />
+                        ))}
+                      </div>
+                      <span className="text-[10px] font-bold text-gray-600">{itemNames[review.menu_item_id] || 'صنف محذوف'}</span>
+                    </div>
+                    <span className="text-[9px] text-gray-300">
+                      {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: ar }) : ''}
+                    </span>
+                  </div>
+                  {review.comment && <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">{review.comment}</p>}
+                  <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-gray-50">
+                    <span className="text-[9px] text-gray-300">{isVisible ? 'معروض' : 'مخفي'}</span>
+                    <button
+                      onClick={() => handleItemVisibilityToggle(review.id, !isVisible)}
+                      disabled={updatingItemVisibility}
                       className={`relative w-9 h-5 rounded-full transition-colors ${isVisible ? 'bg-gray-900' : 'bg-gray-200'}`}
                     >
                       <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${isVisible ? 'right-0.5' : 'right-[18px]'}`} />

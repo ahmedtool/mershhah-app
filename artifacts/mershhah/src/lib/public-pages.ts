@@ -93,7 +93,7 @@ export async function syncPublicPage(restaurantId: string): Promise<void> {
 
     const now = new Date();
 
-    const [menuRes, branchesRes, offersRes, reviewsRes] = await Promise.all([
+    const [menuRes, branchesRes, offersRes, reviewsRes, itemReviewsRes] = await Promise.all([
       supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId),
       supabase.from('branches').select('*').eq('restaurant_id', restaurantId).eq('status', 'active'),
       supabase.from('offers').select('*').eq('restaurant_id', restaurantId).eq('status', 'active'),
@@ -103,9 +103,28 @@ export async function syncPublicPage(restaurantId: string): Promise<void> {
         .eq('restaurant_id', restaurantId)
         .order('created_at', { ascending: false })
         .limit(100),
+      supabase
+        .from('menu_item_reviews')
+        .select('menu_item_id, rating')
+        .eq('restaurant_id', restaurantId)
+        .neq('is_visible', false),
     ]);
 
-    const menu = menuRes.data || [];
+    // Embed each item's average rating/count so the public menu page needs
+    // no extra query - mirrors how the restaurant-level rating is embedded.
+    const itemRatings = new Map<string, { total: number; count: number }>();
+    (itemReviewsRes.data || []).forEach((r: any) => {
+      const bucket = itemRatings.get(r.menu_item_id) || { total: 0, count: 0 };
+      bucket.total += r.rating || 0;
+      bucket.count += 1;
+      itemRatings.set(r.menu_item_id, bucket);
+    });
+    const menu = (menuRes.data || []).map((item: any) => {
+      const bucket = itemRatings.get(item.id);
+      return bucket
+        ? { ...item, rating: bucket.total / bucket.count, review_count: bucket.count }
+        : item;
+    });
     const branches = branchesRes.data || [];
 
     const offers = (offersRes.data || []).filter((o: any) => {

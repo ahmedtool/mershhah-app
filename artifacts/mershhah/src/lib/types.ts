@@ -122,6 +122,18 @@ export type MenuItem = {
   calories?: number; // Total calories (for simple items without sizes)
   allergens?: string[]; // e.g. ["مكسرات", "حليب", "قمح", "بيض", "سمك"]
   classification?: 'Star' | 'Plow-Horse' | 'Puzzle' | 'Dog';
+  rating?: number; // average rating from menu_item_reviews, embedded at sync-time
+  review_count?: number;
+};
+
+export type MenuItemReview = {
+  id: string;
+  menu_item_id: string;
+  restaurant_id: string;
+  rating: number;
+  comment?: string | null;
+  is_visible?: boolean;
+  created_at?: any;
 };
 
 export type Offer = {

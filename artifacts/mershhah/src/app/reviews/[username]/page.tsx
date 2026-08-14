@@ -220,6 +220,10 @@ export default function PublicReviewsPage() {
     );
   }
 
+  // Tag chips/counts only make sense against reviews that have text to match
+  // keywords in - but the review list itself should show every visible
+  // review, comment or not (a star-only review shouldn't be silently hidden
+  // from the feed while still counting toward the average above it).
   const reviewsWithComments = reviews.filter(r => r.comment);
   const primaryColor = restaurant?.primaryColor || '#111827';
   const themeStyle = getPublicThemeStyle(restaurant);
@@ -343,10 +347,10 @@ export default function PublicReviewsPage() {
             </div>
           )}
 
-          {reviewsWithComments.length === 0 ? (
+          {reviews.length === 0 ? (
             <div className="text-center py-16 space-y-3">
               <Star className="h-10 w-10 text-gray-200 mx-auto" />
-              <p className="text-sm text-gray-400">لا توجد تعليقات بعد</p>
+              <p className="text-sm text-gray-400">لا توجد تقييمات بعد</p>
               <button
                 onClick={() => setDialogOpen(true)}
                 className="text-xs font-bold mt-2"
@@ -357,7 +361,7 @@ export default function PublicReviewsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {reviewsWithComments
+              {reviews
                 .filter(r => {
                   if (!filterTag) return true;
                   const tag = reviewTags.find(t => t.id === filterTag);
@@ -380,7 +384,7 @@ export default function PublicReviewsPage() {
                         : ''}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 leading-relaxed">{review.comment}</p>
+                  {review.comment && <p className="text-sm text-gray-600 leading-relaxed">{review.comment}</p>}
                 </div>
               ))}
             </div>
