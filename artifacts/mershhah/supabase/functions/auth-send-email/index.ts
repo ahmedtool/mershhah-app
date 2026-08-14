@@ -112,10 +112,11 @@ function templateFor(actionType: string, name: string, linkOrCode: { url?: strin
 const WELCOME_ACTION_TYPES = new Set(["signup", "invite"]);
 
 function fromFor(actionType: string): string {
-  if (WELCOME_ACTION_TYPES.has(actionType)) {
-    return Deno.env.get("SNDR_FROM_WELCOME") || "welcome@mershhah.com";
-  }
-  return Deno.env.get("SNDR_FROM_AUTH") || "auth@mershhah.com";
+  const address = WELCOME_ACTION_TYPES.has(actionType)
+    ? Deno.env.get("SNDR_FROM_WELCOME") || "welcome@mershhah.com"
+    : Deno.env.get("SNDR_FROM_AUTH") || "auth@mershhah.com";
+  // Latin-only name: a raw Arabic name previously broke SNDR sends outright.
+  return `Mershhah <${address}>`;
 }
 
 async function sendViaSndr(apiKey: string, from: string, to: string, subject: string, html: string) {
