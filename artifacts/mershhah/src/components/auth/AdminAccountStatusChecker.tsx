@@ -11,6 +11,7 @@ const routePermissions: Record<string, string> = {
     '/admin/management': 'management',
     '/admin/financials': 'financials',
     '/admin/store-management': 'store-management',
+    '/admin/shared-products': 'shared-products',
     '/admin/applications': 'applications',
     '/admin/announcements': 'announcements',
     '/admin/support': 'support',
