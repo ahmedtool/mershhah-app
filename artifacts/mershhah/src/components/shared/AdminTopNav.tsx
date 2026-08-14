@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Tag,
   FileText,
+  CupSoda,
 } from 'lucide-react';
 
 const SUPER_ADMIN_EMAIL = 'ahmedsupsa@gmail.com';
@@ -38,6 +39,7 @@ export function AdminTopNav() {
     { href: '/admin/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard, permissionId: 'dashboard' },
     { href: '/admin/management', label: 'المشتركين', icon: Building, permissionId: 'management' },
     { href: '/admin/store-management', label: 'إدارة المتجر', icon: Store, permissionId: 'store-management' },
+    { href: '/admin/shared-products', label: 'مكتبة المنتجات', icon: CupSoda, permissionId: 'shared-products' },
     { href: '/admin/applications', label: 'التطبيقات', icon: AppWindow, permissionId: 'applications' },
     { href: '/admin/announcements', label: 'الإعلانات', icon: Megaphone, permissionId: 'announcements' },
     { href: '/admin/blog', label: 'المدونة', icon: FileText, permissionId: 'blog' },
