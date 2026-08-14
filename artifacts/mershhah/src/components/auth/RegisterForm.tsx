@@ -142,6 +142,11 @@ export function RegisterForm() {
         );
       }
 
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-welcome-email`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${authData.session.access_token}` },
+      }).catch(() => {});
+
       toast({ title: 'تم التسجيل!', description: isAdmin ? 'أهلاً بك أيها المدير.' : 'تم تفعيل الباقة المجانية.' });
       router.push(isAdmin ? '/admin/dashboard' : '/owner/dashboard');
       router.refresh();
