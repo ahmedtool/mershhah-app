@@ -106,7 +106,7 @@ export default function AiAssistantPage() {
     // before any message insert or it fails with a 409 FK violation. 23505
     // (duplicate id) is expected on repeat visits within the same session.
     if (!sessionId || !restaurant?.id) return;
-    supabase.from('ai_sessions').insert({ id: sessionId, restaurant_id: restaurant.id }).then(({ error }) => {
+    supabase.from('ai_sessions').insert({ id: sessionId, restaurant_id: restaurant.id }).then(({ error }: { error: any }) => {
       if (error && error.code !== '23505') console.error('[ai_sessions] insert failed', error);
     });
   }, [sessionId, restaurant?.id]);

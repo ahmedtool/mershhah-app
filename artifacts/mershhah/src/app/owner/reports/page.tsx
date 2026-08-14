@@ -29,7 +29,9 @@ import { classifyMenuItems, CLASSIFICATION_INFO, type MenuClassification } from 
 import { buildInsights, type Insight } from '@/lib/report-insights';
 import { REVIEW_TAGS, countReviewsByTag } from '@/lib/review-tags';
 
-type AnalyzedItem = MenuItem & {
+// Omit MenuItem's own (differently-cased) `classification` field so it
+// doesn't collide with this page's lowercase MenuClassification below.
+type AnalyzedItem = Omit<MenuItem, 'classification'> & {
     popularity: number;
     profitMargin: number;
 };

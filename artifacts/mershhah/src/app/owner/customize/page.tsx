@@ -104,7 +104,7 @@ export default function CustomizePage() {
                 .select('id, name, applications')
                 .eq('restaurant_id', user.restaurantId)
                 .order('name');
-            setBranches((branchesData || []).map(b => ({ ...b, applications: Array.isArray(b.applications) ? b.applications : [] })));
+            setBranches((branchesData || []).map((b: any) => ({ ...b, applications: Array.isArray(b.applications) ? b.applications : [] })));
         } catch (serverError: any) {
             console.error("Error fetching branches:", serverError);
         }

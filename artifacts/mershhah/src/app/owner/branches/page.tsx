@@ -22,7 +22,7 @@ export default function BranchesPage() {
 
   useEffect(() => {
     if (!restaurantId) return;
-    supabase.from('restaurants').select('username').eq('id', restaurantId).single().then(({ data }) => setUsername(data?.username ?? null));
+    supabase.from('restaurants').select('username').eq('id', restaurantId).single().then(({ data }: { data: any }) => setUsername(data?.username ?? null));
   }, [restaurantId]);
 
   const fetchBranches = async () => {

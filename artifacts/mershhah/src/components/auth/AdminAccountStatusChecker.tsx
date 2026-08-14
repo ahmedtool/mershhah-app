@@ -48,6 +48,7 @@ export function AdminAccountStatusChecker({ children }: { children: React.ReactN
             const t = setTimeout(() => setReady(true), 300);
             return () => clearTimeout(t);
         }
+        return undefined;
     }, [isLoading, user]);
 
     if (isLoading || !ready) {

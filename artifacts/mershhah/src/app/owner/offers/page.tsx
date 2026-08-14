@@ -41,7 +41,7 @@ export default function OffersPage() {
       setRestaurantId(restId);
       setIsFetchingData(true);
       fetchOffers(restId).finally(() => setIsFetchingData(false));
-      supabase.from('branches').select('*').eq('restaurant_id', restId).then(({ data }) => setBranches((data || []) as Branch[]));
+      supabase.from('branches').select('*').eq('restaurant_id', restId).then(({ data }: { data: any[] | null }) => setBranches((data || []) as Branch[]));
 
       const channel = supabase
         .channel(`offers-${restId}`)
