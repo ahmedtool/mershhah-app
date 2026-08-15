@@ -118,7 +118,9 @@ serve(async (req) => {
     if (!emailRes.ok) {
       const errBody = await emailRes.text();
       console.error("[send-login-otp] SNDR send failed:", emailRes.status, errBody);
-      return json({ error: "فشل إرسال كود التحقق. حاول مرة أخرى." }, 500);
+      // TEMP: surfacing the real provider error to the client for live
+      // debugging - revert to a plain generic message once diagnosed.
+      return json({ error: `فشل إرسال كود التحقق (${emailRes.status}): ${errBody}` }, 500);
     }
 
     // Mask the email so the client can confirm where the code went
