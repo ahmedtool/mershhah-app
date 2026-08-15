@@ -20,6 +20,7 @@ import { format, addMonths, isAfter } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RestaurantsTable } from '@/components/admin/management/RestaurantsTable';
+import { ImpersonationAccessCard } from '@/components/admin/management/ImpersonationAccessCard';
 import type { Profile, Subscription } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -366,6 +367,8 @@ function ProfileDetails({
             </button>
           </div>
         </div>
+
+        <ImpersonationAccessCard restaurantId={profile.restaurant_id} />
 
         {/* Account Info */}
         <div className="space-y-3">

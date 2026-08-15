@@ -9,6 +9,7 @@ import { useRouter } from '@/lib/navigation';
 import { Loader2 } from "lucide-react";
 import { DashboardAssistant } from "@/components/dashboard/DashboardAssistant";
 import { AnnouncementBanner } from "@/components/dashboard/AnnouncementBanner";
+import { AccessRequestBanner } from "@/components/dashboard/AccessRequestBanner";
 import { useLanguage } from "@/components/shared/LanguageContext";
 
 function OwnerLayoutContent({ children }: { children: React.ReactNode }) {
@@ -42,6 +43,7 @@ function OwnerLayoutContent({ children }: { children: React.ReactNode }) {
       <div dir={dir} className="min-h-screen bg-gray-50/50">
         <OwnerTopNav />
         <main className="p-4 sm:p-6">
+          <AccessRequestBanner />
           <AnnouncementBanner />
           <AccountStatusChecker>
             {children}
