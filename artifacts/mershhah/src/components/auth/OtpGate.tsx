@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from '@/lib/navigation';
+import { useRouter, useSearchParams } from '@/lib/navigation';
 import { Loader2, ShieldCheck, RotateCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -28,7 +28,9 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
   const { user, isLoading: isUserLoading } = useUser();
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isVerified, setIsVerified] = useState(false);
+  const [isCheckingGrant, setIsCheckingGrant] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [maskedEmail, setMaskedEmail] = useState('');
   const [code, setCode] = useState(['', '', '', '']);
@@ -88,10 +90,31 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
     // re-rendered, firing an OTP send that then got silently bypassed.
     const verified = sessionStorage.getItem(sessionKey(user.uid)) === '1';
     setIsVerified(verified);
-    if (needsOtp && !verified && sentForUid.current !== user.uid) {
-      sentForUid.current = user.uid;
-      sendCode();
+    if (verified || sentForUid.current === user.uid) return;
+    sentForUid.current = user.uid;
+
+    // A session opened via an owner-approved temporary-access grant (see
+    // enter-owner-account) carries this param — the owner's own explicit
+    // approval already outranks a 4-digit email code, and there'd be no way
+    // for whoever is in this tab to receive a code sent to the owner's inbox.
+    const grantId = searchParams.get('impersonation_grant');
+    if (grantId) {
+      setIsCheckingGrant(true);
+      callOtpFunction('verify-impersonation-grant', { requestId: grantId }).then(({ ok, data }) => {
+        setIsCheckingGrant(false);
+        // Strip the param either way so it can't be replayed via a bookmark/share.
+        window.history.replaceState({}, '', window.location.pathname);
+        if (ok && data.valid) {
+          sessionStorage.setItem(sessionKey(user.uid), '1');
+          setIsVerified(true);
+        } else if (needsOtp) {
+          sendCode();
+        }
+      });
+      return;
     }
+
+    if (needsOtp) sendCode();
   }, [needsOtp, user]);
 
   useEffect(() => {
@@ -162,6 +185,13 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
   };
 
   if (isUserLoading || !user) return <>{children}</>;
+  if (isCheckingGrant) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-300" />
+      </div>
+    );
+  }
   if (!needsOtp || isVerified || providerUnavailable) return <>{children}</>;
 
   return (

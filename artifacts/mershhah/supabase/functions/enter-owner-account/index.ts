@@ -60,11 +60,15 @@ serve(async (req) => {
     const { data: ownerProfile } = await supabase.from("profiles").select("email").eq("id", restaurant.owner_id).single();
     if (!ownerProfile?.email) return json({ error: "بريد صاحب المطعم غير موجود" }, 500);
 
+    // impersonation_grant on the redirect lets OtpGate recognize this
+    // session came from an owner-approved entry and skip the OTP prompt -
+    // the owner's explicit approval already outranks a 4-digit email code,
+    // and the admin has no way to receive a code sent to the owner's inbox.
     const siteUrl = Deno.env.get("SITE_URL") || "https://www.mershhah.com";
     const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
       type: "magiclink",
       email: ownerProfile.email,
-      options: { redirectTo: `${siteUrl}/owner/dashboard` },
+      options: { redirectTo: `${siteUrl}/owner/dashboard?impersonation_grant=${requestId}` },
     });
     if (linkError) return json({ error: linkError.message }, 500);
 
