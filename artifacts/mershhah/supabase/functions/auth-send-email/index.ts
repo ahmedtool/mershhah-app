@@ -112,11 +112,11 @@ function templateFor(actionType: string, name: string, linkOrCode: { url?: strin
 const WELCOME_ACTION_TYPES = new Set(["signup", "invite"]);
 
 function fromFor(actionType: string): string {
-  const address = WELCOME_ACTION_TYPES.has(actionType)
+  // SNDR's `from` field rejects any display name, Arabic or Latin - bare
+  // email only (confirmed live via their validation error). Don't retry this.
+  return WELCOME_ACTION_TYPES.has(actionType)
     ? Deno.env.get("SNDR_FROM_WELCOME") || "welcome@mershhah.com"
     : Deno.env.get("SNDR_FROM_AUTH") || "auth@mershhah.com";
-  // Latin-only name: a raw Arabic name previously broke SNDR sends outright.
-  return `Mershhah <${address}>`;
 }
 
 async function sendViaSndr(apiKey: string, from: string, to: string, subject: string, html: string) {

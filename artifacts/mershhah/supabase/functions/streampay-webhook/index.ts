@@ -89,7 +89,9 @@ const ADMIN_NOTIFICATION_EMAIL = Deno.env.get("ADMIN_NOTIFICATION_EMAIL") || "ah
 
 async function sendEmail(to: string, subject: string, html: string) {
   const sndrApiKey = Deno.env.get("SNDR_API_KEY");
-  const sndrFromEmail = `Mershhah <${Deno.env.get("SNDR_FROM_BILLING") || "billing@mershhah.com"}>`;
+  // SNDR's `from` field rejects any display name, Arabic or Latin - bare
+  // email only (confirmed live via their validation error). Don't retry this.
+  const sndrFromEmail = Deno.env.get("SNDR_FROM_BILLING") || "billing@mershhah.com";
   if (!sndrApiKey) {
     console.error("[StreamPay Webhook] SNDR_API_KEY not configured — skipping email:", subject);
     return;

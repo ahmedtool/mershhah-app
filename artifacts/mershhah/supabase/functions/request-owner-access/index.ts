@@ -99,7 +99,8 @@ serve(async (req) => {
         method: "POST",
         headers: { Authorization: `Bearer ${sndrApiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          from: `Mershhah <${Deno.env.get("SNDR_FROM_AUTH") || "auth@mershhah.com"}>`,
+          // SNDR's `from` field rejects any display name - bare email only.
+          from: Deno.env.get("SNDR_FROM_AUTH") || "auth@mershhah.com",
           to: [ownerProfile.email],
           subject: "طلب دخول مؤقت لحسابك - مرشح",
           html,

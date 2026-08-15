@@ -25,10 +25,12 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sndrApiKey = Deno.env.get("SNDR_API_KEY");
-    // Latin-only display name: a raw Arabic name here previously broke SNDR
-    // sends outright (reverted once already) - ASCII avoids whatever header
-    // encoding SNDR's API doesn't handle for non-ASCII "From" names.
-    const sndrFromEmail = `Mershhah <${Deno.env.get("SNDR_FROM_AUTH") || "auth@mershhah.com"}>`;
+    // SNDR's `from` field only accepts a bare email address - confirmed live
+    // via their own validation error ("field \"from\" failed validation rule
+    // \"email\""), for BOTH an Arabic name and a Latin-only name. No display
+    // name support in this field at all; don't retry this again without
+    // finding a separate sender-name field in their API first.
+    const sndrFromEmail = Deno.env.get("SNDR_FROM_AUTH") || "auth@mershhah.com";
 
     if (!sndrApiKey) {
       return json({ error: "Email provider not configured. Please contact support." }, 500);
@@ -118,9 +120,7 @@ serve(async (req) => {
     if (!emailRes.ok) {
       const errBody = await emailRes.text();
       console.error("[send-login-otp] SNDR send failed:", emailRes.status, errBody);
-      // TEMP: surfacing the real provider error to the client for live
-      // debugging - revert to a plain generic message once diagnosed.
-      return json({ error: `فشل إرسال كود التحقق (${emailRes.status}): ${errBody}` }, 500);
+      return json({ error: "فشل إرسال كود التحقق. حاول مرة أخرى." }, 500);
     }
 
     // Mask the email so the client can confirm where the code went

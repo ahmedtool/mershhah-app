@@ -28,7 +28,9 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sndrApiKey = Deno.env.get("SNDR_API_KEY");
-    const sndrFromEmail = `Mershhah <${Deno.env.get("SNDR_FROM_WELCOME") || "welcome@mershhah.com"}>`;
+    // SNDR's `from` field rejects any display name, Arabic or Latin - bare
+    // email only (confirmed live via their validation error). Don't retry this.
+    const sndrFromEmail = Deno.env.get("SNDR_FROM_WELCOME") || "welcome@mershhah.com";
 
     if (!sndrApiKey) return json({ error: "not configured" }, 500);
 
