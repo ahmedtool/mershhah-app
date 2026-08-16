@@ -9,6 +9,10 @@ import { useCouponCheck } from '@/hooks/useCouponCheck';
 import { usePlanCheckout } from '@/hooks/usePlanCheckout';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Plans hidden from every customer-facing screen (dev-only test plans, etc.)
+// but still fully valid for a real checkout if visited directly by id.
+const HIDDEN_PLAN_IDS = ['93250b42-d34c-4996-8d83-359ea26ab264'];
+
 interface PlanPricingGridProps {
   currentPlanId?: string;
   isCurrentSubscriptionExpired?: boolean;
@@ -16,21 +20,20 @@ interface PlanPricingGridProps {
 
 // Single source of truth for plan pricing/checkout — used by AccountStatusChecker
 // (onboarding gate), owner/billing, and owner/settings, which each used to fetch
-// plans and render their own slightly-diverged card grid.
+// plans and render their own slightly-diverged card grid. Yearly-only billing.
 export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }: PlanPricingGridProps) {
   const [plans, setPlans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [cycle, setCycle] = useState<'monthly' | 'yearly'>('monthly');
   const { couponCode, setCouponCode, couponDiscount, isCheckingCoupon, checkCoupon, applyDiscount } = useCouponCheck();
   const { checkout, isCheckingOut, isCheckoutInProgress } = usePlanCheckout();
 
   useEffect(() => {
-    supabase.from('plans').select('*').eq('is_active', true).order('price_monthly').then(({ data }: { data: any[] | null }) => {
-      const fetched = data || [];
+    supabase.from('plans').select('*').eq('is_active', true).order('price_yearly').then(({ data }: { data: any[] | null }) => {
+      const fetched = (data || []).filter((p: any) => !HIDDEN_PLAN_IDS.includes(p.id));
       fetched.sort((a: any, b: any) => {
         if (a.is_featured && !b.is_featured) return -1;
         if (!a.is_featured && b.is_featured) return 1;
-        return (a.price_monthly || 0) - (b.price_monthly || 0);
+        return (a.price_yearly || 0) - (b.price_yearly || 0);
       });
       setPlans(fetched);
       setIsLoading(false);
@@ -47,15 +50,7 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="flex bg-gray-100 rounded-xl p-0.5">
-          <button onClick={() => setCycle('monthly')} className={cn("h-8 px-4 rounded-lg text-[11px] font-bold transition-all", cycle === 'monthly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400')}>
-            شهري
-          </button>
-          <button onClick={() => setCycle('yearly')} className={cn("h-8 px-4 rounded-lg text-[11px] font-bold transition-all", cycle === 'yearly' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400')}>
-            سنوي
-          </button>
-        </div>
+      <div className="flex justify-end">
         <div className="flex gap-2 w-full sm:w-auto">
           <input
             type="text"
@@ -82,11 +77,12 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
         {plans.map((plan) => {
-          const originalPrice = cycle === 'yearly' ? (plan.price_yearly || 0) : (plan.price_monthly || 0);
+          const originalPrice = plan.price_yearly || 0;
           const price = applyDiscount(originalPrice);
+          const isFree = originalPrice === 0;
           const isCurrentPlan = currentPlanId === plan.id && !isCurrentSubscriptionExpired;
           const features = Object.entries(plan.features || {});
-          const checking = isCheckingOut(plan.id, cycle);
+          const checking = isCheckingOut(plan.id, 'yearly');
 
           return (
             <div key={plan.id} className={cn(
@@ -104,13 +100,14 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
               </div>
 
               <div className="px-5 py-4 border-b border-gray-100">
-                <div className="flex items-baseline gap-1">
-                  {couponDiscount && price !== originalPrice && <span className="text-xs text-gray-300 line-through">{originalPrice}</span>}
-                  <span className="text-2xl font-black text-gray-900">{price}</span>
-                  <span className="text-xs text-gray-400">ر.س/{cycle === 'yearly' ? 'سنة' : 'شهر'}</span>
-                </div>
-                {cycle === 'yearly' && plan.price_monthly > 0 && plan.price_yearly > 0 && (
-                  <p className="text-[10px] text-emerald-600 font-bold mt-1">وفّر {Math.round((1 - plan.price_yearly / (plan.price_monthly * 12)) * 100)}% سنوياً</p>
+                {isFree ? (
+                  <span className="text-2xl font-black text-gray-900">مجاني</span>
+                ) : (
+                  <div className="flex items-baseline gap-1">
+                    {couponDiscount && price !== originalPrice && <span className="text-xs text-gray-300 line-through">{originalPrice}</span>}
+                    <span className="text-2xl font-black text-gray-900">{price}</span>
+                    <span className="text-xs text-gray-400">ر.س/سنة</span>
+                  </div>
                 )}
                 {plan.trial_days > 0 && <p className="text-[10px] text-amber-600 font-bold mt-1">فترة تجربة {plan.trial_days} يوم</p>}
               </div>
@@ -133,11 +130,12 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
 
               <div className="px-5 pb-5">
                 <button
-                  onClick={() => checkout(plan.id, cycle, couponCode)}
-                  disabled={isCurrentPlan || isCheckoutInProgress}
+                  onClick={() => checkout(plan.id, 'yearly', couponCode)}
+                  disabled={isCurrentPlan || isCheckoutInProgress || isFree}
                   className={cn(
                     "w-full h-11 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2",
                     isCurrentPlan ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : isFree ? 'bg-gray-50 text-gray-400 cursor-default'
                       : checking ? 'bg-gray-400 text-white cursor-wait'
                       : plan.is_featured ? 'bg-gray-900 text-white hover:bg-gray-800'
                       : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -145,9 +143,11 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
                 >
                   {isCurrentPlan
                     ? 'الباقة الحالية'
+                    : isFree
+                    ? 'الباقة المجانية'
                     : checking
                     ? <><Loader2 className="h-4 w-4 animate-spin" /> جاري التوجيه...</>
-                    : cycle === 'yearly' ? 'اشتراك سنوي' : 'اشتراك شهري'}
+                    : 'اشتراك سنوي'}
                 </button>
               </div>
             </div>

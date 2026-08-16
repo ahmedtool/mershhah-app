@@ -8,9 +8,11 @@ import { Link } from "wouter";
 import { PublicFooter } from "@/components/shared/PublicFooter";
 import { supabase } from "@/lib/supabase";
 import type { Plan } from "@/lib/types";
-import { getPlanFeatures } from "@/lib/plan-features";
 import { describeFeature } from "@/lib/plan-feature-labels";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Dev-only test plans, hidden from every customer-facing screen.
+const HIDDEN_PLAN_IDS = ['93250b42-d34c-4996-8d83-359ea26ab264'];
 
 export default function PricingPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -21,11 +23,11 @@ export default function PricingPage() {
       setIsLoading(true);
       try {
         const { data } = await supabase.from("plans").select("*").eq("is_active", true);
-        const fetched = (data || []) as Plan[];
+        const fetched = ((data || []) as Plan[]).filter((p) => !HIDDEN_PLAN_IDS.includes(p.id));
         fetched.sort((a, b) => {
           if (a.is_featured && !b.is_featured) return -1;
           if (!a.is_featured && b.is_featured) return 1;
-          return (a.price ?? 0) - (b.price ?? 0);
+          return (a.price_yearly ?? 0) - (b.price_yearly ?? 0);
         });
         setPlans(fetched);
       } catch {
@@ -68,8 +70,8 @@ export default function PricingPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {plans.map((plan) => {
-                const features = plan.features && Object.keys(plan.features).length > 0 ? plan.features : getPlanFeatures(plan.id);
-                const isFree = (plan.price ?? 0) === 0;
+                const features = plan.features || {};
+                const isFree = (plan.price_yearly ?? 0) === 0;
                 const ctaHref = isFree ? "/register" : (plan.payment_link || "/register");
                 const ctaLabel = isFree ? "ابدأ مجاناً" : "اختر هذه الباقة";
                 const isExternal = ctaHref.startsWith("http");
@@ -85,12 +87,18 @@ export default function PricingPage() {
                       <h3 className="text-base font-bold text-gray-900 mb-1">{plan.name}</h3>
                       <p className="text-[11px] text-gray-400">{plan.description || ''}</p>
                     </div>
-                    <div className="flex items-baseline gap-1.5 mb-1">
-                      <span className="text-3xl font-black text-gray-900">{plan.price ?? 0}</span>
-                      <span className="text-sm font-bold text-gray-400">ر.س</span>
-                    </div>
+                    {isFree ? (
+                      <div className="flex items-baseline gap-1.5 mb-1">
+                        <span className="text-3xl font-black text-gray-900">مجاني</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-baseline gap-1.5 mb-1">
+                        <span className="text-3xl font-black text-gray-900">{plan.price_yearly}</span>
+                        <span className="text-sm font-bold text-gray-400">ر.س</span>
+                      </div>
+                    )}
                     <p className="text-[10px] text-gray-300 mb-6">
-                      {(plan.price ?? 0) === 0 ? 'دائماً مجاناً' : `لكل ${plan.duration_months ?? 1} أشهر`}
+                      {isFree ? 'دائماً مجاناً' : 'سنوياً'}
                     </p>
                     <div className="border-t border-gray-100 pt-5 mb-6 flex-1">
                       <ul className="space-y-2.5">

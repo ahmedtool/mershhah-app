@@ -23,8 +23,7 @@ const TOGGLE_FEATURE_KEYS = ['ai_analysis', 'custom_domain', 'api_access', 'whit
 const formSchema = z.object({
   name: z.string().min(3, 'اسم الباقة يجب أن يكون 3 أحرف على الأقل.'),
   description: z.string().optional(),
-  price: z.coerce.number().min(0, 'السعر يجب أن يكون 0 أو أكثر.'),
-  duration_months: z.coerce.number().int().min(1, 'المدة يجب أن تكون شهرًا واحدًا على الأقل.'),
+  price_yearly: z.coerce.number().min(0, 'السعر يجب أن يكون 0 أو أكثر.'),
   payment_link: z
     .string()
     .url({ message: 'الرجاء إدخال رابط دفع صحيح.' })
@@ -51,7 +50,7 @@ interface EditPlanDialogProps {
 }
 
 const defaultValues: FormValues = {
-  name: '', description: '', price: 0, duration_months: 1,
+  name: '', description: '', price_yearly: 0,
   payment_link: '', is_active: true, is_featured: false,
   max_branches: 1, max_menu_items: 30, max_tools: 2,
   ai_analysis: false, custom_domain: false, api_access: false, white_label: false, priority_support: false,
@@ -75,8 +74,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
         form.reset({
           name: plan.name,
           description: plan.description,
-          price: plan.price,
-          duration_months: plan.duration_months,
+          price_yearly: plan.price_yearly || plan.price || 0,
           payment_link: plan.payment_link || '',
           is_active: plan.is_active,
           is_featured: plan.is_featured,
@@ -103,9 +101,26 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
 
         const {
           ai_analysis, custom_domain, api_access, white_label, priority_support,
+          price_yearly,
           ...rest
         } = values;
-        const payload: any = { ...rest, features };
+        // Yearly-only billing: price_monthly/duration_months are legacy
+        // columns kept for old subscription rows, never edited here again.
+        const payload: any = {
+          ...rest,
+          price_yearly,
+          price: price_yearly,
+          price_monthly: 0,
+          duration_months: 12,
+          features,
+        };
+
+        // Reusing a StreamPay product across a price change would silently
+        // keep charging the old amount on the old terms - force a fresh one
+        // next checkout.
+        if (isEditing && plan && Number(plan.price_yearly ?? plan.price ?? 0) !== price_yearly) {
+          payload.streampay_product_id = null;
+        }
 
         if (isEditing && plan) {
           const { error } = await supabase.from('plans').update(payload).eq('id', plan.id);
@@ -165,27 +180,17 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
               </FormItem>
             )} />
 
-            {/* Price & Duration */}
-            <div className="grid grid-cols-2 gap-3">
-              <FormField control={form.control} name="price" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-gray-500">السعر (ر.س)</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
-                  </FormControl>
-                  <FormMessage className="text-[10px]" />
-                </FormItem>
-              )} />
-              <FormField control={form.control} name="duration_months" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs text-gray-500">المدة (بالأشهر)</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
-                  </FormControl>
-                  <FormMessage className="text-[10px]" />
-                </FormItem>
-              )} />
-            </div>
+            {/* Price (yearly-only billing) */}
+            <FormField control={form.control} name="price_yearly" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs text-gray-500">السعر السنوي (ر.س) — 0 = مجانية</FormLabel>
+                <FormControl>
+                  <Input type="number" min={0} {...field} className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
+                </FormControl>
+                <p className="text-[10px] text-gray-300">كل الباقات سنوية فقط — لا يوجد تسعير شهري</p>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )} />
 
             {/* Payment Link */}
             <FormField control={form.control} name="payment_link" render={({ field }) => (

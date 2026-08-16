@@ -29,6 +29,7 @@ type ManagementPlan = {
   name: string;
   price: number;
   price_monthly: number;
+  price_yearly: number;
   duration_months: number;
   is_featured: boolean;
 };
@@ -66,7 +67,7 @@ function ProfileDetails({
   useEffect(() => {
     const fetchPlans = async () => {
       const { data } = await supabase.from('plans')
-        .select('id, name, price, price_monthly, duration_months, is_featured')
+        .select('id, name, price, price_monthly, price_yearly, duration_months, is_featured')
         .eq('is_active', true);
       const plans = (data || []) as ManagementPlan[];
       setActivePlans(plans);
@@ -197,7 +198,8 @@ function ProfileDetails({
           startDate = subEndDate;
         }
         const endDate = addMonths(startDate, selectedPlan.duration_months || 1);
-        const planAmount = selectedPlan.price_monthly || selectedPlan.price || 0;
+        const isYearlyPlan = (selectedPlan.duration_months || 1) >= 12;
+        const planAmount = (isYearlyPlan ? selectedPlan.price_yearly : selectedPlan.price_monthly) || selectedPlan.price || 0;
 
         const { data: newSub, error: subErr } = await supabase.from('subscriptions').insert({
           id: crypto.randomUUID(),
@@ -205,7 +207,7 @@ function ProfileDetails({
           plan_name: selectedPlan.name,
           plan_id: selectedPlan.id,
           status: 'active',
-          billing_cycle: 'monthly',
+          billing_cycle: isYearlyPlan ? 'yearly' : 'monthly',
           amount: 0,
           start_date: startDate.toISOString(),
           end_date: endDate.toISOString(),
@@ -351,7 +353,7 @@ function ProfileDetails({
               <SelectContent dir="rtl">
                 {activePlans.map((p) => (
                   <SelectItem key={p.id} value={p.id} className="text-xs">
-                    {p.name} — {p.price_monthly || p.price || 0} ر.س / {p.duration_months || 1} أشهر
+                    {p.name} — {(p.duration_months || 1) >= 12 ? `${p.price_yearly || p.price || 0} ر.س/سنة` : `${p.price_monthly || p.price || 0} ر.س / ${p.duration_months || 1} أشهر`}
                   </SelectItem>
                 ))}
               </SelectContent>

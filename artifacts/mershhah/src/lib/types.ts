@@ -357,10 +357,14 @@ export type Plan = {
     description: string;
     description_en?: string; // English description
     price: number;
+    /** Legacy column, kept for old subscription rows - checkout/display use price_yearly. */
+    price_monthly?: number;
+    price_yearly?: number;
     duration_months: number;
     is_active: boolean;
     is_featured: boolean;
     payment_link?: string;
+    streampay_product_id?: string | null;
     /**
      * ميزات الباقة كما يحددها المدير.
      * المفتاح هو اسم الميزة، والقيمة true/false لتحديد إن كانت مشمولة في الباقة.
