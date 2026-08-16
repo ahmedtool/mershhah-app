@@ -13,6 +13,26 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// StreamPay rejects a second POST /consumers for the same email/phone with
+// DUPLICATE_CONSUMER (per their docs, this happens whenever a consumer was
+// created on a prior attempt that didn't finish saving streampay_consumer_id
+// back to our profile row). Their documented fix: search for the existing
+// consumer and reuse its id instead of failing the whole checkout.
+async function findExistingConsumerId(
+  streamApiBase: string,
+  authToken: string,
+  email: string | undefined,
+): Promise<string | null> {
+  if (!email) return null;
+  const res = await fetch(`${streamApiBase}/consumers?search_term=${encodeURIComponent(email)}&limit=20`, {
+    headers: { "x-api-key": authToken },
+  });
+  if (!res.ok) return null;
+  const body = await res.json().catch(() => null);
+  const match = (body?.data || []).find((c: any) => c.email?.toLowerCase() === email.toLowerCase());
+  return match?.id || null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -96,9 +116,15 @@ serve(async (req) => {
       });
       const consumerBody = await consumerRes.text();
       if (!consumerRes.ok) {
-        return json({ error: `Failed to create customer: ${consumerBody}` }, 500);
+        if (consumerBody.includes("DUPLICATE_CONSUMER")) {
+          consumerId = await findExistingConsumerId(streamApiBase, authToken, user.email);
+        }
+        if (!consumerId) {
+          return json({ error: `Failed to create customer: ${consumerBody}` }, 500);
+        }
+      } else {
+        consumerId = JSON.parse(consumerBody).id;
       }
-      consumerId = JSON.parse(consumerBody).id;
       await supabase.from("profiles").update({ streampay_consumer_id: consumerId }).eq("id", user.id);
     }
 
