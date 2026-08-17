@@ -36,6 +36,7 @@ import ReplyTemplatesPage from "@/app/owner/tools/reply-templates/page";
 import SummarizeFeedbackPage from "@/app/owner/tools/summarize-feedback/page";
 import WeeklyContentWriterPage from "@/app/owner/tools/weekly-content-writer/page";
 import SalaryCalculatorPage from "@/app/owner/tools/salary-calculator/page";
+import CostCalculatorPage from "@/app/owner/tools/cost-calculator/page";
 import OwnerSupportPage from "@/app/owner/support/page";
 import OwnerBillingPage from "@/app/owner/billing/page";
 
@@ -137,6 +138,7 @@ function Router() {
       <Route path="/owner/tools/summarize-feedback" component={() => <OW><SummarizeFeedbackPage /></OW>} />
       <Route path="/owner/tools/weekly-content-writer" component={() => <OW><WeeklyContentWriterPage /></OW>} />
       <Route path="/owner/tools/salary-calculator" component={() => <OW><SalaryCalculatorPage /></OW>} />
+      <Route path="/owner/tools/cost-calculator" component={() => <OW><CostCalculatorPage /></OW>} />
       <Route path="/owner/tools/:toolId" component={() => <OW><OwnerToolDetailPage /></OW>} />
       <Route path="/owner/tools" component={() => <OW><OwnerToolsPage /></OW>} />
       <Route path="/owner/support" component={() => <OW><OwnerSupportPage /></OW>} />
