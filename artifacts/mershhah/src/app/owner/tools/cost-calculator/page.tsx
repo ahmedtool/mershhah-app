@@ -84,6 +84,7 @@ export default function CostCalculatorPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [selectedSizeId, setSelectedSizeId] = useState<string>('');
+  const [isLoadingCalc, setIsLoadingCalc] = useState(false);
   const [bulkItemSearch, setBulkItemSearch] = useState('');
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
@@ -143,11 +144,63 @@ export default function CostCalculatorPage() {
   const profitPerServing = hasSellingPrice ? Number(sellingPrice) - costPerServing : 0;
   const profitMarginPercent = hasSellingPrice && Number(sellingPrice) > 0 ? (profitPerServing / Number(sellingPrice)) * 100 : 0;
 
-  const selectProduct = (item: MenuItem) => {
+  const resetCalculationForm = () => {
+    setServings(1);
+    setIngredients([newIngredient()]);
+    setPackagingCost(0);
+    setOverheadPercent(10);
+    setTargetMarginPercent(30);
+    setSellingPrice('');
+  };
+
+  const applySavedCalculation = (calc: any) => {
+    setServings(Number(calc.servings) || 1);
+    const loaded: Ingredient[] = Array.isArray(calc.ingredients) && calc.ingredients.length > 0
+      ? calc.ingredients.map((i: any) => ({
+          id: crypto.randomUUID(),
+          name: i.name || '',
+          packagePrice: Number(i.package_price) || 0,
+          packageQty: Number(i.package_qty) || 0,
+          packageUnit: i.package_unit || 'جرام',
+          usedQty: Number(i.used_qty) || 0,
+          usedUnit: i.used_unit || 'جرام',
+        }))
+      : [newIngredient()];
+    setIngredients(loaded);
+    setPackagingCost(Number(calc.packaging_cost) || 0);
+    setOverheadPercent(Number(calc.overhead_percent) || 0);
+    setTargetMarginPercent(Number(calc.target_margin_percent) || 30);
+    setSellingPrice(calc.selling_price != null ? Number(calc.selling_price) : '');
+  };
+
+  const selectProduct = async (item: MenuItem) => {
     setSelectedItem(item);
     setProductName(item.name);
     setSelectedSizeId(item.sizes?.[0]?.id || '');
     setShowSuggestions(false);
+
+    if (!user?.id) return;
+    setIsLoadingCalc(true);
+    try {
+      const { data } = await supabase
+        .from('product_cost_calculations')
+        .select('*')
+        .eq('profile_id', user.id)
+        .eq('menu_item_id', item.id)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const calc = data?.[0];
+      if (calc) {
+        applySavedCalculation(calc);
+        toast({ title: 'تم استرجاع آخر حساب لهذا المنتج' });
+      } else {
+        resetCalculationForm();
+      }
+    } catch {
+      resetCalculationForm();
+    } finally {
+      setIsLoadingCalc(false);
+    }
   };
 
   const filteredMenuItems = productName.trim()
@@ -340,7 +393,13 @@ export default function CostCalculatorPage() {
                       </select>
                     </div>
                   )}
-                  {selectedItem && (
+                  {selectedItem && isLoadingCalc && (
+                    <p className="text-[10px] text-gray-400 mt-1.5 flex items-center gap-1.5">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      جاري استرجاع آخر حساب لهذا المنتج...
+                    </p>
+                  )}
+                  {selectedItem && !isLoadingCalc && (
                     <p className="text-[10px] text-emerald-600 mt-1.5">مربوط بمنتج من المنيو — راح تنحفظ التكلفة عليه مباشرة</p>
                   )}
                 </>
