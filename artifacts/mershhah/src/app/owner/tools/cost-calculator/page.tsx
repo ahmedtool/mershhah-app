@@ -1,29 +1,63 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Coins, Plus, Trash2, Save, Loader2 } from 'lucide-react';
+import { Coins, Plus, Trash2, Save, Loader2, ChevronDown, Check, AlertTriangle } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { syncPublicPage } from '@/lib/public-pages';
+import { cn } from '@/lib/utils';
+import type { MenuItem } from '@/lib/types';
 
 interface Ingredient {
   id: string;
   name: string;
-  quantity: number;
-  unit: string;
-  unitCost: number;
+  packagePrice: number; // سعر شراء العبوة كاملة
+  packageQty: number;   // كمية العبوة (بوحدة العبوة)
+  packageUnit: string;
+  usedQty: number;      // الكمية المستخدمة فعلياً بهذه الوصفة
+  usedUnit: string;
 }
 
-const UNITS = ['كجم', 'جرام', 'لتر', 'مل', 'حبة', 'علبة', 'كوب'];
+// كل وحدة تنتمي لمجموعة قابلة للتحويل داخل نفسها فقط (وزن مع وزن، حجم مع حجم).
+// "حبة"/"علبة"/"كوب" وحدات عدّية ما تتحول بين بعضها لأنها مو مقاييس فيزيائية ثابتة.
+const UNIT_INFO: Record<string, { group: string; toBase: number }> = {
+  'جرام': { group: 'weight', toBase: 1 },
+  'كجم': { group: 'weight', toBase: 1000 },
+  'مل': { group: 'volume', toBase: 1 },
+  'لتر': { group: 'volume', toBase: 1000 },
+  'حبة': { group: 'حبة', toBase: 1 },
+  'علبة': { group: 'علبة', toBase: 1 },
+  'كوب': { group: 'كوب', toBase: 1 },
+};
+const UNITS = Object.keys(UNIT_INFO);
+
+function convertQty(qty: number, fromUnit: string, toUnit: string): number | null {
+  const from = UNIT_INFO[fromUnit];
+  const to = UNIT_INFO[toUnit];
+  if (!from || !to || from.group !== to.group) return null;
+  return (qty * from.toBase) / to.toBase;
+}
 
 const newIngredient = (): Ingredient => ({
   id: crypto.randomUUID(),
   name: '',
-  quantity: 0,
-  unit: 'كجم',
-  unitCost: 0,
+  packagePrice: 0,
+  packageQty: 0,
+  packageUnit: 'جرام',
+  usedQty: 0,
+  usedUnit: 'جرام',
 });
+
+function ingredientCost(ing: Ingredient): { cost: number; compatible: boolean } {
+  const costPerPackageUnit = ing.packageQty > 0 ? ing.packagePrice / ing.packageQty : 0;
+  const converted = convertQty(ing.usedQty || 0, ing.usedUnit, ing.packageUnit);
+  if (converted === null) return { cost: 0, compatible: false };
+  return { cost: converted * costPerPackageUnit, compatible: true };
+}
 
 export default function CostCalculatorPage() {
   const { user } = useUser();
@@ -37,6 +71,18 @@ export default function CostCalculatorPage() {
   const [sellingPrice, setSellingPrice] = useState<number | ''>('');
   const [saving, setSaving] = useState(false);
 
+  // ربط بمنتج حقيقي من المنيو — عشان نقدر نحفظ التكلفة عليه مباشرة
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [productOpen, setProductOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [selectedSizeId, setSelectedSizeId] = useState<string>('');
+
+  useEffect(() => {
+    if (!user?.restaurantId) return;
+    supabase.from('menu_items').select('*').eq('restaurant_id', user.restaurantId).order('name')
+      .then(({ data }: { data: any[] | null }) => setMenuItems((data || []) as MenuItem[]));
+  }, [user?.restaurantId]);
+
   const addIngredient = () => setIngredients([...ingredients, newIngredient()]);
   const removeIngredient = (id: string) => {
     if (ingredients.length === 1) return;
@@ -49,7 +95,9 @@ export default function CostCalculatorPage() {
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('ar-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
 
-  const ingredientsCost = ingredients.reduce((sum, i) => sum + (i.quantity || 0) * (i.unitCost || 0), 0);
+  const ingredientResults = ingredients.map((i) => ({ ing: i, ...ingredientCost(i) }));
+  const ingredientsCost = ingredientResults.reduce((sum, r) => sum + r.cost, 0);
+  const hasIncompatibleUnits = ingredientResults.some((r) => !r.compatible && (r.ing.usedQty || 0) > 0);
   const rawCost = ingredientsCost + (packagingCost || 0);
   const overheadAmount = rawCost * ((overheadPercent || 0) / 100);
   const totalCost = rawCost + overheadAmount;
@@ -62,6 +110,13 @@ export default function CostCalculatorPage() {
   const profitPerServing = hasSellingPrice ? Number(sellingPrice) - costPerServing : 0;
   const profitMarginPercent = hasSellingPrice && Number(sellingPrice) > 0 ? (profitPerServing / Number(sellingPrice)) * 100 : 0;
 
+  const selectProduct = (item: MenuItem) => {
+    setSelectedItem(item);
+    setProductName(item.name);
+    setSelectedSizeId(item.sizes?.[0]?.id || '');
+    setProductOpen(false);
+  };
+
   const handleSave = async () => {
     if (!user?.id) return;
     if (!productName.trim()) {
@@ -72,9 +127,13 @@ export default function CostCalculatorPage() {
     try {
       const { error } = await supabase.from('product_cost_calculations').insert({
         profile_id: user.id,
+        menu_item_id: selectedItem?.id || null,
         product_name: productName.trim(),
         servings: safeServings,
-        ingredients: ingredients.map((i) => ({ name: i.name, quantity: i.quantity, unit: i.unit, unit_cost: i.unitCost })),
+        ingredients: ingredients.map((i) => ({
+          name: i.name, package_price: i.packagePrice, package_qty: i.packageQty, package_unit: i.packageUnit,
+          used_qty: i.usedQty, used_unit: i.usedUnit,
+        })),
         packaging_cost: packagingCost || 0,
         overhead_percent: overheadPercent || 0,
         target_margin_percent: targetMarginPercent || 0,
@@ -83,7 +142,18 @@ export default function CostCalculatorPage() {
         cost_per_serving: costPerServing,
       });
       if (error) throw error;
-      toast({ title: 'تم الحفظ', description: 'تم حفظ حساب التكلفة' });
+
+      if (selectedItem && selectedSizeId) {
+        const newSizes = (selectedItem.sizes || []).map((s) =>
+          s.id === selectedSizeId ? { ...s, cost: Number(costPerServing.toFixed(2)) } : s
+        );
+        const { error: itemError } = await supabase.from('menu_items').update({ sizes: newSizes }).eq('id', selectedItem.id);
+        if (itemError) throw itemError;
+        if (user.restaurantId) syncPublicPage(user.restaurantId).catch(() => {});
+        toast({ title: 'تم الحفظ', description: 'تم حفظ الحساب وتحديث تكلفة المنتج بالمنيو' });
+      } else {
+        toast({ title: 'تم الحفظ', description: 'تم حفظ حساب التكلفة' });
+      }
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'خطأ', description: e.message });
     } finally {
@@ -119,13 +189,58 @@ export default function CostCalculatorPage() {
         <CardContent className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
             <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">اسم المنتج</label>
-            <input
-              type="text"
-              placeholder="مثال: برجر لحم كلاسيك"
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
-              className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
-            />
+            <Popover open={productOpen} onOpenChange={setProductOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    "w-full h-10 rounded-xl border border-gray-200 bg-white px-3 text-right flex items-center justify-between text-sm",
+                    !productName && "text-gray-400"
+                  )}
+                >
+                  <span className="truncate">{productName || 'اختر من المنيو أو اكتب اسم منتج جديد...'}</span>
+                  <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" dir="rtl">
+                <Command filter={(v, s) => v.toLowerCase().includes(s.toLowerCase()) ? 1 : 0}>
+                  <CommandInput
+                    placeholder="ابحث بالمنيو أو اكتب اسم جديد..."
+                    className="h-9"
+                    value={productName}
+                    onValueChange={(v) => { setProductName(v); if (selectedItem && v !== selectedItem.name) setSelectedItem(null); }}
+                  />
+                  <CommandList>
+                    {menuItems.length === 0 && <CommandEmpty>ما فيه أصناف بالمنيو — اكتب اسم منتج جديد</CommandEmpty>}
+                    <CommandGroup heading="أصناف المنيو">
+                      {menuItems.map((item) => (
+                        <CommandItem key={item.id} value={item.name} onSelect={() => selectProduct(item)}>
+                          <Check className={cn("h-4 w-4 shrink-0", selectedItem?.id === item.id ? "opacity-100" : "opacity-0")} />
+                          <span className="mr-2">{item.name}</span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            {selectedItem && (selectedItem.sizes?.length || 0) > 1 && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="text-[10px] text-gray-400 shrink-0">حفظ التكلفة على حجم:</span>
+                <select
+                  value={selectedSizeId}
+                  onChange={(e) => setSelectedSizeId(e.target.value)}
+                  className="h-8 px-2 rounded-lg border border-gray-200 text-[11px] bg-white flex-1"
+                >
+                  {selectedItem.sizes.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {selectedItem && (
+              <p className="text-[10px] text-emerald-600 mt-1.5">مربوط بمنتج من المنيو — راح تنحفظ التكلفة عليه مباشرة</p>
+            )}
           </div>
           <div>
             <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">عدد الحصص الناتجة</label>
@@ -144,52 +259,95 @@ export default function CostCalculatorPage() {
       {/* Ingredients */}
       <Card className="border-gray-100">
         <CardContent className="p-5 space-y-3">
-          <p className="text-xs font-bold text-gray-900">المكونات</p>
-          <div className="space-y-2">
-            {ingredients.map((ing) => (
-              <div key={ing.id} className="grid grid-cols-12 gap-2 items-center">
-                <input
-                  type="text"
-                  placeholder="اسم المكوّن"
-                  value={ing.name}
-                  onChange={(e) => updateIngredient(ing.id, 'name', e.target.value)}
-                  className="col-span-4 h-9 px-3 rounded-lg border border-gray-200 text-xs"
-                />
-                <input
-                  type="number"
-                  placeholder="الكمية"
-                  value={ing.quantity || ''}
-                  onChange={(e) => updateIngredient(ing.id, 'quantity', Number(e.target.value))}
-                  className="col-span-2 h-9 px-3 rounded-lg border border-gray-200 text-xs"
-                  dir="ltr"
-                />
-                <select
-                  value={ing.unit}
-                  onChange={(e) => updateIngredient(ing.id, 'unit', e.target.value)}
-                  className="col-span-2 h-9 px-2 rounded-lg border border-gray-200 text-xs bg-white"
-                >
-                  {UNITS.map((u) => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  placeholder="سعر الوحدة"
-                  value={ing.unitCost || ''}
-                  onChange={(e) => updateIngredient(ing.id, 'unitCost', Number(e.target.value))}
-                  className="col-span-2 h-9 px-3 rounded-lg border border-gray-200 text-xs"
-                  dir="ltr"
-                />
-                <div className="col-span-1 text-[11px] font-bold text-gray-600 text-center truncate">
-                  {formatCurrency((ing.quantity || 0) * (ing.unitCost || 0))}
+          <div>
+            <p className="text-xs font-bold text-gray-900">المكونات</p>
+            <p className="text-[10px] text-gray-400 mt-0.5">
+              اكتب سعر العبوة اللي تشتريها وكميتها، وبعدين قد إيش استخدمت منها بهذه الوصفة — والحاسبة تحسب التكلفة النسبية تلقائياً
+            </p>
+          </div>
+          <div className="space-y-3">
+            {ingredientResults.map(({ ing, cost, compatible }) => (
+              <div key={ing.id} className="border border-gray-100 rounded-xl p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="اسم المكوّن (مثال: قشطة)"
+                    value={ing.name}
+                    onChange={(e) => updateIngredient(ing.id, 'name', e.target.value)}
+                    className="flex-1 h-9 px-3 rounded-lg border border-gray-200 text-xs font-bold"
+                  />
+                  <button
+                    onClick={() => removeIngredient(ing.id)}
+                    disabled={ingredients.length === 1}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30 shrink-0"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => removeIngredient(ing.id)}
-                  disabled={ingredients.length === 1}
-                  className="col-span-1 w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-2 items-end">
+                  <div className="col-span-2 md:col-span-1">
+                    <label className="text-[9px] text-gray-400 mb-1 block">سعر شراء العبوة</label>
+                    <input
+                      type="number"
+                      value={ing.packagePrice || ''}
+                      onChange={(e) => updateIngredient(ing.id, 'packagePrice', Number(e.target.value))}
+                      className="w-full h-9 px-2 rounded-lg border border-gray-200 text-xs"
+                      dir="ltr"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-gray-400 mb-1 block">كمية العبوة</label>
+                    <input
+                      type="number"
+                      value={ing.packageQty || ''}
+                      onChange={(e) => updateIngredient(ing.id, 'packageQty', Number(e.target.value))}
+                      className="w-full h-9 px-2 rounded-lg border border-gray-200 text-xs"
+                      dir="ltr"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-gray-400 mb-1 block">وحدة العبوة</label>
+                    <select
+                      value={ing.packageUnit}
+                      onChange={(e) => updateIngredient(ing.id, 'packageUnit', e.target.value)}
+                      className="w-full h-9 px-1 rounded-lg border border-gray-200 text-xs bg-white"
+                    >
+                      {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-gray-400 mb-1 block">المستخدم بالوصفة</label>
+                    <input
+                      type="number"
+                      value={ing.usedQty || ''}
+                      onChange={(e) => updateIngredient(ing.id, 'usedQty', Number(e.target.value))}
+                      className="w-full h-9 px-2 rounded-lg border border-gray-200 text-xs"
+                      dir="ltr"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[9px] text-gray-400 mb-1 block">وحدة الاستخدام</label>
+                    <select
+                      value={ing.usedUnit}
+                      onChange={(e) => updateIngredient(ing.id, 'usedUnit', e.target.value)}
+                      className="w-full h-9 px-1 rounded-lg border border-gray-200 text-xs bg-white"
+                    >
+                      {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                {!compatible && (ing.usedQty || 0) > 0 ? (
+                  <p className="text-[10px] text-red-500 flex items-center gap-1.5">
+                    <AlertTriangle className="h-3 w-3 shrink-0" />
+                    وحدة الاستخدام "{ing.usedUnit}" ما تتحول لوحدة العبوة "{ing.packageUnit}" — اختر وحدتين من نفس النوع (وزن مع وزن، أو حجم مع حجم)
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-gray-500">
+                    تكلفة هذا المكوّن بالوصفة: <span className="font-bold text-gray-900">{formatCurrency(cost)} ر.س</span>
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -252,6 +410,14 @@ export default function CostCalculatorPage() {
       {/* Summary */}
       <Card className="border-gray-100 bg-gray-50">
         <CardContent className="p-5 space-y-4">
+          {hasIncompatibleUnits && (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-red-500 shrink-0" />
+              <p className="text-[11px] text-red-600">
+                فيه مكوّن أو أكثر بوحدات غير متوافقة — تكلفته ما تُحسب بالإجمالي لين تصلحها
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
               <p className="text-[10px] text-gray-400">تكلفة المكونات</p>
