@@ -60,6 +60,7 @@ export type PublicPageData = {
     created_at?: unknown;
     is_visible?: boolean;
   }>;
+  categories: Array<{ id: string; name: string; position: number }>;
   updated_at: unknown;
 };
 
@@ -93,7 +94,7 @@ export async function syncPublicPage(restaurantId: string): Promise<void> {
 
     const now = new Date();
 
-    const [menuRes, branchesRes, offersRes, reviewsRes, itemReviewsRes] = await Promise.all([
+    const [menuRes, branchesRes, offersRes, reviewsRes, itemReviewsRes, categoriesRes] = await Promise.all([
       supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId),
       supabase.from('branches').select('*').eq('restaurant_id', restaurantId).eq('status', 'active'),
       supabase.from('offers').select('*').eq('restaurant_id', restaurantId).eq('status', 'active'),
@@ -108,6 +109,7 @@ export async function syncPublicPage(restaurantId: string): Promise<void> {
         .select('menu_item_id, rating')
         .eq('restaurant_id', restaurantId)
         .neq('is_visible', false),
+      supabase.from('menu_categories').select('id, name, position').eq('restaurant_id', restaurantId).order('position'),
     ]);
 
     // Embed each item's average rating/count so the public menu page needs
@@ -174,6 +176,7 @@ export async function syncPublicPage(restaurantId: string): Promise<void> {
         distribution,
       },
       reviews: reviewsList,
+      categories: categoriesRes.data || [],
       updated_at: new Date().toISOString(),
     };
 

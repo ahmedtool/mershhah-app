@@ -98,13 +98,22 @@ export type SharedMenuProduct = {
   updated_at?: any;
 };
 
+export type MenuCategory = {
+  id: string;
+  restaurant_id: string;
+  name: string;
+  position: number;
+  created_at?: any;
+};
+
 export type MenuItem = {
   id: string;
   name: string;
   name_en?: string; // English name
   description: string;
   description_en?: string; // English description
-  category: string;
+  category: string; // Denormalized mirror of menu_categories.name — category_id is the source of truth
+  category_id?: string | null;
   category_en?: string; // English category
   image_url: string;
   status: 'available' | 'unavailable';

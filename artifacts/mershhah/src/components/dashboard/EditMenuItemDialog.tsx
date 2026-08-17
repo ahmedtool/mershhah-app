@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useTransition, useRef, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,7 +16,7 @@ import { generateMenuDescriptions } from '@/ai/flows/generate-menu-descriptions'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { cn } from '@/lib/utils';
-import type { MenuItem } from '@/lib/types';
+import type { MenuItem, MenuCategory } from '@/lib/types';
 import { syncPublicPage } from '@/lib/public-pages';
 import { useUser } from '@/hooks/useUser';
 
@@ -47,6 +47,7 @@ const formSchema = z.object({
   description: z.string().optional().or(z.literal('')),
   image_url: z.string().optional().or(z.literal('')),
   category: z.string().min(2, 'التصنيف مطلوب'),
+  category_id: z.string().nullable().optional(),
   sizes: z.array(sizeSchema).min(1, 'أضف حجماً واحداً على الأقل'),
   status: z.enum(['available', 'unavailable']).default('available'),
   calories: z.coerce.number().min(0).optional().or(z.literal(0)),
@@ -78,6 +79,9 @@ export function EditMenuItemDialog({
   const [isSaving, startSaving] = useTransition();
   const [isGeneratingDesc, startGeneratingDesc] = useTransition();
   const [categoriesOpen, setCategoriesOpen] = useState(false);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [categorySearch, setCategorySearch] = useState('');
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,10 +92,13 @@ export function EditMenuItemDialog({
 
   const form = useForm<FormValues>({ resolver: zodResolver(formSchema) });
 
-  const uniqueCategories = useMemo(() => {
-    if (!menuItems) return [];
-    return [...new Set(menuItems.map(i => i.category).filter(Boolean))];
-  }, [menuItems]);
+  useEffect(() => {
+    if (open && restaurantId) {
+      supabase.from('menu_categories').select('*').eq('restaurant_id', restaurantId).order('position').then(({ data }: { data: any[] | null }) => {
+        setCategories((data || []) as MenuCategory[]);
+      });
+    }
+  }, [open, restaurantId]);
 
   useEffect(() => {
     if (open) {
@@ -102,17 +109,18 @@ export function EditMenuItemDialog({
 
       form.reset(isEditing ? {
         name: menuItem.name, description: menuItem.description || '',
-        category: menuItem.category || '', image_url: menuItem.image_url || '',
+        category: menuItem.category || '', category_id: menuItem.category_id ?? null, image_url: menuItem.image_url || '',
         sizes, status: menuItem.status || 'available',
         calories: menuItem.calories || 0,
         allergens: menuItem.allergens || [],
       } : {
-        name: '', description: '', category: '', image_url: '', sizes: defaultSizes, status: 'available',
+        name: '', description: '', category: '', category_id: null, image_url: '', sizes: defaultSizes, status: 'available',
         calories: 0, allergens: [],
       });
       setImageFile(null);
       setImagePreview(menuItem?.image_url || null);
       setDescGenerated(false);
+      setCategorySearch('');
     }
   }, [open, menuItem, isEditing, form]);
 
@@ -127,6 +135,28 @@ export function EditMenuItemDialog({
       }
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const handleCreateCategory = async (name: string) => {
+    if (!restaurantId || !name.trim()) return;
+    setIsCreatingCategory(true);
+    try {
+      const { data, error } = await supabase.from('menu_categories').insert({
+        restaurant_id: restaurantId,
+        name: name.trim(),
+        position: categories.length,
+      }).select().single();
+      if (error) throw error;
+      setCategories((prev) => [...prev, data as MenuCategory]);
+      form.setValue('category', data.name, { shouldValidate: true });
+      form.setValue('category_id', data.id);
+      setCategoriesOpen(false);
+      setCategorySearch('');
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+    } finally {
+      setIsCreatingCategory(false);
     }
   };
 
@@ -291,16 +321,27 @@ export function EditMenuItemDialog({
                   </PopoverTrigger>
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" dir="rtl">
                     <Command filter={(v, s) => v.toLowerCase().includes(s.toLowerCase()) ? 1 : 0}>
-                      <CommandInput placeholder="ابحث أو اكتب تصنيف جديد..." className="h-9" />
+                      <CommandInput placeholder="ابحث أو اكتب تصنيف جديد..." className="h-9" value={categorySearch} onValueChange={setCategorySearch} />
                       <CommandList>
-                        <CommandEmpty>اضغط Enter للإضافة</CommandEmpty>
+                        {categories.length === 0 && !categorySearch && <CommandEmpty>لا توجد تصنيفات — اكتب اسماً لإنشاء واحد</CommandEmpty>}
                         <CommandGroup>
-                          {uniqueCategories.map(cat => (
-                            <CommandItem value={cat} key={cat} onSelect={() => { form.setValue('category', cat); setCategoriesOpen(false); }}>
-                              <Check className={cn("h-4 w-4 shrink-0", cat === field.value ? "opacity-100" : "opacity-0")} />
-                              <span className="mr-2">{cat}</span>
+                          {categories.map(cat => (
+                            <CommandItem value={cat.name} key={cat.id} onSelect={() => {
+                              form.setValue('category', cat.name, { shouldValidate: true });
+                              form.setValue('category_id', cat.id);
+                              setCategoriesOpen(false);
+                              setCategorySearch('');
+                            }}>
+                              <Check className={cn("h-4 w-4 shrink-0", cat.id === form.watch('category_id') ? "opacity-100" : "opacity-0")} />
+                              <span className="mr-2">{cat.name}</span>
                             </CommandItem>
                           ))}
+                          {categorySearch.trim() && !categories.some(c => c.name.toLowerCase() === categorySearch.trim().toLowerCase()) && (
+                            <CommandItem value={`__create__${categorySearch}`} onSelect={() => handleCreateCategory(categorySearch)} disabled={isCreatingCategory}>
+                              <Plus className="h-4 w-4 shrink-0 text-gray-400" />
+                              <span className="mr-2">إنشاء تصنيف "{categorySearch.trim()}"</span>
+                            </CommandItem>
+                          )}
                         </CommandGroup>
                       </CommandList>
                     </Command>

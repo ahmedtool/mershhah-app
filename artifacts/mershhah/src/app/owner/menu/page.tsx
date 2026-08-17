@@ -2,7 +2,7 @@
 
 import PageHeader from '@/components/dashboard/PageHeader';
 import { MenuTable } from '@/components/dashboard/MenuTable';
-import { PlusCircle, RefreshCw, Flame, Utensils, DollarSign, Sparkles, Loader2, TrendingUp, Package, Library } from 'lucide-react';
+import { PlusCircle, RefreshCw, Flame, Utensils, DollarSign, Sparkles, Loader2, TrendingUp, Package, Library, Tag } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import { useEffect, useState, useTransition, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { EditMenuItemDialog } from '@/components/dashboard/EditMenuItemDialog';
 import { ImportMenuDialog } from '@/components/dashboard/ImportMenuDialog';
 import { AddFromLibraryDialog } from '@/components/dashboard/AddFromLibraryDialog';
+import { ManageCategoriesDialog } from '@/components/dashboard/ManageCategoriesDialog';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
 import type { MenuItem } from '@/lib/types';
@@ -182,6 +183,17 @@ export default function MenuPage() {
               استيراد من صورة
             </button>
           </ImportMenuDialog>
+          <ManageCategoriesDialog
+            restaurantId={user?.restaurantId || ''}
+            menuItems={rawMenuItems}
+            onSave={() => user?.restaurantId && fetchMenuData(user.restaurantId)}
+          >
+            <button disabled={loadingOrNoUser || !user}
+              className="h-9 px-4 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-2">
+              <Tag className="h-3.5 w-3.5" />
+              التصنيفات
+            </button>
+          </ManageCategoriesDialog>
           <AddFromLibraryDialog
             restaurantId={user?.restaurantId}
             onSave={() => user?.restaurantId && fetchMenuData(user.restaurantId)}

@@ -99,6 +99,16 @@ export default function PublicMenuPage() {
     }) as MenuItem[];
   };
 
+  // Real categories (with a deliberate order) come first, in that order;
+  // any stray category text on an item with no matching real category row
+  // (legacy items, or the cache just hasn't resynced yet) is appended after,
+  // so nothing silently disappears from the tab bar.
+  const buildCategoryTabs = (items: MenuItem[], orderedNames: string[]): string[] => {
+    const extra = Array.from(new Set(items.map(i => i.category).filter(Boolean)))
+      .filter((name) => !orderedNames.includes(name));
+    return ['الكل', ...orderedNames, ...extra];
+  };
+
   useEffect(() => {
     if (!username) return;
     setLoading(true);
@@ -110,7 +120,8 @@ export default function PublicMenuPage() {
           setRestaurant(data.restaurant);
           const items = data.menu as MenuItem[];
           setMenuItems(applySort(items));
-          setCategories(['الكل', ...Array.from(new Set(items.map(i => i.category).filter(Boolean)))]);
+          const orderedNames = (data.categories || []).map((c) => c.name);
+          setCategories(buildCategoryTabs(items, orderedNames));
           setLoading(false);
           return;
         }
@@ -130,14 +141,14 @@ export default function PublicMenuPage() {
 
         setRestaurant(rest);
 
-        const { data: items } = await supabase
-          .from('menu_items')
-          .select('*')
-          .eq('restaurant_id', rest.id);
+        const [{ data: items }, { data: categoryRows }] = await Promise.all([
+          supabase.from('menu_items').select('*').eq('restaurant_id', rest.id),
+          supabase.from('menu_categories').select('name').eq('restaurant_id', rest.id).order('position'),
+        ]);
 
         const sorted = applySort((items || []) as MenuItem[]);
         setMenuItems(sorted);
-        setCategories(['الكل', ...Array.from(new Set(sorted.map(i => i.category).filter(Boolean)))]);
+        setCategories(buildCategoryTabs(sorted, (categoryRows || []).map((c: any) => c.name)));
       } catch (e) {
         console.error(e);
       } finally {
