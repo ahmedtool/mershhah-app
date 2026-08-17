@@ -18,6 +18,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import type { MenuItem, MenuCategory } from '@/lib/types';
 import { syncPublicPage } from '@/lib/public-pages';
+import { COMMON_CATEGORY_SUGGESTIONS } from '@/lib/category-suggestions';
 import { useUser } from '@/hooks/useUser';
 
 const BUCKET = 'restaurant-assets';
@@ -343,6 +344,24 @@ export function EditMenuItemDialog({
                             </CommandItem>
                           )}
                         </CommandGroup>
+                        {(() => {
+                          const existingNames = new Set(categories.map(c => c.name.toLowerCase()));
+                          const q = categorySearch.trim().toLowerCase();
+                          const suggestions = COMMON_CATEGORY_SUGGESTIONS.filter(name =>
+                            !existingNames.has(name.toLowerCase()) && (!q || name.toLowerCase().includes(q))
+                          ).slice(0, 6);
+                          if (suggestions.length === 0) return null;
+                          return (
+                            <CommandGroup heading="اقتراحات شائعة">
+                              {suggestions.map(name => (
+                                <CommandItem key={name} value={`__suggest__${name}`} onSelect={() => handleCreateCategory(name)} disabled={isCreatingCategory}>
+                                  <Plus className="h-4 w-4 shrink-0 text-gray-400" />
+                                  <span className="mr-2">{name}</span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          );
+                        })()}
                       </CommandList>
                     </Command>
                   </PopoverContent>

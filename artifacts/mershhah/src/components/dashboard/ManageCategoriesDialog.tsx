@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown, ArrowRight, Check, ListChecks, Tag } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown, ArrowRight, Check, ListChecks, Tag, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
 import { cn } from '@/lib/utils';
 import type { MenuCategory, MenuItem } from '@/lib/types';
+import { COMMON_CATEGORY_SUGGESTIONS } from '@/lib/category-suggestions';
 
 interface ManageCategoriesDialogProps {
   children: React.ReactNode;
@@ -29,7 +30,19 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
   const [assigning, setAssigning] = useState<MenuCategory | null>(null);
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [isSavingAssignment, setIsSavingAssignment] = useState(false);
+  const [itemSearch, setItemSearch] = useState('');
   const { toast } = useToast();
+
+  const existingNames = new Set(categories.map((c) => c.name.trim().toLowerCase()));
+  const categorySuggestions = COMMON_CATEGORY_SUGGESTIONS.filter((name) => {
+    if (existingNames.has(name.toLowerCase())) return false;
+    const q = newName.trim().toLowerCase();
+    return q ? name.toLowerCase().includes(q) : true;
+  }).slice(0, 8);
+
+  const visibleItems = menuItems.filter((item) =>
+    item.name.toLowerCase().includes(itemSearch.trim().toLowerCase())
+  );
 
   const fetchCategories = async () => {
     setIsLoading(true);
@@ -51,8 +64,8 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
 
   const countInCategory = (categoryId: string) => menuItems.filter((i) => i.category_id === categoryId).length;
 
-  const handleAdd = async () => {
-    const name = newName.trim();
+  const handleAdd = async (nameOverride?: string) => {
+    const name = (nameOverride ?? newName).trim();
     if (!name) return;
     setIsAdding(true);
     try {
@@ -130,6 +143,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
 
   const openAssignment = (cat: MenuCategory) => {
     setAssigning(cat);
+    setItemSearch('');
     setSelectedItemIds(new Set(menuItems.filter((i) => i.category_id === cat.id).map((i) => i.id)));
   };
 
@@ -201,7 +215,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                   disabled={isAdding}
                 />
                 <button
-                  onClick={handleAdd}
+                  onClick={() => handleAdd()}
                   disabled={isAdding || !newName.trim()}
                   className="h-10 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 disabled:opacity-50 flex items-center gap-1.5 shrink-0"
                 >
@@ -209,6 +223,22 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                   إضافة
                 </button>
               </div>
+
+              {categorySuggestions.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 -mt-1.5">
+                  {categorySuggestions.map((name) => (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() => handleAdd(name)}
+                      disabled={isAdding}
+                      className="px-2.5 py-1 rounded-full border border-gray-200 text-[11px] font-medium text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors disabled:opacity-50"
+                    >
+                      + {name}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-10">
@@ -276,11 +306,25 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
               <p className="text-xs text-gray-400 mt-0.5">حدد الأصناف اللي تنتمي لهذا التصنيف</p>
             </div>
 
+            <div className="px-5 pt-3">
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
+                <Input
+                  value={itemSearch}
+                  onChange={(e) => setItemSearch(e.target.value)}
+                  placeholder="ابحث عن صنف..."
+                  className="h-9 rounded-xl border-gray-200 text-sm pr-9"
+                />
+              </div>
+            </div>
+
             <div className="p-5 space-y-1.5 max-h-[50vh] overflow-y-auto">
               {menuItems.length === 0 ? (
                 <p className="text-center text-sm text-gray-400 py-10">لا توجد أصناف بالمنيو بعد</p>
+              ) : visibleItems.length === 0 ? (
+                <p className="text-center text-sm text-gray-400 py-10">لا توجد نتائج لـ "{itemSearch}"</p>
               ) : (
-                menuItems.map((item) => {
+                visibleItems.map((item) => {
                   const isSelected = selectedItemIds.has(item.id);
                   return (
                     <button
