@@ -74,6 +74,7 @@ export default function CostCalculatorPage() {
   // ربط بمنتج حقيقي من المنيو — عشان نقدر نحفظ التكلفة عليه مباشرة
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [productOpen, setProductOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [selectedSizeId, setSelectedSizeId] = useState<string>('');
 
@@ -189,7 +190,7 @@ export default function CostCalculatorPage() {
         <CardContent className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
             <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">اسم المنتج</label>
-            <Popover open={productOpen} onOpenChange={setProductOpen}>
+            <Popover open={productOpen} onOpenChange={(v) => { setProductOpen(v); if (v) setProductSearch(''); }}>
               <PopoverTrigger asChild>
                 <button
                   type="button"
@@ -207,8 +208,8 @@ export default function CostCalculatorPage() {
                   <CommandInput
                     placeholder="ابحث بالمنيو أو اكتب اسم جديد..."
                     className="h-9"
-                    value={productName}
-                    onValueChange={(v) => { setProductName(v); if (selectedItem && v !== selectedItem.name) setSelectedItem(null); }}
+                    value={productSearch}
+                    onValueChange={setProductSearch}
                   />
                   <CommandList>
                     {menuItems.length === 0 && <CommandEmpty>ما فيه أصناف بالمنيو — اكتب اسم منتج جديد</CommandEmpty>}
@@ -220,6 +221,22 @@ export default function CostCalculatorPage() {
                         </CommandItem>
                       ))}
                     </CommandGroup>
+                    {productSearch.trim() && !menuItems.some((i) => i.name.toLowerCase() === productSearch.trim().toLowerCase()) && (
+                      <CommandGroup heading="منتج جديد">
+                        <CommandItem
+                          value={`__custom__${productSearch}`}
+                          onSelect={() => {
+                            setProductName(productSearch.trim());
+                            setSelectedItem(null);
+                            setSelectedSizeId('');
+                            setProductOpen(false);
+                          }}
+                        >
+                          <Plus className="h-4 w-4 shrink-0 text-gray-400" />
+                          <span className="mr-2">استخدام "{productSearch.trim()}" كاسم منتج جديد</span>
+                        </CommandItem>
+                      </CommandGroup>
+                    )}
                   </CommandList>
                 </Command>
               </PopoverContent>
