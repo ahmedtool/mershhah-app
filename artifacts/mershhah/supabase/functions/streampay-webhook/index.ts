@@ -289,6 +289,43 @@ serve(async (req) => {
             .maybeSingle();
           subscriptionId = updatedSub?.id ?? null;
           if (subscriptionId) await supersedeFreePlan(supabase, metadata.profile_id, subscriptionId);
+
+          // A confirmed StreamPay payment always means an actual paid plan
+          // (free never goes through checkout) - flip the flag every paid
+          // feature gate reads, and patch the denormalized public_pages
+          // snapshot so it doesn't keep showing stale free-tier state.
+          const { data: payingProfile } = await supabase
+            .from("profiles")
+            .select("restaurant_id")
+            .eq("id", metadata.profile_id)
+            .single();
+          if (payingProfile?.restaurant_id) {
+            const restaurantId = payingProfile.restaurant_id;
+            await supabase.from("restaurants").update({ is_paid_plan: true }).eq("id", restaurantId);
+
+            const { data: restaurantRow } = await supabase
+              .from("restaurants")
+              .select("username")
+              .eq("id", restaurantId)
+              .single();
+            if (restaurantRow?.username) {
+              const { data: publicPageRow } = await supabase
+                .from("public_pages")
+                .select("data")
+                .eq("id", restaurantRow.username)
+                .maybeSingle();
+              if (publicPageRow?.data) {
+                const updatedData = {
+                  ...publicPageRow.data,
+                  restaurant: { ...publicPageRow.data.restaurant, is_paid_plan: true },
+                };
+                await supabase
+                  .from("public_pages")
+                  .update({ data: updatedData, updated_at: new Date().toISOString() })
+                  .eq("id", restaurantRow.username);
+              }
+            }
+          }
         }
 
         // Record the invoice. There's nothing to update yet (checkout never
