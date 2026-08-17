@@ -2,13 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Coins, Plus, Trash2, Save, Loader2, Check, AlertTriangle } from 'lucide-react';
+import { Coins, Plus, Trash2, Save, Loader2, Check, AlertTriangle, Search } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { syncPublicPage } from '@/lib/public-pages';
 import { cn } from '@/lib/utils';
-import type { MenuItem } from '@/lib/types';
+import type { MenuItem, MenuCategory } from '@/lib/types';
+
+type ApplyScope = 'single' | 'items' | 'categories' | 'all';
+const SCOPE_OPTIONS: { value: ApplyScope; label: string }[] = [
+  { value: 'single', label: 'منتج واحد' },
+  { value: 'items', label: 'أصناف محددة' },
+  { value: 'categories', label: 'تصنيفات محددة' },
+  { value: 'all', label: 'كل الأصناف' },
+];
 
 interface Ingredient {
   id: string;
@@ -69,17 +77,44 @@ export default function CostCalculatorPage() {
   const [sellingPrice, setSellingPrice] = useState<number | ''>('');
   const [saving, setSaving] = useState(false);
 
-  // ربط بمنتج حقيقي من المنيو — عشان نقدر نحفظ التكلفة عليه مباشرة
+  // ربط بمنتج (أو أصناف/تصنيفات) حقيقية من المنيو — عشان نقدر نحفظ التكلفة عليها مباشرة
+  const [applyScope, setApplyScope] = useState<ApplyScope>('single');
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [selectedSizeId, setSelectedSizeId] = useState<string>('');
+  const [bulkItemSearch, setBulkItemSearch] = useState('');
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user?.restaurantId) return;
     supabase.from('menu_items').select('*').eq('restaurant_id', user.restaurantId).order('name')
       .then(({ data }: { data: any[] | null }) => setMenuItems((data || []) as MenuItem[]));
+    supabase.from('menu_categories').select('*').eq('restaurant_id', user.restaurantId).order('position')
+      .then(({ data }: { data: any[] | null }) => setCategories((data || []) as MenuCategory[]));
   }, [user?.restaurantId]);
+
+  const changeScope = (scope: ApplyScope) => {
+    setApplyScope(scope);
+    setSelectedItem(null);
+    setSelectedSizeId('');
+    setSelectedItemIds(new Set());
+    setSelectedCategoryIds(new Set());
+    setBulkItemSearch('');
+  };
+
+  const toggleItemId = (id: string) => setSelectedItemIds((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const toggleCategoryId = (id: string) => setSelectedCategoryIds((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
 
   const addIngredient = () => setIngredients([...ingredients, newIngredient()]);
   const removeIngredient = (id: string) => {
@@ -119,17 +154,29 @@ export default function CostCalculatorPage() {
     ? menuItems.filter((i) => i.name.includes(productName.trim()))
     : menuItems;
 
+  const bulkFilteredItems = bulkItemSearch.trim()
+    ? menuItems.filter((i) => i.name.includes(bulkItemSearch.trim()))
+    : menuItems;
+
   const handleSave = async () => {
     if (!user?.id) return;
     if (!productName.trim()) {
-      toast({ variant: 'destructive', title: 'خطأ', description: 'اكتب اسم المنتج أولاً' });
+      toast({ variant: 'destructive', title: 'خطأ', description: 'اكتب اسم/وصف الحساب أولاً' });
+      return;
+    }
+    if (applyScope === 'items' && selectedItemIds.size === 0) {
+      toast({ variant: 'destructive', title: 'خطأ', description: 'اختر صنف واحد على الأقل' });
+      return;
+    }
+    if (applyScope === 'categories' && selectedCategoryIds.size === 0) {
+      toast({ variant: 'destructive', title: 'خطأ', description: 'اختر تصنيف واحد على الأقل' });
       return;
     }
     setSaving(true);
     try {
       const { error } = await supabase.from('product_cost_calculations').insert({
         profile_id: user.id,
-        menu_item_id: selectedItem?.id || null,
+        menu_item_id: applyScope === 'single' ? (selectedItem?.id || null) : null,
         product_name: productName.trim(),
         servings: safeServings,
         ingredients: ingredients.map((i) => ({
@@ -145,17 +192,40 @@ export default function CostCalculatorPage() {
       });
       if (error) throw error;
 
-      if (selectedItem && selectedSizeId) {
-        const newSizes = (selectedItem.sizes || []).map((s) =>
-          s.id === selectedSizeId ? { ...s, cost: Number(costPerServing.toFixed(2)) } : s
-        );
-        const { error: itemError } = await supabase.from('menu_items').update({ sizes: newSizes }).eq('id', selectedItem.id);
-        if (itemError) throw itemError;
-        if (user.restaurantId) syncPublicPage(user.restaurantId).catch(() => {});
-        toast({ title: 'تم الحفظ', description: 'تم حفظ الحساب وتحديث تكلفة المنتج بالمنيو' });
+      const roundedCost = Number(costPerServing.toFixed(2));
+      let targetItems: MenuItem[] = [];
+      if (applyScope === 'single') {
+        if (selectedItem && selectedSizeId) {
+          const newSizes = (selectedItem.sizes || []).map((s) =>
+            s.id === selectedSizeId ? { ...s, cost: roundedCost } : s
+          );
+          const { error: itemError } = await supabase.from('menu_items').update({ sizes: newSizes }).eq('id', selectedItem.id);
+          if (itemError) throw itemError;
+          targetItems = [selectedItem];
+        }
       } else {
-        toast({ title: 'تم الحفظ', description: 'تم حفظ حساب التكلفة' });
+        if (applyScope === 'all') targetItems = menuItems;
+        else if (applyScope === 'items') targetItems = menuItems.filter((i) => selectedItemIds.has(i.id));
+        else if (applyScope === 'categories') targetItems = menuItems.filter((i) => i.category_id && selectedCategoryIds.has(i.category_id));
+
+        if (targetItems.length > 0) {
+          const results = await Promise.all(targetItems.map((item) => {
+            const newSizes = (item.sizes || []).map((s) => ({ ...s, cost: roundedCost }));
+            return supabase.from('menu_items').update({ sizes: newSizes }).eq('id', item.id);
+          }));
+          const failed = results.find((r) => r.error);
+          if (failed?.error) throw failed.error;
+        }
       }
+
+      if (targetItems.length > 0 && user.restaurantId) syncPublicPage(user.restaurantId).catch(() => {});
+
+      toast({
+        title: 'تم الحفظ',
+        description: targetItems.length > 0
+          ? `تم تحديث التكلفة على ${targetItems.length} صنف`
+          : 'تم حفظ حساب التكلفة',
+      });
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'خطأ', description: e.message });
     } finally {
@@ -188,75 +258,202 @@ export default function CostCalculatorPage() {
 
       {/* Product info */}
       <Card className="border-gray-100">
-        <CardContent className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2">
-            <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">اسم المنتج</label>
-            <div className="relative">
+        <CardContent className="p-5 space-y-4">
+          {/* Apply scope */}
+          <div>
+            <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">تطبيق التكلفة على</label>
+            <div className="flex flex-wrap gap-1.5">
+              {SCOPE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => changeScope(opt.value)}
+                  className={cn(
+                    "h-8 px-3 rounded-lg text-[11px] font-bold border transition-colors",
+                    applyScope === opt.value
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">
+                {applyScope === 'single' ? 'اسم المنتج' : 'اسم/وصف الحساب'}
+              </label>
+
+              {applyScope === 'single' ? (
+                <>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="اختر من المنيو أو اكتب اسم منتج جديد..."
+                      value={productName}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setProductName(v);
+                        if (selectedItem && v !== selectedItem.name) { setSelectedItem(null); setSelectedSizeId(''); }
+                        setShowSuggestions(true);
+                      }}
+                      onFocus={() => setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                      className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
+                    />
+                    {showSuggestions && (
+                      <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto" dir="rtl">
+                        {filteredMenuItems.length > 0 ? (
+                          filteredMenuItems.map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onMouseDown={(e) => { e.preventDefault(); selectProduct(item); }}
+                              className="w-full text-right px-3 py-2 text-xs hover:bg-gray-50 flex items-center gap-2"
+                            >
+                              <Check className={cn("h-3.5 w-3.5 shrink-0", selectedItem?.id === item.id ? "opacity-100 text-emerald-600" : "opacity-0")} />
+                              <span className="truncate">{item.name}</span>
+                            </button>
+                          ))
+                        ) : (
+                          <p className="px-3 py-3 text-[11px] text-gray-400 text-center">
+                            {menuItems.length === 0 ? 'ما فيه أصناف بالمنيو بعد' : 'ما فيه صنف مطابق — راح يُستخدم كمنتج جديد'}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {selectedItem && (selectedItem.sizes?.length || 0) > 1 && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-[10px] text-gray-400 shrink-0">حفظ التكلفة على حجم:</span>
+                      <select
+                        value={selectedSizeId}
+                        onChange={(e) => setSelectedSizeId(e.target.value)}
+                        className="h-8 px-2 rounded-lg border border-gray-200 text-[11px] bg-white flex-1"
+                      >
+                        {selectedItem.sizes.map((s, idx) => (
+                          <option key={s.id || idx} value={s.id || ''}>{s.name?.trim() || `حجم ${idx + 1}`}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {selectedItem && (
+                    <p className="text-[10px] text-emerald-600 mt-1.5">مربوط بمنتج من المنيو — راح تنحفظ التكلفة عليه مباشرة</p>
+                  )}
+                </>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="مثال: صلصة الثوم الأساسية"
+                  value={productName}
+                  onChange={(e) => setProductName(e.target.value)}
+                  className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
+                />
+              )}
+            </div>
+            <div>
+              <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">عدد الحصص الناتجة</label>
               <input
-                type="text"
-                placeholder="اختر من المنيو أو اكتب اسم منتج جديد..."
-                value={productName}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setProductName(v);
-                  if (selectedItem && v !== selectedItem.name) { setSelectedItem(null); setSelectedSizeId(''); }
-                  setShowSuggestions(true);
-                }}
-                onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                type="number"
+                min={1}
+                value={servings || ''}
+                onChange={(e) => setServings(Number(e.target.value))}
                 className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
+                dir="ltr"
               />
-              {showSuggestions && (
-                <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto" dir="rtl">
-                  {filteredMenuItems.length > 0 ? (
-                    filteredMenuItems.map((item) => (
+            </div>
+          </div>
+
+          {applyScope === 'items' && (
+            <div className="border border-gray-100 rounded-xl p-3 space-y-2">
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
+                <input
+                  type="text"
+                  placeholder="ابحث عن صنف..."
+                  value={bulkItemSearch}
+                  onChange={(e) => setBulkItemSearch(e.target.value)}
+                  className="w-full h-9 pr-9 pl-3 rounded-lg border border-gray-200 text-xs"
+                />
+              </div>
+              <div className="max-h-56 overflow-y-auto space-y-1">
+                {bulkFilteredItems.length === 0 ? (
+                  <p className="text-center text-[11px] text-gray-400 py-4">ما فيه نتائج</p>
+                ) : (
+                  bulkFilteredItems.map((item) => {
+                    const checked = selectedItemIds.has(item.id);
+                    return (
                       <button
                         key={item.id}
                         type="button"
-                        onMouseDown={(e) => { e.preventDefault(); selectProduct(item); }}
-                        className="w-full text-right px-3 py-2 text-xs hover:bg-gray-50 flex items-center gap-2"
+                        onClick={() => toggleItemId(item.id)}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-right text-xs transition-colors",
+                          checked ? "bg-gray-900 border-gray-900 text-white" : "border-gray-100 hover:border-gray-200 text-gray-700"
+                        )}
                       >
-                        <Check className={cn("h-3.5 w-3.5 shrink-0", selectedItem?.id === item.id ? "opacity-100 text-emerald-600" : "opacity-0")} />
+                        <div className={cn("w-4 h-4 rounded border flex items-center justify-center shrink-0", checked ? "bg-white border-white" : "border-gray-300")}>
+                          {checked && <Check className="h-3 w-3 text-gray-900" />}
+                        </div>
                         <span className="truncate">{item.name}</span>
                       </button>
-                    ))
-                  ) : (
-                    <p className="px-3 py-3 text-[11px] text-gray-400 text-center">
-                      {menuItems.length === 0 ? 'ما فيه أصناف بالمنيو بعد' : 'ما فيه صنف مطابق — راح يُستخدم كمنتج جديد'}
-                    </p>
-                  )}
-                </div>
+                    );
+                  })
+                )}
+              </div>
+              {selectedItemIds.size > 0 && (
+                <p className="text-[10px] text-emerald-600">تم اختيار {selectedItemIds.size} صنف</p>
               )}
             </div>
-            {selectedItem && (selectedItem.sizes?.length || 0) > 1 && (
-              <div className="mt-2 flex items-center gap-2">
-                <span className="text-[10px] text-gray-400 shrink-0">حفظ التكلفة على حجم:</span>
-                <select
-                  value={selectedSizeId}
-                  onChange={(e) => setSelectedSizeId(e.target.value)}
-                  className="h-8 px-2 rounded-lg border border-gray-200 text-[11px] bg-white flex-1"
-                >
-                  {selectedItem.sizes.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {selectedItem && (
-              <p className="text-[10px] text-emerald-600 mt-1.5">مربوط بمنتج من المنيو — راح تنحفظ التكلفة عليه مباشرة</p>
-            )}
-          </div>
-          <div>
-            <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">عدد الحصص الناتجة</label>
-            <input
-              type="number"
-              min={1}
-              value={servings || ''}
-              onChange={(e) => setServings(Number(e.target.value))}
-              className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
-              dir="ltr"
-            />
-          </div>
+          )}
+
+          {applyScope === 'categories' && (
+            <div className="border border-gray-100 rounded-xl p-3 space-y-1">
+              {categories.length === 0 ? (
+                <p className="text-center text-[11px] text-gray-400 py-4">ما فيه تصنيفات بالمنيو بعد</p>
+              ) : (
+                categories.map((cat) => {
+                  const checked = selectedCategoryIds.has(cat.id);
+                  const count = menuItems.filter((i) => i.category_id === cat.id).length;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => toggleCategoryId(cat.id)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2.5 py-2 rounded-lg border text-right text-xs transition-colors",
+                        checked ? "bg-gray-900 border-gray-900 text-white" : "border-gray-100 hover:border-gray-200 text-gray-700"
+                      )}
+                    >
+                      <div className={cn("w-4 h-4 rounded border flex items-center justify-center shrink-0", checked ? "bg-white border-white" : "border-gray-300")}>
+                        {checked && <Check className="h-3 w-3 text-gray-900" />}
+                      </div>
+                      <span className="flex-1 truncate">{cat.name}</span>
+                      <span className={cn("text-[10px]", checked ? "text-gray-300" : "text-gray-400")}>{count} صنف</span>
+                    </button>
+                  );
+                })
+              )}
+              {selectedCategoryIds.size > 0 && (
+                <p className="text-[10px] text-emerald-600 pt-1">
+                  تم اختيار {selectedCategoryIds.size} تصنيف —
+                  {' '}{menuItems.filter((i) => i.category_id && selectedCategoryIds.has(i.category_id)).length} صنف بالإجمالي
+                </p>
+              )}
+            </div>
+          )}
+
+          {applyScope === 'all' && (
+            <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5 flex items-center gap-2">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+              <p className="text-[11px] text-amber-700">
+                عند الحفظ، راح تُطبّق هذي التكلفة ({formatCurrency(costPerServing)} ر.س) على كل الأحجام لكل الأصناف بالمنيو ({menuItems.length} صنف)
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
