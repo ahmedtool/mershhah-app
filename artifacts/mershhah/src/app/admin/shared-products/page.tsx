@@ -11,58 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { SharedMenuProduct } from "@/lib/types";
 
-const CSV_HEADERS = ['المعرف', 'الاسم', 'التصنيف', 'السعرات الحرارية'];
-
-function csvEscape(value: string | number | null | undefined): string {
-  const s = value === null || value === undefined ? '' : String(value);
-  if (/[",\r\n]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
-  return s;
-}
-
-function buildCsv(rows: (string | number | null | undefined)[][]): string {
-  return rows.map((row) => row.map(csvEscape).join(',')).join('\r\n');
-}
-
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = [];
-  let row: string[] = [];
-  let field = '';
-  let inQuotes = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; }
-        else inQuotes = false;
-      } else field += c;
-    } else if (c === '"') {
-      inQuotes = true;
-    } else if (c === ',') {
-      row.push(field); field = '';
-    } else if (c === '\n' || c === '\r') {
-      if (c === '\r' && text[i + 1] === '\n') i++;
-      row.push(field); field = '';
-      if (row.length > 1 || row[0] !== '') rows.push(row);
-      row = [];
-    } else {
-      field += c;
-    }
-  }
-  if (field !== '' || row.length > 0) { row.push(field); rows.push(row); }
-  return rows;
-}
-
-function downloadTextFile(filename: string, content: string) {
-  const blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
+const SHEET_HEADERS = ['المعرف', 'الاسم', 'التصنيف', 'السعرات الحرارية'];
 
 export default function AdminSharedProductsPage() {
   const [products, setProducts] = useState<SharedMenuProduct[]>([]);
@@ -111,12 +60,18 @@ export default function AdminSharedProductsPage() {
     }
   };
 
-  const handleDownloadTemplate = () => {
+  const handleDownloadTemplate = async () => {
+    const XLSX = await import('xlsx');
     const rows = [
-      CSV_HEADERS,
+      SHEET_HEADERS,
       ...products.map((p) => [p.id, p.name, p.category || '', p.calories ?? '']),
     ];
-    downloadTextFile(`مكتبة-المنتجات-${new Date().toISOString().slice(0, 10)}.csv`, buildCsv(rows));
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{ wch: 38 }, { wch: 32 }, { wch: 20 }, { wch: 16 }];
+    ws['!views'] = [{ RTL: true }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'المنتجات');
+    XLSX.writeFile(wb, `مكتبة-المنتجات-${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,8 +81,11 @@ export default function AdminSharedProductsPage() {
 
     setIsImporting(true);
     try {
-      const text = await file.text();
-      const allRows = parseCsv(text.replace(/^﻿/, ''));
+      const XLSX = await import('xlsx');
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const allRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
       const dataRows = allRows.slice(1); // skip header row
       const existingIds = new Set(products.map((p) => p.id));
 
@@ -135,13 +93,14 @@ export default function AdminSharedProductsPage() {
       const toUpdate: { id: string; payload: { name: string; category: string | null; calories: number | null } }[] = [];
 
       for (const r of dataRows) {
-        const [id, name, category, caloriesStr] = r;
-        const trimmedName = (name || '').trim();
+        const [id, name, category, caloriesRaw] = r;
+        const trimmedName = String(name ?? '').trim();
         if (!trimmedName) continue;
-        const calories = caloriesStr && !isNaN(Number(caloriesStr)) ? Number(caloriesStr) : null;
-        const payload = { name: trimmedName, category: (category || '').trim() || null, calories };
+        const calories = caloriesRaw !== '' && caloriesRaw !== undefined && caloriesRaw !== null && !isNaN(Number(caloriesRaw))
+          ? Number(caloriesRaw) : null;
+        const payload = { name: trimmedName, category: String(category ?? '').trim() || null, calories };
 
-        const trimmedId = (id || '').trim();
+        const trimmedId = String(id ?? '').trim();
         if (trimmedId && existingIds.has(trimmedId)) {
           toUpdate.push({ id: trimmedId, payload });
         } else {
@@ -199,13 +158,13 @@ export default function AdminSharedProductsPage() {
           <p className="text-xs text-gray-400 mt-0.5">منتجات جاهزة (مشروبات، عصائر، حلويات، صوصات) يقدر أصحاب المطاعم إضافتها لمنيوهم</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <input type="file" ref={fileInputRef} onChange={handleFileSelected} accept=".csv" className="hidden" />
+          <input type="file" ref={fileInputRef} onChange={handleFileSelected} accept=".xlsx,.xls" className="hidden" />
           <button
             onClick={handleDownloadTemplate}
             className="h-10 px-3.5 rounded-xl border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
           >
             <Download className="h-3.5 w-3.5" />
-            تحميل كملف (Excel/CSV)
+            تحميل كملف إكسل
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
