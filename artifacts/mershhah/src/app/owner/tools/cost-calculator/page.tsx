@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Coins, Plus, Trash2, Save, Loader2, ChevronDown, Check, AlertTriangle } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Coins, Plus, Trash2, Save, Loader2, Check, AlertTriangle } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
@@ -73,8 +71,7 @@ export default function CostCalculatorPage() {
 
   // ربط بمنتج حقيقي من المنيو — عشان نقدر نحفظ التكلفة عليه مباشرة
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [productOpen, setProductOpen] = useState(false);
-  const [productSearch, setProductSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [selectedSizeId, setSelectedSizeId] = useState<string>('');
 
@@ -115,8 +112,12 @@ export default function CostCalculatorPage() {
     setSelectedItem(item);
     setProductName(item.name);
     setSelectedSizeId(item.sizes?.[0]?.id || '');
-    setProductOpen(false);
+    setShowSuggestions(false);
   };
+
+  const filteredMenuItems = productName.trim()
+    ? menuItems.filter((i) => i.name.includes(productName.trim()))
+    : menuItems;
 
   const handleSave = async () => {
     if (!user?.id) return;
@@ -190,57 +191,43 @@ export default function CostCalculatorPage() {
         <CardContent className="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2">
             <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">اسم المنتج</label>
-            <Popover open={productOpen} onOpenChange={(v) => { setProductOpen(v); if (v) setProductSearch(''); }}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className={cn(
-                    "w-full h-10 rounded-xl border border-gray-200 bg-white px-3 text-right flex items-center justify-between text-sm",
-                    !productName && "text-gray-400"
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="اختر من المنيو أو اكتب اسم منتج جديد..."
+                value={productName}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setProductName(v);
+                  if (selectedItem && v !== selectedItem.name) { setSelectedItem(null); setSelectedSizeId(''); }
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
+              />
+              {showSuggestions && (
+                <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto" dir="rtl">
+                  {filteredMenuItems.length > 0 ? (
+                    filteredMenuItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); selectProduct(item); }}
+                        className="w-full text-right px-3 py-2 text-xs hover:bg-gray-50 flex items-center gap-2"
+                      >
+                        <Check className={cn("h-3.5 w-3.5 shrink-0", selectedItem?.id === item.id ? "opacity-100 text-emerald-600" : "opacity-0")} />
+                        <span className="truncate">{item.name}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="px-3 py-3 text-[11px] text-gray-400 text-center">
+                      {menuItems.length === 0 ? 'ما فيه أصناف بالمنيو بعد' : 'ما فيه صنف مطابق — راح يُستخدم كمنتج جديد'}
+                    </p>
                   )}
-                >
-                  <span className="truncate">{productName || 'اختر من المنيو أو اكتب اسم منتج جديد...'}</span>
-                  <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" dir="rtl">
-                <Command filter={(v, s) => v.toLowerCase().includes(s.toLowerCase()) ? 1 : 0}>
-                  <CommandInput
-                    placeholder="ابحث بالمنيو أو اكتب اسم جديد..."
-                    className="h-9"
-                    value={productSearch}
-                    onValueChange={setProductSearch}
-                  />
-                  <CommandList>
-                    {menuItems.length === 0 && <CommandEmpty>ما فيه أصناف بالمنيو — اكتب اسم منتج جديد</CommandEmpty>}
-                    <CommandGroup heading="أصناف المنيو">
-                      {menuItems.map((item) => (
-                        <CommandItem key={item.id} value={item.name} onSelect={() => selectProduct(item)}>
-                          <Check className={cn("h-4 w-4 shrink-0", selectedItem?.id === item.id ? "opacity-100" : "opacity-0")} />
-                          <span className="mr-2">{item.name}</span>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                    {productSearch.trim() && !menuItems.some((i) => i.name.toLowerCase() === productSearch.trim().toLowerCase()) && (
-                      <CommandGroup heading="منتج جديد">
-                        <CommandItem
-                          value={`__custom__${productSearch}`}
-                          onSelect={() => {
-                            setProductName(productSearch.trim());
-                            setSelectedItem(null);
-                            setSelectedSizeId('');
-                            setProductOpen(false);
-                          }}
-                        >
-                          <Plus className="h-4 w-4 shrink-0 text-gray-400" />
-                          <span className="mr-2">استخدام "{productSearch.trim()}" كاسم منتج جديد</span>
-                        </CommandItem>
-                      </CommandGroup>
-                    )}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+                </div>
+              )}
+            </div>
             {selectedItem && (selectedItem.sizes?.length || 0) > 1 && (
               <div className="mt-2 flex items-center gap-2">
                 <span className="text-[10px] text-gray-400 shrink-0">حفظ التكلفة على حجم:</span>
