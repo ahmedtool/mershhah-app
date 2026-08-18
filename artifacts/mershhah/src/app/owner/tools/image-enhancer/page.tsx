@@ -16,8 +16,12 @@ import { ImageGallery } from '@/components/studio/ImageGallery';
 import type { MenuItem } from '@/lib/types';
 
 const BUCKET = 'restaurant-assets';
-const AI_MODEL_ID = 'Xenova/swin2SR-realworld-sr-x4-64-bsrgan-psnr';
-const AI_INPUT_MAX_DIMENSION = 480; // model upscales ~4x, so keep the input small
+// Tested live: the "realworld-x4" model took 89s just to initialize plus
+// 40s+ more for a single small image - the "lightweight-x2" variant is
+// meaningfully faster in every stage (measured ~111s end-to-end total) while
+// still being real AI super-resolution, not just a filter.
+const AI_MODEL_ID = 'Xenova/swin2SR-lightweight-x2-64';
+const AI_INPUT_MAX_DIMENSION = 700; // model upscales ~2x, so a larger input still lands around ~1400px output
 
 function loadImageElement(imgSrc: string, isCrossOrigin: boolean): Promise<HTMLImageElement> {
   const img = document.createElement('img');
@@ -119,9 +123,10 @@ async function enhanceImage(
   isCrossOrigin: boolean,
   onProgress?: (status: string) => void
 ): Promise<Blob> {
-  // The AI model + WASM runtime can be a large one-time download - never let
-  // a slow connection hang the tool indefinitely.
-  return withTimeout(enhanceImageWithAI(imgSrc, isCrossOrigin, onProgress), 60000);
+  // Measured live: model init alone can take ~45s and inference another
+  // ~65s on a plain CPU (no GPU acceleration) - give real headroom over that
+  // for slower devices before giving up.
+  return withTimeout(enhanceImageWithAI(imgSrc, isCrossOrigin, onProgress), 240000);
 }
 
 type UsageState = { allowed: boolean; remaining: number; isUnlimited: boolean };
@@ -216,10 +221,10 @@ export default function ImageEnhancerPage() {
       return;
     }
     setIsProcessing(true);
-    setProcessingStatus('جاري تحميل نموذج الذكاء الاصطناعي...');
+    setProcessingStatus('جاري تجهيز نموذج الذكاء الاصطناعي... (أول مرة قد تأخذ دقيقة أو أكثر)');
     try {
       const blob = await enhanceImage(originalUrl, originalIsRemote, (status) => {
-        if (status === 'processing') setProcessingStatus('جاري التحسين بالذكاء الاصطناعي...');
+        if (status === 'processing') setProcessingStatus('جاري التحسين بالذكاء الاصطناعي... (قد يستغرق حتى 3 دقائق، لا تغلق الصفحة)');
       });
       setEnhancedBlob(blob);
       setEnhancedUrl(URL.createObjectURL(blob));
@@ -400,6 +405,12 @@ export default function ImageEnhancerPage() {
                 </div>
               </div>
             </div>
+          )}
+
+          {originalUrl && !isProcessing && (
+            <p className="text-[11px] text-gray-400 text-center">
+              التحسين يشتغل بالذكاء الاصطناعي داخل متصفحك مباشرة (بدون تكلفة) — وقد يأخذ حتى 2-3 دقائق، خصوصاً أول مرة
+            </p>
           )}
 
           {originalUrl && (
