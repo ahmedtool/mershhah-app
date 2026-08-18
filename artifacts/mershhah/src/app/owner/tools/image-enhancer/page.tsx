@@ -20,8 +20,14 @@ const MAX_DIMENSION = 1600;
 const AI_MODEL_ID = 'Xenova/swin2SR-realworld-sr-x4-64-bsrgan-psnr';
 const AI_INPUT_MAX_DIMENSION = 480; // model upscales ~4x, so keep the input small
 
-function convolve3x3(src: Uint8ClampedArray, width: number, height: number, kernel: number[]): Uint8ClampedArray {
+const yieldToBrowser = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+// Yields back to the browser every few rows so a large image never blocks
+// the main thread long enough to trigger a "page is slowing down Firefox"
+// unresponsive-script warning.
+async function convolve3x3(src: Uint8ClampedArray, width: number, height: number, kernel: number[]): Promise<Uint8ClampedArray> {
   const out = new Uint8ClampedArray(src.length);
+  const YIELD_EVERY_ROWS = 40;
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const idx = (y * width + x) * 4;
@@ -40,18 +46,22 @@ function convolve3x3(src: Uint8ClampedArray, width: number, height: number, kern
       }
       out[idx + 3] = src[idx + 3];
     }
+    if (y % YIELD_EVERY_ROWS === 0) await yieldToBrowser();
   }
   return out;
 }
 
-function autoContrast(src: Uint8ClampedArray): Uint8ClampedArray {
+async function autoContrast(src: Uint8ClampedArray, width: number): Promise<Uint8ClampedArray> {
   let min = 255;
   let max = 0;
+  const rowBytes = width * 4;
+  const YIELD_EVERY_BYTES = rowBytes * 60;
   for (let i = 0; i < src.length; i += 4) {
     for (let c = 0; c < 3; c++) {
       if (src[i + c] < min) min = src[i + c];
       if (src[i + c] > max) max = src[i + c];
     }
+    if (i % YIELD_EVERY_BYTES === 0) await yieldToBrowser();
   }
   const range = Math.max(max - min, 1);
   const out = new Uint8ClampedArray(src.length);
@@ -60,6 +70,7 @@ function autoContrast(src: Uint8ClampedArray): Uint8ClampedArray {
       out[i + c] = ((src[i + c] - min) / range) * 255;
     }
     out[i + 3] = src[i + 3];
+    if (i % YIELD_EVERY_BYTES === 0) await yieldToBrowser();
   }
   return out;
 }
@@ -91,8 +102,8 @@ async function enhanceImageBasic(imgSrc: string, isCrossOrigin: boolean): Promis
   ctx.drawImage(img, 0, 0, width, height);
 
   const imageData = ctx.getImageData(0, 0, width, height);
-  const sharpened = convolve3x3(imageData.data, width, height, [0, -1, 0, -1, 5, -1, 0, -1, 0]);
-  const contrasted = autoContrast(sharpened);
+  const sharpened = await convolve3x3(imageData.data, width, height, [0, -1, 0, -1, 5, -1, 0, -1, 0]);
+  const contrasted = await autoContrast(sharpened, width);
   ctx.putImageData(new ImageData(new Uint8ClampedArray(contrasted), width, height), 0, 0);
 
   return new Promise<Blob>((resolve, reject) => {
@@ -144,7 +155,15 @@ let upscalerPromise: Promise<any> | null = null;
 async function getUpscaler(onProgress?: (status: string) => void) {
   if (!upscalerPromise) {
     upscalerPromise = (async () => {
-      const { pipeline } = await import('@huggingface/transformers');
+      const { pipeline, env } = await import('@huggingface/transformers');
+      // Run the WASM inference on a Web Worker instead of the main thread,
+      // so the page stays responsive (and Firefox/Chrome don't flag it as
+      // an unresponsive script) while the model is actually computing.
+      try {
+        (env as any).backends.onnx.wasm.proxy = true;
+      } catch {
+        // Older/newer library versions may expose this differently - safe to skip.
+      }
       return pipeline('image-to-image', AI_MODEL_ID, {
         progress_callback: (p: any) => {
           if (onProgress && p?.status) onProgress(p.status);
