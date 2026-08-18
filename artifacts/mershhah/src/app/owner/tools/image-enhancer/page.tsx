@@ -1,0 +1,419 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {
+  Sparkles, Upload, Loader2, Check, Images, Save, RotateCcw, Lock, AlertTriangle,
+} from 'lucide-react';
+import { useUser } from '@/hooks/useUser';
+import { supabase } from '@/lib/supabase';
+import { useToast } from '@/hooks/use-toast';
+import { syncPublicPage } from '@/lib/public-pages';
+import { cn } from '@/lib/utils';
+import { Link } from 'wouter';
+import { ImageGallery } from '@/components/studio/ImageGallery';
+import type { MenuItem } from '@/lib/types';
+
+const BUCKET = 'restaurant-assets';
+const MAX_DIMENSION = 1600;
+
+function convolve3x3(src: Uint8ClampedArray, width: number, height: number, kernel: number[]): Uint8ClampedArray {
+  const out = new Uint8ClampedArray(src.length);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4;
+      for (let c = 0; c < 3; c++) {
+        let sum = 0;
+        let k = 0;
+        for (let ky = -1; ky <= 1; ky++) {
+          for (let kx = -1; kx <= 1; kx++) {
+            const yy = Math.min(height - 1, Math.max(0, y + ky));
+            const xx = Math.min(width - 1, Math.max(0, x + kx));
+            sum += src[(yy * width + xx) * 4 + c] * kernel[k];
+            k++;
+          }
+        }
+        out[idx + c] = sum;
+      }
+      out[idx + 3] = src[idx + 3];
+    }
+  }
+  return out;
+}
+
+function autoContrast(src: Uint8ClampedArray): Uint8ClampedArray {
+  let min = 255;
+  let max = 0;
+  for (let i = 0; i < src.length; i += 4) {
+    for (let c = 0; c < 3; c++) {
+      if (src[i + c] < min) min = src[i + c];
+      if (src[i + c] > max) max = src[i + c];
+    }
+  }
+  const range = Math.max(max - min, 1);
+  const out = new Uint8ClampedArray(src.length);
+  for (let i = 0; i < src.length; i += 4) {
+    for (let c = 0; c < 3; c++) {
+      out[i + c] = ((src[i + c] - min) / range) * 255;
+    }
+    out[i + 3] = src[i + 3];
+  }
+  return out;
+}
+
+async function enhanceImage(imgSrc: string, isCrossOrigin: boolean): Promise<Blob> {
+  const img = document.createElement('img');
+  if (isCrossOrigin) img.crossOrigin = 'anonymous';
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error('تعذّر تحميل الصورة'));
+    img.src = imgSrc;
+  });
+
+  const scale = Math.min(1, MAX_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight));
+  const width = Math.round(img.naturalWidth * scale);
+  const height = Math.round(img.naturalHeight * scale);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('تعذّر إنشاء لوحة الرسم');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(img, 0, 0, width, height);
+
+  const imageData = ctx.getImageData(0, 0, width, height);
+  const sharpened = convolve3x3(imageData.data, width, height, [0, -1, 0, -1, 5, -1, 0, -1, 0]);
+  const contrasted = autoContrast(sharpened);
+  ctx.putImageData(new ImageData(new Uint8ClampedArray(contrasted), width, height), 0, 0);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob); else reject(new Error('فشل إنشاء الصورة المحسّنة'));
+    }, 'image/webp', 0.92);
+  });
+}
+
+type UsageState = { allowed: boolean; remaining: number; isUnlimited: boolean };
+
+export default function ImageEnhancerPage() {
+  const { user } = useUser();
+  const { toast } = useToast();
+  const restaurantId = user?.restaurantId;
+
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [productName, setProductName] = useState('');
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const [usage, setUsage] = useState<UsageState | null>(null);
+  const [isLoadingUsage, setIsLoadingUsage] = useState(true);
+
+  const [originalUrl, setOriginalUrl] = useState<string | null>(null);
+  const [originalIsRemote, setOriginalIsRemote] = useState(false);
+  const [enhancedUrl, setEnhancedUrl] = useState<string | null>(null);
+  const [enhancedBlob, setEnhancedBlob] = useState<Blob | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchMenuItems = async () => {
+    if (!restaurantId) return;
+    const { data } = await supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId).order('name');
+    setMenuItems((data || []) as MenuItem[]);
+  };
+
+  const fetchUsage = async () => {
+    if (!restaurantId) return;
+    setIsLoadingUsage(true);
+    const { data } = await supabase.rpc('check_image_enhance_usage', { p_restaurant_id: restaurantId, p_consume: false });
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) setUsage({ allowed: row.allowed, remaining: row.remaining, isUnlimited: row.is_unlimited });
+    setIsLoadingUsage(false);
+  };
+
+  useEffect(() => {
+    fetchMenuItems();
+    fetchUsage();
+  }, [restaurantId]);
+
+  const resetImages = () => {
+    setOriginalUrl(null);
+    setOriginalIsRemote(false);
+    setEnhancedUrl(null);
+    setEnhancedBlob(null);
+  };
+
+  const selectProduct = (item: MenuItem) => {
+    setSelectedItem(item);
+    setProductName(item.name);
+    setShowSuggestions(false);
+    resetImages();
+  };
+
+  const filteredMenuItems = productName.trim()
+    ? menuItems.filter((i) => i.name.includes(productName.trim()))
+    : menuItems;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) {
+      toast({ variant: 'destructive', title: 'الصورة كبيرة جداً', description: 'اختر صورة أقل من 8 ميجابايت' });
+      return;
+    }
+    resetImages();
+    setOriginalUrl(URL.createObjectURL(file));
+    setOriginalIsRemote(false);
+  };
+
+  const handleGallerySelect = (storagePath: string) => {
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
+    resetImages();
+    setOriginalUrl(data.publicUrl);
+    setOriginalIsRemote(true);
+    setGalleryOpen(false);
+  };
+
+  const handleEnhance = async () => {
+    if (!originalUrl) return;
+    if (usage && !usage.isUnlimited && usage.remaining <= 0) {
+      toast({ variant: 'destructive', title: 'انتهى حدك المجاني الشهري', description: 'رقّي باقتك للاستخدام الغير محدود' });
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const blob = await enhanceImage(originalUrl, originalIsRemote);
+      setEnhancedBlob(blob);
+      setEnhancedUrl(URL.createObjectURL(blob));
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'فشل التحسين', description: e.message });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!restaurantId || !selectedItem || !enhancedBlob) {
+      toast({ variant: 'destructive', title: 'خطأ', description: 'اختر منتج وحسّن صورته أولاً' });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const { data: usageData, error: usageError } = await supabase.rpc('check_image_enhance_usage', {
+        p_restaurant_id: restaurantId, p_consume: true,
+      });
+      if (usageError) throw usageError;
+      const row = Array.isArray(usageData) ? usageData[0] : usageData;
+      if (!row?.allowed) {
+        setUsage({ allowed: false, remaining: 0, isUnlimited: false });
+        toast({ variant: 'destructive', title: 'انتهى حدك المجاني الشهري', description: 'رقّي باقتك للاستخدام الغير محدود' });
+        return;
+      }
+      setUsage({ allowed: row.allowed, remaining: row.remaining, isUnlimited: row.is_unlimited });
+
+      const path = `restaurants/${restaurantId}/menu_items/${selectedItem.id}-enhanced-${Date.now()}.webp`;
+      const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, enhancedBlob);
+      if (uploadError) throw uploadError;
+
+      const { error: updateError } = await supabase.from('menu_items').update({ image_url: path }).eq('id', selectedItem.id);
+      if (updateError) throw updateError;
+
+      syncPublicPage(restaurantId).catch(() => {});
+      toast({ title: 'تم الحفظ', description: `تم تحديث صورة "${selectedItem.name}"` });
+      resetImages();
+      fetchMenuItems();
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const quotaExceeded = !!usage && !usage.isUnlimited && usage.remaining <= 0;
+
+  return (
+    <div className="space-y-6 p-4" dir="rtl">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center">
+          <Sparkles className="h-6 w-6 text-violet-600" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold text-gray-900">تحسين جودة صور المنتجات</h1>
+          <p className="text-xs text-gray-400">ارفع صورة أو اختر من صور منيوك، وحسّن وضوحها بضغطة زر</p>
+        </div>
+      </div>
+
+      {/* Usage banner */}
+      {isLoadingUsage ? (
+        <div className="h-10 rounded-xl bg-gray-50 animate-pulse" />
+      ) : usage?.isUnlimited ? (
+        <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-3.5 py-2.5 flex items-center gap-2">
+          <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+          <p className="text-[11px] text-emerald-700 font-bold">استخدام غير محدود — باقتك المدفوعة تشمل هذي الأداة</p>
+        </div>
+      ) : quotaExceeded ? (
+        <div className="bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Lock className="h-3.5 w-3.5 text-red-500 shrink-0" />
+            <p className="text-[11px] text-red-600">انتهى حدك المجاني هذا الشهر (10 منتجات) — يتجدد الشهر القادم</p>
+          </div>
+          <Link href="/pricing" className="h-8 px-3 rounded-lg bg-gray-900 text-white text-[11px] font-bold flex items-center">
+            ترقية الباقة
+          </Link>
+        </div>
+      ) : (
+        <div className="bg-violet-50 border border-violet-100 rounded-xl px-3.5 py-2.5">
+          <p className="text-[11px] text-violet-700">
+            الاستخدامات المتبقية هذا الشهر: <span className="font-bold">{usage?.remaining ?? 10}</span> من 10
+          </p>
+        </div>
+      )}
+
+      {/* Product picker */}
+      <Card className="border-gray-100">
+        <CardContent className="p-5">
+          <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">اختر المنتج</label>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="اختر من المنيو أو اكتب اسم المنتج..."
+              value={productName}
+              onChange={(e) => {
+                const v = e.target.value;
+                setProductName(v);
+                if (selectedItem && v !== selectedItem.name) setSelectedItem(null);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
+            />
+            {showSuggestions && (
+              <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto" dir="rtl">
+                {filteredMenuItems.length > 0 ? (
+                  filteredMenuItems.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); selectProduct(item); }}
+                      className="w-full text-right px-3 py-2 text-xs hover:bg-gray-50 flex items-center gap-2"
+                    >
+                      <Check className={cn('h-3.5 w-3.5 shrink-0', selectedItem?.id === item.id ? 'opacity-100 text-emerald-600' : 'opacity-0')} />
+                      <span className="truncate">{item.name}</span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="px-3 py-3 text-[11px] text-gray-400 text-center">ما فيه صنف مطابق</p>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Image source */}
+      <Card className="border-gray-100">
+        <CardContent className="p-5 space-y-4">
+          <div className="flex gap-2">
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 h-11 rounded-xl border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              رفع صورة جديدة
+            </button>
+            <button
+              onClick={() => setGalleryOpen(true)}
+              className="flex-1 h-11 rounded-xl border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+            >
+              <Images className="h-3.5 w-3.5" />
+              اختيار من صور المنيو
+            </button>
+          </div>
+
+          {originalUrl && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 mb-1.5">قبل</p>
+                <div className="aspect-square rounded-xl overflow-hidden bg-gray-50 border border-gray-100">
+                  <img src={originalUrl} alt="قبل" className="w-full h-full object-cover" />
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 mb-1.5">بعد</p>
+                <div className="aspect-square rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
+                  {isProcessing ? (
+                    <Loader2 className="h-6 w-6 text-gray-300 animate-spin" />
+                  ) : enhancedUrl ? (
+                    <img src={enhancedUrl} alt="بعد" className="w-full h-full object-cover" />
+                  ) : (
+                    <p className="text-[11px] text-gray-300">اضغط "تحسين الصورة"</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {originalUrl && (
+            <div className="flex gap-2">
+              <button
+                onClick={handleEnhance}
+                disabled={isProcessing || quotaExceeded}
+                className="flex-1 h-11 rounded-xl bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                {isProcessing ? 'جاري التحسين...' : 'تحسين الصورة'}
+              </button>
+              <button
+                onClick={resetImages}
+                className="h-11 px-4 rounded-xl border border-gray-200 text-gray-500 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                إلغاء
+              </button>
+            </div>
+          )}
+
+          {enhancedBlob && (
+            <button
+              onClick={handleSave}
+              disabled={isSaving || !selectedItem}
+              className="w-full h-11 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+              {isSaving ? 'جاري الحفظ...' : !selectedItem ? 'اختر منتج أولاً عشان تحفظ' : 'حفظ كصورة المنتج'}
+            </button>
+          )}
+
+          {!selectedItem && enhancedBlob && (
+            <p className="text-[10px] text-amber-600 flex items-center gap-1.5">
+              <AlertTriangle className="h-3 w-3 shrink-0" />
+              لازم تختار المنتج فوق عشان تقدر تحفظ الصورة عليه
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Gallery picker dialog */}
+      <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col rounded-2xl" dir="rtl">
+          <div className="px-5 pt-5 pb-3">
+            <h2 className="text-lg font-bold">اختر صورة من صور منيوك</h2>
+            <p className="text-sm text-gray-400 mt-1">اضغط على الصورة لاختيارها كنقطة بداية للتحسين</p>
+          </div>
+          <div className="flex-1 overflow-y-auto -mx-6 px-6 pb-6">
+            <ImageGallery onImageSelect={handleGallerySelect} />
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
