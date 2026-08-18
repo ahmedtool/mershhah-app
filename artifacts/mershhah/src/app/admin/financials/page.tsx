@@ -27,7 +27,7 @@ type RevenueStats = {
     amount: number;
     date: string;
     status: 'completed' | 'failed' | 'pending';
-    type: 'subscription' | 'refund' | 'tool_purchase' | 'adjustment';
+    type: 'subscription' | 'refund' | 'tool_purchase' | 'adjustment' | 'credit_pack';
   }[];
 };
 
@@ -68,7 +68,7 @@ export default function AdminFinancialsPage() {
       const cancelledSubs = subs.filter(s => s.status === 'cancelled');
       const pendingSubs = subs.filter(s => s.status === 'pending');
 
-      const completedCharges = transactions.filter((t: any) => t.type === 'subscription' && t.status === 'completed');
+      const completedCharges = transactions.filter((t: any) => (t.type === 'subscription' || t.type === 'credit_pack') && t.status === 'completed');
       const completedRefunds = transactions.filter((t: any) => t.type === 'refund' && t.status === 'completed');
 
       const grossRevenue = completedCharges.reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);

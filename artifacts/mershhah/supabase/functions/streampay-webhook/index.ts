@@ -272,6 +272,65 @@ serve(async (req) => {
           break;
         }
 
+        // Image-enhancement credit-pack purchases (streampay-credits-checkout)
+        // carry pack_id + credits instead of tool_id/plan - credit the
+        // restaurant's shared balance (capped at 199, matching the free-grant
+        // cap in check_image_enhance_usage) and stop.
+        if (metadata.pack_id && metadata.credits && metadata.profile_id) {
+          const MAX_BALANCE = 199;
+          const { data: payingProfile2 } = await supabase
+            .from("profiles")
+            .select("restaurant_id")
+            .eq("id", metadata.profile_id)
+            .single();
+
+          if (payingProfile2?.restaurant_id) {
+            const { data: restaurantRow } = await supabase
+              .from("restaurants")
+              .select("image_credits_balance")
+              .eq("id", payingProfile2.restaurant_id)
+              .single();
+
+            const newBalance = Math.min((restaurantRow?.image_credits_balance || 0) + Number(metadata.credits), MAX_BALANCE);
+            await supabase.from("restaurants")
+              .update({ image_credits_balance: newBalance })
+              .eq("id", payingProfile2.restaurant_id);
+          }
+
+          if (invoice?.id) {
+            await supabase.from("invoices").insert({
+              profile_id: metadata.profile_id,
+              streampay_invoice_id: invoice.id,
+              streampay_payment_id: payment?.id,
+              amount: paidAmount,
+              currency: "SAR",
+              status: "paid",
+              description: metadata.description || "شحن رصيد صور",
+              paid_at: new Date().toISOString(),
+            });
+          }
+
+          await supabase.from("transactions").insert({
+            profile_id: metadata.profile_id,
+            type: "credit_pack",
+            amount: paidAmount,
+            currency: "SAR",
+            status: "completed",
+            description: metadata.description || "شحن رصيد صور",
+            reference_type: "credit_pack",
+            reference_id: metadata.pack_id,
+            streampay_payment_id: payment?.id,
+          });
+
+          const creditsLabel = metadata.description || "شحن رصيد صور";
+          if (customerEmail) {
+            await sendEmail(customerEmail, "تم الدفع بنجاح - مرشح", paymentSuccessEmail(customerName, creditsLabel, paidAmount));
+          }
+          await sendEmail(ADMIN_NOTIFICATION_EMAIL, "💰 عملية دفع ناجحة جديدة - مرشح", adminPaymentNotificationEmail(customerName, customerEmail, creditsLabel, paidAmount));
+
+          break;
+        }
+
         // Activate the pending subscription created by streampay-checkout for
         // this profile. StreamPay doesn't echo our local subscription id back,
         // so this matches the same way SUBSCRIPTION_CREATED/ACTIVATED does below.
