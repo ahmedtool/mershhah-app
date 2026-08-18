@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
   Sparkles, Upload, Loader2, Check, Images, Save, RotateCcw, Lock, AlertTriangle,
 } from 'lucide-react';
@@ -445,6 +445,8 @@ export default function ImageEnhancerPage() {
       {/* Gallery picker dialog */}
       <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col rounded-2xl" dir="rtl">
+          <DialogTitle className="sr-only">اختر صورة من صور منيوك</DialogTitle>
+          <DialogDescription className="sr-only">اضغط على الصورة لاختيارها كنقطة بداية للتحسين</DialogDescription>
           <div className="px-5 pt-5 pb-3">
             <h2 className="text-lg font-bold">اختر صورة من صور منيوك</h2>
             <p className="text-sm text-gray-400 mt-1">اضغط على الصورة لاختيارها كنقطة بداية للتحسين</p>
