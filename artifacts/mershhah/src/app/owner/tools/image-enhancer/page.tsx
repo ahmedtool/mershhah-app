@@ -17,6 +17,8 @@ import type { MenuItem } from '@/lib/types';
 
 const BUCKET = 'restaurant-assets';
 const MAX_DIMENSION = 1600;
+const AI_MODEL_ID = 'Xenova/swin2SR-realworld-sr-x4-64-bsrgan-psnr';
+const AI_INPUT_MAX_DIMENSION = 480; // model upscales ~4x, so keep the input small
 
 function convolve3x3(src: Uint8ClampedArray, width: number, height: number, kernel: number[]): Uint8ClampedArray {
   const out = new Uint8ClampedArray(src.length);
@@ -62,15 +64,19 @@ function autoContrast(src: Uint8ClampedArray): Uint8ClampedArray {
   return out;
 }
 
-async function enhanceImage(imgSrc: string, isCrossOrigin: boolean): Promise<Blob> {
+function loadImageElement(imgSrc: string, isCrossOrigin: boolean): Promise<HTMLImageElement> {
   const img = document.createElement('img');
   if (isCrossOrigin) img.crossOrigin = 'anonymous';
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
+  return new Promise((resolve, reject) => {
+    img.onload = () => resolve(img);
     img.onerror = () => reject(new Error('تعذّر تحميل الصورة'));
     img.src = imgSrc;
   });
+}
 
+// Simple, no-AI fallback: sharpen convolution + auto-contrast on canvas.
+async function enhanceImageBasic(imgSrc: string, isCrossOrigin: boolean): Promise<Blob> {
+  const img = await loadImageElement(imgSrc, isCrossOrigin);
   const scale = Math.min(1, MAX_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight));
   const width = Math.round(img.naturalWidth * scale);
   const height = Math.round(img.naturalHeight * scale);
@@ -96,6 +102,100 @@ async function enhanceImage(imgSrc: string, isCrossOrigin: boolean): Promise<Blo
   });
 }
 
+// Shrink the source image down before feeding it to the AI model, since the
+// model upscales ~4x on its own — feeding it a full-size photo would produce
+// an unnecessarily huge, slow result.
+async function shrinkForAI(imgSrc: string, isCrossOrigin: boolean): Promise<string> {
+  const img = await loadImageElement(imgSrc, isCrossOrigin);
+  const scale = Math.min(1, AI_INPUT_MAX_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight));
+  const width = Math.max(1, Math.round(img.naturalWidth * scale));
+  const height = Math.max(1, Math.round(img.naturalHeight * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('تعذّر إنشاء لوحة الرسم');
+  ctx.drawImage(img, 0, 0, width, height);
+  return canvas.toDataURL('image/png');
+}
+
+function rawImageToBlob(rawImage: any): Promise<Blob> {
+  const canvas = document.createElement('canvas');
+  canvas.width = rawImage.width;
+  canvas.height = rawImage.height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('تعذّر إنشاء لوحة الرسم');
+  const channels: number = rawImage.channels || Math.round(rawImage.data.length / (rawImage.width * rawImage.height));
+  const rgba = new Uint8ClampedArray(rawImage.width * rawImage.height * 4);
+  for (let i = 0, j = 0; i < rawImage.data.length; i += channels, j += 4) {
+    rgba[j] = rawImage.data[i];
+    rgba[j + 1] = channels >= 2 ? rawImage.data[i + 1] : rawImage.data[i];
+    rgba[j + 2] = channels >= 3 ? rawImage.data[i + 2] : rawImage.data[i];
+    rgba[j + 3] = channels >= 4 ? rawImage.data[i + 3] : 255;
+  }
+  ctx.putImageData(new ImageData(rgba, rawImage.width, rawImage.height), 0, 0);
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('فشل تحويل الصورة'))), 'image/webp', 0.92);
+  });
+}
+
+let upscalerPromise: Promise<any> | null = null;
+
+async function getUpscaler(onProgress?: (status: string) => void) {
+  if (!upscalerPromise) {
+    upscalerPromise = (async () => {
+      const { pipeline } = await import('@huggingface/transformers');
+      return pipeline('image-to-image', AI_MODEL_ID, {
+        progress_callback: (p: any) => {
+          if (onProgress && p?.status) onProgress(p.status);
+        },
+      } as any);
+    })().catch((err) => {
+      upscalerPromise = null; // allow retrying on the next attempt instead of caching a failure forever
+      throw err;
+    });
+  }
+  return upscalerPromise;
+}
+
+async function enhanceImageWithAI(imgSrc: string, isCrossOrigin: boolean, onProgress?: (status: string) => void): Promise<Blob> {
+  const { RawImage } = await import('@huggingface/transformers');
+  const upscaler = await getUpscaler(onProgress);
+  const shrunkDataUrl = await shrinkForAI(imgSrc, isCrossOrigin);
+  const inputImage = await RawImage.fromURL(shrunkDataUrl);
+  onProgress?.('processing');
+  const output = await upscaler(inputImage);
+  const result = Array.isArray(output) ? output[0] : output;
+  return rawImageToBlob(result);
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('انتهت مهلة تحميل نموذج الذكاء الاصطناعي')), ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); }
+    );
+  });
+}
+
+async function enhanceImage(
+  imgSrc: string,
+  isCrossOrigin: boolean,
+  onProgress?: (status: string) => void
+): Promise<{ blob: Blob; usedAI: boolean }> {
+  try {
+    // The AI model + WASM runtime can be a large one-time download - never
+    // let a slow connection hang the tool indefinitely, fall back instead.
+    const blob = await withTimeout(enhanceImageWithAI(imgSrc, isCrossOrigin, onProgress), 60000);
+    return { blob, usedAI: true };
+  } catch (e) {
+    console.error('AI enhancement failed, falling back to basic filter:', e);
+    const blob = await enhanceImageBasic(imgSrc, isCrossOrigin);
+    return { blob, usedAI: false };
+  }
+}
+
 type UsageState = { allowed: boolean; remaining: number; isUnlimited: boolean };
 
 export default function ImageEnhancerPage() {
@@ -116,6 +216,7 @@ export default function ImageEnhancerPage() {
   const [enhancedUrl, setEnhancedUrl] = useState<string | null>(null);
   const [enhancedBlob, setEnhancedBlob] = useState<Blob | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStatus, setProcessingStatus] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
 
@@ -187,14 +288,21 @@ export default function ImageEnhancerPage() {
       return;
     }
     setIsProcessing(true);
+    setProcessingStatus('جاري تحميل نموذج الذكاء الاصطناعي...');
     try {
-      const blob = await enhanceImage(originalUrl, originalIsRemote);
+      const { blob, usedAI } = await enhanceImage(originalUrl, originalIsRemote, (status) => {
+        if (status === 'processing') setProcessingStatus('جاري التحسين بالذكاء الاصطناعي...');
+      });
       setEnhancedBlob(blob);
       setEnhancedUrl(URL.createObjectURL(blob));
+      if (!usedAI) {
+        toast({ title: 'تم التحسين', description: 'تعذّر تشغيل نموذج الذكاء الاصطناعي هالمرة، فاستخدمنا تحسين بسيط بدلاً منه' });
+      }
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'فشل التحسين', description: e.message });
     } finally {
       setIsProcessing(false);
+      setProcessingStatus('');
     }
   };
 
@@ -351,7 +459,10 @@ export default function ImageEnhancerPage() {
                 <p className="text-[10px] font-bold text-gray-400 mb-1.5">بعد</p>
                 <div className="aspect-square rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
                   {isProcessing ? (
-                    <Loader2 className="h-6 w-6 text-gray-300 animate-spin" />
+                    <div className="flex flex-col items-center gap-2 px-3 text-center">
+                      <Loader2 className="h-6 w-6 text-gray-300 animate-spin" />
+                      <p className="text-[10px] text-gray-400">{processingStatus}</p>
+                    </div>
                   ) : enhancedUrl ? (
                     <img src={enhancedUrl} alt="بعد" className="w-full h-full object-cover" />
                   ) : (
