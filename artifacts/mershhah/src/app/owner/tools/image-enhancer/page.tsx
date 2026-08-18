@@ -16,64 +16,8 @@ import { ImageGallery } from '@/components/studio/ImageGallery';
 import type { MenuItem } from '@/lib/types';
 
 const BUCKET = 'restaurant-assets';
-const MAX_DIMENSION = 1600;
 const AI_MODEL_ID = 'Xenova/swin2SR-realworld-sr-x4-64-bsrgan-psnr';
 const AI_INPUT_MAX_DIMENSION = 480; // model upscales ~4x, so keep the input small
-
-const yieldToBrowser = () => new Promise((resolve) => setTimeout(resolve, 0));
-
-// Yields back to the browser every few rows so a large image never blocks
-// the main thread long enough to trigger a "page is slowing down Firefox"
-// unresponsive-script warning.
-async function convolve3x3(src: Uint8ClampedArray, width: number, height: number, kernel: number[]): Promise<Uint8ClampedArray> {
-  const out = new Uint8ClampedArray(src.length);
-  const YIELD_EVERY_ROWS = 40;
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4;
-      for (let c = 0; c < 3; c++) {
-        let sum = 0;
-        let k = 0;
-        for (let ky = -1; ky <= 1; ky++) {
-          for (let kx = -1; kx <= 1; kx++) {
-            const yy = Math.min(height - 1, Math.max(0, y + ky));
-            const xx = Math.min(width - 1, Math.max(0, x + kx));
-            sum += src[(yy * width + xx) * 4 + c] * kernel[k];
-            k++;
-          }
-        }
-        out[idx + c] = sum;
-      }
-      out[idx + 3] = src[idx + 3];
-    }
-    if (y % YIELD_EVERY_ROWS === 0) await yieldToBrowser();
-  }
-  return out;
-}
-
-async function autoContrast(src: Uint8ClampedArray, width: number): Promise<Uint8ClampedArray> {
-  let min = 255;
-  let max = 0;
-  const rowBytes = width * 4;
-  const YIELD_EVERY_BYTES = rowBytes * 60;
-  for (let i = 0; i < src.length; i += 4) {
-    for (let c = 0; c < 3; c++) {
-      if (src[i + c] < min) min = src[i + c];
-      if (src[i + c] > max) max = src[i + c];
-    }
-    if (i % YIELD_EVERY_BYTES === 0) await yieldToBrowser();
-  }
-  const range = Math.max(max - min, 1);
-  const out = new Uint8ClampedArray(src.length);
-  for (let i = 0; i < src.length; i += 4) {
-    for (let c = 0; c < 3; c++) {
-      out[i + c] = ((src[i + c] - min) / range) * 255;
-    }
-    out[i + 3] = src[i + 3];
-    if (i % YIELD_EVERY_BYTES === 0) await yieldToBrowser();
-  }
-  return out;
-}
 
 function loadImageElement(imgSrc: string, isCrossOrigin: boolean): Promise<HTMLImageElement> {
   const img = document.createElement('img');
@@ -82,34 +26,6 @@ function loadImageElement(imgSrc: string, isCrossOrigin: boolean): Promise<HTMLI
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error('تعذّر تحميل الصورة'));
     img.src = imgSrc;
-  });
-}
-
-// Simple, no-AI fallback: sharpen convolution + auto-contrast on canvas.
-async function enhanceImageBasic(imgSrc: string, isCrossOrigin: boolean): Promise<Blob> {
-  const img = await loadImageElement(imgSrc, isCrossOrigin);
-  const scale = Math.min(1, MAX_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight));
-  const width = Math.round(img.naturalWidth * scale);
-  const height = Math.round(img.naturalHeight * scale);
-
-  const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('تعذّر إنشاء لوحة الرسم');
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-  ctx.drawImage(img, 0, 0, width, height);
-
-  const imageData = ctx.getImageData(0, 0, width, height);
-  const sharpened = await convolve3x3(imageData.data, width, height, [0, -1, 0, -1, 5, -1, 0, -1, 0]);
-  const contrasted = await autoContrast(sharpened, width);
-  ctx.putImageData(new ImageData(new Uint8ClampedArray(contrasted), width, height), 0, 0);
-
-  return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob); else reject(new Error('فشل إنشاء الصورة المحسّنة'));
-    }, 'image/webp', 0.92);
   });
 }
 
@@ -202,17 +118,10 @@ async function enhanceImage(
   imgSrc: string,
   isCrossOrigin: boolean,
   onProgress?: (status: string) => void
-): Promise<{ blob: Blob; usedAI: boolean }> {
-  try {
-    // The AI model + WASM runtime can be a large one-time download - never
-    // let a slow connection hang the tool indefinitely, fall back instead.
-    const blob = await withTimeout(enhanceImageWithAI(imgSrc, isCrossOrigin, onProgress), 60000);
-    return { blob, usedAI: true };
-  } catch (e) {
-    console.error('AI enhancement failed, falling back to basic filter:', e);
-    const blob = await enhanceImageBasic(imgSrc, isCrossOrigin);
-    return { blob, usedAI: false };
-  }
+): Promise<Blob> {
+  // The AI model + WASM runtime can be a large one-time download - never let
+  // a slow connection hang the tool indefinitely.
+  return withTimeout(enhanceImageWithAI(imgSrc, isCrossOrigin, onProgress), 60000);
 }
 
 type UsageState = { allowed: boolean; remaining: number; isUnlimited: boolean };
@@ -309,16 +218,17 @@ export default function ImageEnhancerPage() {
     setIsProcessing(true);
     setProcessingStatus('جاري تحميل نموذج الذكاء الاصطناعي...');
     try {
-      const { blob, usedAI } = await enhanceImage(originalUrl, originalIsRemote, (status) => {
+      const blob = await enhanceImage(originalUrl, originalIsRemote, (status) => {
         if (status === 'processing') setProcessingStatus('جاري التحسين بالذكاء الاصطناعي...');
       });
       setEnhancedBlob(blob);
       setEnhancedUrl(URL.createObjectURL(blob));
-      if (!usedAI) {
-        toast({ title: 'تم التحسين', description: 'تعذّر تشغيل نموذج الذكاء الاصطناعي هالمرة، فاستخدمنا تحسين بسيط بدلاً منه' });
-      }
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'فشل التحسين', description: e.message });
+      toast({
+        variant: 'destructive',
+        title: 'فشل التحسين بالذكاء الاصطناعي',
+        description: e.message || 'حاول مرة ثانية، أو تأكد من اتصال الإنترنت',
+      });
     } finally {
       setIsProcessing(false);
       setProcessingStatus('');
