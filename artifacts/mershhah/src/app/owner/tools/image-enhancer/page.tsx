@@ -129,12 +129,13 @@ async function enhanceImage(
   return withTimeout(enhanceImageWithAI(imgSrc, isCrossOrigin, onProgress), 240000);
 }
 
-type UsageState = { allowed: boolean; remaining: number; isUnlimited: boolean };
+type UsageState = { allowed: boolean; remaining: number };
 
 export default function ImageEnhancerPage() {
   const { user } = useUser();
   const { toast } = useToast();
   const restaurantId = user?.restaurantId;
+  const isPaidPlan = !!user?.entitlements?.planId && user.entitlements.planId !== 'free' && user.entitlements.planId !== 'none';
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [productName, setProductName] = useState('');
@@ -161,19 +162,22 @@ export default function ImageEnhancerPage() {
     setMenuItems((data || []) as MenuItem[]);
   };
 
-  const fetchUsage = async () => {
-    if (!restaurantId) return;
+  const fetchUsage = async (menuItemId: string) => {
     setIsLoadingUsage(true);
-    const { data } = await supabase.rpc('check_image_enhance_usage', { p_restaurant_id: restaurantId, p_consume: false });
+    const { data } = await supabase.rpc('check_image_enhance_usage', { p_menu_item_id: menuItemId, p_consume: false });
     const row = Array.isArray(data) ? data[0] : data;
-    if (row) setUsage({ allowed: row.allowed, remaining: row.remaining, isUnlimited: row.is_unlimited });
+    if (row) setUsage({ allowed: row.allowed, remaining: row.remaining });
     setIsLoadingUsage(false);
   };
 
   useEffect(() => {
     fetchMenuItems();
-    fetchUsage();
   }, [restaurantId]);
+
+  useEffect(() => {
+    if (selectedItem) fetchUsage(selectedItem.id);
+    else { setUsage(null); setIsLoadingUsage(false); }
+  }, [selectedItem?.id]);
 
   const resetImages = () => {
     setOriginalUrl(null);
@@ -215,11 +219,32 @@ export default function ImageEnhancerPage() {
   };
 
   const handleEnhance = async () => {
-    if (!originalUrl) return;
-    if (usage && !usage.isUnlimited && usage.remaining <= 0) {
-      toast({ variant: 'destructive', title: 'انتهى حدك المجاني الشهري', description: 'رقّي باقتك للاستخدام الغير محدود' });
+    if (!originalUrl || !selectedItem) return;
+
+    // Consume the quota right before running the AI model, since that's the
+    // expensive step - not at save time, which would let someone re-run the
+    // model for free as long as they never clicked "save".
+    const { data: usageData, error: usageError } = await supabase.rpc('check_image_enhance_usage', {
+      p_menu_item_id: selectedItem.id, p_consume: true,
+    });
+    if (usageError) {
+      toast({ variant: 'destructive', title: 'خطأ', description: usageError.message });
       return;
     }
+    const row = Array.isArray(usageData) ? usageData[0] : usageData;
+    if (!row?.allowed) {
+      setUsage({ allowed: false, remaining: 0 });
+      toast({
+        variant: 'destructive',
+        title: isPaidPlan ? 'وصلت لحد هذا المنتج' : 'الأداة للمشتركين فقط',
+        description: isPaidPlan
+          ? `هذا المنتج وصل للحد الأقصى (تحسينان). لا يوجد حد على عدد المنتجات المختلفة.`
+          : 'رقّي باقتك لتفعيل تحسين الصور بالذكاء الاصطناعي',
+      });
+      return;
+    }
+    setUsage({ allowed: row.allowed, remaining: row.remaining });
+
     setIsProcessing(true);
     setProcessingStatus('جاري تجهيز نموذج الذكاء الاصطناعي... (أول مرة قد تأخذ دقيقة أو أكثر)');
     try {
@@ -247,18 +272,6 @@ export default function ImageEnhancerPage() {
     }
     setIsSaving(true);
     try {
-      const { data: usageData, error: usageError } = await supabase.rpc('check_image_enhance_usage', {
-        p_restaurant_id: restaurantId, p_consume: true,
-      });
-      if (usageError) throw usageError;
-      const row = Array.isArray(usageData) ? usageData[0] : usageData;
-      if (!row?.allowed) {
-        setUsage({ allowed: false, remaining: 0, isUnlimited: false });
-        toast({ variant: 'destructive', title: 'انتهى حدك المجاني الشهري', description: 'رقّي باقتك للاستخدام الغير محدود' });
-        return;
-      }
-      setUsage({ allowed: row.allowed, remaining: row.remaining, isUnlimited: row.is_unlimited });
-
       const path = `restaurants/${restaurantId}/menu_items/${selectedItem.id}-enhanced-${Date.now()}.webp`;
       const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, enhancedBlob);
       if (uploadError) throw uploadError;
@@ -277,7 +290,7 @@ export default function ImageEnhancerPage() {
     }
   };
 
-  const quotaExceeded = !!usage && !usage.isUnlimited && usage.remaining <= 0;
+  const quotaExceeded = !!usage && !usage.allowed;
 
   return (
     <div className="space-y-6 p-4" dir="rtl">
@@ -293,27 +306,31 @@ export default function ImageEnhancerPage() {
       </div>
 
       {/* Usage banner */}
-      {isLoadingUsage ? (
-        <div className="h-10 rounded-xl bg-gray-50 animate-pulse" />
-      ) : usage?.isUnlimited ? (
-        <div className="bg-emerald-50 border border-emerald-100 rounded-xl px-3.5 py-2.5 flex items-center gap-2">
-          <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-          <p className="text-[11px] text-emerald-700 font-bold">استخدام غير محدود — باقتك المدفوعة تشمل هذي الأداة</p>
-        </div>
-      ) : quotaExceeded ? (
+      {!isPaidPlan ? (
         <div className="bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <Lock className="h-3.5 w-3.5 text-red-500 shrink-0" />
-            <p className="text-[11px] text-red-600">انتهى حدك المجاني هذا الشهر (10 منتجات) — يتجدد الشهر القادم</p>
+            <p className="text-[11px] text-red-600">أداة تحسين الصور بالذكاء الاصطناعي متاحة للمشتركين فقط</p>
           </div>
           <Link href="/pricing" className="h-8 px-3 rounded-lg bg-gray-900 text-white text-[11px] font-bold flex items-center">
             ترقية الباقة
           </Link>
         </div>
+      ) : !selectedItem ? (
+        <div className="bg-violet-50 border border-violet-100 rounded-xl px-3.5 py-2.5">
+          <p className="text-[11px] text-violet-700">اختر منتج بالأسفل لعرض عدد مرات التحسين المتاحة له (تحسينان لكل منتج)</p>
+        </div>
+      ) : isLoadingUsage ? (
+        <div className="h-10 rounded-xl bg-gray-50 animate-pulse" />
+      ) : quotaExceeded ? (
+        <div className="bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5 flex items-center gap-2">
+          <Lock className="h-3.5 w-3.5 text-red-500 shrink-0" />
+          <p className="text-[11px] text-red-600">هذا المنتج وصل للحد الأقصى (تحسينان) — يقدر تحسّن أي منتج ثاني بدون حد</p>
+        </div>
       ) : (
         <div className="bg-violet-50 border border-violet-100 rounded-xl px-3.5 py-2.5">
           <p className="text-[11px] text-violet-700">
-            الاستخدامات المتبقية هذا الشهر: <span className="font-bold">{usage?.remaining ?? 10}</span> من 10
+            التحسينات المتبقية لهذا المنتج: <span className="font-bold">{usage?.remaining ?? 2}</span> من 2
           </p>
         </div>
       )}
@@ -407,7 +424,10 @@ export default function ImageEnhancerPage() {
             </div>
           )}
 
-          {originalUrl && !isProcessing && (
+          {originalUrl && !isProcessing && !selectedItem && (
+            <p className="text-[11px] text-amber-600 text-center">اختر المنتج بالأعلى قبل التحسين</p>
+          )}
+          {originalUrl && !isProcessing && selectedItem && (
             <p className="text-[11px] text-gray-400 text-center">
               التحسين يشتغل بالذكاء الاصطناعي داخل متصفحك مباشرة (بدون تكلفة) — وقد يأخذ حتى 2-3 دقائق، خصوصاً أول مرة
             </p>
@@ -417,7 +437,7 @@ export default function ImageEnhancerPage() {
             <div className="flex gap-2">
               <button
                 onClick={handleEnhance}
-                disabled={isProcessing || quotaExceeded}
+                disabled={isProcessing || quotaExceeded || !isPaidPlan || !selectedItem}
                 className="flex-1 h-11 rounded-xl bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
