@@ -130,6 +130,7 @@ async function enhanceImage(
 }
 
 type UsageState = { allowed: boolean; remaining: number };
+type CreditPack = { id: string; name: string; credits: number; price: number };
 
 export default function ImageEnhancerPage() {
   const { user } = useUser();
@@ -153,6 +154,8 @@ export default function ImageEnhancerPage() {
   const [processingStatus, setProcessingStatus] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [packs, setPacks] = useState<CreditPack[]>([]);
+  const [buyingPackId, setBuyingPackId] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -171,10 +174,58 @@ export default function ImageEnhancerPage() {
     setIsLoadingUsage(false);
   };
 
+  const fetchPacks = async () => {
+    const { data } = await supabase.from('image_credit_packs').select('*').eq('is_active', true).order('position');
+    setPacks((data || []) as CreditPack[]);
+  };
+
   useEffect(() => {
     fetchMenuItems();
     fetchUsage();
+    fetchPacks();
   }, [restaurantId]);
+
+  // Land back here after a real StreamPay credit-pack purchase (success or failure).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get('credit_purchase');
+    if (!result) return;
+    if (result === 'success') {
+      toast({ title: 'تم الشحن بنجاح', description: 'راح يظهر الرصيد خلال لحظات' });
+      fetchUsage();
+    } else if (result === 'failed') {
+      toast({ variant: 'destructive', title: 'فشل الدفع', description: 'لم تكتمل عملية الدفع. حاول مرة أخرى.' });
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+  }, []);
+
+  const handleBuyPack = async (packId: string) => {
+    setBuyingPackId(packId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/streampay-credits-checkout`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ pack_id: packId }),
+        }
+      );
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast({ variant: 'destructive', title: 'تعذّر بدء الدفع', description: data.error || 'فشل إنشاء رابط الدفع' });
+        setBuyingPackId(null);
+      }
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+      setBuyingPackId(null);
+    }
+  };
 
   const resetImages = () => {
     setOriginalUrl(null);
@@ -316,12 +367,9 @@ export default function ImageEnhancerPage() {
       ) : isLoadingUsage ? (
         <div className="h-10 rounded-xl bg-gray-50 animate-pulse" />
       ) : quotaExceeded ? (
-        <div className="bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <Lock className="h-3.5 w-3.5 text-red-500 shrink-0" />
-            <p className="text-[11px] text-red-600">انتهى رصيدك من التحسينات</p>
-          </div>
-          <span className="text-[11px] text-gray-400">قريباً: شحن رصيد إضافي</span>
+        <div className="bg-red-50 border border-red-100 rounded-xl px-3.5 py-2.5 flex items-center gap-2">
+          <Lock className="h-3.5 w-3.5 text-red-500 shrink-0" />
+          <p className="text-[11px] text-red-600">انتهى رصيدك من التحسينات — اشترِ رصيد إضافي بالأسفل عشان تكمل</p>
         </div>
       ) : (
         <div className="bg-violet-50 border border-violet-100 rounded-xl px-3.5 py-2.5">
@@ -329,6 +377,35 @@ export default function ImageEnhancerPage() {
             رصيدك المتبقي: <span className="font-bold">{usage?.remaining ?? 15}</span> من 199 (15 تُضاف مجاناً كل شهر)
           </p>
         </div>
+      )}
+
+      {/* Buy credits */}
+      {isPaidPlan && packs.length > 0 && (
+        <Card className="border-gray-100">
+          <CardContent className="p-5 space-y-3">
+            <div>
+              <p className="text-xs font-bold text-gray-900">اشترِ رصيد إضافي</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">الرصيد يترحّل — ما ينتهي بنهاية الشهر (حد أقصى 199 صورة بالمجموع)</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {packs.map((pack) => (
+                <div key={pack.id} className="border border-gray-100 rounded-xl p-3.5 text-center space-y-2">
+                  <p className="text-[11px] font-bold text-gray-500">{pack.name}</p>
+                  <p className="text-lg font-black text-gray-900">{pack.credits} صورة</p>
+                  <p className="text-sm font-bold text-violet-600">{pack.price} ر.س</p>
+                  <button
+                    onClick={() => handleBuyPack(pack.id)}
+                    disabled={buyingPackId === pack.id}
+                    className="w-full h-9 rounded-lg bg-gray-900 text-white text-[11px] font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {buyingPackId === pack.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                    {buyingPackId === pack.id ? 'جاري التحويل...' : 'شراء'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Product picker */}
