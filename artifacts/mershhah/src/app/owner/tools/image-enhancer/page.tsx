@@ -31,7 +31,7 @@ const FLUX_INPUT_MAX_DIMENSION = 1200;
 
 // Downscale before upload (keeps the request small/fast) and strip the
 // data-URL prefix, since the edge function expects raw base64.
-async function imageSrcToBase64(imgSrc: string, isCrossOrigin: boolean): Promise<string> {
+async function imageSrcToBase64(imgSrc: string, isCrossOrigin: boolean): Promise<{ base64: string; width: number; height: number }> {
   const img = await loadImageElement(imgSrc, isCrossOrigin);
   const scale = Math.min(1, FLUX_INPUT_MAX_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight));
   const width = Math.max(1, Math.round(img.naturalWidth * scale));
@@ -43,7 +43,7 @@ async function imageSrcToBase64(imgSrc: string, isCrossOrigin: boolean): Promise
   if (!ctx) throw new Error('تعذّر إنشاء لوحة الرسم');
   ctx.drawImage(img, 0, 0, width, height);
   const dataUrl = canvas.toDataURL('image/png');
-  return dataUrl.split(',')[1];
+  return { base64: dataUrl.split(',')[1], width, height };
 }
 
 function base64ToBlob(base64: string, mimeType: string): Blob {
@@ -61,11 +61,11 @@ async function enhanceImageWithFlux(
   productName: string,
   accessToken: string
 ): Promise<EnhanceResult> {
-  const imageBase64 = await imageSrcToBase64(imgSrc, isCrossOrigin);
+  const { base64: imageBase64, width, height } = await imageSrcToBase64(imgSrc, isCrossOrigin);
   const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enhance-product-image`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify({ image_base64: imageBase64, product_name: productName }),
+    body: JSON.stringify({ image_base64: imageBase64, product_name: productName, width, height }),
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'فشل التحسين بالذكاء الاصطناعي');

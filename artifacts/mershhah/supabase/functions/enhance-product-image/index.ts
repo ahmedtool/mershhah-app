@@ -7,9 +7,30 @@ const corsHeaders = {
 };
 
 const BFL_API_BASE = "https://api.bfl.ai/v1";
-const BFL_MODEL = "flux-2-klein-4b";
+// klein is BFL's speed-optimized tier and produced noticeably soft/blurry
+// output - kontext-pro is their production-grade editing model. Costs
+// roughly 2x more per image (~0.04$ vs ~0.02$), but margins on every credit
+// pack stay comfortably positive (~57-62%) even at that price.
+const BFL_MODEL = "flux-kontext-pro";
 const POLL_INTERVAL_MS = 1500;
 const POLL_TIMEOUT_MS = 90000;
+
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
+// Clamp to FLUX's supported aspect_ratio range (3:7 to 7:3) so an
+// unusually tall/wide source photo doesn't get rejected.
+function toAspectRatio(width: number, height: number): string {
+  const MIN_RATIO = 3 / 7;
+  const MAX_RATIO = 7 / 3;
+  const raw = width / height;
+  const clamped = Math.min(MAX_RATIO, Math.max(MIN_RATIO, raw));
+  const w = Math.round(clamped * 100);
+  const h = 100;
+  const d = gcd(w, h) || 1;
+  return `${w / d}:${h / d}`;
+}
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -71,7 +92,7 @@ serve(async (req) => {
       return json({ error: "Unauthorized" }, 401);
     }
 
-    const { image_base64, product_name } = await req.json();
+    const { image_base64, product_name, width, height } = await req.json();
     if (!image_base64) return json({ error: "image_base64 is required" }, 400);
 
     // Server-side quota check + consume, mirroring check_image_enhance_usage
@@ -100,6 +121,7 @@ serve(async (req) => {
         prompt: buildPrompt(product_name),
         input_image: image_base64,
         output_format: "png",
+        ...(width && height ? { aspect_ratio: toAspectRatio(Number(width), Number(height)) } : {}),
       }),
     });
     const submitBody = await submitRes.json();
