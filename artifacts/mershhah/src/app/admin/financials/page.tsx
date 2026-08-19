@@ -20,6 +20,9 @@ type RevenueStats = {
   pendingSubscriptions: number;
   revenueByPlan: { plan: string; count: number; revenue: number }[];
   monthlyTrend: { month: string; revenue: number; refunded: number }[];
+  totalGatewayFees: number;
+  totalCogsAndSubsidy: number;
+  totalNetProfit: number;
   recentPayments: {
     id: string;
     restaurant: string;
@@ -28,6 +31,7 @@ type RevenueStats = {
     date: string;
     status: 'completed' | 'failed' | 'pending';
     type: 'subscription' | 'refund' | 'tool_purchase' | 'adjustment' | 'credit_pack';
+    netProfit: number | null;
   }[];
 };
 
@@ -37,7 +41,9 @@ export default function AdminFinancialsPage() {
   const [stats, setStats] = useState<RevenueStats>({
     totalRevenue: 0, monthlyRevenue: 0, lastMonthRevenue: 0, totalRefunded: 0, avgPerRestaurant: 0,
     totalSubscriptions: 0, activeSubscriptions: 0, cancelledSubscriptions: 0, pendingSubscriptions: 0,
-    revenueByPlan: [], monthlyTrend: [], recentPayments: [],
+    revenueByPlan: [], monthlyTrend: [],
+    totalGatewayFees: 0, totalCogsAndSubsidy: 0, totalNetProfit: 0,
+    recentPayments: [],
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -68,7 +74,7 @@ export default function AdminFinancialsPage() {
       const cancelledSubs = subs.filter(s => s.status === 'cancelled');
       const pendingSubs = subs.filter(s => s.status === 'pending');
 
-      const completedCharges = transactions.filter((t: any) => (t.type === 'subscription' || t.type === 'credit_pack') && t.status === 'completed');
+      const completedCharges = transactions.filter((t: any) => (t.type === 'subscription' || t.type === 'credit_pack' || t.type === 'tool_purchase') && t.status === 'completed');
       const completedRefunds = transactions.filter((t: any) => t.type === 'refund' && t.status === 'completed');
 
       const grossRevenue = completedCharges.reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
@@ -119,9 +125,17 @@ export default function AdminFinancialsPage() {
         date: t.created_at,
         status: t.status,
         type: t.type,
+        netProfit: t.net_profit !== null && t.net_profit !== undefined ? Number(t.net_profit) : null,
       }));
 
       const payingProfiles = new Set(completedCharges.map((t: any) => t.profile_id));
+
+      // Real net profit: gross minus StreamPay's processing fee/VAT, AI cost
+      // of goods, and the free-monthly-grant subsidy - computed per
+      // transaction by the webhook (streampay-webhook's computeFinancials).
+      const totalGatewayFees = completedCharges.reduce((sum: number, t: any) => sum + Number(t.gateway_fee || 0) + Number(t.gateway_fee_vat || 0), 0);
+      const totalCogsAndSubsidy = completedCharges.reduce((sum: number, t: any) => sum + Number(t.cogs || 0) + Number(t.free_grant_subsidy || 0), 0);
+      const totalNetProfit = completedCharges.reduce((sum: number, t: any) => sum + Number(t.net_profit ?? t.amount ?? 0), 0) - totalRefunded;
 
       setStats({
         totalRevenue,
@@ -135,6 +149,9 @@ export default function AdminFinancialsPage() {
         pendingSubscriptions: pendingSubs.length,
         revenueByPlan,
         monthlyTrend,
+        totalGatewayFees,
+        totalCogsAndSubsidy,
+        totalNetProfit,
         recentPayments,
       });
       setIsLoading(false);
@@ -241,6 +258,38 @@ export default function AdminFinancialsPage() {
               <p className="text-[10px] text-gray-400 mt-1">اشتراك نشط</p>
             </div>
           </>
+        )}
+      </div>
+
+      {/* Real Net Profit (after gateway fees + COGS + free-grant subsidy) */}
+      <div className="bg-gray-900 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-bold text-white">الربح الصافي الحقيقي</h3>
+            <p className="text-[10px] text-gray-400 mt-0.5">بعد خصم رسوم الدفع (StreamPay) وتكلفة الذكاء الاصطناعي ودعم الرصيد المجاني</p>
+          </div>
+        </div>
+        {isLoading ? (
+          <Skeleton className="h-16 rounded-xl bg-gray-800" />
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div>
+              <p className="text-[10px] text-gray-400">الإيراد الإجمالي</p>
+              <p className="text-lg font-black text-white">{stats.totalRevenue.toLocaleString()} ر.س</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400">رسوم الدفع (StreamPay)</p>
+              <p className="text-lg font-black text-red-400">-{stats.totalGatewayFees.toLocaleString(undefined, { maximumFractionDigits: 2 })} ر.س</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400">تكلفة AI + دعم الرصيد المجاني</p>
+              <p className="text-lg font-black text-red-400">-{stats.totalCogsAndSubsidy.toLocaleString(undefined, { maximumFractionDigits: 2 })} ر.س</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-gray-400">الربح الصافي</p>
+              <p className="text-lg font-black text-emerald-400">{stats.totalNetProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })} ر.س</p>
+            </div>
+          </div>
         )}
       </div>
 
@@ -385,6 +434,7 @@ export default function AdminFinancialsPage() {
                   <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">المطعم</th>
                   <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الوصف</th>
                   <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">المبلغ</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الربح الصافي</th>
                   <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">التاريخ</th>
                   <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الحالة</th>
                 </tr>
@@ -410,6 +460,15 @@ export default function AdminFinancialsPage() {
                         <span className={`font-bold ${isRefund ? 'text-red-500' : 'text-gray-900'}`}>
                           {isRefund ? '-' : ''}{payment.amount.toLocaleString()} ر.س
                         </span>
+                      </td>
+                      <td className="px-5 py-3">
+                        {payment.netProfit !== null ? (
+                          <span className={`font-bold ${payment.netProfit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                            {payment.netProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })} ر.س
+                          </span>
+                        ) : (
+                          <span className="text-gray-300">—</span>
+                        )}
                       </td>
                       <td className="px-5 py-3">
                         <span className="text-gray-400">{date.toLocaleDateString('ar-SA')}</span>

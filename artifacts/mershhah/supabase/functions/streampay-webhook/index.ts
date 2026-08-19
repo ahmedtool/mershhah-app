@@ -57,6 +57,72 @@ async function fetchStreamPayAmount(path: string): Promise<number> {
   }
 }
 
+// StreamPay's payment object exposes the card network used (payment_method:
+// MADA/VISA/MASTERCARD/...) but never a fee amount - they don't expose
+// processing fees via the API at all. Fetch the network so the fee can be
+// looked up from our own editable payment_fee_rates table.
+async function fetchStreamPayPaymentMethod(paymentId: string): Promise<string | null> {
+  const key = Deno.env.get("STREAMPAY_API_KEY");
+  const secret = Deno.env.get("STREAMPAY_API_SECRET");
+  if (!key || !secret || !paymentId) return null;
+  try {
+    const res = await fetch(`https://stream-app-service.streampay.sa/api/v2/payments/${paymentId}`, {
+      headers: { "x-api-key": btoa(`${key}:${secret}`) },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.payment_method || null;
+  } catch {
+    return null;
+  }
+}
+
+type Financials = {
+  paymentMethod: string | null;
+  gatewayFee: number;
+  gatewayFeeVat: number;
+  netAmount: number;
+  cogs: number;
+  freeGrantSubsidy: number;
+  netProfit: number;
+};
+
+// Computes the real net profit for one payment: gross amount minus
+// StreamPay's processing fee (rate looked up by card network, since
+// StreamPay's API doesn't return the fee directly) minus VAT on that fee,
+// minus the cost of goods (AI image generation) and, for credit packs, a
+// fixed subsidy allocation that funds the free monthly grant.
+async function computeFinancials(
+  supabase: any,
+  grossAmount: number,
+  paymentId: string | undefined,
+  cogs: number,
+  freeGrantSubsidy: number
+): Promise<Financials> {
+  const paymentMethod = paymentId ? await fetchStreamPayPaymentMethod(paymentId) : null;
+
+  let feePercent = 6.79; // conservative default (card-network rate) if the method is unknown
+  let vatPercent = 15;
+  if (paymentMethod) {
+    const { data: rate } = await supabase
+      .from("payment_fee_rates")
+      .select("fee_percent, vat_percent")
+      .eq("payment_method", paymentMethod)
+      .maybeSingle();
+    if (rate) {
+      feePercent = Number(rate.fee_percent);
+      vatPercent = Number(rate.vat_percent);
+    }
+  }
+
+  const gatewayFee = Math.round(grossAmount * (feePercent / 100) * 100) / 100;
+  const gatewayFeeVat = Math.round(gatewayFee * (vatPercent / 100) * 100) / 100;
+  const netAmount = Math.round((grossAmount - gatewayFee - gatewayFeeVat) * 100) / 100;
+  const netProfit = Math.round((netAmount - cogs - freeGrantSubsidy) * 100) / 100;
+
+  return { paymentMethod, gatewayFee, gatewayFeeVat, netAmount, cogs, freeGrantSubsidy, netProfit };
+}
+
 // Every signup is auto-enrolled in the free plan as "active". Once a paid
 // plan actually activates, that free row must stop being active too —
 // otherwise the profile ends up with two simultaneously "active"
@@ -251,6 +317,7 @@ serve(async (req) => {
             });
           }
 
+          const toolFinancials = await computeFinancials(supabase, paidAmount, payment?.id, 0, 0);
           await supabase.from("transactions").insert({
             profile_id: metadata.profile_id,
             type: "tool_purchase",
@@ -261,6 +328,13 @@ serve(async (req) => {
             reference_type: "tool",
             reference_id: metadata.tool_id,
             streampay_payment_id: payment?.id,
+            payment_method: toolFinancials.paymentMethod,
+            gateway_fee: toolFinancials.gatewayFee,
+            gateway_fee_vat: toolFinancials.gatewayFeeVat,
+            net_amount: toolFinancials.netAmount,
+            cogs: toolFinancials.cogs,
+            free_grant_subsidy: toolFinancials.freeGrantSubsidy,
+            net_profit: toolFinancials.netProfit,
           });
 
           const toolLabel = metadata.description || "شراء أداة";
@@ -310,6 +384,17 @@ serve(async (req) => {
             });
           }
 
+          // COGS = the real per-image AI cost for the credits actually
+          // delivered. free_grant_subsidy = a fixed allocation covering the
+          // monthly free grant (5 images x 0.50 SAR), charged against every
+          // paid purchase rather than tracked separately.
+          const PER_IMAGE_COST = 0.50;
+          const FREE_GRANT_SUBSIDY = 5 * PER_IMAGE_COST;
+          const creditFinancials = await computeFinancials(
+            supabase, paidAmount, payment?.id,
+            Number(metadata.credits) * PER_IMAGE_COST,
+            FREE_GRANT_SUBSIDY
+          );
           await supabase.from("transactions").insert({
             profile_id: metadata.profile_id,
             type: "credit_pack",
@@ -320,6 +405,13 @@ serve(async (req) => {
             reference_type: "credit_pack",
             reference_id: metadata.pack_id,
             streampay_payment_id: payment?.id,
+            payment_method: creditFinancials.paymentMethod,
+            gateway_fee: creditFinancials.gatewayFee,
+            gateway_fee_vat: creditFinancials.gatewayFeeVat,
+            net_amount: creditFinancials.netAmount,
+            cogs: creditFinancials.cogs,
+            free_grant_subsidy: creditFinancials.freeGrantSubsidy,
+            net_profit: creditFinancials.netProfit,
           });
 
           const creditsLabel = metadata.description || "شحن رصيد صور";
@@ -406,6 +498,7 @@ serve(async (req) => {
 
         // Create transaction record
         if (metadata.profile_id) {
+          const subFinancials = await computeFinancials(supabase, paidAmount, payment?.id, 0, 0);
           await supabase.from("transactions").insert({
             profile_id: metadata.profile_id,
             type: "subscription",
@@ -416,6 +509,13 @@ serve(async (req) => {
             reference_type: "subscription",
             reference_id: subscriptionId,
             streampay_payment_id: payment?.id,
+            payment_method: subFinancials.paymentMethod,
+            gateway_fee: subFinancials.gatewayFee,
+            gateway_fee_vat: subFinancials.gatewayFeeVat,
+            net_amount: subFinancials.netAmount,
+            cogs: subFinancials.cogs,
+            free_grant_subsidy: subFinancials.freeGrantSubsidy,
+            net_profit: subFinancials.netProfit,
           });
         }
 
