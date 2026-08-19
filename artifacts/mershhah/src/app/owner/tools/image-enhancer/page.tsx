@@ -16,12 +16,6 @@ import { ImageGallery } from '@/components/studio/ImageGallery';
 import type { MenuItem } from '@/lib/types';
 
 const BUCKET = 'restaurant-assets';
-// Tested live: the "realworld-x4" model took 89s just to initialize plus
-// 40s+ more for a single small image - the "lightweight-x2" variant is
-// meaningfully faster in every stage (measured ~111s end-to-end total) while
-// still being real AI super-resolution, not just a filter.
-const AI_MODEL_ID = 'Xenova/swin2SR-lightweight-x2-64';
-const AI_INPUT_MAX_DIMENSION = 700; // model upscales ~2x, so a larger input still lands around ~1400px output
 
 function loadImageElement(imgSrc: string, isCrossOrigin: boolean): Promise<HTMLImageElement> {
   const img = document.createElement('img');
@@ -33,12 +27,13 @@ function loadImageElement(imgSrc: string, isCrossOrigin: boolean): Promise<HTMLI
   });
 }
 
-// Shrink the source image down before feeding it to the AI model, since the
-// model upscales ~4x on its own — feeding it a full-size photo would produce
-// an unnecessarily huge, slow result.
-async function shrinkForAI(imgSrc: string, isCrossOrigin: boolean): Promise<string> {
+const FLUX_INPUT_MAX_DIMENSION = 1200;
+
+// Downscale before upload (keeps the request small/fast) and strip the
+// data-URL prefix, since the edge function expects raw base64.
+async function imageSrcToBase64(imgSrc: string, isCrossOrigin: boolean): Promise<string> {
   const img = await loadImageElement(imgSrc, isCrossOrigin);
-  const scale = Math.min(1, AI_INPUT_MAX_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight));
+  const scale = Math.min(1, FLUX_INPUT_MAX_DIMENSION / Math.max(img.naturalWidth, img.naturalHeight));
   const width = Math.max(1, Math.round(img.naturalWidth * scale));
   const height = Math.max(1, Math.round(img.naturalHeight * scale));
   const canvas = document.createElement('canvas');
@@ -47,86 +42,34 @@ async function shrinkForAI(imgSrc: string, isCrossOrigin: boolean): Promise<stri
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('تعذّر إنشاء لوحة الرسم');
   ctx.drawImage(img, 0, 0, width, height);
-  return canvas.toDataURL('image/png');
+  const dataUrl = canvas.toDataURL('image/png');
+  return dataUrl.split(',')[1];
 }
 
-function rawImageToBlob(rawImage: any): Promise<Blob> {
-  const canvas = document.createElement('canvas');
-  canvas.width = rawImage.width;
-  canvas.height = rawImage.height;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('تعذّر إنشاء لوحة الرسم');
-  const channels: number = rawImage.channels || Math.round(rawImage.data.length / (rawImage.width * rawImage.height));
-  const rgba = new Uint8ClampedArray(rawImage.width * rawImage.height * 4);
-  for (let i = 0, j = 0; i < rawImage.data.length; i += channels, j += 4) {
-    rgba[j] = rawImage.data[i];
-    rgba[j + 1] = channels >= 2 ? rawImage.data[i + 1] : rawImage.data[i];
-    rgba[j + 2] = channels >= 3 ? rawImage.data[i + 2] : rawImage.data[i];
-    rgba[j + 3] = channels >= 4 ? rawImage.data[i + 3] : 255;
-  }
-  ctx.putImageData(new ImageData(rgba, rawImage.width, rawImage.height), 0, 0);
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('فشل تحويل الصورة'))), 'image/webp', 0.92);
-  });
+function base64ToBlob(base64: string, mimeType: string): Blob {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mimeType });
 }
 
-let upscalerPromise: Promise<any> | null = null;
+type EnhanceResult = { blob: Blob; remaining: number };
 
-async function getUpscaler(onProgress?: (status: string) => void) {
-  if (!upscalerPromise) {
-    upscalerPromise = (async () => {
-      const { pipeline, env } = await import('@huggingface/transformers');
-      // Run the WASM inference on a Web Worker instead of the main thread,
-      // so the page stays responsive (and Firefox/Chrome don't flag it as
-      // an unresponsive script) while the model is actually computing.
-      try {
-        (env as any).backends.onnx.wasm.proxy = true;
-      } catch {
-        // Older/newer library versions may expose this differently - safe to skip.
-      }
-      return pipeline('image-to-image', AI_MODEL_ID, {
-        progress_callback: (p: any) => {
-          if (onProgress && p?.status) onProgress(p.status);
-        },
-      } as any);
-    })().catch((err) => {
-      upscalerPromise = null; // allow retrying on the next attempt instead of caching a failure forever
-      throw err;
-    });
-  }
-  return upscalerPromise;
-}
-
-async function enhanceImageWithAI(imgSrc: string, isCrossOrigin: boolean, onProgress?: (status: string) => void): Promise<Blob> {
-  const { RawImage } = await import('@huggingface/transformers');
-  const upscaler = await getUpscaler(onProgress);
-  const shrunkDataUrl = await shrinkForAI(imgSrc, isCrossOrigin);
-  const inputImage = await RawImage.fromURL(shrunkDataUrl);
-  onProgress?.('processing');
-  const output = await upscaler(inputImage);
-  const result = Array.isArray(output) ? output[0] : output;
-  return rawImageToBlob(result);
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('انتهت مهلة تحميل نموذج الذكاء الاصطناعي')), ms);
-    promise.then(
-      (v) => { clearTimeout(timer); resolve(v); },
-      (e) => { clearTimeout(timer); reject(e); }
-    );
-  });
-}
-
-async function enhanceImage(
+async function enhanceImageWithFlux(
   imgSrc: string,
   isCrossOrigin: boolean,
-  onProgress?: (status: string) => void
-): Promise<Blob> {
-  // Measured live: model init alone can take ~45s and inference another
-  // ~65s on a plain CPU (no GPU acceleration) - give real headroom over that
-  // for slower devices before giving up.
-  return withTimeout(enhanceImageWithAI(imgSrc, isCrossOrigin, onProgress), 240000);
+  productName: string,
+  accessToken: string
+): Promise<EnhanceResult> {
+  const imageBase64 = await imageSrcToBase64(imgSrc, isCrossOrigin);
+  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/enhance-product-image`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ image_base64: imageBase64, product_name: productName }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'فشل التحسين بالذكاء الاصطناعي');
+  return { blob: base64ToBlob(data.image_base64, 'image/png'), remaining: data.remaining };
 }
 
 type UsageState = { allowed: boolean; remaining: number };
@@ -269,19 +212,12 @@ export default function ImageEnhancerPage() {
   const handleEnhance = async () => {
     if (!originalUrl || !restaurantId) return;
 
-    // Consume the quota right before running the AI model, since that's the
-    // expensive step - not at save time, which would let someone re-run the
-    // model for free as long as they never clicked "save".
-    const { data: usageData, error: usageError } = await supabase.rpc('check_image_enhance_usage', {
-      p_restaurant_id: restaurantId, p_consume: true,
-    });
-    if (usageError) {
-      toast({ variant: 'destructive', title: 'خطأ', description: usageError.message });
-      return;
-    }
-    const row = Array.isArray(usageData) ? usageData[0] : usageData;
-    if (!row?.allowed) {
-      setUsage({ allowed: false, remaining: 0 });
+    // Quick, read-only pre-check so we can fail fast with a friendly message
+    // instead of making a real (paid) FLUX request when we already know the
+    // balance is empty. The actual check-and-consume happens server-side
+    // inside enhance-product-image, right before it calls FLUX - that's the
+    // authoritative gate, this is just UX.
+    if (usage && !usage.allowed) {
       toast({
         variant: 'destructive',
         title: isPaidPlan ? 'انتهى رصيدك' : 'الأداة للمشتركين فقط',
@@ -291,22 +227,29 @@ export default function ImageEnhancerPage() {
       });
       return;
     }
-    setUsage({ allowed: row.allowed, remaining: row.remaining });
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
 
     setIsProcessing(true);
-    setProcessingStatus('جاري تجهيز نموذج الذكاء الاصطناعي... (أول مرة قد تأخذ دقيقة أو أكثر)');
+    setProcessingStatus('جاري إرسال الصورة للذكاء الاصطناعي...');
     try {
-      const blob = await enhanceImage(originalUrl, originalIsRemote, (status) => {
-        if (status === 'processing') setProcessingStatus('جاري التحسين بالذكاء الاصطناعي... (قد يستغرق حتى 3 دقائق، لا تغلق الصفحة)');
-      });
+      const { blob, remaining } = await enhanceImageWithFlux(
+        originalUrl,
+        originalIsRemote,
+        selectedItem?.name || productName,
+        session.access_token
+      );
       setEnhancedBlob(blob);
       setEnhancedUrl(URL.createObjectURL(blob));
+      if (typeof remaining === 'number') setUsage({ allowed: remaining > 0, remaining });
     } catch (e: any) {
       toast({
         variant: 'destructive',
         title: 'فشل التحسين بالذكاء الاصطناعي',
         description: e.message || 'حاول مرة ثانية، أو تأكد من اتصال الإنترنت',
       });
+      fetchUsage(); // in case the failure was "no credit" - resync the real balance
     } finally {
       setIsProcessing(false);
       setProcessingStatus('');
@@ -499,7 +442,7 @@ export default function ImageEnhancerPage() {
 
           {originalUrl && !isProcessing && (
             <p className="text-[11px] text-gray-400 text-center">
-              التحسين يشتغل بالذكاء الاصطناعي داخل متصفحك مباشرة — وقد يأخذ حتى 2-3 دقائق، خصوصاً أول مرة
+              التحسين يستخدم صورة صنفك الفعلية ويحوّل خلفيتها لبيضاء نظيفة — يأخذ عادةً أقل من دقيقة
             </p>
           )}
 
