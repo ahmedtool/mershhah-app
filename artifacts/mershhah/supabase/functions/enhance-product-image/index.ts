@@ -6,31 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const BFL_API_BASE = "https://api.bfl.ai/v1";
-// klein is BFL's speed-optimized tier and produced noticeably soft/blurry
-// output - kontext-pro is their production-grade editing model. Costs
-// roughly 2x more per image (~0.04$ vs ~0.02$), but margins on every credit
-// pack stay comfortably positive (~57-62%) even at that price.
-const BFL_MODEL = "flux-kontext-pro";
-const POLL_INTERVAL_MS = 1500;
-const POLL_TIMEOUT_MS = 90000;
-
-function gcd(a: number, b: number): number {
-  return b === 0 ? a : gcd(b, a % b);
-}
-
-// Clamp to FLUX's supported aspect_ratio range (3:7 to 7:3) so an
-// unusually tall/wide source photo doesn't get rejected.
-function toAspectRatio(width: number, height: number): string {
-  const MIN_RATIO = 3 / 7;
-  const MAX_RATIO = 7 / 3;
-  const raw = width / height;
-  const clamped = Math.min(MAX_RATIO, Math.max(MIN_RATIO, raw));
-  const w = Math.round(clamped * 100);
-  const h = 100;
-  const d = gcd(w, h) || 1;
-  return `${w / d}:${h / d}`;
-}
+const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
+// Nano Banana Pro - studio-quality editing model, chosen after flux-2-klein-4b
+// (too blurry) and flux-kontext-pro (still poor quality) both failed a real
+// visual check. ~$0.134/output image.
+const GEMINI_MODEL = "gemini-3-pro-image";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -51,22 +31,30 @@ function buildPrompt(productName: string): string {
   );
 }
 
-async function pollForResult(pollingUrl: string, apiKey: string): Promise<string> {
-  const deadline = Date.now() + POLL_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    const res = await fetch(pollingUrl, { headers: { "x-key": apiKey, accept: "application/json" } });
-    const body = await res.json();
-    if (body.status === "Ready") {
-      const url = body.result?.sample;
-      if (!url) throw new Error("Result ready but no image URL returned");
-      return url;
-    }
-    if (body.status === "Error" || body.status === "Failed" || body.status === "Content Moderated") {
-      throw new Error(`FLUX generation failed: ${body.status} - ${JSON.stringify(body.details || body)}`);
-    }
-    await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+async function callGemini(apiKey: string, imageBase64: string, prompt: string): Promise<string> {
+  const res = await fetch(`${GEMINI_API_BASE}/models/${GEMINI_MODEL}:generateContent`, {
+    method: "POST",
+    headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inline_data: { mime_type: "image/png", data: imageBase64 } },
+        ],
+      }],
+      generationConfig: { responseModalities: ["IMAGE"] },
+    }),
+  });
+  const body = await res.json();
+  if (!res.ok) {
+    throw new Error(`Gemini request failed: ${JSON.stringify(body)}`);
   }
-  throw new Error("Timed out waiting for FLUX result");
+  const parts = body?.candidates?.[0]?.content?.parts || [];
+  for (const part of parts) {
+    const inline = part.inlineData || part.inline_data;
+    if (inline?.data) return inline.data;
+  }
+  throw new Error(`Gemini returned no image: ${JSON.stringify(body)}`);
 }
 
 serve(async (req) => {
@@ -77,9 +65,9 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const bflApiKey = Deno.env.get("BFL_API_KEY");
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
 
-    if (!bflApiKey) {
+    if (!geminiApiKey) {
       return json({ error: "Image enhancement is not configured. Please contact support." }, 500);
     }
 
@@ -92,7 +80,7 @@ serve(async (req) => {
       return json({ error: "Unauthorized" }, 401);
     }
 
-    const { image_base64, product_name, width, height } = await req.json();
+    const { image_base64, product_name } = await req.json();
     if (!image_base64) return json({ error: "image_base64 is required" }, 400);
 
     // Server-side quota check + consume, mirroring check_image_enhance_usage
@@ -113,32 +101,7 @@ serve(async (req) => {
       return json({ error: "لا يوجد رصيد كافٍ لتحسين الصورة." }, 402);
     }
 
-    // Call FLUX and poll for the result.
-    const submitRes = await fetch(`${BFL_API_BASE}/${BFL_MODEL}`, {
-      method: "POST",
-      headers: { "x-key": bflApiKey, "Content-Type": "application/json", accept: "application/json" },
-      body: JSON.stringify({
-        prompt: buildPrompt(product_name),
-        input_image: image_base64,
-        output_format: "png",
-        ...(width && height ? { aspect_ratio: toAspectRatio(Number(width), Number(height)) } : {}),
-      }),
-    });
-    const submitBody = await submitRes.json();
-    if (!submitRes.ok || !submitBody.polling_url) {
-      return json({ error: `FLUX request failed: ${JSON.stringify(submitBody)}` }, 502);
-    }
-
-    const resultUrl = await pollForResult(submitBody.polling_url, bflApiKey);
-
-    // Fetch the result server-side and return it inline as base64, so the
-    // client never has to deal with BFL's short-lived signed URL directly.
-    const imageRes = await fetch(resultUrl);
-    if (!imageRes.ok) return json({ error: "Failed to download generated image" }, 502);
-    const imageBuffer = new Uint8Array(await imageRes.arrayBuffer());
-    let binary = "";
-    for (let i = 0; i < imageBuffer.length; i++) binary += String.fromCharCode(imageBuffer[i]);
-    const resultBase64 = btoa(binary);
+    const resultBase64 = await callGemini(geminiApiKey, image_base64, buildPrompt(product_name));
 
     return json({ image_base64: resultBase64, remaining: usageRow.remaining });
   } catch (error) {
