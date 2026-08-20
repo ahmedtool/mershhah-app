@@ -3,16 +3,65 @@
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/shared/Logo";
 import { Button } from "@/components/ui/button";
-import { Check, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Utensils, MapPin, Wrench, Sparkles, TrendingUp, Star, Headset } from "lucide-react";
 import { Link } from "wouter";
 import { PublicFooter } from "@/components/shared/PublicFooter";
 import { supabase } from "@/lib/supabase";
 import type { Plan } from "@/lib/types";
-import { describeFeature } from "@/lib/plan-feature-labels";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Dev-only test plans, hidden from every customer-facing screen.
 const HIDDEN_PLAN_IDS = ['93250b42-d34c-4996-8d83-359ea26ab264'];
+
+type FeatureRow = { icon: React.ElementType; label: string; included: boolean };
+
+// Combines the real, enforced limits (max_menu_items/max_branches/max_tools)
+// with the boolean feature flags into one ordered, plain-language list —
+// concrete numbers instead of a generic yes/no checklist.
+function buildFeatureRows(plan: Plan): FeatureRow[] {
+  const features = (plan.features || {}) as Record<string, boolean>;
+  const menuLimit = plan.max_menu_items ?? 0;
+  const branchLimit = plan.max_branches ?? 0;
+  const toolsLimit = plan.max_tools ?? 0;
+
+  return [
+    {
+      icon: Utensils,
+      label: menuLimit > 0 ? `حتى ${menuLimit} ${menuLimit === 1 ? 'صنف' : 'أصناف'} بالمنيو` : 'منيو بلا حدود',
+      included: true,
+    },
+    {
+      icon: MapPin,
+      label: branchLimit > 0 ? `حتى ${branchLimit} ${branchLimit === 1 ? 'فرع' : 'فروع'}` : 'فروع بلا حدود',
+      included: true,
+    },
+    {
+      icon: Wrench,
+      label: toolsLimit > 0 ? `حتى ${toolsLimit} ${toolsLimit === 1 ? 'أداة' : 'أدوات'}` : 'كل الأدوات بلا حدود',
+      included: true,
+    },
+    {
+      icon: Sparkles,
+      label: 'أدوات ذكاء اصطناعي — تحسين صور الأطباق ومساعد ذكي يرد على عملائك',
+      included: !!features.ai_tools,
+    },
+    {
+      icon: TrendingUp,
+      label: 'تحليل يساعدك تفهم عملاءك وتزيد مبيعاتك',
+      included: !!features.ai_analysis,
+    },
+    {
+      icon: Star,
+      label: 'صفحة خاصة بمطعمك بدون أي شعار ثاني',
+      included: !!features.white_label,
+    },
+    {
+      icon: Headset,
+      label: 'دعم فني سريع لما تحتاجنا',
+      included: !!features.priority_support,
+    },
+  ];
+}
 
 export default function PricingPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -40,7 +89,7 @@ export default function PricingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen overflow-x-hidden" dir="rtl">
+    <div className="min-h-screen overflow-x-hidden bg-white" dir="rtl">
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex justify-between items-center">
           <Logo />
@@ -51,79 +100,104 @@ export default function PricingPage() {
       </header>
 
       <main className="py-16 sm:py-24 px-4">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
             <h1 className="text-3xl sm:text-4xl font-black text-gray-900 mb-3">باقات شفافة، مصممة لنموّك</h1>
             <p className="text-sm text-gray-400 max-w-lg mx-auto">ابدأ مجاناً أو أطلق العنان للقوة الكاملة لمطعمك أو مقهاك.</p>
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Skeleton className="h-[400px] rounded-2xl" />
-              <Skeleton className="h-[400px] rounded-2xl" />
-              <Skeleton className="h-[400px] rounded-2xl" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <Skeleton className="h-[460px] rounded-3xl" />
+              <Skeleton className="h-[460px] rounded-3xl" />
             </div>
           ) : plans.length === 0 ? (
             <div className="text-center py-20 text-gray-400">
               <p className="text-sm">لا توجد باقات متاحة حالياً.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
               {plans.map((plan) => {
-                const features = plan.features || {};
                 const isFree = (plan.price_yearly ?? 0) === 0;
                 const ctaHref = isFree ? "/register" : (plan.payment_link || "/register");
                 const ctaLabel = isFree ? "ابدأ مجاناً" : "اختر هذه الباقة";
                 const isExternal = ctaHref.startsWith("http");
+                const featured = !!plan.is_featured;
+                const rows = buildFeatureRows(plan);
+
+                const cta = isExternal ? (
+                  <a href={ctaHref} target="_blank" rel="noopener noreferrer"
+                    className={`block w-full h-12 rounded-2xl text-sm font-bold text-center leading-[3rem] transition-colors ${featured ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
+                    {ctaLabel}
+                  </a>
+                ) : (
+                  <Link href={ctaHref}
+                    className={`block w-full h-12 rounded-2xl text-sm font-bold text-center leading-[3rem] transition-colors ${featured ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
+                    {ctaLabel}
+                  </Link>
+                );
 
                 return (
-                  <div key={plan.id} className={`relative bg-white border rounded-2xl p-6 flex flex-col ${plan.is_featured ? 'border-gray-900' : 'border-gray-100'}`}>
-                    {plan.is_featured && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-[10px] font-bold px-3 py-1 rounded-full">
+                  <div
+                    key={plan.id}
+                    className={`relative rounded-3xl p-7 flex flex-col ${
+                      featured
+                        ? 'bg-gray-900 text-white sm:-translate-y-3 shadow-2xl shadow-gray-900/20'
+                        : 'bg-white border border-gray-100 text-gray-900'
+                    }`}
+                  >
+                    {featured && (
+                      <div className="absolute -top-3 right-7 bg-white text-gray-900 text-[10px] font-black px-3 py-1 rounded-full">
                         الأكثر انتشاراً
                       </div>
                     )}
-                    <div className="mb-6">
-                      <h3 className="text-base font-bold text-gray-900 mb-1">{plan.name}</h3>
-                      <p className="text-[11px] text-gray-400">{plan.description || ''}</p>
+
+                    <div className="mb-5">
+                      <h3 className="text-lg font-black mb-1">{plan.name}</h3>
+                      <p className={`text-xs ${featured ? 'text-gray-400' : 'text-gray-400'}`}>{plan.description || ''}</p>
                     </div>
-                    {isFree ? (
-                      <div className="flex items-baseline gap-1.5 mb-1">
-                        <span className="text-3xl font-black text-gray-900">مجاني</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-baseline gap-1.5 mb-1">
-                        <span className="text-3xl font-black text-gray-900">{plan.price_yearly}</span>
-                        <span className="text-sm font-bold text-gray-400">ر.س</span>
-                      </div>
-                    )}
-                    <p className="text-[10px] text-gray-300 mb-6">
+
+                    <div className="flex items-baseline gap-1.5 mb-1">
+                      {isFree ? (
+                        <span className="text-3xl font-black">مجاني</span>
+                      ) : (
+                        <>
+                          <span className="text-4xl font-black">{plan.price_yearly}</span>
+                          <span className={`text-sm font-bold ${featured ? 'text-gray-400' : 'text-gray-400'}`}>ر.س</span>
+                        </>
+                      )}
+                    </div>
+                    <p className={`text-[11px] mb-6 ${featured ? 'text-gray-500' : 'text-gray-300'}`}>
                       {isFree ? 'دائماً مجاناً' : 'سنوياً'}
                     </p>
-                    <div className="border-t border-gray-100 pt-5 mb-6 flex-1">
-                      <ul className="space-y-2.5">
-                        {Object.entries(features).map(([key, value]) => {
-                          const { label, included } = describeFeature(key, value as boolean | number);
+
+                    <div className={`border-t pt-5 mb-6 flex-1 ${featured ? 'border-white/10' : 'border-gray-100'}`}>
+                      <ul className="space-y-3.5">
+                        {rows.map((row) => {
+                          const Icon = row.icon;
                           return (
-                            <li key={key} className={`flex items-center gap-2.5 text-xs ${!included ? 'text-gray-300 line-through' : 'text-gray-600'}`}>
-                              <Check className={`h-3.5 w-3.5 shrink-0 ${included ? 'text-emerald-500' : 'text-gray-200'}`} />
-                              <span>{label}</span>
+                            <li key={row.label} className={`flex items-start gap-3 text-xs leading-relaxed ${
+                              row.included
+                                ? featured ? 'text-gray-100' : 'text-gray-700'
+                                : featured ? 'text-gray-600' : 'text-gray-300 line-through'
+                            }`}>
+                              <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                                row.included
+                                  ? featured ? 'bg-white/10' : 'bg-gray-900/5'
+                                  : featured ? 'bg-white/5' : 'bg-gray-50'
+                              }`}>
+                                {row.included
+                                  ? <Icon className={`h-3.5 w-3.5 ${featured ? 'text-white' : 'text-gray-900'}`} />
+                                  : <Icon className={`h-3.5 w-3.5 ${featured ? 'text-gray-600' : 'text-gray-300'}`} />}
+                              </span>
+                              <span>{row.label}</span>
                             </li>
                           );
                         })}
                       </ul>
                     </div>
-                    {isExternal ? (
-                      <a href={ctaHref} target="_blank" rel="noopener noreferrer"
-                        className={`block w-full h-10 rounded-xl text-xs font-bold text-center leading-10 transition-colors ${plan.is_featured ? 'bg-gray-900 text-white hover:bg-gray-800' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                        {ctaLabel}
-                      </a>
-                    ) : (
-                      <Link href={ctaHref}
-                        className={`block w-full h-10 rounded-xl text-xs font-bold text-center leading-10 transition-colors ${plan.is_featured ? 'bg-gray-900 text-white hover:bg-gray-800' : 'border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                        {ctaLabel}
-                      </Link>
-                    )}
+
+                    {cta}
                   </div>
                 );
               })}

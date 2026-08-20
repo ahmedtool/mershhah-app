@@ -11,8 +11,6 @@ export type Entitlements = {
   canUseAiAnalysis: boolean;
   canUseStudioImageGeneration: boolean;
   canUseDashboardAgent: boolean;
-  canUseCustomDomain: boolean;
-  canUseApiAccess: boolean;
   canUseWhiteLabel: boolean;
   canUsePrioritySupport: boolean;
   maxBranches: number;
@@ -29,8 +27,6 @@ const defaultEntitlements: Entitlements = {
   canUseAiAnalysis: false,
   canUseStudioImageGeneration: false,
   canUseDashboardAgent: false,
-  canUseCustomDomain: false,
-  canUseApiAccess: false,
   canUseWhiteLabel: false,
   canUsePrioritySupport: false,
   maxBranches: 1,
@@ -98,8 +94,6 @@ function computeEntitlements(activeSub: Subscription | null, profile: Profile, p
     canUseAiAnalysis: enableAi,
     canUseStudioImageGeneration: enableAi,
     canUseDashboardAgent: enableAi,
-    canUseCustomDomain: featureFlag(plan?.features, 'custom_domain'),
-    canUseApiAccess: featureFlag(plan?.features, 'api_access'),
     canUseWhiteLabel: featureFlag(plan?.features, 'white_label'),
     canUsePrioritySupport: featureFlag(plan?.features, 'priority_support'),
     // 0 or unset historically meant "not customized" for these columns —

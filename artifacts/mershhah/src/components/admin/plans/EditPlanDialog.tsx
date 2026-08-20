@@ -18,7 +18,7 @@ import { FEATURE_LABELS } from '@/lib/plan-feature-labels';
 // with FEATURE_LABELS so this editor, the pricing page, and enforcement
 // all read the exact same keys — editing a plan here used to silently
 // overwrite these with free-text marketing bullets instead.
-const TOGGLE_FEATURE_KEYS = ['ai_analysis', 'custom_domain', 'api_access', 'white_label', 'priority_support'] as const;
+const TOGGLE_FEATURE_KEYS = ['ai_analysis', 'ai_tools', 'white_label', 'priority_support'] as const;
 
 const formSchema = z.object({
   name: z.string().min(3, 'اسم الباقة يجب أن يكون 3 أحرف على الأقل.'),
@@ -35,8 +35,7 @@ const formSchema = z.object({
   max_menu_items: z.coerce.number().int().min(0, '0 = غير محدود'),
   max_tools: z.coerce.number().int().min(0, '0 = غير محدود'),
   ai_analysis: z.boolean().default(false),
-  custom_domain: z.boolean().default(false),
-  api_access: z.boolean().default(false),
+  ai_tools: z.boolean().default(false),
   white_label: z.boolean().default(false),
   priority_support: z.boolean().default(false),
 });
@@ -53,7 +52,7 @@ const defaultValues: FormValues = {
   name: '', description: '', price_yearly: 0,
   payment_link: '', is_active: true, is_featured: false,
   max_branches: 1, max_menu_items: 30, max_tools: 2,
-  ai_analysis: false, custom_domain: false, api_access: false, white_label: false, priority_support: false,
+  ai_analysis: false, ai_tools: false, white_label: false, priority_support: false,
 };
 
 export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) {
@@ -82,8 +81,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
           max_menu_items: plan.max_menu_items ?? 30,
           max_tools: plan.max_tools ?? 2,
           ai_analysis: !!features.ai_analysis,
-          custom_domain: !!features.custom_domain,
-          api_access: !!features.api_access,
+          ai_tools: !!features.ai_tools,
           white_label: !!features.white_label,
           priority_support: !!features.priority_support,
         });
@@ -100,7 +98,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
         TOGGLE_FEATURE_KEYS.forEach((key) => { features[key] = values[key]; });
 
         const {
-          ai_analysis, custom_domain, api_access, white_label, priority_support,
+          ai_analysis, ai_tools, white_label, priority_support,
           price_yearly,
           ...rest
         } = values;
