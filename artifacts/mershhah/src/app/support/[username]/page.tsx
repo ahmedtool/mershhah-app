@@ -90,6 +90,7 @@ export default function SupportPage() {
           restaurant_id: restaurant.id,
           restaurant_name: restaurant.name,
           status: 'open',
+          source: 'manual',
           created_at: new Date().toISOString(),
         });
         if (error) throw error;

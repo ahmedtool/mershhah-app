@@ -241,6 +241,7 @@ export default function AiAssistantPage() {
             body: JSON.stringify({
               customerMessage: userMsgContent,
               restaurantData: JSON.stringify(restaurantContextData),
+              history: messages.slice(-10).map((m) => ({ sender: m.sender, text: m.text })),
               locale: 'ar',
             }),
           });

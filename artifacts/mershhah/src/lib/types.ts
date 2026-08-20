@@ -232,6 +232,7 @@ export type SupportTicket = {
   restaurant_name: string;
   category: 'complaint' | 'inquiry' | 'employment' | 'suggestion' | 'other';
   status: 'open' | 'contacted' | 'resolved' | 'closed';
+  source?: 'manual' | 'ai_assistant';
   created_at: any;
 };
 

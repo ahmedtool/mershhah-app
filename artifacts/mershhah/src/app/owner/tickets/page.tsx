@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { Link } from 'wouter';
 import PageHeader from "@/components/dashboard/PageHeader";
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, RefreshCw, MessageSquare, User, Clock, ArrowLeft, Filter } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MessageSquare, User, Clock, ArrowLeft, Filter, Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/useUser';
 import { formatDistanceToNow } from 'date-fns';
@@ -166,6 +166,12 @@ export default function OwnerTicketsPage() {
                   <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md border", statusStyles[ticket.status] || statusStyles.open)}>
                     {statusText[ticket.status] || ticket.status}
                   </span>
+                  {ticket.source === 'ai_assistant' && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md border bg-violet-50 text-violet-600 border-violet-100 flex items-center gap-1">
+                      <Bot className="h-2.5 w-2.5" />
+                      المساعد الذكي
+                    </span>
+                  )}
                 </div>
                 <span className="text-[10px] text-gray-300 font-mono">{ticket.id.substring(0, 8)}</span>
               </div>

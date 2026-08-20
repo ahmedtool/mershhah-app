@@ -21,6 +21,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // The `models` array (OpenRouter tries each in order, falling back on
 // failure) gets both: only curated, conversational models ever answer, and
 // 4/4 live tests succeeded vs 1/3 for a single pinned model.
+//
+// Ticket-filing via tool-calling was tried and reverted here (2026-08-20):
+// live testing showed openai/gpt-oss-20b:free is frequently rate-limited on
+// OpenRouter's shared free pool, and google/gemma-4-26b-a4b-it:free ignored
+// the tool schema entirely - it just wrote "I filed a ticket for you" in
+// plain text without ever calling the function. Shipping that would mean
+// sometimes lying to a customer that a human will follow up when no ticket
+// exists. Real tool-calling needs a paid (non-`:free`) model to be
+// trustworthy - until then this layer only ever produces plain text, and
+// the system prompt below points complaints at the real /support page.
 const DAILY_CAP = 45; // stays under OpenRouter's 50/day zero-balance limit with margin
 const MODELS = ["google/gemma-4-26b-a4b-it:free", "openai/gpt-oss-20b:free"];
 const REQUEST_TIMEOUT_MS = 15000;
@@ -55,7 +65,7 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { customerMessage, restaurantData, locale } = await req.json();
+    const { customerMessage, restaurantData, history, locale } = await req.json();
 
     if (!customerMessage || typeof customerMessage !== "string") {
       return json({ fallback: true });
@@ -103,6 +113,8 @@ serve(async (req) => {
 
     const systemPrompt = `You are the friendly chat assistant for the restaurant "${restaurant.name || ""}", embedded in its digital menu page. ${isArabic ? "Reply only in Saudi-casual Arabic." : "Reply in English."} Keep replies short (2-4 sentences max), warm, and use at most 1-2 emojis. Only mention menu items, prices, offers, or branches that appear in the data below - never invent items, prices, or promises that aren't listed. If the answer truly isn't in the data, say so briefly and suggest they ask about the menu, offers, or branches instead.
 
+If the customer has a complaint or a special request that needs a human, tell them warmly to tap the "تذكرة دعم" (support ticket) button on the page so the team can follow up - never say that you personally filed, opened, or sent anything on their behalf, since you have no way to actually do that.
+
 MENU:
 ${menuLines || "(no items listed)"}
 
@@ -111,6 +123,13 @@ ${offerLines || "(no active offers)"}
 
 BRANCHES:
 ${branchLines || "(no branches listed)"}`;
+
+    const historyMessages = Array.isArray(history)
+      ? history
+          .slice(-10)
+          .filter((m: any) => m?.text && (m.sender === "user" || m.sender === "bot"))
+          .map((m: any) => ({ role: m.sender === "user" ? "user" : "assistant", content: String(m.text) }))
+      : [];
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -127,6 +146,7 @@ ${branchLines || "(no branches listed)"}`;
           models: MODELS,
           messages: [
             { role: "system", content: systemPrompt },
+            ...historyMessages,
             { role: "user", content: customerMessage },
           ],
           max_tokens: 220,
