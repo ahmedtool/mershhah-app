@@ -25,6 +25,7 @@ export type Restaurant = {
   username_last_updated_at?: any; // Can be Firestore Timestamp
   description: string | null;
   description_en?: string | null; // English description
+  business_type?: string | null; // restaurant | cafe | bakery | sweets | other
   logo: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;

@@ -8,13 +8,24 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from '@/lib/navigation';
 import { useState, useEffect } from 'react';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Utensils, Coffee, Croissant, Cake, Store } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { FREE_PLAN_ID, freeSubscriptionEndDate } from '@/lib/free-plan';
+import { cn } from '@/lib/utils';
 
 const ADMIN_EMAIL = 'ahmedsupsa@gmail.com';
 const DEMO_EMAIL = 'demo@mershhah.com';
 const DEMO_PASSWORD = 'demo123';
+
+const PHONE_REGEX = /^05\d{8}$/;
+
+const BUSINESS_TYPES = [
+  { value: 'restaurant', label: 'مطعم', icon: Utensils },
+  { value: 'cafe', label: 'مقهى', icon: Coffee },
+  { value: 'bakery', label: 'مخبز', icon: Croissant },
+  { value: 'sweets', label: 'محل حلويات', icon: Cake },
+  { value: 'other', label: 'أخرى', icon: Store },
+] as const;
 
 const allAdminPermissions = [
   'dashboard', 'management', 'financials', 'store-management',
@@ -26,6 +37,7 @@ const formSchema = z
     fullName: z.string().min(2, { message: 'الاسم لازم يكون حرفين عالأقل.' }),
     restaurantName: z.string().optional(),
     phoneNumber: z.string().optional(),
+    businessType: z.string().optional(),
     email: z.string().email({ message: 'أدخل إيميل صحيح.' }),
     password: z.string().min(6, { message: 'كلمة المرور 6 أحرف عالأقل.' }),
   })
@@ -34,8 +46,12 @@ const formSchema = z
       if (!data.restaurantName || data.restaurantName.length < 2) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'اسم المشروع حرفين عالأقل.', path: ['restaurantName'] });
       }
-      if (!data.phoneNumber || data.phoneNumber.length < 9) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'أدخل رقم جوال صحيح.', path: ['phoneNumber'] });
+      const cleanedPhone = (data.phoneNumber || '').replace(/[\s-]/g, '');
+      if (!PHONE_REGEX.test(cleanedPhone)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'رقم الجوال لازم يبدأ بـ05 ويكون 10 أرقام بالضبط.', path: ['phoneNumber'] });
+      }
+      if (!data.businessType) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'اختر نوع مشروعك.', path: ['businessType'] });
       }
     }
   });
@@ -48,7 +64,7 @@ export function RegisterForm() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { fullName: '', restaurantName: '', phoneNumber: '', email: '', password: '' },
+    defaultValues: { fullName: '', restaurantName: '', phoneNumber: '', businessType: '', email: '', password: '' },
   });
 
   const emailValue = form.watch('email');
@@ -66,6 +82,19 @@ export function RegisterForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
+      const isAdminEmail = values.email === ADMIN_EMAIL;
+      const cleanedPhone = (values.phoneNumber || '').replace(/[\s-]/g, '');
+
+      if (!isAdminEmail) {
+        const { data: phoneTaken, error: phoneCheckError } = await supabase.rpc('is_phone_registered', { p_phone: cleanedPhone });
+        if (phoneCheckError) throw new Error(phoneCheckError.message);
+        if (phoneTaken) {
+          form.setError('phoneNumber', { message: 'الرقم مسجل من قبل، جرّب رقم ثاني.' });
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
@@ -97,19 +126,29 @@ export function RegisterForm() {
 
       const profileData: any = {
         id: userId, full_name: values.fullName, email: values.email,
-        phone_number: values.phoneNumber || null, role: isAdmin ? 'admin' : 'owner',
+        phone_number: isAdmin ? null : cleanedPhone, role: isAdmin ? 'admin' : 'owner',
         account_status: 'active', created_at: now,
         restaurant_name: isAdmin ? null : values.restaurantName, restaurant_id: restaurantId,
       };
       if (isAdmin) profileData.admin_permissions = allAdminPermissions;
 
       const { error: profileInsertError } = await supabase.from('profiles').insert(profileData);
-      if (profileInsertError) throw new Error(profileInsertError.message);
+      if (profileInsertError) {
+        // 23505 = unique_violation - covers the rare race where two signups
+        // for the same phone land between the RPC pre-check above and here.
+        if (profileInsertError.code === '23505' && profileInsertError.message.includes('phone_number')) {
+          form.setError('phoneNumber', { message: 'الرقم مسجل من قبل، جرّب رقم ثاني.' });
+          setIsLoading(false);
+          return;
+        }
+        throw new Error(profileInsertError.message);
+      }
 
       if (!isAdmin && restaurantId) {
         await supabase.from('restaurants').insert({
           id: restaurantId, owner_id: userId, name: values.restaurantName, username: uniqueUsername,
           description: 'مقهى ومطعم يقدم أشهى المأكولات والمشروبات.', logo: null,
+          business_type: values.businessType || null,
           primaryColor: '#6366F1', secondaryColor: '#F3F4F6', buttonTextColor: '#FFFFFF',
           borderRadius: 12, fontFamily: 'Cairo', socialLinks: null, deliveryApps: null,
           aiConfig: null, created_at: now, is_paid_plan: false,
@@ -216,6 +255,30 @@ export function RegisterForm() {
               className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300 disabled:opacity-50"
             />
             {form.formState.errors.phoneNumber && <p className="text-[10px] text-red-500 mt-1">{form.formState.errors.phoneNumber.message}</p>}
+          </div>
+          <div>
+            <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">نوع المشروع</label>
+            <div className="grid grid-cols-5 gap-1.5">
+              {BUSINESS_TYPES.map(({ value, label, icon: Icon }) => {
+                const selected = form.watch('businessType') === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    disabled={isLoading}
+                    onClick={() => form.setValue('businessType', value, { shouldValidate: true })}
+                    className={cn(
+                      'flex flex-col items-center gap-1 py-2.5 rounded-xl border text-[10px] font-bold transition-colors disabled:opacity-50',
+                      selected ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="leading-tight">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {form.formState.errors.businessType && <p className="text-[10px] text-red-500 mt-1">{form.formState.errors.businessType.message}</p>}
           </div>
         </>
       )}
