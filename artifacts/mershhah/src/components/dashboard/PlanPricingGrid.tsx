@@ -14,11 +14,11 @@ import { useUser } from '@/hooks/useUser';
 // but still fully valid for a real checkout if visited directly by id.
 const HIDDEN_PLAN_IDS = ['93250b42-d34c-4996-8d83-359ea26ab264'];
 
-// Our own dedicated test restaurant account - the one exception that can see
+// Our own dedicated test restaurant accounts - the exceptions that can see
 // (and check out) the hidden test plan through the normal owner UI, so a
 // real end-to-end subscription flow can be exercised without paying full
 // price and without every other account seeing a 1 SAR plan.
-const TEST_ACCOUNT_EMAIL = 'ahmednasmhi@gmail.com';
+const TEST_ACCOUNT_EMAILS = ['ahmednasmhi@gmail.com', '3thresa@gmail.com'];
 
 interface PlanPricingGridProps {
   currentPlanId?: string;
@@ -32,7 +32,7 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
   const [plans, setPlans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useUser();
-  const isTestAccount = user?.email === TEST_ACCOUNT_EMAIL;
+  const isTestAccount = !!user?.email && TEST_ACCOUNT_EMAILS.includes(user.email);
   const { couponCode, setCouponCode, couponDiscount, isCheckingCoupon, checkCoupon, applyDiscount } = useCouponCheck();
   const { checkout, isCheckingOut, isCheckoutInProgress } = usePlanCheckout();
 
