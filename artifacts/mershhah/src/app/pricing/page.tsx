@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/shared/Logo";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Utensils, MapPin, Wrench, Sparkles, TrendingUp, Star, Headset } from "lucide-react";
+import { ArrowLeft, Loader2, Utensils, MapPin, Wrench, Sparkles, TrendingUp, Star, Headset } from "lucide-react";
 import { Link } from "wouter";
 import { PublicFooter } from "@/components/shared/PublicFooter";
 import { supabase } from "@/lib/supabase";
 import type { Plan } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUser } from "@/hooks/useUser";
+import { usePlanCheckout } from "@/hooks/usePlanCheckout";
 
 // Dev-only test plans, hidden from every customer-facing screen.
 const HIDDEN_PLAN_IDS = ['93250b42-d34c-4996-8d83-359ea26ab264'];
@@ -66,6 +68,8 @@ function buildFeatureRows(plan: Plan): FeatureRow[] {
 export default function PricingPage() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useUser();
+  const { checkout, isCheckingOut } = usePlanCheckout();
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -119,22 +123,26 @@ export default function PricingPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
               {plans.map((plan) => {
                 const isFree = (plan.price_yearly ?? 0) === 0;
-                const ctaHref = isFree ? "/register" : (plan.payment_link || "/register");
-                const ctaLabel = isFree ? "ابدأ مجاناً" : "اختر هذه الباقة";
-                const isExternal = ctaHref.startsWith("http");
                 const featured = !!plan.is_featured;
                 const rows = buildFeatureRows(plan);
+                const checking = isCheckingOut(plan.id, 'yearly');
+                const ctaClass = `block w-full h-12 rounded-2xl text-sm font-bold text-center leading-[3rem] transition-colors disabled:opacity-60 ${featured ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`;
 
-                const cta = isExternal ? (
-                  <a href={ctaHref} target="_blank" rel="noopener noreferrer"
-                    className={`block w-full h-12 rounded-2xl text-sm font-bold text-center leading-[3rem] transition-colors ${featured ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
-                    {ctaLabel}
-                  </a>
+                // Free plan and logged-out visitors go through registration -
+                // a freshly-registered account lands on the real in-app
+                // upgrade gate (PlanPricingGrid), which already checks out
+                // correctly. A logged-in visitor on this marketing page can
+                // check out directly, the same way the dashboard does -
+                // this is what makes the payment actually tied to their
+                // account instead of a static, identity-less payment link.
+                const cta = isFree ? (
+                  <Link href="/register" className={ctaClass}>ابدأ مجاناً</Link>
+                ) : user ? (
+                  <button type="button" onClick={() => checkout(plan.id, 'yearly')} disabled={checking} className={ctaClass}>
+                    {checking ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'اختر هذه الباقة'}
+                  </button>
                 ) : (
-                  <Link href={ctaHref}
-                    className={`block w-full h-12 rounded-2xl text-sm font-bold text-center leading-[3rem] transition-colors ${featured ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`}>
-                    {ctaLabel}
-                  </Link>
+                  <Link href="/register" className={ctaClass}>اختر هذه الباقة</Link>
                 );
 
                 return (
