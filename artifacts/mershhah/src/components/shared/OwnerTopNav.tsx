@@ -32,7 +32,6 @@ export function OwnerTopNav() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activatedTools, setActivatedTools] = useState<any[]>([]);
   const [isLoadingTools, setIsLoadingTools] = useState(true);
-  const [showTools, setShowTools] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const navItems = [
@@ -127,44 +126,6 @@ export function OwnerTopNav() {
                 <span className="hidden md:inline">{item.label}</span>
               </Link>
             ))}
-
-            {/* Activated tools dropdown */}
-            {activatedTools.length > 0 && (
-              <div className="relative">
-                <button
-                  onClick={() => setShowTools(!showTools)}
-                  className={`flex items-center gap-1.5 h-9 px-3 rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap ${
-                    activatedTools.some(t => isActive(t.href))
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-                  }`}
-                >
-                  <Box className="h-3.5 w-3.5 shrink-0" />
-                  <span className="hidden md:inline">أدوات إضافية</span>
-                  <ChevronDown className={`h-3 w-3 transition-transform ${showTools ? 'rotate-180' : ''}`} />
-                </button>
-                {showTools && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowTools(false)} />
-                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 min-w-[180px]">
-                      {activatedTools.map((tool) => (
-                        <Link
-                          key={tool.id}
-                          href={tool.href}
-                          onClick={() => setShowTools(false)}
-                          className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold transition-colors ${
-                            isActive(tool.href) ? 'bg-gray-50 text-gray-900' : 'text-gray-500 hover:bg-gray-50'
-                          }`}
-                        >
-                          <tool.icon className="h-3.5 w-3.5 text-gray-400" />
-                          {tool.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
           </div>
         </div>
 
