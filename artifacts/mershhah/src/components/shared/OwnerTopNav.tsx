@@ -139,6 +139,8 @@ export function OwnerTopNav() {
                       : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                   }`}
                 >
+                  <Box className="h-3.5 w-3.5 shrink-0" />
+                  <span className="hidden md:inline">أدوات إضافية</span>
                   <ChevronDown className={`h-3 w-3 transition-transform ${showTools ? 'rotate-180' : ''}`} />
                 </button>
                 {showTools && (
