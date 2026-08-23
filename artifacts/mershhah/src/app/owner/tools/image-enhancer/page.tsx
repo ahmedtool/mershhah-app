@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
-  Sparkles, Upload, Loader2, Check, Images, Save, RotateCcw, Lock, AlertTriangle,
+  Sparkles, Upload, Loader2, Check, Images, Save, RotateCcw, Lock, AlertTriangle, ImageOff,
 } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
@@ -177,10 +177,30 @@ export default function ImageEnhancerPage() {
     setEnhancedBlob(null);
   };
 
+  // Picking a product now loads its own existing photo automatically -
+  // enhancing was previously possible before choosing a product, which
+  // could burn a paid credit on an image with nowhere to be saved.
+  // Requiring the product first (and auto-loading its photo) closes that
+  // gap entirely instead of just warning about it after the fact.
   const selectProduct = (item: MenuItem) => {
     setSelectedItem(item);
     setProductName(item.name);
     setShowSuggestions(false);
+    setEnhancedUrl(null);
+    setEnhancedBlob(null);
+    if (item.image_url) {
+      const { data } = supabase.storage.from(BUCKET).getPublicUrl(item.image_url);
+      setOriginalUrl(data.publicUrl);
+      setOriginalIsRemote(true);
+    } else {
+      setOriginalUrl(null);
+      setOriginalIsRemote(false);
+    }
+  };
+
+  const clearProduct = () => {
+    setSelectedItem(null);
+    setProductName('');
     resetImages();
   };
 
@@ -196,27 +216,29 @@ export default function ImageEnhancerPage() {
       toast({ variant: 'destructive', title: 'الصورة كبيرة جداً', description: 'اختر صورة أقل من 8 ميجابايت' });
       return;
     }
-    resetImages();
+    setEnhancedUrl(null);
+    setEnhancedBlob(null);
     setOriginalUrl(URL.createObjectURL(file));
     setOriginalIsRemote(false);
   };
 
   const handleGallerySelect = (storagePath: string) => {
     const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
-    resetImages();
+    setEnhancedUrl(null);
+    setEnhancedBlob(null);
     setOriginalUrl(data.publicUrl);
     setOriginalIsRemote(true);
     setGalleryOpen(false);
   };
 
   const handleEnhance = async () => {
-    if (!originalUrl || !restaurantId) return;
+    if (!originalUrl || !restaurantId || !selectedItem) return;
 
     // Quick, read-only pre-check so we can fail fast with a friendly message
-    // instead of making a real (paid) FLUX request when we already know the
+    // instead of making a real (paid) request when we already know the
     // balance is empty. The actual check-and-consume happens server-side
-    // inside enhance-product-image, right before it calls FLUX - that's the
-    // authoritative gate, this is just UX.
+    // inside enhance-product-image, right before it calls Gemini - that's
+    // the authoritative gate, this is just UX.
     if (usage && !usage.allowed) {
       toast({
         variant: 'destructive',
@@ -237,7 +259,7 @@ export default function ImageEnhancerPage() {
       const { blob, remaining } = await enhanceImageWithGemini(
         originalUrl,
         originalIsRemote,
-        selectedItem?.name || productName,
+        selectedItem.name,
         session.access_token
       );
       setEnhancedBlob(blob);
@@ -257,10 +279,7 @@ export default function ImageEnhancerPage() {
   };
 
   const handleSave = async () => {
-    if (!restaurantId || !selectedItem || !enhancedBlob) {
-      toast({ variant: 'destructive', title: 'خطأ', description: 'اختر منتج وحسّن صورته أولاً' });
-      return;
-    }
+    if (!restaurantId || !selectedItem || !enhancedBlob) return;
     setIsSaving(true);
     try {
       const path = `restaurants/${restaurantId}/menu_items/${selectedItem.id}-enhanced-${Date.now()}.webp`;
@@ -272,7 +291,7 @@ export default function ImageEnhancerPage() {
 
       syncPublicPage(restaurantId).catch(() => {});
       toast({ title: 'تم الحفظ', description: `تم تحديث صورة "${selectedItem.name}"` });
-      resetImages();
+      clearProduct();
       fetchMenuItems();
     } catch (e: any) {
       toast({ variant: 'destructive', title: 'خطأ', description: e.message });
@@ -282,17 +301,18 @@ export default function ImageEnhancerPage() {
   };
 
   const quotaExceeded = !!usage && !usage.allowed;
+  const canEnhance = !!selectedItem && !!originalUrl;
 
   return (
-    <div className="space-y-6 p-4" dir="rtl">
+    <div className="space-y-6 p-4 max-w-2xl mx-auto" dir="rtl">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center">
+        <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center shrink-0">
           <Sparkles className="h-6 w-6 text-violet-600" />
         </div>
         <div>
           <h1 className="text-lg font-bold text-gray-900">تحسين جودة صور المنتجات</h1>
-          <p className="text-xs text-gray-400">ارفع صورة أو اختر من صور منيوك، وحسّن وضوحها بضغطة زر</p>
+          <p className="text-xs text-gray-400">اختر صنف من منيوك، وحسّن وضوح صورته بضغطة زر</p>
         </div>
       </div>
 
@@ -322,7 +342,186 @@ export default function ImageEnhancerPage() {
         </div>
       )}
 
-      {/* Buy credits */}
+      {/* Step 1: product */}
+      <Card className="border-gray-100 overflow-visible">
+        <CardContent className="p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="w-5 h-5 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0">١</span>
+            <label className="text-xs font-bold text-gray-900">اختر الصنف</label>
+          </div>
+
+          {selectedItem ? (
+            <div className="flex items-center gap-3 border border-gray-100 rounded-xl p-2.5">
+              <div className="w-11 h-11 rounded-lg overflow-hidden bg-gray-50 border border-gray-100 shrink-0 flex items-center justify-center">
+                {originalUrl ? (
+                  <img src={originalUrl} alt={selectedItem.name} className="w-full h-full object-cover" />
+                ) : (
+                  <ImageOff className="h-4 w-4 text-gray-300" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-gray-900 truncate">{selectedItem.name}</p>
+                <p className="text-[10px] text-gray-400">{originalUrl ? 'صورته الحالية جاهزة للتحسين' : 'ماعنده صورة حالياً'}</p>
+              </div>
+              <button onClick={clearProduct} className="h-8 px-3 rounded-lg border border-gray-200 text-gray-500 text-[11px] font-bold hover:bg-gray-50 transition-colors shrink-0">
+                تغيير
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="اكتب اسم الصنف..."
+                value={productName}
+                onChange={(e) => {
+                  setProductName(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
+              />
+              {showSuggestions && (
+                <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto" dir="rtl">
+                  {filteredMenuItems.length > 0 ? (
+                    filteredMenuItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); selectProduct(item); }}
+                        className="w-full text-right px-3 py-2 text-xs hover:bg-gray-50 flex items-center gap-2.5"
+                      >
+                        <div className="w-7 h-7 rounded-md overflow-hidden bg-gray-50 border border-gray-100 shrink-0 flex items-center justify-center">
+                          {item.image_url ? (
+                            <img
+                              src={supabase.storage.from(BUCKET).getPublicUrl(item.image_url).data.publicUrl}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <ImageOff className="h-3 w-3 text-gray-300" />
+                          )}
+                        </div>
+                        <span className="truncate">{item.name}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="px-3 py-3 text-[11px] text-gray-400 text-center">ما فيه صنف مطابق</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Step 2: image + enhance */}
+      {selectedItem && (
+        <Card className="border-gray-100">
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0">٢</span>
+              <label className="text-xs font-bold text-gray-900">الصورة والتحسين</label>
+            </div>
+
+            {!originalUrl ? (
+              <div className="border border-dashed border-gray-200 rounded-xl p-6 text-center space-y-3">
+                <p className="text-[11px] text-gray-400">هذا الصنف ماعنده صورة بعد — ارفع وحدة أو اختر من مكتبة صور منيوك</p>
+                <div className="flex gap-2 justify-center">
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="h-10 px-4 rounded-xl border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    رفع صورة
+                  </button>
+                  <button
+                    onClick={() => setGalleryOpen(true)}
+                    className="h-10 px-4 rounded-xl border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Images className="h-3.5 w-3.5" />
+                    من مكتبة الصور
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 mb-1.5">قبل</p>
+                    <div className="aspect-square rounded-xl overflow-hidden bg-gray-50 border border-gray-100">
+                      <img src={originalUrl} alt="قبل" className="w-full h-full object-cover" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 mb-1.5">بعد</p>
+                    <div className="aspect-square rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
+                      {isProcessing ? (
+                        <div className="flex flex-col items-center gap-2 px-3 text-center">
+                          <Loader2 className="h-6 w-6 text-gray-300 animate-spin" />
+                          <p className="text-[10px] text-gray-400">{processingStatus}</p>
+                        </div>
+                      ) : enhancedUrl ? (
+                        <img src={enhancedUrl} alt="بعد" className="w-full h-full object-cover" />
+                      ) : (
+                        <Sparkles className="h-6 w-6 text-gray-200" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {!isProcessing && (
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[10px] text-gray-400">يحوّل الخلفية لبيضاء نظيفة — عادةً أقل من دقيقة</p>
+                    <div className="flex gap-1.5 shrink-0">
+                      <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                      <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-bold text-gray-400 hover:text-gray-600">
+                        رفع صورة ثانية
+                      </button>
+                      <span className="text-gray-200">·</span>
+                      <button onClick={() => setGalleryOpen(true)} className="text-[10px] font-bold text-gray-400 hover:text-gray-600">
+                        اختيار من المكتبة
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleEnhance}
+                    disabled={isProcessing || quotaExceeded || !isPaidPlan || !canEnhance}
+                    className="flex-1 h-11 rounded-xl bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                    {isProcessing ? 'جاري التحسين...' : 'تحسين الصورة'}
+                  </button>
+                  <button
+                    onClick={resetImages}
+                    className="h-11 px-4 rounded-xl border border-gray-200 text-gray-500 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    إلغاء
+                  </button>
+                </div>
+
+                {enhancedBlob && (
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="w-full h-11 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    {isSaving ? 'جاري الحفظ...' : `حفظ كصورة "${selectedItem.name}"`}
+                  </button>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Buy credits - deliberately last, this is a secondary action */}
       {isPaidPlan && packs.length > 0 && (
         <Card className="border-gray-100">
           <CardContent className="p-5 space-y-3">
@@ -350,141 +549,6 @@ export default function ImageEnhancerPage() {
           </CardContent>
         </Card>
       )}
-
-      {/* Product picker */}
-      <Card className="border-gray-100">
-        <CardContent className="p-5">
-          <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">اختر المنتج</label>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="اختر من المنيو أو اكتب اسم المنتج..."
-              value={productName}
-              onChange={(e) => {
-                const v = e.target.value;
-                setProductName(v);
-                if (selectedItem && v !== selectedItem.name) setSelectedItem(null);
-                setShowSuggestions(true);
-              }}
-              onFocus={() => setShowSuggestions(true)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-              className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
-            />
-            {showSuggestions && (
-              <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto" dir="rtl">
-                {filteredMenuItems.length > 0 ? (
-                  filteredMenuItems.map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onMouseDown={(e) => { e.preventDefault(); selectProduct(item); }}
-                      className="w-full text-right px-3 py-2 text-xs hover:bg-gray-50 flex items-center gap-2"
-                    >
-                      <Check className={cn('h-3.5 w-3.5 shrink-0', selectedItem?.id === item.id ? 'opacity-100 text-emerald-600' : 'opacity-0')} />
-                      <span className="truncate">{item.name}</span>
-                    </button>
-                  ))
-                ) : (
-                  <p className="px-3 py-3 text-[11px] text-gray-400 text-center">ما فيه صنف مطابق</p>
-                )}
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Image source */}
-      <Card className="border-gray-100">
-        <CardContent className="p-5 space-y-4">
-          <div className="flex gap-2">
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-1 h-11 rounded-xl border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-            >
-              <Upload className="h-3.5 w-3.5" />
-              رفع صورة جديدة
-            </button>
-            <button
-              onClick={() => setGalleryOpen(true)}
-              className="flex-1 h-11 rounded-xl border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-            >
-              <Images className="h-3.5 w-3.5" />
-              اختيار من صور المنيو
-            </button>
-          </div>
-
-          {originalUrl && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 mb-1.5">قبل</p>
-                <div className="aspect-square rounded-xl overflow-hidden bg-gray-50 border border-gray-100">
-                  <img src={originalUrl} alt="قبل" className="w-full h-full object-cover" />
-                </div>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-gray-400 mb-1.5">بعد</p>
-                <div className="aspect-square rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
-                  {isProcessing ? (
-                    <div className="flex flex-col items-center gap-2 px-3 text-center">
-                      <Loader2 className="h-6 w-6 text-gray-300 animate-spin" />
-                      <p className="text-[10px] text-gray-400">{processingStatus}</p>
-                    </div>
-                  ) : enhancedUrl ? (
-                    <img src={enhancedUrl} alt="بعد" className="w-full h-full object-cover" />
-                  ) : (
-                    <p className="text-[11px] text-gray-300">اضغط "تحسين الصورة"</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {originalUrl && !isProcessing && (
-            <p className="text-[11px] text-gray-400 text-center">
-              التحسين يستخدم صورة صنفك الفعلية ويحوّل خلفيتها لبيضاء نظيفة — يأخذ عادةً أقل من دقيقة
-            </p>
-          )}
-
-          {originalUrl && (
-            <div className="flex gap-2">
-              <button
-                onClick={handleEnhance}
-                disabled={isProcessing || quotaExceeded || !isPaidPlan}
-                className="flex-1 h-11 rounded-xl bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {isProcessing ? 'جاري التحسين...' : 'تحسين الصورة'}
-              </button>
-              <button
-                onClick={resetImages}
-                className="h-11 px-4 rounded-xl border border-gray-200 text-gray-500 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                إلغاء
-              </button>
-            </div>
-          )}
-
-          {enhancedBlob && (
-            <button
-              onClick={handleSave}
-              disabled={isSaving || !selectedItem}
-              className="w-full h-11 rounded-xl bg-emerald-600 text-white text-sm font-bold hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {isSaving ? 'جاري الحفظ...' : !selectedItem ? 'اختر منتج أولاً عشان تحفظ' : 'حفظ كصورة المنتج'}
-            </button>
-          )}
-
-          {!selectedItem && enhancedBlob && (
-            <p className="text-[10px] text-amber-600 flex items-center gap-1.5">
-              <AlertTriangle className="h-3 w-3 shrink-0" />
-              لازم تختار المنتج فوق عشان تقدر تحفظ الصورة عليه
-            </p>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Gallery picker dialog */}
       <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
