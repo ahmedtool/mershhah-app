@@ -1,27 +1,29 @@
--- ============================================================
--- إصلاح صفحات الدعم - ضمان عمل المحادثات
--- انسخ هذا الكود في Supabase > SQL Editor > Run
--- ============================================================
+-- chats/chat_messages had RLS disabled entirely - any anonymous request with
+-- just the public anon key could read/write every support conversation on
+-- the platform (confirmed live: real owner names and message text came back
+-- with zero authentication). Scope access to exactly how the app already
+-- uses these tables: the admin side (is_admin()) and the owning restaurant's
+-- owner (ownerId = auth.uid()), nothing else.
 
--- 1. التأكد من وجود chat_type
-ALTER TABLE public.chats ADD COLUMN IF NOT EXISTS chat_type text DEFAULT 'admin';
+ALTER TABLE public.chats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
 
--- 2. تعطيل RLS على chats (المدير يحتاج قراءة كل المحادثات)
-ALTER TABLE public.chats DISABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "chats_owner_or_admin" ON public.chats;
+CREATE POLICY "chats_owner_or_admin" ON public.chats
+  FOR ALL
+  USING (public.is_admin() OR "ownerId" = auth.uid()::text)
+  WITH CHECK (public.is_admin() OR "ownerId" = auth.uid()::text);
 
--- 3. تعطيل RLS على chat_messages
-ALTER TABLE public.chat_messages DISABLE ROW LEVEL SECURITY;
-
--- 4. التأكد من وجود الـ storage bucket
-INSERT INTO storage.buckets (id, name, public) 
-VALUES ('chat-attachments', 'chat-attachments', true)
-ON CONFLICT (id) DO NOTHING;
-
--- 5. سياسة storage للـ chat attachments
-CREATE POLICY "Public access for chat attachments"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'chat-attachments');
-
-CREATE POLICY "Anyone can upload chat attachments"
-ON storage.objects FOR INSERT
-WITH CHECK (bucket_id = 'chat-attachments');
+DROP POLICY IF EXISTS "chat_messages_owner_or_admin" ON public.chat_messages;
+CREATE POLICY "chat_messages_owner_or_admin" ON public.chat_messages
+  FOR ALL
+  USING (
+    public.is_admin() OR EXISTS (
+      SELECT 1 FROM public.chats c WHERE c.id = chat_messages.chat_id AND c."ownerId" = auth.uid()::text
+    )
+  )
+  WITH CHECK (
+    public.is_admin() OR EXISTS (
+      SELECT 1 FROM public.chats c WHERE c.id = chat_messages.chat_id AND c."ownerId" = auth.uid()::text
+    )
+  );

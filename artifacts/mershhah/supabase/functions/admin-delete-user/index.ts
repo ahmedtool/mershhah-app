@@ -12,6 +12,32 @@ serve(async (req) => {
   }
 
   try {
+    // Create admin client with service_role key
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const admin = createClient(supabaseUrl, serviceKey)
+
+    // This previously had no auth check at all - any request with just the
+    // public anon key could delete any account, admins included. Only an
+    // authenticated admin may call this now, matching every other
+    // admin-only function in this project.
+    const authHeader = req.headers.get('Authorization') || ''
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user }, error: authError } = await admin.auth.getUser(token)
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const { data: callerProfile } = await admin.from('profiles').select('role').eq('id', user.id).single()
+    if (callerProfile?.role !== 'admin') {
+      return new Response(JSON.stringify({ error: 'Forbidden — admin only' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const { userId } = await req.json()
 
     if (!userId) {
@@ -20,11 +46,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
-
-    // Create admin client with service_role key
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const admin = createClient(supabaseUrl, serviceKey)
 
     // Delete auth user
     const { error } = await admin.auth.admin.deleteUser(userId)
