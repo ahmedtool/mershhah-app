@@ -107,6 +107,11 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
         if (ok && data.valid) {
           sessionStorage.setItem(sessionKey(user.uid), '1');
           setIsVerified(true);
+          // The current JWT was minted before the grant stamped
+          // otp_verified_at server-side - refresh so its otp_ok claim
+          // catches up, or RLS keeps treating this session as unverified
+          // even though the UI has already moved past this screen.
+          supabase.auth.refreshSession().catch(() => {});
         } else if (needsOtp) {
           sendCode();
         }
@@ -177,6 +182,10 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
     if (ok && data.verified) {
       sessionStorage.setItem(sessionKey(user.uid), '1');
       setIsVerified(true);
+      // Same reason as the grant path: the session's JWT was minted before
+      // verify-login-otp stamped otp_verified_at, so it still carries the
+      // old otp_ok:false claim until refreshed.
+      supabase.auth.refreshSession().catch(() => {});
     } else {
       setError(data.error || 'كود غير صحيح');
       setCode(['', '', '', '']);

@@ -69,10 +69,22 @@ serve(async (req) => {
       return json({ verified: false, error: `كود غير صحيح${remaining > 0 ? ` — باقي ${remaining} محاولات` : ""}` }, 400);
     }
 
+    const verifiedAt = new Date().toISOString();
     await supabase
       .from("login_otp_codes")
-      .update({ verified_at: new Date().toISOString() })
+      .update({ verified_at: verifiedAt })
       .eq("id", otpRow.id);
+
+    // Feeds the custom access token hook, which stamps an `otp_ok` claim
+    // into the JWT on the next token refresh - this is what RLS actually
+    // checks server-side. Without this, "verified" only ever meant a flag
+    // in the browser's sessionStorage, and the session's real access token
+    // (already fully valid from the password sign-in step) worked for every
+    // API call regardless of whether OTP had been completed at all.
+    await supabase
+      .from("profiles")
+      .update({ otp_verified_at: verifiedAt })
+      .eq("id", user.id);
 
     return json({ verified: true });
   } catch (error) {

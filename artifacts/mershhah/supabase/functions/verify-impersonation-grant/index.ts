@@ -50,6 +50,13 @@ serve(async (req) => {
       .single();
     if (restaurant?.owner_id !== user.id) return json({ valid: false });
 
+    // The owner's own approval of this grant stands in for OTP - stamp the
+    // same otp_verified_at column the real OTP flow uses, so the access
+    // token hook's otp_ok claim reflects it once the client refreshes its
+    // session (the magic-link sign-in already happened before this check
+    // ever runs, so the current JWT still carries the pre-grant claim).
+    await supabase.from("profiles").update({ otp_verified_at: new Date().toISOString() }).eq("id", user.id);
+
     return json({ valid: true });
   } catch (error) {
     console.error("[verify-impersonation-grant] Fatal error:", error);
