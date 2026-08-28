@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import PageHeader from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Utensils, Globe, ShoppingCart, CalendarDays, Lightbulb, Ticket, Bell, Copy, Loader2 } from 'lucide-react';
+import { Utensils, Globe, ShoppingCart, CalendarDays, Ticket, Bell, Loader2 } from 'lucide-react';
 import { months, foodDays, globalDays, saudiEvents, salesSeasons, parseFixedDate } from '@/data/marketing-calendar-2025';
 import { useUser } from '@/hooks/useUser';
 import { useRouter } from '@/lib/navigation';
@@ -37,26 +37,12 @@ function occasionKey(event: { name: string }) {
   return event.name;
 }
 
-async function callAiFunction(path: string, body: Record<string, unknown>) {
-  const { data: { session } } = await supabase.auth.getSession();
-  const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => ({}));
-  return { ok: res.ok, data };
-}
-
 export default function MarketingCalendarPage() {
   const { user } = useUser();
   const router = useRouter();
   const { toast } = useToast();
 
   const [selectedMonth, setSelectedMonth] = useState<string>('الكل');
-  const [expandedKey, setExpandedKey] = useState<string | null>(null);
-  const [ideas, setIdeas] = useState<Record<string, string>>({});
-  const [loadingIdeaKey, setLoadingIdeaKey] = useState<string | null>(null);
   const [reminderKeys, setReminderKeys] = useState<Set<string>>(new Set());
   const [togglingReminderKey, setTogglingReminderKey] = useState<string | null>(null);
 
@@ -76,27 +62,6 @@ export default function MarketingCalendarPage() {
       data: category.data.filter(event => (event as any).month === selectedMonth),
     }));
   }, [selectedMonth]);
-
-  const handleToggleIdea = async (key: string, event: any) => {
-    if (expandedKey === key) {
-      setExpandedKey(null);
-      return;
-    }
-    setExpandedKey(key);
-    if (ideas[key]) return;
-    setLoadingIdeaKey(key);
-    const { ok, data } = await callAiFunction('generate-marketing-idea', {
-      occasionName: event.name,
-      occasionDate: event.date,
-    });
-    setLoadingIdeaKey(null);
-    if (ok && data.idea) {
-      setIdeas(prev => ({ ...prev, [key]: data.idea }));
-    } else {
-      toast({ variant: 'destructive', title: 'تعذّر توليد الفكرة', description: data.error || 'حاول مرة أخرى' });
-      setExpandedKey(null);
-    }
-  };
 
   const handleCreateOffer = (event: any) => {
     const title = `عرض ${event.name}`;
@@ -132,11 +97,6 @@ export default function MarketingCalendarPage() {
       }
     }
     setTogglingReminderKey(null);
-  };
-
-  const copyIdea = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: 'تم نسخ الفكرة' });
   };
 
   return (
@@ -192,9 +152,6 @@ export default function MarketingCalendarPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 {category.data.map((event: any) => {
                   const key = occasionKey(event);
-                  const isExpanded = expandedKey === key;
-                  const isLoadingIdea = loadingIdeaKey === key;
-                  const idea = ideas[key];
                   const canRemind = !!parseFixedDate(event.date);
                   const isReminding = reminderKeys.has(key);
                   const isTogglingReminder = togglingReminderKey === key;
@@ -230,40 +187,12 @@ export default function MarketingCalendarPage() {
                         </span>
                       )}
 
-                      <div className="flex items-center gap-1.5 mt-3">
-                        <button
-                          onClick={() => handleToggleIdea(key, event)}
-                          className="flex-1 h-8 rounded-lg text-[11px] font-bold text-gray-500 hover:bg-amber-50 hover:text-amber-600 transition-colors flex items-center justify-center gap-1"
-                        >
-                          <Lightbulb className="h-3.5 w-3.5" /> فكرة تسويقية
-                        </button>
-                        <button
-                          onClick={() => handleCreateOffer(event)}
-                          className="flex-1 h-8 rounded-lg text-[11px] font-bold text-gray-500 hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-center gap-1"
-                        >
-                          <Ticket className="h-3.5 w-3.5" /> إنشاء عرض
-                        </button>
-                      </div>
-
-                      {isExpanded && (
-                        <div className="mt-3 pt-3 border-t border-gray-50">
-                          {isLoadingIdea ? (
-                            <div className="flex items-center gap-2 text-[11px] text-gray-400 py-2">
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" /> جاري توليد الفكرة...
-                            </div>
-                          ) : idea ? (
-                            <div className="bg-amber-50/60 rounded-xl p-3 relative">
-                              <p className="text-[11px] text-gray-700 leading-relaxed whitespace-pre-wrap pl-6">{idea}</p>
-                              <button
-                                onClick={() => copyIdea(idea)}
-                                className="absolute top-2 left-2 w-6 h-6 rounded-md flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-white transition-colors"
-                              >
-                                <Copy className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          ) : null}
-                        </div>
-                      )}
+                      <button
+                        onClick={() => handleCreateOffer(event)}
+                        className="w-full h-8 mt-3 rounded-lg text-[11px] font-bold text-gray-500 hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Ticket className="h-3.5 w-3.5" /> إنشاء عرض
+                      </button>
                     </div>
                   );
                 })}
