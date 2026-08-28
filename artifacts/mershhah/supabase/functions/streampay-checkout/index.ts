@@ -6,6 +6,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Kept in sync with PlanPricingGrid.tsx's HIDDEN_PLAN_IDS/TEST_ACCOUNT_EMAILS —
+// that component only hides the dev-only test plan from the UI, it doesn't
+// stop a request that names the plan id directly, so the same restriction
+// has to be enforced here too or anyone can buy the unlimited plan for 1 SAR.
+const HIDDEN_PLAN_IDS = ["93250b42-d34c-4996-8d83-359ea26ab264"];
+const TEST_ACCOUNT_EMAILS = ["ahmednasmhi@gmail.com", "3thresa@gmail.com"];
+
 async function consumeDiscountCode(
   supabase: any,
   discountCodeId: string,
@@ -93,6 +100,14 @@ serve(async (req) => {
 
     if (planError || !plan) {
       console.error("[StreamPay Checkout] Plan not found:", plan_id, planError);
+      return new Response(JSON.stringify({ error: "Plan not found" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+      });
+    }
+
+    if (HIDDEN_PLAN_IDS.includes(plan_id) && !TEST_ACCOUNT_EMAILS.includes(user.email || "")) {
+      console.warn("[StreamPay Checkout] Blocked non-test account from hidden test plan:", user.id, user.email);
       return new Response(JSON.stringify({ error: "Plan not found" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 404,

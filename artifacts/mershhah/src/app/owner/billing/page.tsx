@@ -22,7 +22,7 @@ export default function BillingPage() {
         const [subRes, invRes] = await Promise.all([
           supabase
             .from("subscriptions")
-            .select("*, plans(*)")
+            .select("*")
             .eq("profile_id", user.id)
             .in("status", ["active", "pending"])
             .order("created_at", { ascending: false })
