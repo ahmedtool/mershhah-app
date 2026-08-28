@@ -8,8 +8,8 @@ export async function getTools(): Promise<any[]> {
 
         const marketingCalendarTool = {
             id: "marketing-calendar",
-            title: "تقويم التسويق 2025",
-            description: "تقويم عملي ومذهل مصمم للمطاعم السعودية، مليء بالأفكار المبتكرة والواقعية التي يمكنك تنفيذها فوراً.",
+            title: "تقويم التسويق",
+            description: "تقويم عملي ومذهل مصمم لقطاع المأكولات في السعودية — مطاعم، مقاهي، مخابز، وغيرها — مليء بالأفكار المبتكرة والواقعية التي يمكنك تنفيذها فوراً.",
             category: "marketing",
             price_label: "مجاني",
             icon: "CalendarDays",

@@ -33,8 +33,8 @@ export default function MarketingCalendarPage() {
     return (
         <div className="space-y-6">
             <PageHeader
-                title="تقويم المناسبات التسويقي 2025"
-                description="خطط لحملاتك التسويقية بذكاء. استلهم أفكارًا مبتكرة لكل مناسبة."
+                title="تقويم المناسبات التسويقي"
+                description="خطط لحملاتك التسويقية بذكاء — لمطعمك، مقهاك، مخبزك، أو أي مشروع في قطاع المأكولات. استلهم أفكارًا مبتكرة لكل مناسبة."
             />
 
             <div className="sticky top-14 z-20 bg-background/80 backdrop-blur-sm py-3 -mt-3">
