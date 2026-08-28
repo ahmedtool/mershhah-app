@@ -24,6 +24,20 @@ export default function OffersPage() {
   const [offerToDelete, setOfferToDelete] = useState<any | null>(null);
   const [isDeleting, startDelete] = useTransition();
   const { toast } = useToast();
+  // Arriving from the marketing calendar's "إنشاء عرض" button - open a
+  // fresh (not edit-mode) offer dialog pre-filled with that occasion. Read
+  // once into state (not on every render via useSearchParams) since the URL
+  // gets stripped right after - a live read would go blank the moment
+  // restaurantId finishes loading and re-renders this component.
+  const [prefill, setPrefill] = useState<{ title: string; description: string } | null>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const title = params.get('prefill_title');
+    if (title) {
+      setPrefill({ title, description: params.get('prefill_desc') || '' });
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   const [offers, setOffers] = useState<any[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -83,6 +97,19 @@ export default function OffersPage() {
             </button>
           </EditOfferDialog>
         </PageHeader>
+
+        {!loadingData && restaurantId && prefill && (
+          <EditOfferDialog
+            restaurantId={restaurantId}
+            userId={user?.uid}
+            branches={branches}
+            defaultOpen
+            initialValues={prefill}
+            onSave={() => restaurantId && fetchOffers(restaurantId)}
+          >
+            <span className="hidden" />
+          </EditOfferDialog>
+        )}
 
         {loadingData && (
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">

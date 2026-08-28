@@ -1,4 +1,24 @@
 
+const MONTH_INDEX: Record<string, number> = {
+  "يناير": 1, "فبراير": 2, "مارس": 3, "أبريل": 4, "مايو": 5, "يونيو": 6,
+  "يوليو": 7, "أغسطس": 8, "سبتمبر": 9, "أكتوبر": 10, "نوفمبر": 11, "ديسمبر": 12,
+};
+
+// Only a plain "D شهر" date (e.g. "16 أكتوبر") can be turned into a real
+// calendar date to remind against - relative phrasing ("second Monday of
+// January") and variable dates (Ramadan, Eid) are intentionally left
+// unparsed rather than guessed at, so the reminder toggle simply doesn't
+// show for those instead of ever computing a wrong date.
+export function parseFixedDate(dateStr?: string): { month: number; day: number } | null {
+  if (!dateStr) return null;
+  const match = dateStr.trim().match(/^(\d{1,2})\s+(.+)$/);
+  if (!match) return null;
+  const day = parseInt(match[1], 10);
+  const month = MONTH_INDEX[match[2].trim()];
+  if (!month || day < 1 || day > 31) return null;
+  return { month, day };
+}
+
 export const months = [
   "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
   "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
@@ -22,6 +42,7 @@ export const foodDays = [
   { name: "يوم تشوبستيك", date: "6 فبراير", month: "فبراير" },
   { name: "يوم مكرونة فوتيتشيني الفريدو", date: "7 فبراير", month: "فبراير" },
   { name: "يوم محبي البطاطس", date: "8 فبراير", month: "فبراير" },
+  { name: "اليوم العالمي للبيتزا", date: "9 فبراير", month: "فبراير" },
   { name: "اليوم العالمي للاتيه", date: "11 فبراير", month: "فبراير" },
   { name: "يوم الطعام الإيطالي", date: "13 فبراير", month: "فبراير" },
   { name: "يوم الحب", date: "14 فبراير", month: "فبراير" },
@@ -31,6 +52,7 @@ export const foodDays = [
   { name: "يوم البستاشيو", date: "26 فبراير", month: "فبراير" },
   { name: "يوم الفراولة", date: "27 فبراير", month: "فبراير" },
   { name: "يوم محبي زبدة الفول السوداني", date: "1 مارس", month: "مارس" },
+  { name: "يوم الحبوب العالمي", date: "7 مارس", month: "مارس" },
   { name: "يوم السناك", date: "4 مارس", month: "مارس" },
   { name: "يوم الأوريو", date: "6 مارس", month: "مارس" },
   { name: "يوم الشوكولاتة بالكراميل", date: "19 مارس", month: "مارس" },
@@ -57,6 +79,7 @@ export const foodDays = [
   { name: "اليوم العالمي للحليب", date: "1 يونيو", month: "يونيو" },
   { name: "يوم الأيسكريم بالشوكولاته", date: "7 يونيو", month: "يونيو" },
   { name: "يوم الدوناتس", date: "أول جمعة من يونيو", month: "يونيو" },
+  { name: "يوم الزبادي", date: "17 يونيو", month: "يونيو" },
   { name: "يوم الشاي المثلج", date: "10 يونيو", month: "يونيو" },
   { name: "يوم الفلافل", date: "12 يونيو", month: "يونيو" },
   { name: "يوم ستروبيري شورت كيك", date: "14 يونيو", month: "يونيو" },
@@ -85,6 +108,7 @@ export const foodDays = [
   { name: "يوم الشوكولاتة", date: "13 سبتمبر", month: "سبتمبر" },
   { name: "يوم التشيز برغر", date: "18 سبتمبر", month: "سبتمبر" },
   { name: "يوم أكل التفاح", date: "ثالث يوم سبت من سبتمبر", month: "سبتمبر" },
+  { name: "يوم الجواكامولي", date: "16 سبتمبر", month: "سبتمبر" },
   { name: "يوم الشوكولاتة البيضاء", date: "22 سبتمبر", month: "سبتمبر" },
   { name: "يوم القهوة", date: "1 أكتوبر", month: "أكتوبر" },
   { name: "اليوم العالمي للأطعمة النباتية", date: "1 أكتوبر", month: "أكتوبر" },
@@ -108,6 +132,7 @@ export const foodDays = [
   { name: "يوم مشروب الكاكاو", date: "13 ديسمبر", month: "ديسمبر" },
   { name: "يوم الكب كيك", date: "15 ديسمبر", month: "ديسمبر" },
   { name: "يوم الباجيت الفرنسي", date: "30 نوفمبر", month: "نوفمبر" },
+  { name: "اليوم العالمي للنباتيين الصرفين (فيغن)", date: "1 نوفمبر", month: "نوفمبر" },
 ];
 
 export const globalDays = [
@@ -125,6 +150,7 @@ export const globalDays = [
   { name: "اليوم العالمي لسلامة الغذاء", date: "7 يونيو", month: "يونيو" },
   { name: "اليوم العالمي للمحيطات", date: "8 يونيو", month: "يونيو" },
   { name: "يوم الأب", date: "21 يونيو", month: "يونيو" },
+  { name: "اليوم العالمي للمشاريع الصغيرة والمتوسطة", date: "27 يونيو", month: "يونيو" },
   { name: "يوم الصداقة", date: "30 يوليو", month: "يوليو" },
   { name: "يوم الشباب", date: "12 أغسطس", month: "أغسطس" },
   { name: "اليوم العالمي للسلام", date: "21 سبتمبر", month: "سبتمبر" },

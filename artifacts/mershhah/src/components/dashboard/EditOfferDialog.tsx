@@ -39,14 +39,19 @@ type FormValues = z.infer<typeof formSchema>;
 interface EditOfferDialogProps {
   children: React.ReactNode;
   offer?: any;
+  // Pre-fills a brand-new offer (e.g. from the marketing calendar's "إنشاء
+  // عرض" button) without switching the dialog into edit mode - only `offer`
+  // does that, since onSubmit uses `!!offer` to decide insert vs update.
+  initialValues?: { title?: string; description?: string };
+  defaultOpen?: boolean;
   onSave?: () => void;
   restaurantId?: string;
   userId?: string;
   branches?: Branch[];
 }
 
-export function EditOfferDialog({ children, offer, onSave, restaurantId, userId, branches = [] }: EditOfferDialogProps) {
-  const [open, setOpen] = useState(false);
+export function EditOfferDialog({ children, offer, initialValues, defaultOpen, onSave, restaurantId, userId, branches = [] }: EditOfferDialogProps) {
+  const [open, setOpen] = useState(!!defaultOpen);
   const [isSaving, startSaving] = useTransition();
   const { toast } = useToast();
   const isEditing = !!offer;
@@ -81,8 +86,8 @@ export function EditOfferDialog({ children, offer, onSave, restaurantId, userId,
         external_link: offer.external_link || "",
         branch_id: offer.branch_id ?? null,
       } : {
-        title: "",
-        description: "",
+        title: initialValues?.title || "",
+        description: initialValues?.description || "",
         image_url: "",
         external_link: "",
         valid_until: undefined,
