@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/useUser';
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Line, LineChart, Cell } from 'recharts';
 import { parseDeliveryReport, type ParsedDeliveryReport } from '@/lib/delivery-report-reader';
 import { generateKeetaInsights } from '@/lib/keeta-order-log-parser';
 import { detectAndParseKeetaReport, generateOrderDataInsights, REPORT_TYPE_LABELS, type KeetaParsedReport } from '@/lib/keeta-reports/registry';
@@ -81,31 +83,6 @@ function AlertsRecs({ alerts, recommendations }: { alerts: string[]; recommendat
   );
 }
 
-function DataTable({ headers, rows }: { headers: string[]; rows: (string | number)[][] }) {
-  return (
-    <div className="overflow-x-auto max-h-[420px] overflow-y-auto border-t border-gray-50 -mx-5 -mb-5 px-5 pb-5">
-      <table className="w-full text-xs mt-3">
-        <thead className="sticky top-0 bg-gray-50">
-          <tr>
-            {headers.map((h) => (
-              <th key={h} className="px-3 py-2 text-right font-bold text-gray-500 whitespace-nowrap">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {rows.map((row, i) => (
-            <tr key={i} className="hover:bg-gray-50/50">
-              {row.map((c, j) => (
-                <td key={j} className="px-3 py-2 text-gray-700 whitespace-nowrap">{c}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 function CollapsibleTable({ title, count, headers, rows }: { title: string; count: number; headers: string[]; rows: (string | number)[][] }) {
   const [open, setOpen] = useState(false);
   return (
@@ -140,6 +117,88 @@ function CollapsibleTable({ title, count, headers, rows }: { title: string; coun
   );
 }
 
+// ---- charts ----
+// Real recharts, matching the same ChartContainer pattern used in
+// src/components/dashboard/Analytics.tsx - not decoration, these carry the
+// numbers a plain table buries: proportion at a glance, trend over time.
+
+function BreakdownChart({ data, color = '#ef4444' }: { data: { name: string; value: number }[]; color?: string }) {
+  const filtered = data.filter((d) => d.value > 0);
+  if (filtered.length === 0) return null;
+  const chartConfig: ChartConfig = { value: { label: 'القيمة', color } };
+  return (
+    <ChartContainer config={chartConfig} className="w-full aspect-auto" style={{ height: Math.max(120, filtered.length * 36) }}>
+      <BarChart data={filtered} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 0 }}>
+        <CartesianGrid horizontal={false} stroke="#f3f4f6" />
+        <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
+        <YAxis type="category" dataKey="name" orientation="right" width={130} tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#374151' }} />
+        <ChartTooltip cursor={{ fill: '#f9fafb' }} content={<ChartTooltipContent hideLabel />} />
+        <Bar dataKey="value" radius={4} fill={color} />
+      </BarChart>
+    </ChartContainer>
+  );
+}
+
+function DivergingChart({ data }: { data: { name: string; value: number }[] }) {
+  if (data.length === 0) return null;
+  const chartConfig: ChartConfig = { value: { label: 'التغيّر %' } };
+  return (
+    <ChartContainer config={chartConfig} className="w-full aspect-auto" style={{ height: Math.max(140, data.length * 32) }}>
+      <BarChart data={data} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 0 }}>
+        <CartesianGrid horizontal={false} stroke="#f3f4f6" />
+        <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} unit="%" />
+        <YAxis type="category" dataKey="name" orientation="right" width={130} tickLine={false} axisLine={false} tick={{ fontSize: 10, fill: '#374151' }} />
+        <ChartTooltip cursor={{ fill: '#f9fafb' }} content={<ChartTooltipContent hideLabel />} />
+        <Bar dataKey="value" radius={4}>
+          {data.map((d, i) => (
+            <Cell key={i} fill={d.value >= 0 ? '#10b981' : '#ef4444'} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ChartContainer>
+  );
+}
+
+function TrendChart({ data }: { data: { date: string; sales: number; revenue: number }[] }) {
+  const chartConfig: ChartConfig = {
+    sales: { label: 'المبيعات', color: '#111827' },
+    revenue: { label: 'الإيرادات', color: '#10b981' },
+  };
+  return (
+    <ChartContainer config={chartConfig} className="w-full aspect-auto h-[220px]">
+      <LineChart data={data} margin={{ top: 10, left: 0, right: 10, bottom: 0 }}>
+        <CartesianGrid vertical={false} stroke="#f3f4f6" />
+        <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tick={{ fontSize: 9, fill: '#9ca3af' }} minTickGap={24} />
+        <YAxis tickLine={false} axisLine={false} width={36} tick={{ fontSize: 10, fill: '#9ca3af' }} />
+        <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+        <Line type="monotone" dataKey="sales" stroke="var(--color-sales)" strokeWidth={2} dot={false} />
+        <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} dot={false} />
+      </LineChart>
+    </ChartContainer>
+  );
+}
+
+function GroupedBarChart({ data, aKey, bKey, aLabel, bLabel, xKey }: {
+  data: Record<string, any>[]; aKey: string; bKey: string; aLabel: string; bLabel: string; xKey: string;
+}) {
+  const chartConfig: ChartConfig = {
+    [aKey]: { label: aLabel, color: '#111827' },
+    [bKey]: { label: bLabel, color: '#10b981' },
+  };
+  return (
+    <ChartContainer config={chartConfig} className="w-full aspect-auto h-[220px]">
+      <BarChart data={data} margin={{ top: 10, left: 0, right: 10, bottom: 0 }}>
+        <CartesianGrid vertical={false} stroke="#f3f4f6" />
+        <XAxis dataKey={xKey} tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: '#9ca3af' }} />
+        <YAxis tickLine={false} axisLine={false} width={40} tick={{ fontSize: 10, fill: '#9ca3af' }} />
+        <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
+        <Bar dataKey={aKey} fill={`var(--color-${aKey})`} radius={4} />
+        <Bar dataKey={bKey} fill={`var(--color-${bKey})`} radius={4} />
+      </BarChart>
+    </ChartContainer>
+  );
+}
+
 // ---- per-type renderers ----
 
 function OrderLogView({ summary }: { summary: Extract<KeetaParsedReport, { type: 'order_log' }>['summary'] }) {
@@ -165,13 +224,24 @@ function OrderLogView({ summary }: { summary: Extract<KeetaParsedReport, { type:
       </Card>
       <Card>
         <SectionTitle icon={TrendingDown}>وين راحت فلوسي؟</SectionTitle>
-        <WaterfallRow label="مبيعاتك" value={summary.totalOriginalPrice} isFinal />
-        <WaterfallRow label="عمولة كيتا" value={summary.totalCommission} />
-        {summary.totalMerchantPromo > 0 && <WaterfallRow label="خصومات تحملتها" value={summary.totalMerchantPromo} />}
-        {summary.totalPaymentFee > 0 && <WaterfallRow label="رسوم الدفع الإلكتروني" value={summary.totalPaymentFee} />}
-        {summary.totalMinOrderDiff > 0 && <WaterfallRow label="فارق الحد الأدنى للطلب" value={summary.totalMinOrderDiff} />}
-        {summary.otherGap > 1 && <WaterfallRow label="رسوم/تعديلات أخرى" value={summary.otherGap} />}
-        <div className="pt-2.5"><WaterfallRow label="الصافي المحول لك" value={summary.totalProfit} isFinal /></div>
+        <BreakdownChart
+          data={[
+            { name: 'عمولة كيتا', value: summary.totalCommission },
+            { name: 'خصومات تحملتها', value: summary.totalMerchantPromo },
+            { name: 'رسوم الدفع الإلكتروني', value: summary.totalPaymentFee },
+            { name: 'فارق الحد الأدنى للطلب', value: summary.totalMinOrderDiff },
+            { name: 'رسوم/تعديلات أخرى', value: summary.otherGap },
+          ]}
+        />
+        <div className="mt-3">
+          <WaterfallRow label="مبيعاتك" value={summary.totalOriginalPrice} isFinal />
+          <WaterfallRow label="عمولة كيتا" value={summary.totalCommission} />
+          {summary.totalMerchantPromo > 0 && <WaterfallRow label="خصومات تحملتها" value={summary.totalMerchantPromo} />}
+          {summary.totalPaymentFee > 0 && <WaterfallRow label="رسوم الدفع الإلكتروني" value={summary.totalPaymentFee} />}
+          {summary.totalMinOrderDiff > 0 && <WaterfallRow label="فارق الحد الأدنى للطلب" value={summary.totalMinOrderDiff} />}
+          {summary.otherGap > 1 && <WaterfallRow label="رسوم/تعديلات أخرى" value={summary.otherGap} />}
+          <div className="pt-2.5"><WaterfallRow label="الصافي المحول لك" value={summary.totalProfit} isFinal /></div>
+        </div>
       </Card>
       <AlertsRecs {...insights} />
       <CollapsibleTable
@@ -208,13 +278,24 @@ function OrderDataView({ summary }: { summary: Extract<KeetaParsedReport, { type
       </Card>
       <Card>
         <SectionTitle icon={TrendingDown}>وين راحت فلوسي؟</SectionTitle>
-        <WaterfallRow label="مبيعاتك" value={summary.totalSales} isFinal />
-        <WaterfallRow label="العمولة" value={summary.totalCommission} />
-        {summary.totalPlatformCost > 0 && <WaterfallRow label="تكاليف المنصة" value={summary.totalPlatformCost} />}
-        {summary.totalDeliveryFee > 0 && <WaterfallRow label="رسوم التوصيل" value={summary.totalDeliveryFee} />}
-        {summary.totalPromoCost > 0 && <WaterfallRow label="تكلفة العروض الترويجية" value={summary.totalPromoCost} />}
-        {summary.otherGap > 1 && <WaterfallRow label="رسوم/تعديلات أخرى" value={summary.otherGap} />}
-        <div className="pt-2.5"><WaterfallRow label="الصافي المحول لك" value={summary.totalRevenue} isFinal /></div>
+        <BreakdownChart
+          data={[
+            { name: 'العمولة', value: summary.totalCommission },
+            { name: 'تكاليف المنصة', value: summary.totalPlatformCost },
+            { name: 'رسوم التوصيل', value: summary.totalDeliveryFee },
+            { name: 'تكلفة العروض الترويجية', value: summary.totalPromoCost },
+            { name: 'رسوم/تعديلات أخرى', value: summary.otherGap },
+          ]}
+        />
+        <div className="mt-3">
+          <WaterfallRow label="مبيعاتك" value={summary.totalSales} isFinal />
+          <WaterfallRow label="العمولة" value={summary.totalCommission} />
+          {summary.totalPlatformCost > 0 && <WaterfallRow label="تكاليف المنصة" value={summary.totalPlatformCost} />}
+          {summary.totalDeliveryFee > 0 && <WaterfallRow label="رسوم التوصيل" value={summary.totalDeliveryFee} />}
+          {summary.totalPromoCost > 0 && <WaterfallRow label="تكلفة العروض الترويجية" value={summary.totalPromoCost} />}
+          {summary.otherGap > 1 && <WaterfallRow label="رسوم/تعديلات أخرى" value={summary.otherGap} />}
+          <div className="pt-2.5"><WaterfallRow label="الصافي المحول لك" value={summary.totalRevenue} isFinal /></div>
+        </div>
       </Card>
       <AlertsRecs {...insights} />
       {lowRated.length > 0 && (
@@ -306,12 +387,15 @@ function CampaignView({ summary }: { summary: Extract<KeetaParsedReport, { type:
         </div>
       </Card>
       <Card>
-        <SectionTitle icon={ListOrdered}>حسب الحملة</SectionTitle>
-        <DataTable
-          headers={['الحملة', 'التكلفة', 'الطلبات', 'المبيعات']}
-          rows={summary.byCampaign.map((c) => [c.name, sar(c.cost), c.orders, sar(c.sales)])}
-        />
+        <SectionTitle icon={ListOrdered}>التكلفة حسب الحملة</SectionTitle>
+        <BreakdownChart data={summary.byCampaign.map((c) => ({ name: c.name, value: c.cost }))} />
       </Card>
+      <CollapsibleTable
+        title="تفاصيل كل حملة"
+        count={summary.byCampaign.length}
+        headers={['الحملة', 'التكلفة', 'الطلبات', 'المبيعات']}
+        rows={summary.byCampaign.map((c) => [c.name, sar(c.cost), c.orders, sar(c.sales)])}
+      />
     </div>
   );
 }
@@ -331,6 +415,12 @@ function RestaurantDataView({ summary }: { summary: Extract<KeetaParsedReport, {
           {summary.dateRange ? ` · ${summary.dateRange.from} → ${summary.dateRange.to}` : ''}
         </p>
       </Card>
+      {summary.dailySeries.length > 1 && (
+        <Card>
+          <SectionTitle icon={TrendingUp}>الاتجاه اليومي</SectionTitle>
+          <TrendChart data={summary.dailySeries} />
+        </Card>
+      )}
       {summary.dailySeries.length > 0 && (
         <CollapsibleTable
           title="التفصيل اليومي"
@@ -348,23 +438,13 @@ function ItemDataView({ summary }: { summary: Extract<KeetaParsedReport, { type:
     <div className="space-y-5">
       <Card>
         <SectionTitle icon={Package}>الأكثر مبيعاً</SectionTitle>
-        <DataTable
-          headers={['الصنف', 'الكمية المباعة', 'المبيعات']}
-          rows={summary.topSellers.map((i) => [i.name, i.salesVolume, sar(i.salesAmount)])}
-        />
+        <BreakdownChart color="#10b981" data={summary.topSellers.map((i) => ({ name: i.name, value: i.salesVolume }))} />
       </Card>
       {summary.viewedNotBought.length > 0 && (
         <Card className="bg-amber-50/60 border-amber-100">
           <SectionTitle icon={AlertTriangle}>يشوفها الزبون وما يطلبها</SectionTitle>
           <p className="text-[11px] text-gray-600 mb-3">أصناف بمشاهدات عالية بدون أي عملية بيع — سعرها أو صورتها أو وصفها قد يكون السبب.</p>
-          <ul className="space-y-1.5">
-            {summary.viewedNotBought.map((i) => (
-              <li key={i.name} className="text-[11px] text-gray-700 flex items-center justify-between">
-                <span>{i.name}</span>
-                <span className="text-gray-400">{i.impressions} مشاهدة</span>
-              </li>
-            ))}
-          </ul>
+          <BreakdownChart color="#f59e0b" data={summary.viewedNotBought.map((i) => ({ name: i.name, value: i.impressions }))} />
         </Card>
       )}
     </div>
@@ -372,32 +452,41 @@ function ItemDataView({ summary }: { summary: Extract<KeetaParsedReport, { type:
 }
 
 function ItemAnalysisView({ summary }: { summary: Extract<KeetaParsedReport, { type: 'item_analysis' }>['summary'] }) {
+  const diverging = [...summary.topGrowing, ...[...summary.topDeclining].reverse()].map((i) => ({ name: i.name, value: Math.round(i.changePercent) }));
   return (
-    <div className="grid sm:grid-cols-2 gap-5">
-      <Card>
-        <SectionTitle icon={TrendingUp}>الأصناف الصاعدة</SectionTitle>
-        <ul className="space-y-2">
-          {summary.topGrowing.map((i) => (
-            <li key={i.name} className="text-[11px] flex items-center justify-between border-b border-gray-50 pb-2 last:border-0">
-              <span className="text-gray-700">{i.name}</span>
-              <span className="font-bold text-emerald-600">+{Math.round(i.changePercent)}%</span>
-            </li>
-          ))}
-          {summary.topGrowing.length === 0 && <p className="text-[11px] text-gray-400">لا يوجد</p>}
-        </ul>
-      </Card>
-      <Card>
-        <SectionTitle icon={TrendingDownIcon}>الأصناف المتراجعة</SectionTitle>
-        <ul className="space-y-2">
-          {summary.topDeclining.map((i) => (
-            <li key={i.name} className="text-[11px] flex items-center justify-between border-b border-gray-50 pb-2 last:border-0">
-              <span className="text-gray-700">{i.name}</span>
-              <span className="font-bold text-red-500">{Math.round(i.changePercent)}%</span>
-            </li>
-          ))}
-          {summary.topDeclining.length === 0 && <p className="text-[11px] text-gray-400">لا يوجد</p>}
-        </ul>
-      </Card>
+    <div className="space-y-5">
+      {diverging.length > 0 && (
+        <Card>
+          <SectionTitle icon={TrendingUp}>التغيّر في المبيعات</SectionTitle>
+          <DivergingChart data={diverging} />
+        </Card>
+      )}
+      <div className="grid sm:grid-cols-2 gap-5">
+        <Card>
+          <SectionTitle icon={TrendingUp}>الأصناف الصاعدة</SectionTitle>
+          <ul className="space-y-2">
+            {summary.topGrowing.map((i) => (
+              <li key={i.name} className="text-[11px] flex items-center justify-between border-b border-gray-50 pb-2 last:border-0">
+                <span className="text-gray-700">{i.name}</span>
+                <span className="font-bold text-emerald-600">+{Math.round(i.changePercent)}%</span>
+              </li>
+            ))}
+            {summary.topGrowing.length === 0 && <p className="text-[11px] text-gray-400">لا يوجد</p>}
+          </ul>
+        </Card>
+        <Card>
+          <SectionTitle icon={TrendingDownIcon}>الأصناف المتراجعة</SectionTitle>
+          <ul className="space-y-2">
+            {summary.topDeclining.map((i) => (
+              <li key={i.name} className="text-[11px] flex items-center justify-between border-b border-gray-50 pb-2 last:border-0">
+                <span className="text-gray-700">{i.name}</span>
+                <span className="font-bold text-red-500">{Math.round(i.changePercent)}%</span>
+              </li>
+            ))}
+            {summary.topDeclining.length === 0 && <p className="text-[11px] text-gray-400">لا يوجد</p>}
+          </ul>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -413,13 +502,25 @@ function InvoiceSummaryView({ summary }: { summary: Extract<KeetaParsedReport, {
           <div><p className="text-lg font-black text-red-500">{sar(summary.totalCommission)}</p><p className="text-[10px] text-gray-400">إجمالي العمولة</p></div>
         </div>
       </Card>
-      <Card>
-        <SectionTitle icon={ListOrdered}>حسب الفترة</SectionTitle>
-        <DataTable
-          headers={['الفترة', 'إجمالي المبيعات', 'العمولة', 'رسوم بنكية', 'خصومات تتحملها', 'الصافي المستحق']}
-          rows={summary.periods.map((p) => [p.period, sar(p.grossSales), sar(p.totalCommission), sar(p.totalBankFees), sar(p.merchantBorneDiscounts), sar(p.netPayable)])}
-        />
-      </Card>
+      {summary.periods.length > 1 && (
+        <Card>
+          <SectionTitle icon={TrendingUp}>حسب الفترة</SectionTitle>
+          <GroupedBarChart
+            data={summary.periods.map((p) => ({ period: p.period, grossSales: p.grossSales, netPayable: p.netPayable }))}
+            xKey="period"
+            aKey="grossSales"
+            bKey="netPayable"
+            aLabel="إجمالي المبيعات"
+            bLabel="الصافي المستحق"
+          />
+        </Card>
+      )}
+      <CollapsibleTable
+        title="تفاصيل كل فترة"
+        count={summary.periods.length}
+        headers={['الفترة', 'إجمالي المبيعات', 'العمولة', 'رسوم بنكية', 'خصومات تتحملها', 'الصافي المستحق']}
+        rows={summary.periods.map((p) => [p.period, sar(p.grossSales), sar(p.totalCommission), sar(p.totalBankFees), sar(p.merchantBorneDiscounts), sar(p.netPayable)])}
+      />
     </div>
   );
 }
