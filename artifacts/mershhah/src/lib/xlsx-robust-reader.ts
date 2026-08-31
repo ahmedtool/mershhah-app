@@ -22,6 +22,26 @@ export async function readTabularFile(file: File): Promise<{ headers: string[]; 
   return parseXlsx(file);
 }
 
+// Reads every sheet in a workbook, keyed by its real display name (not the
+// internal sheetN.xml filename) - needed for reports like Keeta's invoice
+// summary that ship several named sheets in one file.
+export async function readAllSheets(file: File): Promise<Record<string, any[][]>> {
+  const JSZip = (await import('jszip')).default;
+  const buffer = await file.arrayBuffer();
+  const zip = await JSZip.loadAsync(buffer);
+  const sharedStrings = await readSharedStrings(zip);
+  const sheetPaths = await resolveAllSheetPaths(zip);
+
+  const result: Record<string, any[][]> = {};
+  for (const { name, path } of sheetPaths) {
+    const f = zip.file(path);
+    if (!f) continue;
+    const xml = await f.async('string');
+    result[name] = parseSheetXml(xml, sharedStrings);
+  }
+  return result;
+}
+
 function parseCsv(text: string): { headers: string[]; rows: any[][] } {
   const lines = text.split(/\r\n|\n|\r/).filter((l) => l.trim() !== '');
   const parseLine = (line: string): string[] => {
@@ -67,9 +87,14 @@ async function parseXlsx(file: File): Promise<{ headers: string[]; rows: any[][]
   const sheetXml = await sheetXmlFile.async('string');
 
   const sharedStrings = await readSharedStrings(zip);
+  const allRows = parseSheetXml(sheetXml, sharedStrings);
 
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(sheetXml, 'application/xml');
+  const headers = (allRows[0] || []).map((h) => String(h ?? '').trim());
+  return { headers, rows: allRows.slice(1) };
+}
+
+function parseSheetXml(sheetXml: string, sharedStrings: string[]): any[][] {
+  const doc = new DOMParser().parseFromString(sheetXml, 'application/xml');
   const rowEls = Array.from(doc.getElementsByTagName('row'));
 
   const allRows: any[][] = [];
@@ -88,9 +113,7 @@ async function parseXlsx(file: File): Promise<{ headers: string[]; rows: any[][]
       row[colIndex] = value;
     }
   }
-
-  const headers = (allRows[0] || []).map((h) => String(h ?? '').trim());
-  return { headers, rows: allRows.slice(1) };
+  return allRows;
 }
 
 async function resolveFirstSheetPath(zip: any): Promise<string> {
@@ -99,6 +122,41 @@ async function resolveFirstSheetPath(zip: any): Promise<string> {
   if (zip.file('xl/worksheets/sheet1.xml')) return 'xl/worksheets/sheet1.xml';
   const names = Object.keys(zip.files).filter((n) => /^xl\/worksheets\/sheet\d+\.xml$/.test(n));
   return names.sort()[0] || 'xl/worksheets/sheet1.xml';
+}
+
+// Maps each sheet's real display name (from workbook.xml's <sheet name=.../>)
+// to its actual worksheet XML path (via workbook.xml.rels), since the two
+// are only linked indirectly through an r:id, not by matching order.
+async function resolveAllSheetPaths(zip: any): Promise<{ name: string; path: string }[]> {
+  const workbookFile = zip.file('xl/workbook.xml');
+  const relsFile = zip.file('xl/_rels/workbook.xml.rels');
+  if (!workbookFile || !relsFile) {
+    const names = Object.keys(zip.files).filter((n) => /^xl\/worksheets\/sheet\d+\.xml$/.test(n)).sort();
+    return names.map((path, i) => ({ name: `Sheet${i + 1}`, path }));
+  }
+
+  const workbookXml = await workbookFile.async('string');
+  const relsXml = await relsFile.async('string');
+  const wbDoc = new DOMParser().parseFromString(workbookXml, 'application/xml');
+  const relsDoc = new DOMParser().parseFromString(relsXml, 'application/xml');
+
+  const relIdToTarget = new Map<string, string>();
+  Array.from(relsDoc.getElementsByTagName('Relationship')).forEach((rel) => {
+    const id = rel.getAttribute('Id');
+    const target = rel.getAttribute('Target');
+    if (id && target) relIdToTarget.set(id, target.replace(/^\/?/, ''));
+  });
+
+  const sheetEls = Array.from(wbDoc.getElementsByTagName('sheet'));
+  return sheetEls
+    .map((el) => {
+      const name = el.getAttribute('name') || '';
+      const rId = el.getAttribute('r:id') || el.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships', 'id') || '';
+      const target = relIdToTarget.get(rId);
+      const path = target ? (target.startsWith('xl/') ? target : `xl/${target}`) : '';
+      return { name, path };
+    })
+    .filter((s) => s.path);
 }
 
 async function readSharedStrings(zip: any): Promise<string[]> {

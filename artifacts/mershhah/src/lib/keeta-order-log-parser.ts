@@ -66,8 +66,11 @@ export function isKeetaOrderLog(headers: string[]): boolean {
 export async function parseKeetaOrderLog(file: File): Promise<KeetaOrderLogSummary | null> {
   const { headers: rawHeaders, rows: dataOnlyRows } = await readTabularFile(file);
   if (rawHeaders.length === 0) return null;
-
   const headers = rawHeaders.map((h) => String(h ?? '').trim());
+  return parseKeetaOrderLogRows(headers, dataOnlyRows);
+}
+
+export function parseKeetaOrderLogRows(headers: string[], dataOnlyRows: any[][]): KeetaOrderLogSummary | null {
   if (!isKeetaOrderLog(headers)) return null;
   const allRows: any[][] = [headers, ...dataOnlyRows];
 
