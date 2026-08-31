@@ -7,7 +7,6 @@ import { OtpGate } from "@/components/auth/OtpGate";
 import { useUser } from "@/hooks/useUser";
 import { useRouter } from '@/lib/navigation';
 import { Loader2 } from "lucide-react";
-import { DashboardAssistant } from "@/components/dashboard/DashboardAssistant";
 import { AnnouncementBanner } from "@/components/dashboard/AnnouncementBanner";
 import { AccessRequestBanner } from "@/components/dashboard/AccessRequestBanner";
 import { useLanguage } from "@/components/shared/LanguageContext";
@@ -49,7 +48,6 @@ function OwnerLayoutContent({ children }: { children: React.ReactNode }) {
             {children}
           </AccountStatusChecker>
         </main>
-        <DashboardAssistant />
       </div>
     </OtpGate>
   );

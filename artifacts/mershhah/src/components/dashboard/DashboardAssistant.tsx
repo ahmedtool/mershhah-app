@@ -1,5 +1,10 @@
 'use client';
 
+// "رفيق الدرب" - unmounted from src/app/owner/layout.tsx by request; kept
+// here dormant (not deleted) since a written summary can't reliably
+// reproduce dashboard-assistant-flow.ts's local NLU parsing if this is
+// rebuilt as a dedicated page later. Not imported anywhere right now.
+
 import { useState, useRef, useEffect, useTransition } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, SendHorizonal, User, Loader2 } from 'lucide-react';
