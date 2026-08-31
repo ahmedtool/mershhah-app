@@ -4,6 +4,8 @@
 // guessed at, so this only activates when that exact report is uploaded;
 // any other file falls back to the generic table+summary view.
 
+import { readTabularFile } from './xlsx-robust-reader';
+
 export type KeetaOrder = {
   orderId: string;
   status: string;
@@ -62,15 +64,12 @@ export function isKeetaOrderLog(headers: string[]): boolean {
 }
 
 export async function parseKeetaOrderLog(file: File): Promise<KeetaOrderLogSummary | null> {
-  const XLSX = await import('xlsx');
-  const buffer = await file.arrayBuffer();
-  const wb = XLSX.read(buffer, { type: 'array' });
-  const sheet = wb.Sheets[wb.SheetNames[0]];
-  const allRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-  if (allRows.length === 0) return null;
+  const { headers: rawHeaders, rows: dataOnlyRows } = await readTabularFile(file);
+  if (rawHeaders.length === 0) return null;
 
-  const headers = allRows[0].map((h) => String(h ?? '').trim());
+  const headers = rawHeaders.map((h) => String(h ?? '').trim());
   if (!isKeetaOrderLog(headers)) return null;
+  const allRows: any[][] = [headers, ...dataOnlyRows];
 
   const col = (name: string) => headers.indexOf(name);
   const idx = {

@@ -1,8 +1,10 @@
 // Shared parsing logic behind the Keeta/HungerStation report-reader tools.
-// Column names in real merchant-dashboard exports aren't known yet (no
-// sample file seen), so this detects likely amount/date/item columns by
-// keyword instead of assuming a fixed layout - once a real export is
-// available this can be tightened to that exact schema.
+// Column names in real merchant-dashboard exports vary by report type, so
+// this detects likely amount/date/item columns by keyword instead of
+// assuming a fixed layout - it's the fallback for any report that isn't
+// specifically recognized (see keeta-order-log-parser.ts for that one).
+
+import { readTabularFile } from './xlsx-robust-reader';
 
 export type ParsedDeliveryReport = {
   headers: string[];
@@ -31,13 +33,10 @@ function toNumber(value: unknown): number {
 }
 
 export async function parseDeliveryReport(file: File): Promise<ParsedDeliveryReport> {
-  const XLSX = await import("xlsx");
-  const buffer = await file.arrayBuffer();
-  const wb = XLSX.read(buffer, { type: "array" });
-  const sheet = wb.Sheets[wb.SheetNames[0]];
-  const allRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+  const { headers: rawHeaders, rows: dataOnlyRows } = await readTabularFile(file);
+  const allRows: any[][] = [rawHeaders, ...dataOnlyRows];
 
-  if (allRows.length === 0) {
+  if (allRows.length === 0 || rawHeaders.length === 0) {
     return { headers: [], rows: [], rowCount: 0, amountColumn: null, totalAmount: null, dateColumn: null, dateRange: null, itemColumn: null, topItems: [] };
   }
 
