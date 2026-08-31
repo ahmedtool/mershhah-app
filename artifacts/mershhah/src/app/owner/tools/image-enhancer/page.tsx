@@ -337,7 +337,8 @@ export default function ImageEnhancerPage() {
       ) : (
         <div className="bg-violet-50 border border-violet-100 rounded-xl px-3.5 py-2.5">
           <p className="text-[11px] text-violet-700">
-            رصيدك المتبقي: <span className="font-bold">{usage?.remaining ?? 5}</span> من 199 (5 تُضاف مجاناً كل شهر)
+            رصيدك المتبقي: <span className="font-bold">{usage?.remaining ?? 5}</span>
+            {(usage?.remaining ?? 5) <= 199 ? ' من 199 (5 تُضاف مجاناً كل شهر)' : ''}
           </p>
         </div>
       )}
