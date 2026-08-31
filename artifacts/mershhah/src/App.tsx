@@ -38,6 +38,8 @@ import WeeklyContentWriterPage from "@/app/owner/tools/weekly-content-writer/pag
 import SalaryCalculatorPage from "@/app/owner/tools/salary-calculator/page";
 import CostCalculatorPage from "@/app/owner/tools/cost-calculator/page";
 import ImageEnhancerPage from "@/app/owner/tools/image-enhancer/page";
+import KeetaReportsReaderPage from "@/app/owner/tools/keeta-reports-reader/page";
+import HungerStationReportsReaderPage from "@/app/owner/tools/hungerstation-reports-reader/page";
 import OwnerSupportPage from "@/app/owner/support/page";
 import OwnerBillingPage from "@/app/owner/billing/page";
 
@@ -141,6 +143,8 @@ function Router() {
       <Route path="/owner/tools/salary-calculator" component={() => <OW><SalaryCalculatorPage /></OW>} />
       <Route path="/owner/tools/cost-calculator" component={() => <OW><CostCalculatorPage /></OW>} />
       <Route path="/owner/tools/image-enhancer" component={() => <OW><ImageEnhancerPage /></OW>} />
+      <Route path="/owner/tools/keeta-reports-reader" component={() => <OW><KeetaReportsReaderPage /></OW>} />
+      <Route path="/owner/tools/hungerstation-reports-reader" component={() => <OW><HungerStationReportsReaderPage /></OW>} />
       <Route path="/owner/tools/:toolId" component={() => <OW><OwnerToolDetailPage /></OW>} />
       <Route path="/owner/tools" component={() => <OW><OwnerToolsPage /></OW>} />
       <Route path="/owner/support" component={() => <OW><OwnerSupportPage /></OW>} />
