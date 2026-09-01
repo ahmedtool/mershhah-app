@@ -2,11 +2,12 @@
 
 import PageHeader from '@/components/dashboard/PageHeader';
 import { MenuTable } from '@/components/dashboard/MenuTable';
-import { PlusCircle, RefreshCw, Flame, Utensils, DollarSign, Sparkles, Loader2, TrendingUp, Package, Library, Tag } from 'lucide-react';
+import { PlusCircle, RefreshCw, Flame, Utensils, DollarSign, Sparkles, Loader2, TrendingUp, Package, Library, Tag, MoreHorizontal } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import { useEffect, useState, useTransition, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { EditMenuItemDialog } from '@/components/dashboard/EditMenuItemDialog';
 import { ImportMenuDialog } from '@/components/dashboard/ImportMenuDialog';
 import { AddFromLibraryDialog } from '@/components/dashboard/AddFromLibraryDialog';
@@ -172,45 +173,51 @@ export default function MenuPage() {
     <div className="space-y-5">
       <PageHeader title="إدارة المنيو" description="أضف وعُدّل أطباقك وتابع أرباحك.">
         <div className="flex items-center gap-2">
-          <button onClick={handleApplySmartSort} disabled={isApplyingSort || loadingOrNoUser}
-            className="h-9 px-4 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-2">
-            {isApplyingSort ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            ترتيب ذكي
-          </button>
-          <button onClick={handleRefresh} disabled={isRefreshing || loadingOrNoUser}
-            className="h-9 px-4 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-2">
-            <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-            تحديث
-          </button>
-          <ImportMenuDialog restaurantId={user?.restaurantId} onSave={() => user?.restaurantId && fetchMenuData(user.restaurantId)}>
-            <button disabled={loadingOrNoUser || !user}
-              className="h-9 px-4 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-2">
-              استيراد من صورة
-            </button>
-          </ImportMenuDialog>
-          <ManageCategoriesDialog
-            restaurantId={user?.restaurantId || ''}
-            menuItems={rawMenuItems}
-            onSave={() => user?.restaurantId && fetchMenuData(user.restaurantId)}
-          >
-            <button disabled={loadingOrNoUser || !user}
-              className="h-9 px-4 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-2">
-              <Tag className="h-3.5 w-3.5" />
-              التصنيفات
-            </button>
-          </ManageCategoriesDialog>
-          <AddFromLibraryDialog
-            restaurantId={user?.restaurantId}
-            onSave={() => user?.restaurantId && fetchMenuData(user.restaurantId)}
-            itemCount={menuItems.length}
-            menuItems={rawMenuItems}
-          >
-            <button disabled={loadingOrNoUser || !user}
-              className="h-9 px-4 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-2">
-              <Library className="h-3.5 w-3.5" />
-              من المكتبة المشتركة
-            </button>
-          </AddFromLibraryDialog>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button disabled={loadingOrNoUser}
+                className="h-9 px-4 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-2">
+                <MoreHorizontal className="h-3.5 w-3.5" />
+                المزيد
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleApplySmartSort} disabled={isApplyingSort || loadingOrNoUser}>
+                {isApplyingSort ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                ترتيب ذكي
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleRefresh} disabled={isRefreshing || loadingOrNoUser}>
+                <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                تحديث
+              </DropdownMenuItem>
+              <ImportMenuDialog restaurantId={user?.restaurantId} onSave={() => user?.restaurantId && fetchMenuData(user.restaurantId)}>
+                <DropdownMenuItem disabled={loadingOrNoUser || !user} onSelect={(e) => e.preventDefault()}>
+                  استيراد من صورة
+                </DropdownMenuItem>
+              </ImportMenuDialog>
+              <ManageCategoriesDialog
+                restaurantId={user?.restaurantId || ''}
+                menuItems={rawMenuItems}
+                onSave={() => user?.restaurantId && fetchMenuData(user.restaurantId)}
+              >
+                <DropdownMenuItem disabled={loadingOrNoUser || !user} onSelect={(e) => e.preventDefault()}>
+                  <Tag className="h-3.5 w-3.5" />
+                  التصنيفات
+                </DropdownMenuItem>
+              </ManageCategoriesDialog>
+              <AddFromLibraryDialog
+                restaurantId={user?.restaurantId}
+                onSave={() => user?.restaurantId && fetchMenuData(user.restaurantId)}
+                itemCount={menuItems.length}
+                menuItems={rawMenuItems}
+              >
+                <DropdownMenuItem disabled={loadingOrNoUser || !user} onSelect={(e) => e.preventDefault()}>
+                  <Library className="h-3.5 w-3.5" />
+                  من المكتبة المشتركة
+                </DropdownMenuItem>
+              </AddFromLibraryDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <EditMenuItemDialog
             restaurantId={user?.restaurantId}
             userId={user?.uid}
