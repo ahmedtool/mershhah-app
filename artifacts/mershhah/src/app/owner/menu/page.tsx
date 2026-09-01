@@ -13,7 +13,8 @@ import { AddFromLibraryDialog } from '@/components/dashboard/AddFromLibraryDialo
 import { ManageCategoriesDialog } from '@/components/dashboard/ManageCategoriesDialog';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
-import type { MenuItem } from '@/lib/types';
+import { cn } from '@/lib/utils';
+import type { MenuItem, MenuCategory } from '@/lib/types';
 
 type ItemCategory = 'Star' | 'Plow-Horse' | 'Puzzle' | 'Dog';
 
@@ -25,16 +26,20 @@ export default function MenuPage() {
 
   const [rawMenuItems, setRawMenuItems] = useState<MenuItem[]>([]);
   const [interactions, setInteractions] = useState<any[]>([]);
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [activeCategoryId, setActiveCategoryId] = useState('all');
   const [isFetchingData, setIsFetchingData] = useState(true);
 
   const fetchMenuData = async (restaurantId: string) => {
     setIsFetchingData(true);
-    const [menuRes, interactionsRes] = await Promise.all([
+    const [menuRes, interactionsRes, categoriesRes] = await Promise.all([
       supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId),
       supabase.from('menu_item_interactions').select('menu_item_id').eq('restaurant_id', restaurantId),
+      supabase.from('menu_categories').select('*').eq('restaurant_id', restaurantId).order('position'),
     ]);
     setRawMenuItems((menuRes.data || []) as MenuItem[]);
     setInteractions(interactionsRes.data || []);
+    setCategories((categoriesRes.data || []) as MenuCategory[]);
     setIsFetchingData(false);
   };
 
@@ -280,6 +285,52 @@ export default function MenuPage() {
         )}
       </div>
 
+      {/* Category filter */}
+      {!loadingOrNoUser && (
+        <div className="flex gap-2 overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => setActiveCategoryId('all')}
+            className={cn(
+              "shrink-0 h-9 px-4 rounded-full text-[12px] font-bold transition-colors",
+              activeCategoryId === 'all' ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100/80 text-gray-500 hover:bg-gray-200/70"
+            )}
+          >
+            الكل
+          </button>
+          {categories.map((cat) => {
+            const count = menuItems.filter((i) => i.category_id === cat.id).length;
+            if (count === 0) return null;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategoryId(cat.id)}
+                className={cn(
+                  "shrink-0 h-9 px-4 rounded-full text-[12px] font-bold transition-colors",
+                  activeCategoryId === cat.id ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100/80 text-gray-500 hover:bg-gray-200/70"
+                )}
+              >
+                {cat.name} <span className="opacity-60">({count})</span>
+              </button>
+            );
+          })}
+          {(() => {
+            const uncategorizedCount = menuItems.filter((i) => !i.category_id).length;
+            if (uncategorizedCount === 0) return null;
+            return (
+              <button
+                onClick={() => setActiveCategoryId('__uncategorized__')}
+                className={cn(
+                  "shrink-0 h-9 px-4 rounded-full text-[12px] font-bold transition-colors",
+                  activeCategoryId === '__uncategorized__' ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100/80 text-gray-500 hover:bg-gray-200/70"
+                )}
+              >
+                بدون تصنيف <span className="opacity-60">({uncategorizedCount})</span>
+              </button>
+            );
+          })()}
+        </div>
+      )}
+
       {/* Menu Items */}
       {loadingOrNoUser ? (
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
@@ -290,6 +341,8 @@ export default function MenuPage() {
       ) : (
         <MenuTable
           items={menuItems}
+          categories={categories}
+          activeCategoryId={activeCategoryId}
           restaurantId={user!.restaurantId!}
           userId={user!.uid}
           onActionCompletion={() => user?.restaurantId && fetchMenuData(user.restaurantId)}
