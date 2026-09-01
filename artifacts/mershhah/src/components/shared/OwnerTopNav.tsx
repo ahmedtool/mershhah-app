@@ -77,6 +77,8 @@ export function OwnerTopNav() {
     router.refresh();
   };
 
+  const isActive = (href: string) => pathname.startsWith(href);
+
   const allNavItems = [...navItems, ...activatedTools.map(t => ({ href: t.href, label: t.label, icon: t.icon }))];
   // navigatePage('next'/'prev') moves by RTL reading direction (currentIndex-1/+1
   // respectively, since the app is RTL-only) - not raw array direction, so the
@@ -99,8 +101,6 @@ export function OwnerTopNav() {
       router.push(allNavItems[nextIndex].href);
     }
   };
-
-  const isActive = (href: string) => pathname.startsWith(href);
 
   return (
     <div className="sticky top-0 z-50 bg-white border-b border-gray-100" dir="rtl">
