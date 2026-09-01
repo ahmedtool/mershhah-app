@@ -1,12 +1,14 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, MessageSquare, TrendingUp, Clock, Star } from 'lucide-react';
+import { Users, MessageSquare, Eye, Clock, Star } from 'lucide-react';
 import StatCard from './StatCard';
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
   ChartConfig,
 } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
@@ -20,11 +22,12 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/comp
 import { useLanguage } from '@/components/shared/LanguageContext';
 
 type AnalyticsData = {
-  totalVisitors: number;
+  menuVisitors: number;
+  assistantVisitors: number;
   totalQuestions: number;
   peakStartHour: number | null;
   averageRating: number | null;
-  weeklyVisitors: { date: Date; visitors: number }[];
+  weeklyVisitors: { date: Date; menuVisitors: number; assistantVisitors: number }[];
   activityHeatMap: { hour: number; activity: number }[];
 };
 
@@ -45,9 +48,13 @@ export default function Analytics({ ...props }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const chartConfig = {
-    visitors: {
-      label: isRTL ? 'الزوار' : 'Visitors',
+    menuVisitors: {
+      label: isRTL ? 'زوار المنيو' : 'Menu views',
       color: 'hsl(var(--primary))',
+    },
+    assistantVisitors: {
+      label: isRTL ? 'زوار المساعد' : 'Assistant sessions',
+      color: '#10b981',
     },
   } satisfies ChartConfig;
 
@@ -56,7 +63,8 @@ export default function Analytics({ ...props }) {
     if (!user || !user.restaurantId) {
       setIsLoading(false);
       setData({
-        totalVisitors: 0,
+        menuVisitors: 0,
+        assistantVisitors: 0,
         totalQuestions: 0,
         peakStartHour: null,
         averageRating: null,
@@ -101,7 +109,13 @@ export default function Analytics({ ...props }) {
           ...(hubVisits || []).map((v: any) => new Date(v.created_at || v.timestamp)),
         ];
 
-        const totalVisitors = allEventDates.length;
+        // Two genuinely different things, kept separate rather than summed:
+        // hub_visits logs every menu-page load with no dedup at all, while
+        // ai_sessions is one row per browser (deduped via localStorage) that
+        // actually opened the assistant - conflating them into one "visitors"
+        // number overstated real assistant usage by menu page-view volume.
+        const menuVisitors = (hubVisits || []).length;
+        const assistantVisitors = (sessions || []).length;
 
         let avgRating: number | null = null;
         if ((reviews || []).length > 0) {
@@ -148,14 +162,18 @@ export default function Analytics({ ...props }) {
 
         const weeklyVisitorsData = daysOfWeek.map((day) => {
           const dayStr = format(day, 'yyyy-MM-dd');
-          const visitors = allEventDates.filter(
-            (d) => format(d, 'yyyy-MM-dd') === dayStr
+          const menuVisitorsForDay = (hubVisits || []).filter(
+            (v: any) => format(new Date(v.created_at || v.timestamp), 'yyyy-MM-dd') === dayStr
           ).length;
-          return { date: day, visitors };
+          const assistantVisitorsForDay = (sessions || []).filter(
+            (s: any) => format(new Date(s.created_at), 'yyyy-MM-dd') === dayStr
+          ).length;
+          return { date: day, menuVisitors: menuVisitorsForDay, assistantVisitors: assistantVisitorsForDay };
         });
 
         setData({
-          totalVisitors,
+          menuVisitors,
+          assistantVisitors,
           totalQuestions,
           peakStartHour,
           averageRating: avgRating,
@@ -165,7 +183,8 @@ export default function Analytics({ ...props }) {
       } catch (error) {
         console.error('Failed to fetch analytics data:', error);
         setData({
-          totalVisitors: 0,
+          menuVisitors: 0,
+          assistantVisitors: 0,
           totalQuestions: 0,
           peakStartHour: null,
           averageRating: null,
@@ -198,13 +217,15 @@ export default function Analytics({ ...props }) {
   const formatWeeklyData = () =>
     data?.weeklyVisitors.map((item) => ({
       day: format(item.date, 'eee', { locale: isRTL ? arSA : enUS }),
-      visitors: item.visitors,
+      menuVisitors: item.menuVisitors,
+      assistantVisitors: item.assistantVisitors,
     })) || [];
 
   if (isLoading || isUserLoading || !data) {
     return (
       <div className="space-y-4">
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
+          <Skeleton className="h-24 rounded-2xl" />
           <Skeleton className="h-24 rounded-2xl" />
           <Skeleton className="h-24 rounded-2xl" />
           <Skeleton className="h-24 rounded-2xl" />
@@ -220,12 +241,18 @@ export default function Analytics({ ...props }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-5">
         <StatCard
-          title={isRTL ? 'زوار المساعد' : 'Visitors'}
-          value={data.totalVisitors.toString()}
+          title={isRTL ? 'زوار المنيو' : 'Menu views'}
+          value={data.menuVisitors.toString()}
+          icon={Eye}
+          change={isRTL ? 'مشاهدة لصفحة المنيو' : 'menu page views'}
+        />
+        <StatCard
+          title={isRTL ? 'زوار المساعد' : 'Assistant visitors'}
+          value={data.assistantVisitors.toString()}
           icon={Users}
-          change={isRTL ? 'زائر فريد' : 'unique visitors'}
+          change={isRTL ? 'فتحوا المساعد فعلياً' : 'opened the assistant'}
         />
         <StatCard
           title={isRTL ? 'الأسئلة' : 'Questions'}
@@ -260,7 +287,9 @@ export default function Analytics({ ...props }) {
               <XAxis dataKey="day" tickLine={false} tickMargin={10} axisLine={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
               <YAxis tickLine={false} axisLine={false} tickMargin={10} allowDecimals={false} tick={{ fontSize: 10, fill: '#9ca3af' }} />
               <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-              <Bar dataKey="visitors" fill="var(--color-visitors)" radius={6} />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar dataKey="menuVisitors" fill="var(--color-menuVisitors)" radius={6} />
+              <Bar dataKey="assistantVisitors" fill="var(--color-assistantVisitors)" radius={6} />
             </BarChart>
           </ChartContainer>
         </div>
