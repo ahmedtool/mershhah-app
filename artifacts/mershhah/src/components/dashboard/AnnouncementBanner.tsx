@@ -3,16 +3,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Announcement } from '@/lib/types';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
 import { X, Info, AlertTriangle, CheckCircle, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 const typeConfig = {
-  info: { icon: Info, className: "text-blue-500 border-blue-200 bg-blue-50" },
-  warning: { icon: AlertTriangle, className: "text-yellow-500 border-yellow-200 bg-yellow-50" },
-  success: { icon: CheckCircle, className: "text-green-500 border-green-200 bg-green-50" },
-  update: { icon: Bell, className: "text-cyan-500 border-cyan-200 bg-cyan-50" },
+  info: { icon: Info, bg: 'bg-blue-50', border: 'border-blue-100', tileBg: 'bg-blue-100', tileColor: 'text-blue-600' },
+  warning: { icon: AlertTriangle, bg: 'bg-amber-50', border: 'border-amber-100', tileBg: 'bg-amber-100', tileColor: 'text-amber-600' },
+  success: { icon: CheckCircle, bg: 'bg-emerald-50', border: 'border-emerald-100', tileBg: 'bg-emerald-100', tileColor: 'text-emerald-600' },
+  update: { icon: Bell, bg: 'bg-violet-50', border: 'border-violet-100', tileBg: 'bg-violet-100', tileColor: 'text-violet-600' },
 };
 
 export function AnnouncementBanner() {
@@ -70,26 +69,34 @@ export function AnnouncementBanner() {
     }
   };
 
-  const Icon = announcement ? typeConfig[announcement.type]?.icon ?? Info : Info;
-  const style = announcement ? typeConfig[announcement.type]?.className ?? '' : '';
+  if (!announcement) return null;
+  const config = typeConfig[announcement.type] ?? typeConfig.info;
+  const Icon = config.icon;
 
   return (
     <AnimatePresence>
-      {isVisible && announcement && (
+      {isVisible && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, height: 0, padding: 0, margin: 0, transition: { duration: 0.3 } }}
+          exit={{ opacity: 0, height: 0, marginBottom: 0, transition: { duration: 0.3 } }}
           className="mb-6 overflow-hidden"
         >
-          <Alert className={style}>
-            <Icon className="h-5 w-5" />
-            <AlertTitle className="font-bold">{announcement.title}</AlertTitle>
-            <AlertDescription>{announcement.content}</AlertDescription>
-            <Button variant="ghost" size="icon" className="absolute top-3 left-3 h-6 w-6" onClick={handleDismiss}>
+          <div className={cn('rounded-2xl border p-4 flex items-start gap-3', config.bg, config.border)}>
+            <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', config.tileBg)}>
+              <Icon className={cn('h-5 w-5', config.tileColor)} strokeWidth={2} />
+            </div>
+            <div className="flex-1 min-w-0 pt-0.5">
+              <h3 className="text-sm font-bold text-gray-900">{announcement.title}</h3>
+              <p className="text-xs text-gray-600 leading-relaxed mt-1">{announcement.content}</p>
+            </div>
+            <button
+              onClick={handleDismiss}
+              className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-black/5 hover:text-gray-600 transition-colors"
+            >
               <X className="h-4 w-4" />
-            </Button>
-          </Alert>
+            </button>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

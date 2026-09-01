@@ -2,21 +2,17 @@
 
 import { useState, useTransition } from "react";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2, Info, AlertTriangle, CheckCircle, Bell } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Pencil, Trash2, Info, AlertTriangle, CheckCircle, Bell, Megaphone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '@/lib/supabase';
 import { format } from "date-fns";
+import { arSA } from "date-fns/locale";
 import type { Announcement } from "@/lib/types";
 import { EditAnnouncementDialog } from "./EditAnnouncementDialog";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface AnnouncementsTableProps {
   announcements: Announcement[];
@@ -24,14 +20,13 @@ interface AnnouncementsTableProps {
 }
 
 const typeConfig = {
-    info: { text: "معلومات", icon: Info, className: "bg-blue-100 text-blue-800 border-blue-200" },
-    warning: { text: "تحذير", icon: AlertTriangle, className: "bg-yellow-100 text-yellow-800 border-yellow-200" },
-    success: { text: "نجاح", icon: CheckCircle, className: "bg-green-100 text-green-800 border-green-200" },
-    update: { text: "تحديث", icon: Bell, className: "bg-cyan-100 text-cyan-800 border-cyan-200" },
+  info: { text: "معلومات", icon: Info, tileBg: "bg-blue-50", tileColor: "text-blue-600" },
+  warning: { text: "تحذير", icon: AlertTriangle, tileBg: "bg-amber-50", tileColor: "text-amber-600" },
+  success: { text: "نجاح", icon: CheckCircle, tileBg: "bg-emerald-50", tileColor: "text-emerald-600" },
+  update: { text: "تحديث", icon: Bell, tileBg: "bg-violet-50", tileColor: "text-violet-600" },
 };
 
 export function AnnouncementsTable({ announcements, onActionComplete }: AnnouncementsTableProps) {
-  const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [announcementToDelete, setAnnouncementToDelete] = useState<Announcement | null>(null);
   const [isDeleting, startDelete] = useTransition();
   const { toast } = useToast();
@@ -39,118 +34,95 @@ export function AnnouncementsTable({ announcements, onActionComplete }: Announce
   const handleDelete = () => {
     if (!announcementToDelete) return;
     startDelete(async () => {
-        try {
-            const { error } = await supabase.from('announcements').delete().eq('id', announcementToDelete.id);
-            if (error) throw error;
-            toast({ title: "تم حذف الإعلان بنجاح" });
-            onActionComplete();
-            setAnnouncementToDelete(null);
-        } catch (error: any) {
-            toast({ variant: "destructive", title: "خطأ في الحذف", description: error.message });
-        }
+      try {
+        const { error } = await supabase.from('announcements').delete().eq('id', announcementToDelete.id);
+        if (error) throw error;
+        toast({ title: "تم حذف الإعلان بنجاح" });
+        onActionComplete();
+        setAnnouncementToDelete(null);
+      } catch (error: any) {
+        toast({ variant: "destructive", title: "خطأ في الحذف", description: error.message });
+      }
     });
   };
 
+  if (announcements.length === 0) {
+    return (
+      <div className="bg-white border border-gray-100 rounded-2xl p-10 text-center">
+        <Megaphone className="h-8 w-8 text-gray-200 mx-auto mb-3" />
+        <p className="text-sm font-bold text-gray-900 mb-1">لا توجد إعلانات</p>
+        <p className="text-[11px] text-gray-400">أنشئ إعلاناً جديداً ليظهر لأصحاب المطاعم</p>
+      </div>
+    );
+  }
+
   return (
     <>
-      <div className="border rounded-lg hidden md:block">
-        <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead>العنوان</TableHead>
-                    <TableHead>النوع</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>تاريخ الإنشاء</TableHead>
-                    <TableHead className="text-right">الإجراءات</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {announcements.length === 0 ? (
-                    <TableRow><TableCell colSpan={5} className="h-24 text-center">لا توجد إعلانات حالياً.</TableCell></TableRow>
-                ) : announcements.map((ann) => {
-                    const TypeIcon = typeConfig[ann.type].icon;
-                    return (
-                        <TableRow key={ann.id}>
-                            <TableCell className="font-medium">{ann.title}</TableCell>
-                            <TableCell>
-                                <Badge variant="outline" className={typeConfig[ann.type].className}>
-                                    <TypeIcon className="h-3.5 w-3.5 -ml-1 mr-1" />
-                                    {typeConfig[ann.type].text}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant={ann.isActive ? 'default' : 'secondary'} className={ann.isActive ? 'bg-green-500' : ''}>
-                                    {ann.isActive ? 'نشط' : 'غير نشط'}
-                                </Badge>
-                            </TableCell>
-                            <TableCell>{ann.createdAt ? format(new Date(ann.createdAt), 'yyyy/MM/dd') : '-'}</TableCell>
-                            <TableCell className="text-right">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <EditAnnouncementDialog announcement={ann} onSave={onActionComplete}>
-                                            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                                <Pencil className="ml-2 h-4 w-4" /> تعديل
-                                            </DropdownMenuItem>
-                                        </EditAnnouncementDialog>
-                                        <DropdownMenuItem onClick={() => setAnnouncementToDelete(ann)} className="text-destructive">
-                                            <Trash2 className="ml-2 h-4 w-4" /> حذف
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
-                        </TableRow>
-                    )
-                })}
-            </TableBody>
-        </Table>
-      </div>
+      <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden divide-y divide-gray-50">
+        {announcements.map((ann) => {
+          const config = typeConfig[ann.type] ?? typeConfig.info;
+          const Icon = config.icon;
+          return (
+            <div key={ann.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50/60 transition-colors">
+              <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", config.tileBg)}>
+                <Icon className={cn("h-4.5 w-4.5", config.tileColor)} strokeWidth={2} />
+              </div>
 
-      <div className="md:hidden space-y-4">
-        {announcements.length === 0 ? (
-             <Card><CardContent className="p-6 text-center text-muted-foreground">لا توجد إعلانات حالياً.</CardContent></Card>
-        ) : announcements.map((ann) => {
-             const TypeIcon = typeConfig[ann.type].icon;
-             return (
-                <Card key={ann.id}>
-                    <CardHeader>
-                        <div className="flex justify-between items-start">
-                           <CardTitle className="text-base">{ann.title}</CardTitle>
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 -mt-2"><MoreHorizontal className="h-4 w-4" /></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <EditAnnouncementDialog announcement={ann} onSave={onActionComplete}><DropdownMenuItem onSelect={(e) => e.preventDefault()}><Pencil className="ml-2 h-4 w-4" /> تعديل</DropdownMenuItem></EditAnnouncementDialog>
-                                    <DropdownMenuItem onClick={() => setAnnouncementToDelete(ann)} className="text-destructive"><Trash2 className="ml-2 h-4 w-4" /> حذف</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                        <CardDescription>{ann.createdAt ? format(new Date(ann.createdAt), 'yyyy/MM/dd') : '-'}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <p className="text-sm text-muted-foreground line-clamp-2">{ann.content}</p>
-                    </CardContent>
-                    <CardFooter className="flex justify-between items-center">
-                        <Badge variant="outline" className={typeConfig[ann.type].className}>
-                            <TypeIcon className="h-3.5 w-3.5 -ml-1 mr-1" />
-                            {typeConfig[ann.type].text}
-                        </Badge>
-                        <Badge variant={ann.isActive ? 'default' : 'secondary'} className={ann.isActive ? 'bg-green-500' : ''}>
-                            {ann.isActive ? 'نشط' : 'غير نشط'}
-                        </Badge>
-                    </CardFooter>
-                </Card>
-             )
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xs font-bold text-gray-900 truncate">{ann.title}</h3>
+                  <span
+                    className={cn("shrink-0 w-1.5 h-1.5 rounded-full", ann.isActive ? "bg-emerald-400" : "bg-gray-300")}
+                    title={ann.isActive ? "نشط" : "غير نشط"}
+                  />
+                </div>
+                <p className="text-[11px] text-gray-400 mt-0.5 truncate">{ann.content}</p>
+              </div>
+
+              <span className={cn("hidden sm:inline-flex shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full", config.tileBg, config.tileColor)}>
+                {config.text}
+              </span>
+
+              <span className="hidden md:inline text-[10px] text-gray-400 shrink-0 w-20 text-center">
+                {ann.createdAt ? format(new Date(ann.createdAt), 'd MMM yyyy', { locale: arSA }) : '-'}
+              </span>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <EditAnnouncementDialog announcement={ann} onSave={onActionComplete}>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <Pencil className="h-4 w-4" /> تعديل
+                    </DropdownMenuItem>
+                  </EditAnnouncementDialog>
+                  <DropdownMenuItem onClick={() => setAnnouncementToDelete(ann)} className="text-destructive focus:text-destructive">
+                    <Trash2 className="h-4 w-4" /> حذف
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          );
         })}
       </div>
 
       <AlertDialog open={!!announcementToDelete} onOpenChange={(open) => !open && setAnnouncementToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle><AlertDialogDescription>سيتم حذف الإعلان "{announcementToDelete?.title}" نهائياً.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>إلغاء</AlertDialogCancel><AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">{isDeleting ? "جاري الحذف..." : "حذف"}</AlertDialogAction></AlertDialogFooter>
+        <AlertDialogContent className="sm:max-w-md p-0 gap-0" dir="rtl">
+          <div className="px-5 pt-5 pb-3 border-b border-gray-100">
+            <AlertDialogTitle className="text-base font-bold text-gray-900">حذف "{announcementToDelete?.title}"</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-gray-400 mt-0.5">لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
+          </div>
+          <div className="flex gap-2 px-5 pb-5 pt-3">
+            <AlertDialogCancel disabled={isDeleting} className="flex-1 h-10 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50">
+              إلغاء
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="flex-1 h-10 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 disabled:opacity-50">
+              {isDeleting ? 'جاري الحذف...' : 'نعم، حذف'}
+            </AlertDialogAction>
+          </div>
         </AlertDialogContent>
       </AlertDialog>
     </>
