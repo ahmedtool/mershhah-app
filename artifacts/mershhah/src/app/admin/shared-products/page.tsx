@@ -159,27 +159,32 @@ export default function AdminSharedProductsPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <input type="file" ref={fileInputRef} onChange={handleFileSelected} accept=".xlsx,.xls" className="hidden" />
-          <button
-            onClick={handleDownloadTemplate}
-            className="h-10 px-3.5 rounded-xl border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
-          >
-            <Download className="h-3.5 w-3.5" />
-            تحميل كملف إكسل
-          </button>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isImporting}
-            className="h-10 px-3.5 rounded-xl border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50"
-          >
-            {isImporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-            رفع ملف
-          </button>
           <EditSharedProductDialog onSave={fetchProducts}>
-            <button className="h-10 px-4 rounded-xl bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
+            <button
+              title="أضف منتجاً جديداً للمكتبة المشتركة"
+              className="h-10 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 active:scale-[0.97] transition-all duration-200 flex items-center gap-2"
+            >
               <Plus className="h-4 w-4" />
               منتج جديد
             </button>
           </EditSharedProductDialog>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImporting}
+            title="ارفع ملف إكسل لتحديث أو إضافة منتجات بالجملة"
+            className="h-10 px-3.5 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 hover:border-gray-300 active:scale-[0.97] transition-all duration-200 flex items-center gap-2 disabled:opacity-50"
+          >
+            {isImporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+            رفع ملف
+          </button>
+          <button
+            onClick={handleDownloadTemplate}
+            title="نزّل نسخة إكسل من المنتجات الحالية كقالب للتعديل"
+            className="h-10 px-3.5 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 hover:border-gray-300 active:scale-[0.97] transition-all duration-200 flex items-center gap-2"
+          >
+            <Download className="h-3.5 w-3.5" />
+            تحميل كملف إكسل
+          </button>
         </div>
       </div>
 
