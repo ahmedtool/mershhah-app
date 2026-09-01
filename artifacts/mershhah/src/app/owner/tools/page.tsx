@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
+import { StorageImage } from "@/components/shared/StorageImage";
 
 const iconMap: { [key: string]: React.ElementType } = { ...icons, Box };
 
@@ -98,9 +99,15 @@ export default function OwnerToolsPage() {
                         return (
                             <div key={tool.id} className="bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md transition-shadow">
                                 <div className={`p-4 text-center ${tool.bg_color || 'bg-gray-50'}`}>
-                                    <div className="w-12 h-12 rounded-xl bg-white/80 border border-white/50 flex items-center justify-center mx-auto mb-2">
-                                        <IconComp className={`h-6 w-6 ${tool.color || 'text-gray-600'}`} />
-                                    </div>
+                                    {tool.image_path ? (
+                                        <div className="w-12 h-12 rounded-xl overflow-hidden mx-auto mb-2 bg-white/80 border border-white/50">
+                                            <StorageImage imagePath={tool.image_path} alt={tool.title} className="w-full h-full object-cover" />
+                                        </div>
+                                    ) : (
+                                        <div className="w-12 h-12 rounded-xl bg-white/80 border border-white/50 flex items-center justify-center mx-auto mb-2">
+                                            <IconComp className={`h-6 w-6 ${tool.color || 'text-gray-600'}`} />
+                                        </div>
+                                    )}
                                     <h3 className="text-sm font-bold text-gray-900">{tool.title}</h3>
                                 </div>
                                 <div className="p-4 space-y-3">

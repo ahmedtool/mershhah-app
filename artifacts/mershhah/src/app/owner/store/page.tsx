@@ -23,6 +23,7 @@ import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { toolGradient } from '@/lib/tool-gradient';
 import { ToolDetailModal } from '@/components/store/ToolDetailModal';
+import { StorageImage } from '@/components/shared/StorageImage';
 
 const iconMap: { [key: string]: React.ElementType } = { ...icons, Box };
 
@@ -37,6 +38,17 @@ function IconTile({ tool, size = 'md' }: { tool: any; size?: 'md' | 'lg' }) {
   const Icon = tool.icon;
   const dims = size === 'lg' ? 'w-16 h-16 rounded-[22px]' : 'w-14 h-14 rounded-[18px]';
   const iconDims = size === 'lg' ? 'h-8 w-8' : 'h-7 w-7';
+
+  // A custom uploaded logo (tools.image_path) replaces the Lucide icon
+  // wherever the tool's identity is shown — that's the whole point of it.
+  if (tool.image_path) {
+    return (
+      <div className={cn(dims, "shrink-0 overflow-hidden shadow-sm ring-1 ring-black/[0.03] bg-gray-50")}>
+        <StorageImage imagePath={tool.image_path} alt={tool.title} className="w-full h-full object-cover" />
+      </div>
+    );
+  }
+
   return (
     <div className={cn(dims, "shrink-0 flex items-center justify-center shadow-sm ring-1 ring-black/[0.03]", tool.bg_color)}>
       <Icon className={cn(iconDims, tool.color)} strokeWidth={2} />
@@ -123,9 +135,15 @@ function FeaturedCard({ tool, installing, hasPaidPlan, onActivate, onOpenDetail 
     >
       <Icon className="absolute -left-6 -bottom-6 h-32 w-32 text-white/10" strokeWidth={1.5} />
       <div className="relative z-10">
-        <div className="w-14 h-14 rounded-[18px] bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4">
-          <Icon className="h-7 w-7 text-white" strokeWidth={2} />
-        </div>
+        {tool.image_path ? (
+          <div className="w-14 h-14 rounded-[18px] overflow-hidden mb-4 bg-white/20">
+            <StorageImage imagePath={tool.image_path} alt={tool.title} className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="w-14 h-14 rounded-[18px] bg-white/20 backdrop-blur-sm flex items-center justify-center mb-4">
+            <Icon className="h-7 w-7 text-white" strokeWidth={2} />
+          </div>
+        )}
         <h3 className="text-white text-base font-black">{tool.title}</h3>
         <p className="text-white/80 text-[11px] leading-relaxed mt-1.5 line-clamp-2">{tool.description}</p>
       </div>

@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StorageImage } from "@/components/shared/StorageImage";
 
 const iconMap: { [key: string]: React.ElementType } = { ...icons, Box };
 
@@ -106,9 +107,15 @@ export default function ToolDetailPage() {
                         <ArrowRight className="h-5 w-5" />
                     </button>
                 </Link>
-                <div className={`w-14 h-14 rounded-2xl ${tool.bg_color || 'bg-gray-100'} ${tool.color || 'text-gray-600'} flex items-center justify-center`}>
-                    <IconComp className="h-7 w-7" />
-                </div>
+                {tool.image_path ? (
+                    <div className="w-14 h-14 rounded-2xl overflow-hidden bg-gray-50">
+                        <StorageImage imagePath={tool.image_path} alt={tool.title} className="w-full h-full object-cover" />
+                    </div>
+                ) : (
+                    <div className={`w-14 h-14 rounded-2xl ${tool.bg_color || 'bg-gray-100'} ${tool.color || 'text-gray-600'} flex items-center justify-center`}>
+                        <IconComp className="h-7 w-7" />
+                    </div>
+                )}
                 <div className="flex-1">
                     <h1 className="text-xl font-bold text-gray-900">{tool.title}</h1>
                     <p className="text-sm text-gray-400">{tool.description}</p>
@@ -178,9 +185,15 @@ export default function ToolDetailPage() {
                 <Card className="border-gray-100">
                     <CardContent className="p-8">
                         <div className="flex flex-col items-center justify-center gap-4 text-center">
-                            <div className={`w-16 h-16 rounded-2xl ${tool.bg_color || 'bg-gray-100'} ${tool.color || 'text-gray-600'} flex items-center justify-center`}>
-                                <IconComp className="h-8 w-8" />
-                            </div>
+                            {tool.image_path ? (
+                                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-gray-50">
+                                    <StorageImage imagePath={tool.image_path} alt={tool.title} className="w-full h-full object-cover" />
+                                </div>
+                            ) : (
+                                <div className={`w-16 h-16 rounded-2xl ${tool.bg_color || 'bg-gray-100'} ${tool.color || 'text-gray-600'} flex items-center justify-center`}>
+                                    <IconComp className="h-8 w-8" />
+                                </div>
+                            )}
                             <h3 className="text-lg font-bold text-gray-900">{tool.title}</h3>
                             <p className="text-sm text-gray-400 max-w-md">{tool.description}</p>
                             {tool.price_label && (

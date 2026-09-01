@@ -91,9 +91,15 @@ export function ToolDetailModal({
           <div className="p-5">
             {/* Title row */}
             <div className="flex items-start gap-3.5 mb-4">
-              <div className={cn("w-14 h-14 rounded-[18px] shrink-0 flex items-center justify-center shadow-sm", tool.bg_color)}>
-                <Icon className={cn("h-7 w-7", tool.color)} strokeWidth={2} />
-              </div>
+              {tool.image_path ? (
+                <div className="w-14 h-14 rounded-[18px] shrink-0 overflow-hidden shadow-sm bg-gray-50">
+                  <StorageImage imagePath={tool.image_path} alt={tool.title} className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className={cn("w-14 h-14 rounded-[18px] shrink-0 flex items-center justify-center shadow-sm", tool.bg_color)}>
+                  <Icon className={cn("h-7 w-7", tool.color)} strokeWidth={2} />
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <h2 className="text-base font-black text-gray-900">{tool.title}</h2>
                 <div className="flex items-center gap-2 flex-wrap mt-1">
