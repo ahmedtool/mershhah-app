@@ -21,6 +21,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { toolGradient } from '@/lib/tool-gradient';
+import { ToolDetailModal } from '@/components/store/ToolDetailModal';
 
 const iconMap: { [key: string]: React.ElementType } = { ...icons, Box };
 
@@ -30,38 +32,6 @@ const TABS = [
     { value: 'operations', label: 'العمليات' },
     { value: 'analytics', label: 'التحليلات' },
 ];
-
-// Inline hex gradients, not Tailwind utility classes — a class name built
-// from a DB value at runtime (e.g. `from-${name}-500`) is invisible to
-// Tailwind's build-time scanner and would silently emit no CSS at all.
-const GRADIENTS: Record<string, [string, string]> = {
-  blue: ['#60a5fa', '#1d4ed8'],
-  emerald: ['#34d399', '#047857'],
-  green: ['#4ade80', '#15803d'],
-  purple: ['#c084fc', '#7e22ce'],
-  pink: ['#f472b6', '#be185d'],
-  amber: ['#fbbf24', '#b45309'],
-  yellow: ['#facc15', '#a16207'],
-  red: ['#f87171', '#b91c1c'],
-  indigo: ['#818cf8', '#4338ca'],
-  teal: ['#2dd4bf', '#0f766e'],
-  orange: ['#fb923c', '#c2410c'],
-  cyan: ['#22d3ee', '#0e7490'],
-  rose: ['#fb7185', '#be123c'],
-  violet: ['#a78bfa', '#6d28d9'],
-  primary: ['#4b5563', '#111827'],
-  gray: ['#9ca3af', '#374151'],
-};
-
-function colorNameFrom(twClass: string | undefined): string {
-  const m = (twClass || '').match(/(?:text|bg)-([a-z]+)-\d+/);
-  return m ? m[1] : 'primary';
-}
-
-function toolGradient(tool: any): string {
-  const [from, to] = GRADIENTS[colorNameFrom(tool.color || tool.bg_color)] || GRADIENTS.primary;
-  return `linear-gradient(135deg, ${from}, ${to})`;
-}
 
 function IconTile({ tool, size = 'md' }: { tool: any; size?: 'md' | 'lg' }) {
   const Icon = tool.icon;
@@ -109,14 +79,19 @@ function ActionPill({ tool, installing, hasPaidPlan, onActivate }: {
   );
 }
 
-function ToolCard({ tool, installing, hasPaidPlan, onActivate, categoryLabel }: {
-  tool: any; installing: string | null; hasPaidPlan: boolean; onActivate: (tool: any) => void; categoryLabel: string;
+function ToolCard({ tool, installing, hasPaidPlan, onActivate, onOpenDetail, categoryLabel }: {
+  tool: any; installing: string | null; hasPaidPlan: boolean; onActivate: (tool: any) => void; onOpenDetail: (tool: any) => void; categoryLabel: string;
 }) {
   return (
-    <div className="group bg-white border border-gray-100 rounded-[26px] p-5 flex flex-col gap-3.5 hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.08)] hover:border-gray-200 transition-all duration-300">
+    <div
+      onClick={() => onOpenDetail(tool)}
+      className="group bg-white border border-gray-100 rounded-[26px] p-5 flex flex-col gap-3.5 hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.08)] hover:border-gray-200 transition-all duration-300 cursor-pointer"
+    >
       <div className="flex items-start justify-between gap-3">
         <IconTile tool={tool} />
-        <ActionPill tool={tool} installing={installing} hasPaidPlan={hasPaidPlan} onActivate={onActivate} />
+        <div onClick={(e) => e.stopPropagation()}>
+          <ActionPill tool={tool} installing={installing} hasPaidPlan={hasPaidPlan} onActivate={onActivate} />
+        </div>
       </div>
       <div>
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -136,13 +111,14 @@ function ToolCard({ tool, installing, hasPaidPlan, onActivate, categoryLabel }: 
   );
 }
 
-function FeaturedCard({ tool, installing, hasPaidPlan, onActivate }: {
-  tool: any; installing: string | null; hasPaidPlan: boolean; onActivate: (tool: any) => void;
+function FeaturedCard({ tool, installing, hasPaidPlan, onActivate, onOpenDetail }: {
+  tool: any; installing: string | null; hasPaidPlan: boolean; onActivate: (tool: any) => void; onOpenDetail: (tool: any) => void;
 }) {
   const Icon = tool.icon;
   return (
     <div
-      className="snap-start shrink-0 w-[260px] sm:w-[300px] rounded-[28px] p-6 relative overflow-hidden flex flex-col justify-between min-h-[220px]"
+      onClick={() => onOpenDetail(tool)}
+      className="snap-start shrink-0 w-[260px] sm:w-[300px] rounded-[28px] p-6 relative overflow-hidden flex flex-col justify-between min-h-[220px] cursor-pointer"
       style={{ background: toolGradient(tool) }}
     >
       <Icon className="absolute -left-6 -bottom-6 h-32 w-32 text-white/10" strokeWidth={1.5} />
@@ -153,7 +129,7 @@ function FeaturedCard({ tool, installing, hasPaidPlan, onActivate }: {
         <h3 className="text-white text-base font-black">{tool.title}</h3>
         <p className="text-white/80 text-[11px] leading-relaxed mt-1.5 line-clamp-2">{tool.description}</p>
       </div>
-      <div className="relative z-10 mt-4">
+      <div className="relative z-10 mt-4" onClick={(e) => e.stopPropagation()}>
         <ActionPillLight tool={tool} installing={installing} hasPaidPlan={hasPaidPlan} onActivate={onActivate} />
       </div>
     </div>
@@ -192,6 +168,7 @@ export default function ToolsStorePage() {
   const [installing, setInstalling] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [selectedTool, setSelectedTool] = useState<any>(null);
   const { toast } = useToast();
 
   const platformExpiryDate = subscription
@@ -218,7 +195,7 @@ export default function ToolsStorePage() {
     try {
       const [toolsData, activatedToolsRes, subscriptionRes] = await Promise.all([
         getTools(),
-        supabase.from('activated_tools').select('tool_id').eq('profile_id', user.id),
+        supabase.from('activated_tools').select('tool_id, expires_at, activated_at').eq('profile_id', user.id).eq('status', 'active'),
         supabase.from('subscriptions').select('*').eq('profile_id', user.id).eq('status', 'active').limit(1),
       ]);
 
@@ -226,16 +203,22 @@ export default function ToolsStorePage() {
         setSubscription(subscriptionRes.data[0]);
       }
 
-      const activatedIds = (activatedToolsRes.data || []).map((t: any) => t.tool_id);
+      const activatedById = new Map<string, any>((activatedToolsRes.data || []).map((t: any) => [t.tool_id, t]));
 
-      const processedTools = toolsData.map(tool => ({
-        ...tool,
-        billing_type: tool.billing_type || 'plan',
-        period_months: tool.period_months ?? null,
-        icon: iconMap[tool.icon] || Box,
-        installed: activatedIds.includes(tool.id),
-      }));
+      const processedTools = toolsData.map(tool => {
+        const activation = activatedById.get(tool.id);
+        return {
+          ...tool,
+          billing_type: tool.billing_type || 'plan',
+          period_months: tool.period_months ?? null,
+          icon: iconMap[tool.icon] || Box,
+          installed: !!activation,
+          expires_at: activation?.expires_at ?? null,
+          activated_at: activation?.activated_at ?? null,
+        };
+      });
       setAllTools(processedTools);
+      setSelectedTool((prev: any) => prev ? processedTools.find(t => t.id === prev.id) ?? null : null);
     } catch (error) {
       console.error("Failed to fetch tools", error);
       toast({ title: "فشل تحميل الأدوات", variant: "destructive" });
@@ -307,6 +290,25 @@ export default function ToolsStorePage() {
       toast({ title: "خطأ", description: error.message, variant: "destructive" });
     } finally {
       setInstalling(null);
+    }
+  };
+
+  // Soft-cancels the activation row rather than deleting it, so a paid
+  // addon's purchase history stays intact for billing records.
+  const deactivateTool = async (tool: any) => {
+    if (!user || !user.id) return;
+    try {
+      const { error } = await supabase
+        .from('activated_tools')
+        .update({ status: 'cancelled' })
+        .eq('profile_id', user.id)
+        .eq('tool_id', tool.id);
+      if (error) throw error;
+      toast({ title: 'تم إلغاء التفعيل', description: `"${tool.title}" ما عادت مفعّلة على حسابك.` });
+      await fetchAllData();
+    } catch (error: any) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+      throw error;
     }
   };
 
@@ -417,7 +419,7 @@ export default function ToolsStorePage() {
           </div>
           <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory no-scrollbar">
             {featured.map((tool) => (
-              <FeaturedCard key={tool.id} tool={tool} installing={installing} hasPaidPlan={hasPaidPlan} onActivate={handleActivate} />
+              <FeaturedCard key={tool.id} tool={tool} installing={installing} hasPaidPlan={hasPaidPlan} onActivate={handleActivate} onOpenDetail={setSelectedTool} />
             ))}
           </div>
         </div>
@@ -454,6 +456,7 @@ export default function ToolsStorePage() {
               installing={installing}
               hasPaidPlan={hasPaidPlan}
               onActivate={handleActivate}
+              onOpenDetail={setSelectedTool}
               categoryLabel={categoryLabelOf(tool.category)}
             />
           ))}
@@ -467,6 +470,17 @@ export default function ToolsStorePage() {
           </div>
         )}
       </div>
+
+      <ToolDetailModal
+        tool={selectedTool}
+        open={!!selectedTool}
+        onOpenChange={(open) => !open && setSelectedTool(null)}
+        installing={installing}
+        hasPaidPlan={hasPaidPlan}
+        onActivate={handleActivate}
+        onDeactivate={deactivateTool}
+        categoryLabel={selectedTool ? categoryLabelOf(selectedTool.category) : ''}
+      />
     </div>
   );
 }

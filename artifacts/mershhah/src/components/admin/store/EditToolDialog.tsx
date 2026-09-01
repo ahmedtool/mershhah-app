@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Code2, Copy, Sparkles, Box, ExternalLink, FileCode, Globe } from "lucide-react";
+import { Loader2, Code2, Copy, Sparkles, Box, ExternalLink, FileCode, Globe, Plus, X as XIcon } from "lucide-react";
 import { supabase } from '@/lib/supabase';
 import { generateToolIdeas } from "@/ai/flows/generate-tool-ideas";
 import { StorageImage } from "@/components/shared/StorageImage";
@@ -56,6 +56,11 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(tool?.image_path || null);
   const [localImageFile, setLocalImageFile] = useState<File | null>(null);
+
+  const screenshotsInputRef = useRef<HTMLInputElement | null>(null);
+  const [existingScreenshots, setExistingScreenshots] = useState<string[]>(tool?.screenshots || []);
+  const [newScreenshots, setNewScreenshots] = useState<File[]>([]);
+  const MAX_SCREENSHOTS = 6;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -109,6 +114,8 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
       });
       setPreviewImage(tool?.image_path || null);
       setLocalImageFile(null);
+      setExistingScreenshots(tool?.screenshots || []);
+      setNewScreenshots([]);
     }
   }, [open, tool, isEditing, form]);
 
@@ -137,10 +144,10 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
     startSaving(async () => {
       try {
         let imagePath: string | null | undefined = tool?.image_path || null;
+        const safeId = isEditing ? tool!.id : values.id;
 
         if (localImageFile) {
           const fileExt = localImageFile.name.split('.').pop();
-          const safeId = isEditing ? tool!.id : values.id;
           const fileName = `tools/${safeId}/${safeId}.${fileExt}`;
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('restaurant-assets')
@@ -148,6 +155,19 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
           if (uploadError) throw uploadError;
           imagePath = uploadData.path;
         }
+
+        const uploadedScreenshotPaths: string[] = [];
+        for (let i = 0; i < newScreenshots.length; i++) {
+          const file = newScreenshots[i];
+          const fileExt = file.name.split('.').pop();
+          const fileName = `tools/${safeId}/screenshots/${Date.now()}-${i}.${fileExt}`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('restaurant-assets')
+            .upload(fileName, file, { upsert: true });
+          if (uploadError) throw uploadError;
+          uploadedScreenshotPaths.push(uploadData.path);
+        }
+        const screenshots = [...existingScreenshots, ...uploadedScreenshotPaths];
 
         const dataToSave: any = {
           title: values.title,
@@ -171,6 +191,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
           // a tool can't be "free" with a price attached or vice versa.
           type: values.price > 0 ? 'paid' : 'free',
           image_path: imagePath ?? null,
+          screenshots,
         };
 
         // Reusing a StreamPay product across price edits would silently
@@ -269,6 +290,45 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
                 if (file.size > 1024 * 1024) { toast({ variant: "destructive", title: "حجم الصورة كبير", description: "أقل من 1 ميجابايت" }); return; }
                 setLocalImageFile(file);
                 setPreviewImage(URL.createObjectURL(file));
+              }} />
+            </div>
+
+            {/* Screenshots */}
+            <div>
+              <p className="text-xs text-gray-500 mb-2">لقطات شاشة للأداة (تظهر لصاحب المطعم عند فتح تفاصيل الأداة)</p>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {existingScreenshots.map((path, i) => (
+                  <div key={`existing-${i}`} className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-50">
+                    <StorageImage imagePath={path} alt={`screenshot ${i + 1}`} width={64} height={64} className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => setExistingScreenshots(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/60 text-white flex items-center justify-center">
+                      <XIcon className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                ))}
+                {newScreenshots.map((file, i) => (
+                  <div key={`new-${i}`} className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-50">
+                    <img src={URL.createObjectURL(file)} alt={`new screenshot ${i + 1}`} className="w-full h-full object-cover" />
+                    <button type="button" onClick={() => setNewScreenshots(prev => prev.filter((_, idx) => idx !== i))}
+                      className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/60 text-white flex items-center justify-center">
+                      <XIcon className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                ))}
+                {existingScreenshots.length + newScreenshots.length < MAX_SCREENSHOTS && (
+                  <button type="button" onClick={() => screenshotsInputRef.current?.click()}
+                    className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-gray-300 hover:bg-gray-50 transition-all shrink-0">
+                    <Plus className="h-4 w-4 text-gray-300" />
+                  </button>
+                )}
+              </div>
+              <input ref={screenshotsInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                e.target.value = '';
+                const room = MAX_SCREENSHOTS - existingScreenshots.length - newScreenshots.length;
+                const tooBig = files.find(f => f.size > 1024 * 1024);
+                if (tooBig) { toast({ variant: "destructive", title: "حجم صورة كبير", description: "كل صورة أقل من 1 ميجابايت" }); return; }
+                setNewScreenshots(prev => [...prev, ...files.slice(0, room)]);
               }} />
             </div>
 
