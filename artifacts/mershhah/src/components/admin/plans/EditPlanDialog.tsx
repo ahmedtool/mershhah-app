@@ -204,7 +204,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
             {/* Real, enforced limits */}
             <div className="rounded-xl bg-gray-50 p-4 space-y-3">
               <p className="text-xs font-bold text-gray-600">الحدود الفعلية (0 = غير محدود)</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <FormField control={form.control} name="max_branches" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-[10px] text-gray-400">الفروع</FormLabel>

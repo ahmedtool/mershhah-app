@@ -68,7 +68,7 @@ export function EditUsernameDialog({ user, isOpen, onOpenChange, onUsernameUpdat
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto">
                  <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)}>
                         <DialogHeader>

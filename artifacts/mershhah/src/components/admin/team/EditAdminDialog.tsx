@@ -92,7 +92,7 @@ export function EditAdminDialog({ admin, onAdminUpdated, open, onOpenChange }: E
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto">
                  <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <DialogHeader>
@@ -118,7 +118,7 @@ export function EditAdminDialog({ admin, onAdminUpdated, open, onOpenChange }: E
                                         <FormLabel>صلاحيات الوصول</FormLabel>
                                         <FormMessage />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         {permissions.map((permission) => (
                                             <FormField
                                             key={permission.id}

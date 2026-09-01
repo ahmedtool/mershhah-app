@@ -178,7 +178,7 @@ export function EditApplicationDialog({ children, application, onSave }: EditApp
             {/* Category */}
             <div className="space-y-2">
               <FormLabel className="text-xs text-gray-500">تصنيف التطبيق</FormLabel>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {categories.map((cat) => (
                   <button
                     key={cat.value}

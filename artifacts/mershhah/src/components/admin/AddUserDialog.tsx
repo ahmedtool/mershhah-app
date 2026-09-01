@@ -67,7 +67,7 @@ export function AddUserDialog({ children, onUserAdded }: AddUserDialogProps) {
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto">
                  <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)}>
                         <DialogHeader>
