@@ -213,7 +213,7 @@ function OrderLogView({ summary }: { summary: Extract<KeetaParsedReport, { type:
             <span className={cn("w-1.5 h-1.5 rounded-full", verdict.dot)} /> {verdict.label}
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
           <div><p className="text-lg font-black text-gray-900">{sar(summary.totalOriginalPrice)}</p><p className="text-[10px] text-gray-400">إجمالي المبيعات</p></div>
           <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalProfit)}</p><p className="text-[10px] text-gray-400">وصلك فعلياً</p></div>
           <div><p className="text-lg font-black text-red-500">{sar(summary.gap)}</p><p className="text-[10px] text-gray-400">الفرق</p></div>
@@ -267,7 +267,7 @@ function OrderDataView({ summary }: { summary: Extract<KeetaParsedReport, { type
             <span className={cn("w-1.5 h-1.5 rounded-full", verdict.dot)} /> {verdict.label}
           </span>
         </div>
-        <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
           <div><p className="text-lg font-black text-gray-900">{sar(summary.totalSales)}</p><p className="text-[10px] text-gray-400">إجمالي المبيعات</p></div>
           <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalRevenue)}</p><p className="text-[10px] text-gray-400">وصلك فعلياً</p></div>
           <div><p className="text-lg font-black text-red-500">{sar(summary.gap)}</p><p className="text-[10px] text-gray-400">الفرق</p></div>
@@ -380,7 +380,7 @@ function CampaignView({ summary }: { summary: Extract<KeetaParsedReport, { type:
     <div className="space-y-5">
       <Card>
         <SectionTitle icon={Megaphone}>ملخص الحملات</SectionTitle>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div><p className="text-lg font-black text-red-500">{sar(summary.totalCost)}</p><p className="text-[10px] text-gray-400">إجمالي التكلفة</p></div>
           <div><p className="text-lg font-black text-gray-900">{summary.totalOrders}</p><p className="text-[10px] text-gray-400">طلبات الحملات</p></div>
           <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalSales)}</p><p className="text-[10px] text-gray-400">مبيعات الحملات</p></div>
@@ -405,7 +405,7 @@ function RestaurantDataView({ summary }: { summary: Extract<KeetaParsedReport, {
     <div className="space-y-5">
       <Card>
         <SectionTitle icon={Store}>ملخص الفترة</SectionTitle>
-        <div className="grid grid-cols-3 gap-3 mb-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
           <div><p className="text-lg font-black text-gray-900">{sar(summary.totalSales)}</p><p className="text-[10px] text-gray-400">إجمالي المبيعات</p></div>
           <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalRevenue)}</p><p className="text-[10px] text-gray-400">وصلك فعلياً</p></div>
           <div><p className="text-lg font-black text-red-500">{sar(summary.gap)}</p><p className="text-[10px] text-gray-400">الفرق</p></div>
@@ -496,7 +496,7 @@ function InvoiceSummaryView({ summary }: { summary: Extract<KeetaParsedReport, {
     <div className="space-y-5">
       <Card>
         <SectionTitle icon={FileStack}>ملخص الفواتير</SectionTitle>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div><p className="text-lg font-black text-gray-900">{sar(summary.totalGrossSales)}</p><p className="text-[10px] text-gray-400">إجمالي المبيعات</p></div>
           <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalNetPayable)}</p><p className="text-[10px] text-gray-400">صافي المستحق</p></div>
           <div><p className="text-lg font-black text-red-500">{sar(summary.totalCommission)}</p><p className="text-[10px] text-gray-400">إجمالي العمولة</p></div>

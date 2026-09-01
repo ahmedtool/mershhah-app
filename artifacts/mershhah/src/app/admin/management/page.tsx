@@ -420,7 +420,7 @@ function ProfileDetails({
               <FormField control={form.control} name="account_status" render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-[10px] text-gray-400">حالة الحساب</FormLabel>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {[
                       { value: 'active', label: 'نشط', color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
                       { value: 'pending', label: 'بانتظار', color: 'bg-amber-50 border-amber-200 text-amber-700' },

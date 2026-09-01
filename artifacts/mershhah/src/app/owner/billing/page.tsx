@@ -81,7 +81,7 @@ export default function BillingPage() {
                 <p className="text-[10px] text-gray-400">/{subscription.billing_cycle === "yearly" ? "سنة" : "شهر"}</p>
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="bg-gray-50 rounded-xl p-3 text-center">
                 <Calendar className="h-4 w-4 text-gray-400 mx-auto mb-1" />
                 <p className="text-[10px] text-gray-400">ينتهي</p>

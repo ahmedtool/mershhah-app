@@ -101,6 +101,12 @@ export function AdminTopNav() {
     }
   };
 
+  // Same RTL semantics as navigatePage: 'prev' moves to currentIndex+1,
+  // 'next' moves to currentIndex-1 (the app is RTL-only).
+  const currentNavIndex = visibleNavItems.findIndex(item => isActive(item.href));
+  const canGoPrev = currentNavIndex !== -1 && currentNavIndex < visibleNavItems.length - 1;
+  const canGoNext = currentNavIndex > 0;
+
   return (
     <div className="sticky top-0 z-50 bg-white border-b border-gray-100" dir="rtl">
       <div className="flex items-center h-14 px-4 gap-3">
@@ -108,11 +114,14 @@ export function AdminTopNav() {
           <span className="text-sm font-black text-gray-900">مرشح</span>
         </Link>
 
-        <button onClick={() => navigatePage('prev')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden relative z-10">
+        <button onClick={() => navigatePage('prev')} disabled={!canGoPrev}
+          className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none sm:hidden relative z-10">
           <ChevronRight className="h-4 w-4" />
         </button>
 
-        <div ref={scrollRef} className="flex-1 overflow-x-auto scrollbar-hide">
+        {/* Scrollbar is hidden, so the edges fade out as a visual hint that
+            there's more nav to scroll to. */}
+        <div ref={scrollRef} className="flex-1 overflow-x-auto scrollbar-hide [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%-16px),transparent)]">
           <div className="flex items-center gap-1 min-w-max">
             {visibleNavItems.map((item) => (
               <Link
@@ -150,7 +159,8 @@ export function AdminTopNav() {
           </div>
         </div>
 
-        <button onClick={() => navigatePage('next')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden relative z-10">
+        <button onClick={() => navigatePage('next')} disabled={!canGoNext}
+          className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none sm:hidden relative z-10">
           <ChevronLeft className="h-4 w-4" />
         </button>
 

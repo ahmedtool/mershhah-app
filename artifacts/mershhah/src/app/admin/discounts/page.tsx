@@ -246,23 +246,23 @@ export default function AdminDiscountsPage() {
         ) : (
           <div className="divide-y divide-gray-50">
             {codes.map((code) => (
-              <div key={code.id} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center gap-4">
+              <div key={code.id} className="flex items-center justify-between flex-wrap gap-y-3 gap-x-4 px-5 py-4 hover:bg-gray-50 transition-colors">
+                <div className="flex items-center gap-4 min-w-0">
                   {getTypeIcon(code.discount_type)}
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-bold text-gray-900 font-mono tracking-wider">{code.code}</span>
                       <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${code.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
                         {code.is_active ? 'نشط' : 'معطل'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
+                    <p className="text-[11px] text-gray-400 mt-0.5 truncate">
                       {getTypeLabel(code.discount_type)} · {code.discount_type === 'percentage' ? `${code.discount_value}%` : code.discount_type === 'fixed' ? `${code.discount_value} ر.س` : 'مجاني'}
                       {code.description && ` · ${code.description}`}
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4 sm:gap-6 shrink-0">
                   <div className="text-center">
                     <p className="text-[10px] text-gray-400">الاستخدام</p>
                     <p className="text-xs font-bold text-gray-900">{code.current_uses}/{code.max_uses || '∞'}</p>

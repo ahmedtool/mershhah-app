@@ -416,7 +416,7 @@ export default function ReviewsPage() {
           {/* Device Stats */}
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
             <h3 className="text-sm font-bold text-gray-900 mb-4">الأجهزة</h3>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {deviceStats.map(d => (
                 <div key={d.device} className="text-center p-3 bg-gray-50 rounded-xl">
                   <div className="flex justify-center mb-1 text-gray-400">{d.icon}</div>

@@ -78,6 +78,12 @@ export function OwnerTopNav() {
   };
 
   const allNavItems = [...navItems, ...activatedTools.map(t => ({ href: t.href, label: t.label, icon: t.icon }))];
+  // navigatePage('next'/'prev') moves by RTL reading direction (currentIndex-1/+1
+  // respectively, since the app is RTL-only) - not raw array direction, so the
+  // "next" arrow (visually pointing right) is only enabled once we're past index 0.
+  const currentNavIndex = allNavItems.findIndex(item => isActive(item.href));
+  const canGoNext = currentNavIndex > 0;
+  const canGoPrev = currentNavIndex !== -1 && currentNavIndex < allNavItems.length - 1;
 
   const navigatePage = (dir: 'next' | 'prev') => {
     const currentIndex = allNavItems.findIndex(item => isActive(item.href));
@@ -105,12 +111,15 @@ export function OwnerTopNav() {
         </Link>
 
         {/* Next page arrow - mobile */}
-        <button onClick={() => navigatePage('next')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden relative z-10">
+        <button onClick={() => navigatePage('next')} disabled={!canGoNext}
+          className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none sm:hidden relative z-10">
           <ChevronRight className="h-4 w-4" />
         </button>
 
-        {/* Nav items - scrollable */}
-        <div ref={scrollRef} className="flex-1 overflow-x-auto scrollbar-hide">
+        {/* Nav items - scrollable. Scrollbar is hidden, so the edges fade out
+            as a visual hint that there's more to scroll to (there's otherwise
+            no cue this strip scrolls at all on mobile). */}
+        <div ref={scrollRef} className="flex-1 overflow-x-auto scrollbar-hide [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%-16px),transparent)]">
           <div className="flex items-center gap-1 min-w-max">
             {navItems.map((item) => (
               <Link
@@ -130,7 +139,8 @@ export function OwnerTopNav() {
         </div>
 
         {/* Prev page arrow - mobile */}
-        <button onClick={() => navigatePage('prev')} className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 sm:hidden relative z-10">
+        <button onClick={() => navigatePage('prev')} disabled={!canGoPrev}
+          className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none sm:hidden relative z-10">
           <ChevronLeft className="h-4 w-4" />
         </button>
 

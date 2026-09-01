@@ -115,7 +115,7 @@ export default function OwnerTicketsPage() {
       {/* Filters */}
       {!isLoadingData && tickets.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1 [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%-16px),transparent)]">
             <button onClick={() => setFilterCategory('all')}
               className={cn("shrink-0 h-8 px-3 rounded-lg text-[11px] font-bold border transition-all",
                 filterCategory === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200')}>
@@ -129,7 +129,7 @@ export default function OwnerTicketsPage() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1 [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%-16px),transparent)]">
             {Object.entries(statusText).map(([key, label]) => (
               <button key={key} onClick={() => setFilterStatus(filterStatus === key ? 'all' : key)}
                 className={cn("shrink-0 h-8 px-3 rounded-lg text-[11px] font-bold border transition-all",

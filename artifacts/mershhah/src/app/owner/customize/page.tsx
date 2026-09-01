@@ -521,7 +521,7 @@ export default function CustomizePage() {
                         {/* Font */}
                         <div className="space-y-1.5">
                             <Label className="text-[11px] text-gray-400">الخط</Label>
-                            <div className="grid grid-cols-3 gap-1.5">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                                 {FONT_OPTIONS.map(font => (
                                     <button key={font.id} type="button"
                                         onClick={() => setSettings({ ...settings, fontFamily: font.id })}
@@ -542,7 +542,7 @@ export default function CustomizePage() {
                         {/* Corner radius */}
                         <div className="space-y-1.5">
                             <Label className="text-[11px] text-gray-400">انحناء الحواف</Label>
-                            <div className="grid grid-cols-3 gap-1.5">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                                 {RADIUS_PRESETS.map(preset => (
                                     <button key={preset.id} type="button"
                                         onClick={() => setSettings({ ...settings, borderRadius: preset.value })}

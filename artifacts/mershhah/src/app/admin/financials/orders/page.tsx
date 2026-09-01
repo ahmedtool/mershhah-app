@@ -189,8 +189,8 @@ export default function FinancialsOrdersPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[160px] max-w-xs">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
           <input
             placeholder="بحث بالاسم أو الباقة..."
@@ -199,12 +199,12 @@ export default function FinancialsOrdersPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1">
+        <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1 overflow-x-auto no-scrollbar max-w-full">
           {(['all', 'active', 'pending', 'inactive', 'cancelled'] as const).map((status) => (
             <button
               key={status}
               onClick={() => setStatusFilter(status)}
-              className={`h-8 px-3 rounded-lg text-[10px] font-bold transition-colors ${
+              className={`h-8 px-3 rounded-lg text-[10px] font-bold transition-colors shrink-0 ${
                 statusFilter === status
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-400 hover:text-gray-600'
