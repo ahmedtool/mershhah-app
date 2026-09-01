@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { toolGradient } from '@/lib/tool-gradient';
 import { ToolDetailModal } from '@/components/store/ToolDetailModal';
 import { StorageImage } from '@/components/shared/StorageImage';
+import { isUnlimitedAccount } from '@/lib/unlimited-account';
 
 const iconMap: { [key: string]: React.ElementType } = { ...icons, Box };
 
@@ -267,7 +268,8 @@ export default function ToolsStorePage() {
   const platformExpiryDate = subscription
     ? new Date(subscription.end_date).toLocaleDateString('ar-SA')
     : "غير محدد";
-  const hasPaidPlan = !!subscription && subscription.plan_id !== 'free';
+  const unlimitedAccount = isUnlimitedAccount(user?.email);
+  const hasPaidPlan = unlimitedAccount || (!!subscription && subscription.plan_id !== 'free');
 
   // Land back here after a real StreamPay tool purchase (success or failure)
   useEffect(() => {
@@ -440,6 +442,13 @@ export default function ToolsStorePage() {
     const billingType = tool.billing_type || 'plan';
 
     if (tool.type !== 'paid') {
+      activateBundledOrFreeTool(tool);
+      return;
+    }
+
+    // Our own team account skips real payment entirely, including
+    // independently-priced addon tools that would otherwise go to checkout.
+    if (unlimitedAccount) {
       activateBundledOrFreeTool(tool);
       return;
     }

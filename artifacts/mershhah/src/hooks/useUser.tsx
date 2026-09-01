@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Profile, Restaurant, Subscription } from '@/lib/types';
+import { isUnlimitedAccount } from '@/lib/unlimited-account';
 
 export type Entitlements = {
   planId: string;
@@ -71,11 +72,28 @@ export function pickActiveSubscription(subscriptions: Subscription[]): Subscript
   return activeSub;
 }
 
+const unlimitedEntitlements: Entitlements = {
+  planId: 'unlimited',
+  planName: 'غير محدود',
+  endDate: null,
+  canUseAiAnalysis: true,
+  canUseStudioImageGeneration: true,
+  canUseDashboardAgent: true,
+  canUseWhiteLabel: true,
+  canUsePrioritySupport: true,
+  maxBranches: UNLIMITED,
+  maxMenuItems: UNLIMITED,
+  maxTools: UNLIMITED,
+};
+
 // The DB columns (max_branches/max_menu_items/max_tools) are the source of
 // truth for numeric limits — `plans.features` may also carry numbers for a
 // couple of legacy keys (branches/offers), but those are display-only and
 // intentionally not used for enforcement to avoid two limits disagreeing.
 function computeEntitlements(activeSub: Subscription | null, profile: Profile, plan: PlanRow | null): Entitlements {
+  // Our own team account - every feature unlocked regardless of subscription
+  // state, so it's never gated by an expired/missing/free plan row.
+  if (isUnlimitedAccount(profile.email)) return unlimitedEntitlements;
   if (!activeSub) return defaultEntitlements;
 
   const isPaidPlan = activeSub.plan_id !== 'free' && activeSub.plan_id !== 'none';
