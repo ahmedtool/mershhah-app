@@ -13,6 +13,8 @@ import {
     Star,
     Lock,
     Sparkles,
+    SlidersHorizontal,
+    ChevronDown,
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { useToast } from "@/hooks/use-toast";
@@ -34,23 +36,75 @@ const TABS = [
     { value: 'analytics', label: 'التحليلات' },
 ];
 
-function IconTile({ tool, size = 'md' }: { tool: any; size?: 'md' | 'lg' }) {
+const SORTS = [
+    { value: 'relevance', label: 'الأنسب' },
+    { value: 'price_asc', label: 'الأقل سعراً' },
+    { value: 'price_desc', label: 'الأعلى سعراً' },
+    { value: 'installs', label: 'الأكثر تفعيلاً' },
+];
+
+// The tool's own screenshots/logo, used as real imagery behind its icon in
+// cards and banners — falls back to the brand-color gradient only when the
+// admin hasn't uploaded anything yet, never a fabricated stock photo.
+function coverImageOf(tool: any): string | null {
+  if (Array.isArray(tool.screenshots) && tool.screenshots.length > 0) return tool.screenshots[0];
+  return tool.image_path || null;
+}
+
+function SortDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const current = SORTS.find((s) => s.value === value)?.label || SORTS[0].label;
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="h-9 px-4 rounded-full bg-gray-100/80 text-gray-600 text-[12px] font-bold flex items-center gap-1.5 hover:bg-gray-200/70 transition-colors"
+      >
+        <SlidersHorizontal className="h-3.5 w-3.5" />
+        {current}
+        <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-11 z-20 bg-white border border-gray-100 rounded-2xl shadow-lg p-1.5 w-44">
+            {SORTS.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => { onChange(s.value); setOpen(false); }}
+                className={cn(
+                  "w-full text-right px-3 py-2 rounded-xl text-[12px] font-bold transition-colors",
+                  value === s.value ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-50"
+                )}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function IconTile({ tool, size = 'md', ring = 'thin' }: { tool: any; size?: 'md' | 'lg'; ring?: 'thin' | 'white' }) {
   const Icon = tool.icon;
   const dims = size === 'lg' ? 'w-16 h-16 rounded-[22px]' : 'w-14 h-14 rounded-[18px]';
   const iconDims = size === 'lg' ? 'h-8 w-8' : 'h-7 w-7';
+  const ringClass = ring === 'white' ? 'ring-4 ring-white' : 'ring-1 ring-black/[0.03]';
 
   // A custom uploaded logo (tools.image_path) replaces the Lucide icon
   // wherever the tool's identity is shown — that's the whole point of it.
   if (tool.image_path) {
     return (
-      <div className={cn(dims, "shrink-0 overflow-hidden shadow-sm ring-1 ring-black/[0.03] bg-gray-50")}>
+      <div className={cn(dims, "shrink-0 overflow-hidden shadow-sm bg-gray-50", ringClass)}>
         <StorageImage imagePath={tool.image_path} alt={tool.title} className="w-full h-full object-cover" />
       </div>
     );
   }
 
   return (
-    <div className={cn(dims, "shrink-0 flex items-center justify-center shadow-sm ring-1 ring-black/[0.03]", tool.bg_color)}>
+    <div className={cn(dims, "shrink-0 flex items-center justify-center shadow-sm", ringClass, tool.bg_color)}>
       <Icon className={cn(iconDims, tool.color)} strokeWidth={2} />
     </div>
   );
@@ -94,21 +148,31 @@ function ActionPill({ tool, installing, hasPaidPlan, onActivate }: {
 function ToolCard({ tool, installing, hasPaidPlan, onActivate, onOpenDetail, categoryLabel }: {
   tool: any; installing: string | null; hasPaidPlan: boolean; onActivate: (tool: any) => void; onOpenDetail: (tool: any) => void; categoryLabel: string;
 }) {
+  const cover = coverImageOf(tool);
   return (
     <div
       onClick={() => onOpenDetail(tool)}
-      className="group bg-white border border-gray-100 rounded-[26px] p-5 flex flex-col gap-3.5 hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.08)] hover:border-gray-200 transition-all duration-300 cursor-pointer"
+      className="group bg-white border border-gray-100 rounded-[26px] overflow-hidden flex flex-col hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.08)] hover:border-gray-200 transition-all duration-300 cursor-pointer"
     >
-      <div className="flex items-start justify-between gap-3">
-        <IconTile tool={tool} />
-        <div onClick={(e) => e.stopPropagation()}>
-          <ActionPill tool={tool} installing={installing} hasPaidPlan={hasPaidPlan} onActivate={onActivate} />
-        </div>
+      {/* Cover band — the tool's own screenshot/logo when available, its
+          brand-color gradient otherwise. Never a stock/fabricated image. */}
+      <div className="h-[84px] relative" style={cover ? undefined : { background: toolGradient(tool) }}>
+        {cover && (
+          <>
+            <StorageImage imagePath={cover} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/10" />
+          </>
+        )}
       </div>
-      <div>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <h3 className="text-[14px] font-bold text-gray-900">{tool.title}</h3>
+
+      <div className="px-5 pb-5 -mt-7 relative z-10">
+        <div className="flex items-end justify-between gap-3 mb-3">
+          <IconTile tool={tool} ring="white" />
+          <div onClick={(e) => e.stopPropagation()} className="mb-0.5">
+            <ActionPill tool={tool} installing={installing} hasPaidPlan={hasPaidPlan} onActivate={onActivate} />
+          </div>
         </div>
+        <h3 className="text-[14px] font-bold text-gray-900">{tool.title}</h3>
         <p className="text-[10.5px] text-gray-400 mt-0.5 flex items-center gap-1">
           {categoryLabel}
           {tool.popular && (
@@ -127,16 +191,26 @@ function FeaturedCard({ tool, installing, hasPaidPlan, onActivate, onOpenDetail 
   tool: any; installing: string | null; hasPaidPlan: boolean; onActivate: (tool: any) => void; onOpenDetail: (tool: any) => void;
 }) {
   const Icon = tool.icon;
+  const cover = coverImageOf(tool);
   return (
     <div
       onClick={() => onOpenDetail(tool)}
       className="snap-start shrink-0 w-[260px] sm:w-[300px] rounded-[28px] p-6 relative overflow-hidden flex flex-col justify-between min-h-[220px] cursor-pointer"
-      style={{ background: toolGradient(tool) }}
+      style={cover ? undefined : { background: toolGradient(tool) }}
     >
-      <Icon className="absolute -left-6 -bottom-6 h-32 w-32 text-white/10" strokeWidth={1.5} />
+      {/* A real screenshot fills the whole banner, like Apple's editorial
+          cards — falls back to the brand gradient when none is uploaded. */}
+      {cover ? (
+        <>
+          <StorageImage imagePath={cover} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-black/10" />
+        </>
+      ) : (
+        <Icon className="absolute -left-6 -bottom-6 h-32 w-32 text-white/10" strokeWidth={1.5} />
+      )}
       <div className="relative z-10">
         {tool.image_path ? (
-          <div className="w-14 h-14 rounded-[18px] overflow-hidden mb-4 bg-white/20">
+          <div className="w-14 h-14 rounded-[18px] overflow-hidden mb-4 ring-2 ring-white/30 bg-white/20">
             <StorageImage imagePath={tool.image_path} alt={tool.title} className="w-full h-full object-cover" />
           </div>
         ) : (
@@ -186,6 +260,7 @@ export default function ToolsStorePage() {
   const [installing, setInstalling] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [sortBy, setSortBy] = useState('relevance');
   const [selectedTool, setSelectedTool] = useState<any>(null);
   const { toast } = useToast();
 
@@ -401,7 +476,12 @@ export default function ToolsStorePage() {
     );
   }
 
-  const tabFiltered = filteredTools.filter(t => activeTab === 'all' || t.category === activeTab);
+  const tabFiltered = [...filteredTools.filter(t => activeTab === 'all' || t.category === activeTab)].sort((a, b) => {
+    if (sortBy === 'price_asc') return (a.price ?? 0) - (b.price ?? 0);
+    if (sortBy === 'price_desc') return (b.price ?? 0) - (a.price ?? 0);
+    if (sortBy === 'installs') return (b.total_installs ?? 0) - (a.total_installs ?? 0);
+    return 0;
+  });
   const featured = !searchQuery ? allTools.filter(t => t.popular).slice(0, 6) : [];
   const categoryLabelOf = (category: string) => TABS.find(t => t.value === category)?.label || category;
 
@@ -463,9 +543,12 @@ export default function ToolsStorePage() {
 
       {/* Tools Grid */}
       <div>
-        <h2 className="text-[15px] font-black text-gray-900 mb-3.5 px-0.5">
-          {activeTab === 'all' ? 'كل الأدوات' : categoryLabelOf(activeTab)}
-        </h2>
+        <div className="flex items-center justify-between mb-3.5 px-0.5">
+          <h2 className="text-[15px] font-black text-gray-900">
+            {activeTab === 'all' ? 'كل الأدوات' : categoryLabelOf(activeTab)}
+          </h2>
+          <SortDropdown value={sortBy} onChange={setSortBy} />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" dir="rtl">
           {tabFiltered.map((tool) => (
             <ToolCard
