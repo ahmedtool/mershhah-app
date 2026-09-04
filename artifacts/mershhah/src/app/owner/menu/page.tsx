@@ -11,12 +11,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/components/shared/LanguageContext';
 import type { MenuItem, MenuCategory } from '@/lib/types';
 
 type ItemCategory = 'Star' | 'Plow-Horse' | 'Puzzle' | 'Dog';
 
 export default function MenuPage() {
   const { user, isLoading: isUserLoading } = useUser();
+  const { t } = useLanguage();
   const [isRefreshing, startRefresh] = useTransition();
   const [isApplyingSort, startApplyingSort] = useTransition();
   const { toast } = useToast();
@@ -112,13 +114,13 @@ export default function MenuPage() {
   const handleRefresh = () => {
     startRefresh(() => {
       if (user?.restaurantId) fetchMenuData(user.restaurantId);
-      toast({ title: 'تم تحديث البيانات' });
+      toast({ title: t('menu.dataRefreshed') });
     });
   };
 
   const handleApplySmartSort = () => {
     if (!user?.restaurantId || menuItems.length === 0) {
-      toast({ title: 'لا توجد بيانات للترتيب', variant: 'destructive' });
+      toast({ title: t('menu.noDataForSort'), variant: 'destructive' });
       return;
     }
 
@@ -132,9 +134,9 @@ export default function MenuPage() {
               .eq('id', item.id)
           )
         );
-        toast({ title: 'تم تطبيق الترتيب الذكي' });
+        toast({ title: t('menu.smartSortApplied') });
       } catch (error: any) {
-        toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+        toast({ title: t('common.errorTitle'), description: error.message, variant: 'destructive' });
       }
     });
   };
@@ -167,7 +169,7 @@ export default function MenuPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader title="إدارة المنيو" description="أضف وعُدّل أطباقك وتابع أرباحك.">
+      <PageHeader title={t('menu.manageMenu')} description={t('menu.manageMenuDesc')}>
         <MenuPageToolbar
           restaurantId={user?.restaurantId}
           userId={user?.uid}
@@ -195,46 +197,46 @@ export default function MenuPage() {
           <>
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-gray-600">إجمالي الأطباق</span>
+                <span className="text-[10px] font-bold text-gray-600">{t('menu.totalItems')}</span>
                 <div className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center">
                   <Package className="h-3.5 w-3.5 text-gray-600" />
                 </div>
               </div>
               <div className="text-2xl font-black text-gray-900">{totalItems}</div>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[9px] text-emerald-600 font-bold">{availableItems} متاح</span>
-                {unavailableItems > 0 && <span className="text-[9px] text-red-400 font-bold">{unavailableItems} غير متاح</span>}
+                <span className="text-[9px] text-emerald-600 font-bold">{availableItems} {t('menu.available')}</span>
+                {unavailableItems > 0 && <span className="text-[9px] text-red-400 font-bold">{unavailableItems} {t('menu.unavailable')}</span>}
               </div>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-gray-600">متوسط السعر</span>
+                <span className="text-[10px] font-bold text-gray-600">{t('menu.avgPrice')}</span>
                 <div className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center">
                   <DollarSign className="h-3.5 w-3.5 text-gray-600" />
                 </div>
               </div>
-              <div className="text-2xl font-black text-gray-900">{avgPrice.toFixed(0)} <span className="text-sm text-gray-600">ر.س</span></div>
-              <p className="text-[9px] text-gray-600 mt-1">لكل الأطباق المتاحة</p>
+              <div className="text-2xl font-black text-gray-900">{avgPrice.toFixed(0)} <span className="text-sm text-gray-600">{t('menu.sar')}</span></div>
+              <p className="text-[9px] text-gray-600 mt-1">{t('menu.forAllAvailable')}</p>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-gray-600">الأكثر طلباً</span>
+                <span className="text-[10px] font-bold text-gray-600">{t('menu.mostOrdered')}</span>
                 <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
                   <Flame className="h-3.5 w-3.5 text-amber-500" />
                 </div>
               </div>
               <div className="text-sm font-black text-gray-900 truncate">{popularItem?.name || '—'}</div>
-              <p className="text-[9px] text-gray-600 mt-1">بناءً على التفاعل</p>
+              <p className="text-[9px] text-gray-600 mt-1">{t('menu.basedOnInteraction')}</p>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-gray-600">إجمالي الربح</span>
+                <span className="text-[10px] font-bold text-gray-600">{t('menu.totalProfit')}</span>
                 <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
                   <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
                 </div>
               </div>
-              <div className="text-2xl font-black text-emerald-600">{totalProfit.toFixed(0)} <span className="text-sm text-gray-600">ر.س</span></div>
-              <p className="text-[9px] text-gray-600 mt-1">تقديري من جميع الأطباق</p>
+              <div className="text-2xl font-black text-emerald-600">{totalProfit.toFixed(0)} <span className="text-sm text-gray-600">{t('menu.sar')}</span></div>
+              <p className="text-[9px] text-gray-600 mt-1">{t('menu.estimatedFromAllDishes')}</p>
             </div>
           </>
         )}
@@ -250,7 +252,7 @@ export default function MenuPage() {
               activeCategoryId === 'all' ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100/80 text-gray-600 hover:bg-gray-200/70"
             )}
           >
-            الكل
+            {t('common.all')}
           </button>
           {categories.map((cat) => {
             const count = menuItems.filter((i) => i.category_id === cat.id).length;
@@ -279,7 +281,7 @@ export default function MenuPage() {
                   activeCategoryId === '__uncategorized__' ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100/80 text-gray-600 hover:bg-gray-200/70"
                 )}
               >
-                بدون تصنيف <span className="opacity-60">({uncategorizedCount})</span>
+                {t('menu.uncategorized')} <span className="opacity-60">({uncategorizedCount})</span>
               </button>
             );
           })()}

@@ -15,7 +15,10 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/lib/supabase";
 import { StorageImage } from "@/components/shared/StorageImage";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/shared/LanguageContext";
 import type { MenuItem, MenuCategory } from "@/lib/types";
+
+type Translate = (key: string) => string;
 
 interface MenuTableProps {
   items: MenuItem[];
@@ -36,17 +39,17 @@ function getCost(item: any) {
   if (!item.sizes || !Array.isArray(item.sizes) || item.sizes.length === 0) return null;
   return item.sizes[0].cost;
 }
-function getTag(item: any) {
-  if (item.display_tags === 'best_seller') return { label: 'الأكثر مبيعاً', color: 'bg-amber-50 text-amber-600' };
-  if (item.display_tags === 'new') return { label: 'جديد', color: 'bg-blue-50 text-blue-600' };
+function getTag(item: any, t: Translate) {
+  if (item.display_tags === 'best_seller') return { label: t('menu.bestSeller'), color: 'bg-amber-50 text-amber-600' };
+  if (item.display_tags === 'new') return { label: t('menu.newItem'), color: 'bg-blue-50 text-blue-600' };
   return null;
 }
-function getClassification(item: any) {
+function getClassification(item: any, t: Translate) {
   const map: Record<string, { label: string; color: string }> = {
-    Star: { label: 'نجمة', color: 'bg-amber-50 text-amber-600' },
-    Puzzle: { label: 'لغز', color: 'bg-rose-50 text-rose-600' },
-    'Plow-Horse': { label: 'حصان عمل', color: 'bg-blue-50 text-blue-600' },
-    Dog: { label: 'يحتاج تحسين', color: 'bg-gray-50 text-gray-600' },
+    Star: { label: t('menu.star'), color: 'bg-amber-50 text-amber-600' },
+    Puzzle: { label: t('menu.puzzle'), color: 'bg-rose-50 text-rose-600' },
+    'Plow-Horse': { label: t('menu.plowHorse'), color: 'bg-blue-50 text-blue-600' },
+    Dog: { label: t('menu.needsImprovement'), color: 'bg-gray-50 text-gray-600' },
   };
   return map[item.classification] || map.Dog;
 }
@@ -55,10 +58,11 @@ function MenuItemCard({ item, items, restaurantId, userId, onActionCompletion, o
   item: MenuItem; items: MenuItem[]; restaurantId: string; userId: string;
   onActionCompletion: () => void; onDeleteRequest: (item: MenuItem) => void; className?: string;
 }) {
+  const { t } = useLanguage();
   const price = getPrice(item);
   const cost = getCost(item);
-  const tag = getTag(item);
-  const classification = getClassification(item);
+  const tag = getTag(item, t);
+  const classification = getClassification(item, t);
   const profit = price != null && cost != null ? price - cost : null;
   const profitMargin = price != null && price > 0 && profit != null ? (profit / price) * 100 : null;
   const isAvailable = item.status !== 'unavailable';
@@ -77,7 +81,7 @@ function MenuItemCard({ item, items, restaurantId, userId, onActionCompletion, o
         <div className="absolute top-2 right-2">
           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-bold ${isAvailable ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
             {isAvailable ? <CheckCircle className="h-2.5 w-2.5" /> : <XCircle className="h-2.5 w-2.5" />}
-            {isAvailable ? 'متاح' : 'غير متاح'}
+            {isAvailable ? t('menu.available') : t('menu.unavailable')}
           </span>
         </div>
         {tag && (
@@ -105,18 +109,18 @@ function MenuItemCard({ item, items, restaurantId, userId, onActionCompletion, o
         <div className="flex items-center justify-between mb-3">
           <div>
             <span className="text-lg font-black text-gray-900">{price != null ? price.toFixed(0) : '—'}</span>
-            <span className="text-[10px] text-gray-600 mr-1">ر.س</span>
+            <span className="text-[10px] text-gray-600 mr-1">{t('menu.sar')}</span>
           </div>
           {profitMargin != null && (
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${profitMargin >= 60 ? 'bg-emerald-50 text-emerald-600' : profitMargin >= 30 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-500'}`}>
-              هامش {profitMargin.toFixed(0)}%
+              {t('menu.marginLabel')} {profitMargin.toFixed(0)}%
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-3 text-[9px] text-gray-600 mb-3">
-          {cost != null && <span>التكلفة: {cost.toFixed(0)} ر.س</span>}
-          {profit != null && <span>الربح: {profit.toFixed(0)} ر.س</span>}
+          {cost != null && <span>{t('menu.cost')}: {cost.toFixed(0)} {t('menu.sar')}</span>}
+          {profit != null && <span>{t('menu.profitLabel')}: {profit.toFixed(0)} {t('menu.sar')}</span>}
           {typeof (item as any).popularity === 'number' && (item as any).popularity > 0 && (
             <span className="flex items-center gap-0.5"><Flame className="h-2.5 w-2.5 text-amber-400" />{(item as any).popularity}</span>
           )}
@@ -126,7 +130,7 @@ function MenuItemCard({ item, items, restaurantId, userId, onActionCompletion, o
           <EditMenuItemDialog menuItem={item} restaurantId={restaurantId} userId={userId} onSave={onActionCompletion} itemCount={items.length} menuItems={items}>
             <button className="flex-1 h-8 rounded-lg border border-gray-200 text-[10px] font-bold text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1">
               <Pencil className="h-3 w-3" />
-              تعديل
+              {t('common.edit')}
             </button>
           </EditMenuItemDialog>
           <button onClick={() => onDeleteRequest(item)}
@@ -169,6 +173,7 @@ function CategoryRow({ title, items, restaurantId, userId, onActionCompletion, o
 
 export function MenuTable({ items, categories, activeCategoryId, restaurantId, userId, onActionCompletion }: MenuTableProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [isDeleting, startDelete] = useTransition();
   const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
 
@@ -178,11 +183,11 @@ export function MenuTable({ items, categories, activeCategoryId, restaurantId, u
       try {
         const { error } = await supabase.from('menu_items').delete().eq('id', itemToDelete.id);
         if (error) throw error;
-        toast({ title: 'تم الحذف' });
+        toast({ title: t('menu.itemDeleted') });
         onActionCompletion();
         setItemToDelete(null);
       } catch (error: any) {
-        toast({ variant: "destructive", title: 'خطأ', description: error.message });
+        toast({ variant: "destructive", title: t('common.errorTitle'), description: error.message });
       }
     });
   };
@@ -191,8 +196,8 @@ export function MenuTable({ items, categories, activeCategoryId, restaurantId, u
     return (
       <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center">
         <Package className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-        <p className="text-sm font-bold text-gray-900 mb-1">المنيو فارغ</p>
-        <p className="text-xs text-gray-600">أضف أول طبق ليظهر هنا.</p>
+        <p className="text-sm font-bold text-gray-900 mb-1">{t('menu.emptyMenu')}</p>
+        <p className="text-xs text-gray-600">{t('menu.startAddingItem')}</p>
       </div>
     );
   }
@@ -214,7 +219,7 @@ export function MenuTable({ items, categories, activeCategoryId, restaurantId, u
 
     const uncategorized = byCategoryId.get(UNCATEGORIZED_ID) || [];
     if (uncategorized.length > 0) {
-      sections.push({ id: UNCATEGORIZED_ID, title: 'بدون تصنيف', items: uncategorized });
+      sections.push({ id: UNCATEGORIZED_ID, title: t('menu.uncategorized'), items: uncategorized });
     }
 
     return (
@@ -266,18 +271,19 @@ export function MenuTable({ items, categories, activeCategoryId, restaurantId, u
 function DeleteDialog({ itemToDelete, isDeleting, onCancel, onConfirm }: {
   itemToDelete: MenuItem | null; isDeleting: boolean; onCancel: () => void; onConfirm: () => void;
 }) {
+  const { t, dir } = useLanguage();
   return (
     <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && onCancel()}>
-      <AlertDialogContent className="sm:max-w-lg p-0 gap-0" dir="rtl">
+      <AlertDialogContent className="sm:max-w-lg p-0 gap-0" dir={dir}>
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
-          <AlertDialogTitle className="text-base font-bold text-gray-900">حذف "{itemToDelete?.name}"</AlertDialogTitle>
-          <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
+          <AlertDialogTitle className="text-base font-bold text-gray-900">{t('menu.deleteItemTitle')} "{itemToDelete?.name}"</AlertDialogTitle>
+          <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">{t('common.cannotUndo')}</AlertDialogDescription>
         </div>
         <div className="flex gap-2 px-5 pb-5 pt-3">
-          <AlertDialogCancel disabled={isDeleting} className="flex-1 h-10 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50">إلغاء</AlertDialogCancel>
+          <AlertDialogCancel disabled={isDeleting} className="flex-1 h-10 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50">{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} disabled={isDeleting}
             className="flex-1 h-10 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 disabled:opacity-50">
-            {isDeleting ? 'جاري الحذف...' : 'نعم، حذف'}
+            {isDeleting ? t('menu.deleting') : t('menu.confirmDeleteAction')}
           </AlertDialogAction>
         </div>
       </AlertDialogContent>

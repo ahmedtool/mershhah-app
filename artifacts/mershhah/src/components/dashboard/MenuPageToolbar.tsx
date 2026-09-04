@@ -8,6 +8,7 @@ import { ImportMenuDialog } from './ImportMenuDialog';
 import { AddFromLibraryDialog } from './AddFromLibraryDialog';
 import { ManageCategoriesDialog } from './ManageCategoriesDialog';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/components/shared/LanguageContext';
 import type { MenuItem } from '@/lib/types';
 
 type ActionButtonProps = {
@@ -71,6 +72,7 @@ export function MenuPageToolbar({
   restaurantId, userId, disabled, rawMenuItems, menuItemsCount,
   isApplyingSort, isRefreshing, onApplySmartSort, onRefresh, onSave,
 }: MenuPageToolbarProps) {
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -78,8 +80,8 @@ export function MenuPageToolbar({
     {
       key: 'sort',
       icon: Sparkles,
-      label: 'ترتيب ذكي',
-      description: 'يرتّب أطباقك تلقائياً حسب الأداء والربحية',
+      label: t('menu.smartSort'),
+      description: t('menu.smartSortTooltip'),
       onClick: onApplySmartSort,
       spinning: isApplyingSort,
       disabled: isApplyingSort || disabled,
@@ -87,8 +89,8 @@ export function MenuPageToolbar({
     {
       key: 'refresh',
       icon: RefreshCw,
-      label: 'تحديث',
-      description: 'يحدّث المنيو لآخر نسخة محفوظة',
+      label: t('menu.refresh'),
+      description: t('menu.refreshTooltip'),
       onClick: onRefresh,
       spinning: isRefreshing,
       disabled: isRefreshing || disabled,
@@ -101,11 +103,11 @@ export function MenuPageToolbar({
       <EditMenuItemDialog restaurantId={restaurantId} userId={userId} onSave={onSave} itemCount={menuItemsCount} menuItems={rawMenuItems}>
         <button
           disabled={disabled}
-          title="أضف صنف جديد للمنيو"
+          title={t('menu.addNewDishTooltip')}
           className="h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 active:scale-[0.97] transition-all duration-200 disabled:opacity-50 flex items-center gap-2 shrink-0"
         >
           <PlusCircle className="h-3.5 w-3.5" />
-          طبق جديد
+          {t('menu.newDish')}
         </button>
       </EditMenuItemDialog>
 
@@ -113,11 +115,11 @@ export function MenuPageToolbar({
       <ImportMenuDialog restaurantId={restaurantId} onSave={onSave}>
         <button
           disabled={disabled}
-          title="استورد أطباقك تلقائياً من صورة قائمة الطعام"
+          title={t('menu.importTooltip')}
           className="h-9 px-3.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 hover:border-gray-300 active:scale-[0.97] transition-all duration-200 disabled:opacity-50 flex items-center gap-1.5 shrink-0 whitespace-nowrap"
         >
           <UploadCloud className="h-3.5 w-3.5" />
-          استيراد المنيو من صورة
+          {t('menu.importFromImage')}
         </button>
       </ImportMenuDialog>
 
@@ -138,17 +140,17 @@ export function MenuPageToolbar({
               onClick={() => { a.onClick(); setExpanded(false); }} disabled={a.disabled} spinning={a.spinning} variant="bar" />
           ))}
           <ManageCategoriesDialog restaurantId={restaurantId || ''} menuItems={rawMenuItems} onSave={onSave}>
-            <ActionButton icon={Tag} label="التصنيفات" description="أنشئ ورتّب تصنيفات المنيو" disabled={disabled}
+            <ActionButton icon={Tag} label={t('menu.categories')} description={t('menu.categoriesTooltip')} disabled={disabled}
               onClick={() => setExpanded(false)} variant="bar" />
           </ManageCategoriesDialog>
           <AddFromLibraryDialog restaurantId={restaurantId} onSave={onSave} itemCount={menuItemsCount} menuItems={rawMenuItems}>
-            <ActionButton icon={Library} label="من المكتبة المشتركة" description="أضف أصناف جاهزة من مكتبة مرشح" disabled={disabled}
+            <ActionButton icon={Library} label={t('menu.fromLibrary')} description={t('menu.fromLibraryTooltip')} disabled={disabled}
               onClick={() => setExpanded(false)} variant="bar" />
           </AddFromLibraryDialog>
         </motion.div>
         <button
           onClick={() => setExpanded((v) => !v)}
-          title="المزيد من الأدوات"
+          title={t('menu.moreTools')}
           className={cn(
             "h-9 w-9 rounded-xl border flex items-center justify-center shrink-0 transition-all duration-200 active:scale-[0.97]",
             expanded ? "bg-gray-900 border-gray-900 text-white" : "border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300"
@@ -162,7 +164,7 @@ export function MenuPageToolbar({
       <div className="md:hidden relative">
         <button
           onClick={() => setMobileMenuOpen((v) => !v)}
-          title="المزيد من الأدوات"
+          title={t('menu.moreTools')}
           className={cn(
             "h-9 w-9 rounded-xl border flex items-center justify-center transition-all duration-200 active:scale-[0.97]",
             mobileMenuOpen ? "bg-gray-900 border-gray-900 text-white" : "border-gray-200 text-gray-600 hover:bg-gray-50"
@@ -186,11 +188,11 @@ export function MenuPageToolbar({
                     onClick={() => { a.onClick(); setMobileMenuOpen(false); }} disabled={a.disabled} spinning={a.spinning} variant="menu" />
                 ))}
                 <ManageCategoriesDialog restaurantId={restaurantId || ''} menuItems={rawMenuItems} onSave={onSave}>
-                  <ActionButton icon={Tag} label="التصنيفات" description="أنشئ ورتّب تصنيفات المنيو" disabled={disabled}
+                  <ActionButton icon={Tag} label={t('menu.categories')} description={t('menu.categoriesTooltip')} disabled={disabled}
                     onClick={() => setMobileMenuOpen(false)} variant="menu" />
                 </ManageCategoriesDialog>
                 <AddFromLibraryDialog restaurantId={restaurantId} onSave={onSave} itemCount={menuItemsCount} menuItems={rawMenuItems}>
-                  <ActionButton icon={Library} label="من المكتبة المشتركة" description="أضف أصناف جاهزة من مكتبة مرشح" disabled={disabled}
+                  <ActionButton icon={Library} label={t('menu.fromLibrary')} description={t('menu.fromLibraryTooltip')} disabled={disabled}
                     onClick={() => setMobileMenuOpen(false)} variant="menu" />
                 </AddFromLibraryDialog>
               </motion.div>
