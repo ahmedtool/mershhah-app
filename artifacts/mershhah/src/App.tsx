@@ -1,5 +1,5 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
-import { lazy, Suspense } from "react";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +8,7 @@ import { LanguageProvider } from "@/components/shared/LanguageContext";
 import { HydrationGate } from "@/components/shared/HydrationGate";
 import { UserProvider } from "@/hooks/useUser";
 import { Loader2 } from "lucide-react";
+import { trackPageView } from "@/lib/analytics";
 
 const HomePage = lazy(() => import("@/app/page"));
 const LoginPage = lazy(() => import("@/app/login/page"));
@@ -105,6 +106,36 @@ function RouteLoadingFallback() {
 }
 
 function Router() {
+  const [location] = useLocation();
+
+  // Wouter navigates client-side with no full page load, so gtag's default
+  // one-shot page_view (fired on initial script load) never fires again on
+  // navigation - track it manually on every route change instead. A lazy
+  // route's own useDocumentMeta call (which sets the real title) only runs
+  // once its chunk finishes downloading - an unbounded, network-dependent
+  // delay a fixed setTimeout can't reliably wait out (confirmed live: a
+  // cold chunk load still raced past a setTimeout(0) and got tracked with
+  // the previous page's stale title). Watching the <title> element directly
+  // fires exactly when it actually changes, however long that takes; routes
+  // that never call useDocumentMeta (owner/admin, auth) fall back to a
+  // capped wait so they still get tracked.
+  useEffect(() => {
+    let fired = false;
+    const fire = () => {
+      if (fired) return;
+      fired = true;
+      trackPageView(location, document.title);
+    };
+    const titleEl = document.querySelector('title');
+    const observer = titleEl ? new MutationObserver(fire) : null;
+    observer?.observe(titleEl!, { childList: true });
+    const fallback = setTimeout(fire, 1500);
+    return () => {
+      observer?.disconnect();
+      clearTimeout(fallback);
+    };
+  }, [location]);
+
   return (
     <Suspense fallback={<RouteLoadingFallback />}>
       <Switch>
