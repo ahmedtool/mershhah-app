@@ -5,9 +5,9 @@ import type { CSSProperties } from 'react';
 // anywhere, so it silently fell back to the browser default. Keep the ids
 // stable; they're stored as-is in restaurants.fontFamily.
 export const FONT_OPTIONS = [
-  { id: 'IBM Plex Sans Arabic', label: 'كلاسيكي', sample: 'أبجد هوز' },
-  { id: 'Cairo', label: 'ودود', sample: 'أبجد هوز' },
-  { id: 'Tajawal', label: 'عصري', sample: 'أبجد هوز' },
+  { id: 'IBM Plex Sans Arabic', labelKey: 'customize.fontClassic', sample: 'أبجد هوز' },
+  { id: 'Cairo', labelKey: 'customize.fontFriendly', sample: 'أبجد هوز' },
+  { id: 'Tajawal', labelKey: 'customize.fontModern', sample: 'أبجد هوز' },
 ] as const;
 
 const DEFAULT_FONT = FONT_OPTIONS[0].id;
@@ -16,9 +16,9 @@ const DEFAULT_FONT = FONT_OPTIONS[0].id;
 // pages. Small badges/pills stay fully round regardless of this value;
 // it only governs the "how boxy vs. soft" feel of rectangular surfaces.
 export const RADIUS_PRESETS = [
-  { id: 'sharp', label: 'حاد', value: 4 },
-  { id: 'soft', label: 'ناعم', value: 16 },
-  { id: 'round', label: 'دائري', value: 28 },
+  { id: 'sharp', labelKey: 'customize.radiusSharp', value: 4 },
+  { id: 'soft', labelKey: 'customize.radiusSoft', value: 16 },
+  { id: 'round', labelKey: 'customize.radiusRound', value: 28 },
 ] as const;
 
 const DEFAULT_RADIUS = 16;

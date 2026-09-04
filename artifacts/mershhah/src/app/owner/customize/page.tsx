@@ -51,6 +51,13 @@ export default function CustomizePage() {
   const { user } = useUser();
   const { toast } = useToast();
   const { t, dir } = useLanguage();
+  // text-align/flex-direction Tailwind utilities are literal values, not
+  // direction-aware logical ones (unlike justify-between/-end, which
+  // already follow dir natively via flexbox) - resolve them here so the
+  // page mirrors correctly instead of staying right-aligned/reversed
+  // under English.
+  const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
+  const rowReverse = dir === 'rtl' ? 'flex-row-reverse' : 'flex-row';
   const [settings, setSettings] = useState<any>(null);
   const [globalApps, setGlobalApps] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -436,13 +443,13 @@ export default function CustomizePage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-10 items-start min-w-0">
         {/* Settings Panel */}
         <div className="xl:col-span-1 space-y-4 min-w-0">
-            <Accordion type="multiple" defaultValue={['branding', 'colors', 'apps', 'social']} className="space-y-3">
+            <Accordion type="multiple" dir={dir} defaultValue={['branding', 'colors', 'apps', 'social']} className="space-y-3">
                 {/* Branding */}
                 <AccordionItem value="branding" className="border border-gray-100 rounded-2xl px-4 bg-white">
-                    <AccordionTrigger className="font-bold hover:no-underline text-right text-sm text-gray-900 py-4">
+                    <AccordionTrigger className={`font-bold hover:no-underline ${alignStart} text-sm text-gray-900 py-4`}>
                         <div className="flex items-center gap-2"><Layout className="h-4 w-4 text-gray-600"/> {t('customize.branding')}</div>
                     </AccordionTrigger>
-                    <AccordionContent className="space-y-5 pb-5 text-right">
+                    <AccordionContent className={`space-y-5 pb-5 ${alignStart}`}>
                         <div className="space-y-2">
                             <Label className="text-[11px] text-gray-600">{t('customize.appLogo')}</Label>
                             <div className="relative w-28 h-28 mx-auto border border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 cursor-pointer overflow-hidden group" onClick={() => fileInputRef.current?.click()}>
@@ -454,7 +461,7 @@ export default function CustomizePage() {
                         <div className="space-y-1.5">
                             <Label className="text-[11px] text-gray-600">{t('customize.restaurantName')}</Label>
                             <Input value={settings.name} onChange={e => setSettings({...settings, name: e.target.value})}
-                              className="h-10 rounded-xl border-gray-200 text-xs text-right" />
+                              className={`h-10 rounded-xl border-gray-200 text-xs ${alignStart}`} />
                         </div>
                         <div className="space-y-1.5">
                             <Label className="text-[11px] text-gray-600">{t('customize.usernameForLink')}</Label>
@@ -463,7 +470,7 @@ export default function CustomizePage() {
                                 value={settings.username ?? ''}
                                 onChange={e => setSettings({ ...settings, username: e.target.value })}
                                 placeholder={t('customize.usernamePlaceholder')}
-                                className="h-10 rounded-xl border-gray-200 text-xs text-right font-mono"
+                                className={`h-10 rounded-xl border-gray-200 text-xs ${alignStart} font-mono`}
                                 disabled={(() => {
                                     const lastUpdated = settings.username_last_updated_at;
                                     if (!lastUpdated) return false;
@@ -483,17 +490,17 @@ export default function CustomizePage() {
                         <div className="space-y-1.5">
                             <Label className="text-[11px] text-gray-600">{t('customize.description')}</Label>
                             <Textarea value={settings.description || ''} onChange={e => setSettings({...settings, description: e.target.value})}
-                              rows={2} className="rounded-xl border-gray-200 text-xs text-right resize-none" />
+                              rows={2} className={`rounded-xl border-gray-200 text-xs ${alignStart} resize-none`} />
                         </div>
                     </AccordionContent>
                 </AccordionItem>
 
                 {/* Colors */}
                 <AccordionItem value="colors" className="border border-gray-100 rounded-2xl px-4 bg-white">
-                    <AccordionTrigger className="font-bold hover:no-underline text-right text-sm text-gray-900 py-4">
+                    <AccordionTrigger className={`font-bold hover:no-underline ${alignStart} text-sm text-gray-900 py-4`}>
                         <div className="flex items-center gap-2"><Palette className="h-4 w-4 text-gray-600"/> {t('customize.colors')}</div>
                     </AccordionTrigger>
-                    <AccordionContent className="space-y-4 pb-5 text-right">
+                    <AccordionContent className={`space-y-4 pb-5 ${alignStart}`}>
                         <button
                             className="w-full h-9 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
                             onClick={handleSuggestColors}
@@ -535,7 +542,7 @@ export default function CustomizePage() {
                                                 : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
                                         )}>
                                         <span className="text-sm">{font.sample}</span>
-                                        <span className="text-[9px] opacity-70">{font.label}</span>
+                                        <span className="text-[9px] opacity-70">{t(font.labelKey)}</span>
                                     </button>
                                 ))}
                             </div>
@@ -558,7 +565,7 @@ export default function CustomizePage() {
                                             className={cn("w-5 h-5 border-2", (settings.borderRadius ?? 16) === preset.value ? "border-white" : "border-gray-400")}
                                             style={{ borderRadius: `${Math.min(preset.value, 10)}px` }}
                                         />
-                                        <span className={cn("text-[9px]", (settings.borderRadius ?? 16) === preset.value ? "text-white/70" : "text-gray-600")}>{preset.label}</span>
+                                        <span className={cn("text-[9px]", (settings.borderRadius ?? 16) === preset.value ? "text-white/70" : "text-gray-600")}>{t(preset.labelKey)}</span>
                                     </button>
                                 ))}
                             </div>
@@ -568,10 +575,10 @@ export default function CustomizePage() {
 
                 {/* Apps */}
                 <AccordionItem value="apps" className="border border-gray-100 rounded-2xl px-4 bg-white">
-                    <AccordionTrigger className="font-bold hover:no-underline text-right text-sm text-gray-900 py-4">
+                    <AccordionTrigger className={`font-bold hover:no-underline ${alignStart} text-sm text-gray-900 py-4`}>
                         <div className="flex items-center gap-2"><AppWindow className="h-4 w-4 text-gray-600"/> {t('customize.apps')}</div>
                     </AccordionTrigger>
-                    <AccordionContent className="space-y-5 pb-5 text-right">
+                    <AccordionContent className={`space-y-5 pb-5 ${alignStart}`}>
                       {branches.length > 0 ? (
                         <>
                           <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
@@ -652,15 +659,15 @@ export default function CustomizePage() {
                         </div>
                         <div className="border-t border-gray-100" />
                         <div className="space-y-3">
-                            <div className="flex justify-between items-center flex-row-reverse">
+                            <div className={`flex justify-between items-center ${rowReverse}`}>
                                 <h4 className="text-xs font-bold text-gray-900">{t('customize.customApps')}</h4>
                                 <button onClick={addCustomApp} className="text-[10px] font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1 transition-colors">
                                     <PlusCircle className="h-3 w-3" /> {t('customize.add')}
                                 </button>
                             </div>
                             {settings.applications?.map((app: any) => (
-                                <div key={app.id} className="p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-2 relative text-right">
-                                    <div className="flex items-center gap-2 flex-row-reverse">
+                                <div key={app.id} className={`p-3 bg-gray-50 border border-gray-100 rounded-xl space-y-2 relative ${alignStart}`}>
+                                    <div className={`flex items-center gap-2 ${rowReverse}`}>
                                         <div
                                             className="relative w-9 h-9 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer"
                                             onClick={() => app.type === 'custom' && appLogoInputRefs.current[app.id]?.click()}
@@ -668,7 +675,7 @@ export default function CustomizePage() {
                                             {app.logo ? <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain p-1" sizes="36px" /> : <ImageIcon size={16} className="text-gray-200" />}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            {app.type === 'global' ? <p className="text-[11px] font-bold text-gray-900">{app.name}</p> : <Input value={app.name} onChange={e => updateAppField(app.id, 'name', e.target.value)} className="h-8 text-[11px] font-bold text-right rounded-lg border-gray-200" />}
+                                            {app.type === 'global' ? <p className="text-[11px] font-bold text-gray-900">{app.name}</p> : <Input value={app.name} onChange={e => updateAppField(app.id, 'name', e.target.value)} className={`h-8 text-[11px] font-bold ${alignStart} rounded-lg border-gray-200`} />}
                                         </div>
                                         <button onClick={() => removeApp(app.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1"><X size={12} /></button>
                                     </div>
@@ -684,10 +691,10 @@ export default function CustomizePage() {
 
                 {/* Social */}
                 <AccordionItem value="social" className="border border-gray-100 rounded-2xl px-4 bg-white">
-                    <AccordionTrigger className="font-bold hover:no-underline text-right text-sm text-gray-900 py-4">
+                    <AccordionTrigger className={`font-bold hover:no-underline ${alignStart} text-sm text-gray-900 py-4`}>
                         <div className="flex items-center gap-2"><LinkIcon className="h-4 w-4 text-gray-600"/> {t('customize.social')}</div>
                     </AccordionTrigger>
-                    <AccordionContent className="space-y-4 pb-5 text-right">
+                    <AccordionContent className={`space-y-4 pb-5 ${alignStart}`}>
                         <div className="flex flex-wrap gap-1.5 justify-end">
                             {SOCIAL_PLATFORMS.map(p => (
                                 <button key={p.value}
@@ -705,7 +712,7 @@ export default function CustomizePage() {
                                 const platform = SOCIAL_PLATFORMS.find(p => p.value === link.platform);
                                 const Icon = platform?.icon || WebsiteIcon;
                                 return (
-                                    <div key={link.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100 flex-row-reverse">
+                                    <div key={link.id} className={`flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100 ${rowReverse}`}>
                                         <div className="p-1.5 bg-white rounded-lg border border-gray-100 shrink-0">
                                             <Icon size={14} style={{ color: platform?.color }} />
                                         </div>
