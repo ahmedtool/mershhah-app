@@ -11,6 +11,7 @@ import { Link, useParams } from 'wouter';
 import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useDocumentMeta } from '@/hooks/useDocumentMeta';
+import { PublicFooter } from '@/components/shared/PublicFooter';
 
 export default function PostPage() {
   const resolvedParams = useParams() as { slug: string };
@@ -67,6 +68,7 @@ export default function PostPage() {
   }
 
   return (
+    <>
     <article className="max-w-4xl mx-auto px-4 py-8 md:py-16">
         {/* Breadcrumbs */}
         <nav className="flex items-center gap-2 text-sm text-muted-foreground mb-12">
@@ -157,5 +159,7 @@ export default function PostPage() {
             </Button>
         </div>
     </article>
+    <PublicFooter />
+    </>
   );
 }
