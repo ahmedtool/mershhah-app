@@ -21,11 +21,11 @@ export default function OwnerToolsPage() {
         const fetchTools = async () => {
             if (!user?.id) return;
             try {
-                // Get all activated tools for this user (without status filter)
                 const { data: activated, error: actError } = await supabase
                     .from('activated_tools')
                     .select('tool_id, activated_at, expires_at')
-                    .eq('profile_id', user.id);
+                    .eq('profile_id', user.id)
+                    .eq('status', 'active');
 
                 if (actError) {
                     console.error('Error fetching activated tools:', actError);

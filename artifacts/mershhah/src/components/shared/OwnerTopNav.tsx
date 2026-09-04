@@ -55,7 +55,7 @@ export function OwnerTopNav() {
         const { data: allTools } = await supabase.from('tools').select('id, title, icon');
         const allToolsMap = new Map((allTools || []).map((t: any) => [t.id, t]));
         const { data: activatedToolsData } = await supabase
-          .from('activated_tools').select('tool_id').eq('profile_id', user.id);
+          .from('activated_tools').select('tool_id').eq('profile_id', user.id).eq('status', 'active');
         const userTools = (activatedToolsData || [])
           .map((row: any) => {
             const toolDetails = allToolsMap.get(row.tool_id) as any;
