@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Check, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
+import { useLanguage } from '@/components/shared/LanguageContext';
 import type { Branch } from '@/lib/types';
 
 interface BulkEditDialogProps {
@@ -19,6 +20,7 @@ interface BulkEditDialogProps {
 
 export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onSaved }: BulkEditDialogProps) {
   const { toast } = useToast();
+  const { dir } = useLanguage();
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<'active' | 'inactive' | null>(null);
   const [openingHours, setOpeningHours] = useState('');
@@ -74,7 +76,7 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetState(); onOpenChange(o); }}>
-      <DialogContent className="sm:max-w-md p-0 gap-0" dir="rtl">
+      <DialogContent className="sm:max-w-md p-0 gap-0" dir={dir}>
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div>

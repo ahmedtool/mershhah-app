@@ -20,6 +20,7 @@ import type { MenuItem, MenuCategory } from '@/lib/types';
 import { syncPublicPage } from '@/lib/public-pages';
 import { COMMON_CATEGORY_SUGGESTIONS } from '@/lib/category-suggestions';
 import { useUser } from '@/hooks/useUser';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 const BUCKET = 'restaurant-assets';
 
@@ -76,6 +77,7 @@ const isToday = (d?: Date) => {
 export function EditMenuItemDialog({
   children, menuItem, menuItems, onSave, restaurantId, userId, itemCount = 0,
 }: EditMenuItemDialogProps) {
+  const { dir } = useLanguage();
   const [open, setOpen] = useState(false);
   const [isSaving, startSaving] = useTransition();
   const [isGeneratingDesc, startGeneratingDesc] = useTransition();
@@ -237,7 +239,7 @@ export function EditMenuItemDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
+      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir={dir}>
         {/* Hero Image */}
         <div className="relative w-full aspect-[16/9] bg-gray-100 overflow-hidden">
           {imagePreview ? (
@@ -320,7 +322,7 @@ export function EditMenuItemDialog({
                       </button>
                     </FormControl>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" dir="rtl">
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" dir={dir}>
                     <Command filter={(v, s) => v.toLowerCase().includes(s.toLowerCase()) ? 1 : 0}>
                       <CommandInput placeholder="ابحث أو اكتب تصنيف جديد..." className="h-9" value={categorySearch} onValueChange={setCategorySearch} />
                       <CommandList>

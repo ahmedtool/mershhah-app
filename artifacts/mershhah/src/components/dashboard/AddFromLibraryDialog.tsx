@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { syncPublicPage } from '@/lib/public-pages';
 import { useUser } from '@/hooks/useUser';
+import { useLanguage } from '@/components/shared/LanguageContext';
 import type { SharedMenuProduct, MenuItem } from '@/lib/types';
 
 interface AddFromLibraryDialogProps {
@@ -20,6 +21,7 @@ interface AddFromLibraryDialogProps {
 }
 
 export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCount = 0, onSave }: AddFromLibraryDialogProps) {
+  const { dir } = useLanguage();
   const [open, setOpen] = useState(false);
   const [products, setProducts] = useState<SharedMenuProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -148,7 +150,7 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
+      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir={dir}>
         <DialogTitle className="sr-only">إضافة من المكتبة المشتركة</DialogTitle>
         <DialogDescription className="sr-only">تصفح منتجات جاهزة وأضفها لمنيوك</DialogDescription>
 

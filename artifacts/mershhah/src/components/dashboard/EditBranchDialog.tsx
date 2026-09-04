@@ -16,6 +16,7 @@ import { extractFromGoogleMapsUrl } from '@/lib/geocoding';
 import saGeodata from '@/data/sa-geodata.json';
 import type { Branch } from '@/lib/types';
 import { useUser } from '@/hooks/useUser';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 const schema = z.object({
   name: z.string().min(2, 'اسم الفرع مطلوب'),
@@ -63,6 +64,7 @@ export function EditBranchDialog({
 }: EditBranchDialogProps) {
   const { toast } = useToast();
   const { user } = useUser();
+  const { dir } = useLanguage();
   const [saving, setSaving] = useState(false);
   const [mapsUrl, setMapsUrl] = useState('');
   const [parsingMaps, setParsingMaps] = useState(false);
@@ -200,7 +202,7 @@ export function EditBranchDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
+      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir={dir}>
         {/* Header */}
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3">

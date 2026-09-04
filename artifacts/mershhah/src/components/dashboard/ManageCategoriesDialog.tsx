@@ -10,6 +10,7 @@ import { syncPublicPage } from '@/lib/public-pages';
 import { cn } from '@/lib/utils';
 import type { MenuCategory, MenuItem } from '@/lib/types';
 import { COMMON_CATEGORY_SUGGESTIONS } from '@/lib/category-suggestions';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 interface ManageCategoriesDialogProps {
   children: React.ReactNode;
@@ -19,6 +20,7 @@ interface ManageCategoriesDialogProps {
 }
 
 export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSave }: ManageCategoriesDialogProps) {
+  const { dir } = useLanguage();
   const [open, setOpen] = useState(false);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -186,7 +188,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
+      <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir={dir}>
         <DialogTitle className="sr-only">إدارة التصنيفات</DialogTitle>
         <DialogDescription className="sr-only">أنشئ تصنيفات ورتّبها وحدد الأصناف اللي تنتمي لكل وحدة</DialogDescription>
 

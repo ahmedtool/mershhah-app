@@ -55,7 +55,7 @@ export default function BranchesPage() {
   }
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="space-y-5" dir={dir}>
       <PageHeader title={t('branches.title')} description={t('branches.subtitle')}>
         {restaurantId && (
           <button type="button" onClick={() => setAddOpen(true)}

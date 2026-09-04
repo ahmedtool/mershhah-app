@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Calculator, Plus, Trash2, Download, Loader2 } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 interface Employee {
   id: string;
@@ -36,6 +37,7 @@ const defaultEmployee: Employee = {
 
 export default function SalaryCalculatorPage() {
   const { user } = useUser();
+  const { dir } = useLanguage();
   const [employees, setEmployees] = useState<Employee[]>([{ ...defaultEmployee }]);
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [saving, setSaving] = useState(false);
@@ -121,7 +123,7 @@ export default function SalaryCalculatorPage() {
   }, { gross: 0, deductions: 0, net: 0 });
 
   return (
-    <div className="space-y-6 p-4" dir="rtl">
+    <div className="space-y-6 p-4" dir={dir}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

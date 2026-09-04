@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { syncPublicPage } from '@/lib/public-pages';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/components/shared/LanguageContext';
 import type { MenuItem, MenuCategory } from '@/lib/types';
 
 type ApplyScope = 'single' | 'items' | 'categories' | 'all';
@@ -68,6 +69,7 @@ function ingredientCost(ing: Ingredient): { cost: number; compatible: boolean } 
 export default function CostCalculatorPage() {
   const { user } = useUser();
   const { toast } = useToast();
+  const { dir } = useLanguage();
   const [productName, setProductName] = useState('');
   const [servings, setServings] = useState(1);
   const [ingredients, setIngredients] = useState<Ingredient[]>([newIngredient()]);
@@ -287,7 +289,7 @@ export default function CostCalculatorPage() {
   };
 
   return (
-    <div className="space-y-6 p-4" dir="rtl">
+    <div className="space-y-6 p-4" dir={dir}>
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
@@ -358,7 +360,7 @@ export default function CostCalculatorPage() {
                       className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
                     />
                     {showSuggestions && (
-                      <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto" dir="rtl">
+                      <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto" dir={dir}>
                         {filteredMenuItems.length > 0 ? (
                           filteredMenuItems.map((item) => (
                             <button

@@ -18,6 +18,7 @@ import {
 import { EditBranchDialog } from './EditBranchDialog';
 import { BulkEditDialog } from './BulkEditDialog';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/components/shared/LanguageContext';
 import type { Branch } from '@/lib/types';
 
 interface BranchesListProps {
@@ -29,6 +30,7 @@ interface BranchesListProps {
 
 export function BranchesList({ branches, restaurantId, username, onChanged }: BranchesListProps) {
   const { toast } = useToast();
+  const { dir } = useLanguage();
   const [editBranch, setEditBranch] = useState<Branch | null>(null);
   const [deleteBranch, setDeleteBranch] = useState<Branch | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -249,7 +251,7 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
       />
 
       <AlertDialog open={Boolean(deleteBranch)} onOpenChange={(o) => !o && setDeleteBranch(null)}>
-        <AlertDialogContent dir="rtl" className="text-right">
+        <AlertDialogContent dir={dir} className="text-right">
           <AlertDialogHeader>
             <AlertDialogTitle>حذف الفرع</AlertDialogTitle>
             <AlertDialogDescription>

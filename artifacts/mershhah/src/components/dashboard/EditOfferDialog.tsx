@@ -22,6 +22,7 @@ import { Badge } from "../ui/badge";
 import { Dialog as GalleryDialog, DialogContent as GalleryDialogContent } from "@/components/ui/dialog";
 import { StorageImage } from "../shared/StorageImage";
 import { ImageGallery } from "../studio/ImageGallery";
+import { useLanguage } from "@/components/shared/LanguageContext";
 
 const formSchema = z.object({
   title: z.string().min(2, "العنوان مطلوب"),
@@ -54,6 +55,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
   const [open, setOpen] = useState(!!defaultOpen);
   const [isSaving, startSaving] = useTransition();
   const { toast } = useToast();
+  const { dir } = useLanguage();
   const isEditing = !!offer;
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -172,7 +174,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>{children}</DialogTrigger>
-        <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
+        <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir={dir}>
           {/* Hero Image */}
           <div className="relative w-full aspect-[16/9] bg-gray-100 overflow-hidden">
             {imagePreview ? (
@@ -319,7 +321,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                           </button>
                         </FormControl>
                       </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" dir="rtl">
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" dir={dir}>
                         <Command>
                           <CommandInput placeholder="ابحث..." className="h-9" />
                           <CommandList>
@@ -441,7 +443,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
 
       {/* Gallery Dialog */}
       <GalleryDialog open={galleryOpen} onOpenChange={setGalleryOpen}>
-        <GalleryDialogContent className="max-w-4xl max-h-[90vh] flex flex-col rounded-2xl" dir="rtl">
+        <GalleryDialogContent className="max-w-4xl max-h-[90vh] flex flex-col rounded-2xl" dir={dir}>
           <div className="px-5 pt-5 pb-3">
             <h2 className="text-lg font-bold">اختر صورة من المعرض</h2>
             <p className="text-sm text-gray-600 mt-1">اضغط على الصورة لاختيارها</p>

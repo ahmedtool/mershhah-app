@@ -13,6 +13,7 @@ import { syncPublicPage } from '@/lib/public-pages';
 import { cn } from '@/lib/utils';
 import { Link } from 'wouter';
 import { ImageGallery } from '@/components/studio/ImageGallery';
+import { useLanguage } from '@/components/shared/LanguageContext';
 import type { MenuItem } from '@/lib/types';
 
 const BUCKET = 'restaurant-assets';
@@ -78,6 +79,7 @@ type CreditPack = { id: string; name: string; credits: number; price: number };
 export default function ImageEnhancerPage() {
   const { user } = useUser();
   const { toast } = useToast();
+  const { dir } = useLanguage();
   const restaurantId = user?.restaurantId;
   const isPaidPlan = !!user?.entitlements?.planId && user.entitlements.planId !== 'free' && user.entitlements.planId !== 'none';
 
@@ -304,7 +306,7 @@ export default function ImageEnhancerPage() {
   const canEnhance = !!selectedItem && !!originalUrl;
 
   return (
-    <div className="space-y-6 p-4 max-w-2xl mx-auto" dir="rtl">
+    <div className="space-y-6 p-4 max-w-2xl mx-auto" dir={dir}>
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-2xl bg-violet-50 flex items-center justify-center shrink-0">
@@ -383,7 +385,7 @@ export default function ImageEnhancerPage() {
                 className="w-full h-10 px-3 rounded-xl border border-gray-200 text-sm"
               />
               {showSuggestions && (
-                <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto" dir="rtl">
+                <div className="absolute z-20 top-full mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto" dir={dir}>
                   {filteredMenuItems.length > 0 ? (
                     filteredMenuItems.map((item) => (
                       <button
@@ -553,7 +555,7 @@ export default function ImageEnhancerPage() {
 
       {/* Gallery picker dialog */}
       <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col rounded-2xl" dir="rtl">
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col rounded-2xl" dir={dir}>
           <DialogTitle className="sr-only">اختر صورة من صور منيوك</DialogTitle>
           <DialogDescription className="sr-only">اضغط على الصورة لاختيارها كنقطة بداية للتحسين</DialogDescription>
           <div className="px-5 pt-5 pb-3">
