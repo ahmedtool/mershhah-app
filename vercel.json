@@ -4,6 +4,10 @@
   "outputDirectory": "artifacts/mershhah/dist/public",
   "rewrites": [
     {
+      "source": "/sitemap.xml",
+      "destination": "https://smmriycsboexindabanc.supabase.co/functions/v1/sitemap"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
