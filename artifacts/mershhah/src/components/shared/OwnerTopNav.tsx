@@ -6,6 +6,8 @@ import { supabase } from '@/lib/supabase';
 import { useUser } from '@/hooks/useUser';
 import { Link } from 'wouter';
 import { Logo } from './Logo';
+import { useLanguage } from './LanguageContext';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import {
   LayoutDashboard,
   Utensils,
@@ -29,23 +31,24 @@ export function OwnerTopNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useUser();
+  const { t, dir } = useLanguage();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activatedTools, setActivatedTools] = useState<any[]>([]);
   const [isLoadingTools, setIsLoadingTools] = useState(true);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const navItems = [
-    { href: '/owner/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
-    { href: '/owner/menu', label: 'المنيو', icon: Utensils },
-    { href: '/owner/reports', label: 'التقارير', icon: BarChart3 },
-    { href: '/owner/offers', label: 'العروض', icon: Megaphone },
-    { href: '/owner/reviews', label: 'التقييمات', icon: Star },
-    { href: '/owner/branches', label: 'الفروع', icon: Building2 },
-    { href: '/owner/customize', label: 'التخصيص', icon: Settings },
-    { href: '/owner/tools', label: 'أدواتي', icon: Box },
-    { href: '/owner/store', label: 'المتجر', icon: Store },
-    { href: '/owner/support', label: 'الدعم', icon: MessageSquare },
-    { href: '/owner/tickets', label: 'التذاكر', icon: Ticket },
+    { href: '/owner/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { href: '/owner/menu', label: t('nav.menu'), icon: Utensils },
+    { href: '/owner/reports', label: t('nav.reports'), icon: BarChart3 },
+    { href: '/owner/offers', label: t('nav.offers'), icon: Megaphone },
+    { href: '/owner/reviews', label: t('nav.reviews'), icon: Star },
+    { href: '/owner/branches', label: t('nav.branches'), icon: Building2 },
+    { href: '/owner/customize', label: t('nav.customize'), icon: Settings },
+    { href: '/owner/tools', label: t('nav.myTools'), icon: Box },
+    { href: '/owner/store', label: t('nav.store'), icon: Store },
+    { href: '/owner/support', label: t('nav.support'), icon: MessageSquare },
+    { href: '/owner/tickets', label: t('nav.tickets'), icon: Ticket },
   ];
 
   useEffect(() => {
@@ -103,7 +106,7 @@ export function OwnerTopNav() {
   };
 
   return (
-    <div className="sticky top-0 z-50 bg-white border-b border-gray-100" dir="rtl">
+    <div className="sticky top-0 z-50 bg-white border-b border-gray-100" dir={dir}>
       <div className="flex items-center h-14 px-4 gap-3">
         {/* Logo */}
         <Link href="/owner/dashboard" className="shrink-0 flex items-center gap-2">
@@ -144,6 +147,9 @@ export function OwnerTopNav() {
           <ChevronLeft className="h-4 w-4" />
         </button>
 
+        {/* Language switcher */}
+        <LanguageSwitcher className="hidden sm:flex" />
+
         {/* User menu */}
         <div className="relative shrink-0">
           <button
@@ -162,23 +168,26 @@ export function OwnerTopNav() {
               <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
               <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 min-w-[200px]">
                 <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-xs font-bold text-gray-900">{user?.full_name || 'مستخدم'}</p>
+                  <p className="text-xs font-bold text-gray-900">{user?.full_name || t('nav.user')}</p>
                   <p className="text-[10px] text-gray-600">{user?.email}</p>
                 </div>
                 <Link href="/owner/settings" onClick={() => setShowUserMenu(false)}
                   className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold text-gray-600 hover:bg-gray-50">
                   <Settings className="h-3.5 w-3.5 text-gray-600" />
-                  الإعدادات
+                  {t('nav.settings')}
                 </Link>
                 <Link href="/owner/billing" onClick={() => setShowUserMenu(false)}
                   className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold text-gray-600 hover:bg-gray-50">
                   <CreditCard className="h-3.5 w-3.5 text-gray-600" />
-                  الفواتير والاشتراكات
+                  {t('nav.billing')}
                 </Link>
+                <div className="sm:hidden border-t border-gray-100 mt-1 pt-1">
+                  <LanguageSwitcher className="w-full" />
+                </div>
                 <button onClick={handleLogout}
                   className="w-full flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold text-red-500 hover:bg-red-50">
                   <LogOut className="h-3.5 w-3.5" />
-                  تسجيل الخروج
+                  {t('nav.logout')}
                 </button>
               </div>
             </>

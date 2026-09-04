@@ -53,6 +53,19 @@
     </script>
   </head>
   <body>
+    <!-- Applies a persisted language choice before React mounts, so an
+         English-locale visitor doesn't see an RTL flash on load. Mirrors
+         the same key/logic as LanguageContext.tsx's readStoredLocale(). -->
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem('mershhah_locale') === 'en') {
+            document.documentElement.lang = 'en';
+            document.documentElement.dir = 'ltr';
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
