@@ -24,6 +24,7 @@ import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useToast } from '@/hooks/use-toast';
 import { useDocumentMeta } from '@/hooks/useDocumentMeta';
+import { useGoogleFont } from '@/hooks/useGoogleFont';
 
 const SOCIAL_ICONS: { [key: string]: React.ElementType } = {
     whatsapp: WhatsAppIcon,
@@ -68,6 +69,7 @@ export default function RestaurantHubPage() {
       ? (restaurant.description || `منيو ${restaurant.name} الرقمي — تصفّح الأطباق والعروض واسأل المساعد الذكي.`)
       : undefined
   );
+  useGoogleFont(restaurant?.fontFamily);
   // Offers with a branch_id only show to visitors known to be at that branch
   // (via a branch-specific link/QR); offers with no branch_id always show.
   const visibleOffers = branchParam ? offers.filter((o) => !o.branch_id || o.branch_id === branchParam) : offers;

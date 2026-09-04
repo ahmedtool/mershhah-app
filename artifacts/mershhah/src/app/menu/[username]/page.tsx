@@ -17,6 +17,7 @@ import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useToast } from '@/hooks/use-toast';
 import { useDocumentMeta } from '@/hooks/useDocumentMeta';
+import { useGoogleFont } from '@/hooks/useGoogleFont';
 
 export default function PublicMenuPage() {
   const params = useParams();
@@ -30,6 +31,7 @@ export default function PublicMenuPage() {
       ? (restaurant.description || `تصفّح منيو ${restaurant.name} الرقمي — الأطباق والأسعار والعروض.`)
       : undefined
   );
+  useGoogleFont(restaurant?.fontFamily);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('الكل');
