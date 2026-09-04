@@ -30,7 +30,7 @@ interface BranchesListProps {
 
 export function BranchesList({ branches, restaurantId, username, onChanged }: BranchesListProps) {
   const { toast } = useToast();
-  const { dir } = useLanguage();
+  const { t, dir } = useLanguage();
   const [editBranch, setEditBranch] = useState<Branch | null>(null);
   const [deleteBranch, setDeleteBranch] = useState<Branch | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -55,7 +55,7 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
     if (!username) return;
     const link = `${window.location.origin}/${username}?branch=${branch.id}`;
     navigator.clipboard.writeText(link);
-    toast({ title: 'تم نسخ رابط الفرع', description: 'اطبعه كرمز QR أو شاركه — العروض الخاصة بهذا الفرع تظهر لمن يفتحه' });
+    toast({ title: t('branches.copiedLinkTitle'), description: t('branches.copiedLinkDesc') });
   };
 
   const handleDelete = async () => {
@@ -68,13 +68,13 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
         .eq('id', deleteBranch.id)
         .eq('restaurant_id', restaurantId);
       if (error) throw error;
-      toast({ title: 'تم حذف الفرع' });
+      toast({ title: t('branches.branchDeleted') });
       syncPublicPage(restaurantId).catch(() => {});
       onChanged?.();
       setDeleteBranch(null);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast({ variant: 'destructive', title: 'خطأ في الحذف', description: msg });
+      toast({ variant: 'destructive', title: t('menu.deleteError'), description: msg });
     } finally {
       setDeleting(false);
     }
@@ -86,8 +86,8 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
         <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
           <MapPin className="h-7 w-7 text-gray-600" />
         </div>
-        <p className="text-sm font-medium text-gray-600">لا توجد فروع بعد</p>
-        <p className="text-xs text-gray-600 mt-1">اضغط "إضافة فرع" لبدء الإضافة</p>
+        <p className="text-sm font-medium text-gray-600">{t('branches.noBranchesYet')}</p>
+        <p className="text-xs text-gray-600 mt-1">{t('branches.clickAddBranch')}</p>
       </div>
     );
   }
@@ -99,14 +99,14 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
         {selectedIds.size > 0 ? (
           <div className="flex items-center justify-between gap-3 flex-wrap bg-gray-900 rounded-xl px-4 py-2.5">
             <div className="flex items-center gap-3">
-              <span className="text-xs font-bold text-white">{selectedIds.size} فرع محدد</span>
+              <span className="text-xs font-bold text-white">{selectedIds.size} {t('branches.branchSelectedSuffix')}</span>
               {selectedIds.size < branches.length ? (
                 <button onClick={selectAll} className="text-[11px] font-medium text-gray-300 hover:text-white transition-colors">
-                  تحديد الكل ({branches.length})
+                  {t('branches.selectAllLabel')} ({branches.length})
                 </button>
               ) : (
                 <button onClick={clearSelection} className="text-[11px] font-medium text-gray-300 hover:text-white transition-colors">
-                  إلغاء تحديد الكل
+                  {t('branches.deselectAll')}
                 </button>
               )}
             </div>
@@ -116,11 +116,11 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
                 className="h-8 px-3.5 rounded-lg bg-white text-gray-900 text-xs font-bold hover:bg-gray-100 transition-colors flex items-center gap-1.5"
               >
                 <Layers className="h-3.5 w-3.5" />
-                تعديل جماعي
+                {t('branches.bulkEdit')}
               </button>
               <button
                 onClick={clearSelection}
-                title="إلغاء التحديد"
+                title={t('branches.deselect')}
                 className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
               >
                 <X className="h-4 w-4" />
@@ -130,7 +130,7 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
         ) : branches.length > 1 ? (
           <p className="text-[11px] text-gray-600 flex items-center gap-1.5 px-0.5">
             <CheckSquare className="h-3 w-3" />
-            حدد أكثر من فرع لتعديلهم دفعة وحدة
+            {t('branches.selectMultipleHint')}
           </p>
         ) : null}
 
@@ -151,7 +151,7 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
                   <div className="flex items-center gap-2.5 min-w-0">
                     <button
                       onClick={() => toggleSelected(branch.id)}
-                      title={isSelected ? "إلغاء التحديد" : "تحديد للتعديل الجماعي"}
+                      title={isSelected ? t('branches.deselect') : t('branches.selectForBulkEdit')}
                       className={cn(
                         "shrink-0 w-5 h-5 rounded-md border flex items-center justify-center transition-colors",
                         isSelected ? "bg-gray-900 border-gray-900 text-white" : "border-gray-300 text-transparent hover:border-gray-400"
@@ -162,7 +162,7 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
                       </svg>
                     </button>
                     <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600 shrink-0">
-                      {branch.name?.[0] || 'ف'}
+                      {branch.name?.[0] || t('branches.branchInitial')}
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-sm font-semibold text-gray-900 leading-tight truncate">{branch.name}</h3>
@@ -174,7 +174,7 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
                   <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
                     branch.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'
                   }`}>
-                    {branch.status === 'active' ? 'نشط' : 'معطّل'}
+                    {branch.status === 'active' ? t('common.active') : t('branches.disabled')}
                   </span>
                 </div>
 
@@ -207,17 +207,17 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
                     className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                   >
                     <Pencil className="h-3.5 w-3.5" />
-                    تعديل
+                    {t('common.edit')}
                   </button>
                   <div className="w-px h-4 bg-gray-100" />
                   <button
                     onClick={() => handleCopyBranchLink(branch)}
                     disabled={!username}
-                    title="نسخ رابط خاص بهذا الفرع"
+                    title={t('branches.copyBranchLinkTooltip')}
                     className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-40"
                   >
                     <Link2 className="h-3.5 w-3.5" />
-                    رابط الفرع
+                    {t('branches.branchLink')}
                   </button>
                   <div className="w-px h-4 bg-gray-100" />
                   <button
@@ -225,7 +225,7 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
                     className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    حذف
+                    {t('common.delete')}
                   </button>
                 </div>
               </div>
@@ -251,17 +251,17 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
       />
 
       <AlertDialog open={Boolean(deleteBranch)} onOpenChange={(o) => !o && setDeleteBranch(null)}>
-        <AlertDialogContent dir={dir} className="text-right">
+        <AlertDialogContent dir={dir} className={dir === 'rtl' ? 'text-right' : 'text-left'}>
           <AlertDialogHeader>
-            <AlertDialogTitle>حذف الفرع</AlertDialogTitle>
+            <AlertDialogTitle>{t('branches.deleteBranchTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              هل أنت متأكد من حذف &quot;{deleteBranch?.name}&quot;؟ لا يمكن التراجع.
+              {t('branches.deleteConfirmPrefix')} &quot;{deleteBranch?.name}&quot;{t('branches.deleteConfirmSuffix')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive hover:bg-destructive/90">
-              {deleting ? 'جاري الحذف...' : 'حذف'}
+              {deleting ? t('menu.deleting') : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

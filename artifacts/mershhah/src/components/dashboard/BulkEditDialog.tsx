@@ -20,7 +20,7 @@ interface BulkEditDialogProps {
 
 export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onSaved }: BulkEditDialogProps) {
   const { toast } = useToast();
-  const { dir } = useLanguage();
+  const { t, dir } = useLanguage();
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<'active' | 'inactive' | null>(null);
   const [openingHours, setOpeningHours] = useState('');
@@ -32,7 +32,7 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
   const handleSave = async () => {
     if (!restaurantId || branches.length === 0) return;
     if (!applyStatus && !applyHours && !applyPhone) {
-      toast({ title: 'اختر تعديلاً أولاً', variant: 'destructive' });
+      toast({ title: t('branches.chooseEditFirst'), variant: 'destructive' });
       return;
     }
 
@@ -52,12 +52,12 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
       if (error) throw error;
 
       syncPublicPage(restaurantId).catch(() => {});
-      toast({ title: `تم تحديث ${branches.length} فرع` });
+      toast({ title: `${t('branches.updatedCountPrefix')} ${branches.length} ${t('branches.branchWord')}` });
       onSaved?.();
       resetState();
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      toast({ variant: 'destructive', title: 'خطأ', description: msg });
+      toast({ variant: 'destructive', title: t('common.errorTitle'), description: msg });
     } finally {
       setSaving(false);
     }
@@ -80,8 +80,8 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-bold text-gray-900">تعديل جماعي</h2>
-              <p className="text-xs text-gray-600 mt-0.5">{branches.length} فروع محددة</p>
+              <h2 className="text-base font-bold text-gray-900">{t('branches.bulkEdit')}</h2>
+              <p className="text-xs text-gray-600 mt-0.5">{branches.length} {t('branches.branchesSelectedSuffix')}</p>
             </div>
             <button onClick={() => onOpenChange(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-100">
               <X className="h-4 w-4" />
@@ -95,21 +95,21 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={applyStatus} onChange={(e) => setApplyStatus(e.target.checked)}
                 className="w-4 h-4 rounded border-gray-300" />
-              <span className="text-sm font-medium text-gray-700">تغيير الحالة</span>
+              <span className="text-sm font-medium text-gray-700">{t('branches.changeStatus')}</span>
             </label>
             {applyStatus && (
-              <div className="flex gap-2 mr-6">
+              <div className="flex gap-2 ms-6">
                 <button onClick={() => setStatus('active')}
                   className={`flex-1 h-10 rounded-xl text-xs font-medium transition-all border ${
                     status === 'active' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-600'
                   }`}>
-                  نشط
+                  {t('common.active')}
                 </button>
                 <button onClick={() => setStatus('inactive')}
                   className={`flex-1 h-10 rounded-xl text-xs font-medium transition-all border ${
                     status === 'inactive' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-gray-200 text-gray-600'
                   }`}>
-                  غير نشط
+                  {t('common.inactive')}
                 </button>
               </div>
             )}
@@ -120,14 +120,14 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={applyHours} onChange={(e) => setApplyHours(e.target.checked)}
                 className="w-4 h-4 rounded border-gray-300" />
-              <span className="text-sm font-medium text-gray-700">تغيير أوقات العمل</span>
+              <span className="text-sm font-medium text-gray-700">{t('branches.changeHours')}</span>
             </label>
             {applyHours && (
-              <div className="mr-6">
+              <div className="ms-6">
                 <Input
                   value={openingHours}
                   onChange={(e) => setOpeningHours(e.target.value)}
-                  placeholder="يوميًا 9 ص - 11 م"
+                  placeholder={t('branches.hoursPlaceholderExample')}
                   className="h-10 rounded-xl border-gray-200 text-sm"
                 />
               </div>
@@ -139,10 +139,10 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={applyPhone} onChange={(e) => setApplyPhone(e.target.checked)}
                 className="w-4 h-4 rounded border-gray-300" />
-              <span className="text-sm font-medium text-gray-700">تغيير رقم الجوال</span>
+              <span className="text-sm font-medium text-gray-700">{t('branches.changePhone')}</span>
             </label>
             {applyPhone && (
-              <div className="mr-6">
+              <div className="ms-6">
                 <Input
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -150,7 +150,7 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
                   dir="ltr"
                   className="h-10 rounded-xl border-gray-200 text-sm"
                 />
-                <p className="text-[10px] text-gray-600 mt-1">اتركه فاضي لحذف الرقم</p>
+                <p className="text-[10px] text-gray-600 mt-1">{t('branches.leaveEmptyToRemove')}</p>
               </div>
             )}
           </div>
@@ -159,12 +159,12 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
         <div className="px-5 pb-5 flex gap-2">
           <button onClick={() => onOpenChange(false)}
             className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">
-            إلغاء
+            {t('common.cancel')}
           </button>
           <button onClick={handleSave} disabled={saving || !hasChanges}
             className="flex-1 h-11 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            {saving ? 'جاري الحفظ...' : 'تطبيق على الكل'}
+            {saving ? t('common.saving') : t('branches.applyToAll')}
           </button>
         </div>
       </DialogContent>

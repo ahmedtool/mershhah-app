@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -18,18 +18,20 @@ import type { Branch } from '@/lib/types';
 import { useUser } from '@/hooks/useUser';
 import { useLanguage } from '@/components/shared/LanguageContext';
 
-const schema = z.object({
-  name: z.string().min(2, 'اسم الفرع مطلوب'),
-  city: z.string().min(2, 'اختر المدينة'),
-  district: z.string().min(2, 'اختر الحي'),
-  phone: z.string().optional(),
-  opening_hours: z.string().max(200).optional(),
-  status: z.enum(['active', 'inactive']),
-  latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
-  longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
-});
+function buildSchema(t: (key: string) => string) {
+  return z.object({
+    name: z.string().min(2, t('branches.branchNameRequired')),
+    city: z.string().min(2, t('branches.selectCityError')),
+    district: z.string().min(2, t('branches.selectDistrictError')),
+    phone: z.string().optional(),
+    opening_hours: z.string().max(200).optional(),
+    status: z.enum(['active', 'inactive']),
+    latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
+    longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
+  });
+}
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<ReturnType<typeof buildSchema>>;
 
 function generateHoursText(open: string, close: string, friOpen: string, friClose: string): string {
   if (!open || !close) return '';
@@ -64,7 +66,9 @@ export function EditBranchDialog({
 }: EditBranchDialogProps) {
   const { toast } = useToast();
   const { user } = useUser();
-  const { dir } = useLanguage();
+  const { t, dir } = useLanguage();
+  const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
+  const schema = useMemo(() => buildSchema(t), [t]);
   const [saving, setSaving] = useState(false);
   const [mapsUrl, setMapsUrl] = useState('');
   const [parsingMaps, setParsingMaps] = useState(false);
@@ -131,20 +135,20 @@ export function EditBranchDialog({
   useEffect(() => { if (!city) form.setValue('district', ''); }, [city, form]);
 
   async function handleParseMapsUrl() {
-    if (!mapsUrl.trim()) { toast({ variant: 'destructive', title: 'الصق رابط أولاً' }); return; }
+    if (!mapsUrl.trim()) { toast({ variant: 'destructive', title: t('branches.pasteLinkFirst') }); return; }
     setParsingMaps(true);
     try {
       const r = await extractFromGoogleMapsUrl(mapsUrl.trim());
       if (r) {
         form.setValue('latitude', r.latitude, { shouldDirty: true });
         form.setValue('longitude', r.longitude, { shouldDirty: true });
-        toast({ title: 'تم استخراج الموقع' });
+        toast({ title: t('branches.locationExtracted') });
         setMapsUrl('');
       } else {
-        toast({ variant: 'destructive', title: 'لم يتم العثور على إحداثيات' });
+        toast({ variant: 'destructive', title: t('branches.coordinatesNotFound') });
       }
     } catch {
-      toast({ variant: 'destructive', title: 'فشل قراءة الرابط' });
+      toast({ variant: 'destructive', title: t('branches.failedToReadLink') });
     } finally {
       setParsingMaps(false);
     }
@@ -170,7 +174,7 @@ export function EditBranchDialog({
       if (isEdit && branch?.id) {
         const { error } = await supabase.from('branches').update(data).eq('id', branch.id);
         if (error) throw error;
-        toast({ title: 'تم التحديث' });
+        toast({ title: t('branches.updated') });
       } else {
         const maxBranches = user?.entitlements?.maxBranches ?? 1;
         const { count } = await supabase
@@ -180,8 +184,8 @@ export function EditBranchDialog({
         if ((count ?? 0) >= maxBranches) {
           toast({
             variant: 'destructive',
-            title: 'وصلت للحد الأقصى من الفروع',
-            description: `باقتك الحالية (${user?.entitlements?.planName || ''}) تسمح بحد أقصى ${maxBranches} فرع. رقّي باقتك لإضافة المزيد.`,
+            title: t('branches.maxBranchesReached'),
+            description: `${t('branches.currentPlanPrefix')} (${user?.entitlements?.planName || ''}) ${t('branches.allowsMax')} ${maxBranches} ${t('branches.branchWord')}. ${t('branches.upgradeForMore')}`,
           });
           setSaving(false);
           return;
@@ -189,14 +193,14 @@ export function EditBranchDialog({
 
         const { error } = await supabase.from('branches').insert({ id: crypto.randomUUID(), ...data });
         if (error) throw error;
-        toast({ title: 'تمت الإضافة' });
+        toast({ title: t('branches.added') });
       }
 
       syncPublicPage(restaurantId).catch(() => {});
       onSaved?.();
       onOpenChange(false);
     } catch (e: unknown) {
-      toast({ variant: 'destructive', title: 'خطأ', description: e instanceof Error ? e.message : String(e) });
+      toast({ variant: 'destructive', title: t('common.errorTitle'), description: e instanceof Error ? e.message : String(e) });
     } finally { setSaving(false); }
   }
 
@@ -210,8 +214,8 @@ export function EditBranchDialog({
               <MapPin className="h-5 w-5 text-gray-600" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900">{isEdit ? 'تعديل الفرع' : 'إضافة فرع جديد'}</h2>
-              <p className="text-xs text-gray-600 mt-0.5">{isEdit ? 'عدّل البيانات ثم احفظ' : 'أدخل بيانات الفرع'}</p>
+              <h2 className="text-base font-bold text-gray-900">{isEdit ? t('branches.editBranch') : t('branches.addNewBranch')}</h2>
+              <p className="text-xs text-gray-600 mt-0.5">{isEdit ? t('branches.editBranchDesc') : t('branches.addBranchDesc')}</p>
             </div>
           </div>
         </div>
@@ -222,9 +226,9 @@ export function EditBranchDialog({
             {/* Name */}
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-600">اسم الفرع</FormLabel>
+                <FormLabel className="text-xs text-gray-600">{t('branches.branchName')}</FormLabel>
                 <FormControl>
-                  <Input placeholder="مثال: فرع العليا" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={saving} />
+                  <Input placeholder={t('branches.branchNamePlaceholder')} {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={saving} />
                 </FormControl>
                 <FormMessage className="text-[10px]" />
               </FormItem>
@@ -234,7 +238,7 @@ export function EditBranchDialog({
             <div className="grid grid-cols-2 gap-3">
               {/* City Searchable */}
               <div className="space-y-1.5">
-                <FormLabel className="text-xs text-gray-600">المدينة</FormLabel>
+                <FormLabel className="text-xs text-gray-600">{t('branches.city')}</FormLabel>
                 <div className="relative">
                   <Input
                     value={citySearch}
@@ -246,7 +250,7 @@ export function EditBranchDialog({
                     }}
                     onFocus={() => setCityOpen(true)}
                     onBlur={() => setTimeout(() => setCityOpen(false), 200)}
-                    placeholder="ابحث عن مدينة..."
+                    placeholder={t('branches.searchCityPlaceholder')}
                     className="h-10 rounded-xl border-gray-200 text-sm"
                     disabled={saving}
                   />
@@ -260,7 +264,7 @@ export function EditBranchDialog({
                             setCitySearch(c);
                             setCityOpen(false);
                           }}
-                          className="w-full text-right px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                          className={`w-full ${alignStart} px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors`}>
                           {c}
                         </button>
                       ))}
@@ -271,7 +275,7 @@ export function EditBranchDialog({
 
               {/* District Searchable */}
               <div className="space-y-1.5">
-                <FormLabel className="text-xs text-gray-600">الحي</FormLabel>
+                <FormLabel className="text-xs text-gray-600">{t('branches.district')}</FormLabel>
                 <div className="relative">
                   <Input
                     value={districtSearch}
@@ -282,7 +286,7 @@ export function EditBranchDialog({
                     }}
                     onFocus={() => setDistrictOpen(true)}
                     onBlur={() => setTimeout(() => setDistrictOpen(false), 200)}
-                    placeholder={city ? "ابحث عن حي..." : "اختر المدينة أولاً"}
+                    placeholder={city ? t('branches.searchDistrictPlaceholder') : t('branches.selectCityFirst')}
                     className="h-10 rounded-xl border-gray-200 text-sm"
                     disabled={saving || !city}
                   />
@@ -295,7 +299,7 @@ export function EditBranchDialog({
                             setDistrictSearch(d);
                             setDistrictOpen(false);
                           }}
-                          className="w-full text-right px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                          className={`w-full ${alignStart} px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors`}>
                           {d}
                         </button>
                       ))}
@@ -308,7 +312,7 @@ export function EditBranchDialog({
             {/* Phone */}
             <FormField control={form.control} name="phone" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-600">رقم الجوال <span className="text-gray-600">(اختياري)</span></FormLabel>
+                <FormLabel className="text-xs text-gray-600">{t('branches.mobileNumber')} <span className="text-gray-600">({t('common.optional')})</span></FormLabel>
                 <FormControl>
                   <Input placeholder="05XXXXXXXX" {...field} className="h-10 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={saving} />
                 </FormControl>
@@ -318,23 +322,23 @@ export function EditBranchDialog({
 
             {/* Opening Hours */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-600">أوقات العمل</FormLabel>
+              <FormLabel className="text-xs text-gray-600">{t('branches.openingHours')}</FormLabel>
               <div className="flex items-end gap-2">
-                <TimePicker value={allDaysOpen} onChange={(v) => { setAllDaysOpen(v); form.setValue('opening_hours', generateHoursText(v, allDaysClose, fridayOpen, fridayClose), { shouldDirty: true }); }} label="الفتح" className="flex-1" />
+                <TimePicker value={allDaysOpen} onChange={(v) => { setAllDaysOpen(v); form.setValue('opening_hours', generateHoursText(v, allDaysClose, fridayOpen, fridayClose), { shouldDirty: true }); }} label={t('branches.openLabel')} className="flex-1" />
                 <span className="text-xs text-gray-600 mb-3">—</span>
-                <TimePicker value={allDaysClose} onChange={(v) => { setAllDaysClose(v); form.setValue('opening_hours', generateHoursText(allDaysOpen, v, fridayOpen, fridayClose), { shouldDirty: true }); }} label="الإغلاق" className="flex-1" />
+                <TimePicker value={allDaysClose} onChange={(v) => { setAllDaysClose(v); form.setValue('opening_hours', generateHoursText(allDaysOpen, v, fridayOpen, fridayClose), { shouldDirty: true }); }} label={t('branches.closeLabel')} className="flex-1" />
               </div>
 
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={showFriday} onChange={(e) => { setShowFriday(e.target.checked); if (!e.target.checked) { setFridayOpen(''); setFridayClose(''); form.setValue('opening_hours', generateHoursText(allDaysOpen, allDaysClose, '', ''), { shouldDirty: true }); } }} className="w-3.5 h-3.5 rounded border-gray-300" />
-                <span className="text-[11px] text-gray-600">الجمعة مختلفة</span>
+                <span className="text-[11px] text-gray-600">{t('branches.fridayDifferent')}</span>
               </label>
 
               {showFriday && (
                 <div className="flex items-end gap-2">
-                  <TimePicker value={fridayOpen} onChange={(v) => { setFridayOpen(v); form.setValue('opening_hours', generateHoursText(allDaysOpen, allDaysClose, v, fridayClose), { shouldDirty: true }); }} label="فتح" className="flex-1" />
+                  <TimePicker value={fridayOpen} onChange={(v) => { setFridayOpen(v); form.setValue('opening_hours', generateHoursText(allDaysOpen, allDaysClose, v, fridayClose), { shouldDirty: true }); }} label={t('branches.fridayOpenLabel')} className="flex-1" />
                   <span className="text-xs text-gray-600 mb-3">—</span>
-                  <TimePicker value={fridayClose} onChange={(v) => { setFridayClose(v); form.setValue('opening_hours', generateHoursText(allDaysOpen, allDaysClose, fridayOpen, v), { shouldDirty: true }); }} label="إغلاق" className="flex-1" />
+                  <TimePicker value={fridayClose} onChange={(v) => { setFridayClose(v); form.setValue('opening_hours', generateHoursText(allDaysOpen, allDaysClose, fridayOpen, v), { shouldDirty: true }); }} label={t('branches.fridayCloseLabel')} className="flex-1" />
                 </div>
               )}
 
@@ -347,10 +351,10 @@ export function EditBranchDialog({
 
             {/* Location - URL only */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-600">موقع الفرع</FormLabel>
+              <FormLabel className="text-xs text-gray-600">{t('branches.branchLocation')}</FormLabel>
               <div className="flex gap-2">
                 <Input
-                  placeholder="الصق رابط جوجل مابز..."
+                  placeholder={t('branches.pasteGoogleMapsUrl')}
                   value={mapsUrl}
                   onChange={(e) => setMapsUrl(e.target.value)}
                   className="h-10 text-xs rounded-xl border-gray-200 flex-1"
@@ -359,36 +363,36 @@ export function EditBranchDialog({
                 <button type="button" onClick={handleParseMapsUrl} disabled={parsingMaps || !mapsUrl.trim()}
                   className="h-10 px-3 rounded-xl border border-gray-200 text-[11px] font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center gap-1.5 disabled:opacity-50">
                   {parsingMaps ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5 text-blue-500" />}
-                  استخراج
+                  {t('branches.extract')}
                 </button>
               </div>
               {form.watch('latitude') && form.watch('longitude') && (
                 <a href={`https://www.google.com/maps/dir/?api=1&destination=${form.watch('latitude')},${form.watch('longitude')}`} target="_blank" rel="noopener noreferrer"
                   className="text-[11px] text-blue-500 hover:underline inline-flex items-center gap-1">
-                  <MapPin className="h-3 w-3" /> تم تحديد الموقع ✓
+                  <MapPin className="h-3 w-3" /> {t('branches.locationSet')} ✓
                 </a>
               )}
             </div>
 
             {/* Status */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-600">الحالة</FormLabel>
+              <FormLabel className="text-xs text-gray-600">{t('common.status')}</FormLabel>
               <div className="flex gap-2">
                 <button type="button" onClick={() => form.setValue('status', 'active')}
                   className={`flex-1 h-9 rounded-xl text-xs font-medium transition-all border ${form.watch('status') === 'active' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                  نشط
+                  {t('common.active')}
                 </button>
                 <button type="button" onClick={() => form.setValue('status', 'inactive')}
                   className={`flex-1 h-9 rounded-xl text-xs font-medium transition-all border ${form.watch('status') === 'inactive' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
-                  غير نشط
+                  {t('common.inactive')}
                 </button>
               </div>
             </div>
 
             {/* Branch Delivery Apps */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-600">تطبيقات التوصيل</FormLabel>
-              <p className="text-[10px] text-gray-600">أضف روابط التطبيقات الخاصة بهذا الفرع</p>
+              <FormLabel className="text-xs text-gray-600">{t('settings.deliveryApps')}</FormLabel>
+              <p className="text-[10px] text-gray-600">{t('branches.addBranchAppLinks')}</p>
               
               {globalApps.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
@@ -427,7 +431,7 @@ export function EditBranchDialog({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-bold text-gray-700">{app.name}</p>
-                    <Input dir="ltr" value={app.value} placeholder="https://..."
+                    <Input dir="ltr" value={app.value} placeholder={t('customize.linkPlaceholder')}
                       onChange={(e) => {
                         setBranchApps(branchApps.map((a: any) => a.id === app.id ? { ...a, value: e.target.value } : a));
                       }}
@@ -445,12 +449,12 @@ export function EditBranchDialog({
             <div className="flex flex-wrap gap-2 pt-2">
               <button type="button" onClick={() => onOpenChange(false)}
                 className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                إلغاء
+                {t('common.cancel')}
               </button>
               <button type="submit" disabled={saving}
                 className="flex-1 h-11 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {saving ? 'جاري الحفظ...' : isEdit ? 'حفظ التعديلات' : 'إضافة الفرع'}
+                {saving ? t('common.saving') : isEdit ? t('common.saveChanges') : t('branches.addBranchSubmit')}
               </button>
             </div>
           </form>
