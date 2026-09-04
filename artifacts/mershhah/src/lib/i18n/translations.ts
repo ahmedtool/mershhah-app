@@ -140,6 +140,7 @@ export const translations = {
     },
     branches: {
       title: 'إدارة الفروع',
+      subtitle: 'أضف وعُدّل فروع مطعمك من قائمة واحدة.',
       addBranch: 'إضافة فرع',
       editBranch: 'تعديل الفرع',
       branchName: 'اسم الفرع',
@@ -155,7 +156,9 @@ export const translations = {
       allBranches: 'جميع الفروع',
     },
     offers: {
-      title: 'العروض',
+      title: 'إدارة العروض',
+      subtitle: 'سوّ عروض ترويجية عشان تجذب زباين أكثر.',
+      newOffer: 'عرض جديد',
       addOffer: 'إضافة عرض',
       editOffer: 'تعديل العرض',
       offerTitle: 'عنوان العرض',
@@ -166,6 +169,12 @@ export const translations = {
       externalLink: 'رابط خارجي',
       views: 'المشاهدات',
       clicks: 'النقرات',
+      noOffers: 'لا توجد عروض',
+      addToSeeHere: 'أضف عروض جديدة لتظهر هنا',
+      deleteOfferTitle: 'حذف العرض',
+      deleteConfirmPrefix: 'سيتم حذف',
+      deleteConfirmSuffix: 'نهائياً',
+      offerDeleted: 'تم حذف العرض بنجاح',
     },
     reviews: {
       title: 'التقييمات',
@@ -189,6 +198,8 @@ export const translations = {
     },
     dashboard: {
       title: 'لوحة التحكم',
+      subtitle: 'نظرة سريعة على أداء مشروعك.',
+      refreshingData: 'جاري تحديث البيانات...',
       overview: 'نظرة عامة',
       analytics: 'التحليلات',
       totalViews: 'إجمالي المشاهدات',
@@ -247,6 +258,14 @@ export const translations = {
       privacy: 'سياسة الخصوصية',
       contact: 'اتصل بنا',
       allRightsReserved: 'جميع الحقوق محفوظة',
+    },
+    tools: {
+      subtitle: 'أدوات إضافية تساعدك على النمو',
+      noActiveTools: 'لا توجد أدوات مفعّلة حالياً',
+      toolsStore: 'متجر الأدوات',
+      expired: 'منتهية الصلاحية',
+      validUntil: 'صالح حتى',
+      openTool: 'فتح الأداة',
     },
   },
   en: {
@@ -387,6 +406,7 @@ export const translations = {
     },
     branches: {
       title: 'Branch Management',
+      subtitle: 'Add and edit your restaurant\'s branches from one list.',
       addBranch: 'Add Branch',
       editBranch: 'Edit Branch',
       branchName: 'Branch Name',
@@ -402,7 +422,9 @@ export const translations = {
       allBranches: 'All Branches',
     },
     offers: {
-      title: 'Offers',
+      title: 'Offer Management',
+      subtitle: 'Create promotional offers to attract more customers.',
+      newOffer: 'New Offer',
       addOffer: 'Add Offer',
       editOffer: 'Edit Offer',
       offerTitle: 'Offer Title',
@@ -413,6 +435,12 @@ export const translations = {
       externalLink: 'External Link',
       views: 'Views',
       clicks: 'Clicks',
+      noOffers: 'No offers yet',
+      addToSeeHere: 'Add new offers to see them here',
+      deleteOfferTitle: 'Delete Offer',
+      deleteConfirmPrefix: 'This will permanently delete',
+      deleteConfirmSuffix: '',
+      offerDeleted: 'Offer deleted successfully',
     },
     reviews: {
       title: 'Reviews',
@@ -436,6 +464,8 @@ export const translations = {
     },
     dashboard: {
       title: 'Dashboard',
+      subtitle: 'A quick look at your business performance.',
+      refreshingData: 'Refreshing data...',
       overview: 'Overview',
       analytics: 'Analytics',
       totalViews: 'Total Views',
@@ -494,6 +524,14 @@ export const translations = {
       privacy: 'Privacy Policy',
       contact: 'Contact Us',
       allRightsReserved: 'All rights reserved',
+    },
+    tools: {
+      subtitle: 'Extra tools to help you grow',
+      noActiveTools: 'No active tools yet',
+      toolsStore: 'Tools Store',
+      expired: 'Expired',
+      validUntil: 'Valid until',
+      openTool: 'Open Tool',
     },
   },
 } as const;

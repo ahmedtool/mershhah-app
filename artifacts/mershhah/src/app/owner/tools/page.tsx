@@ -10,9 +10,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { StorageImage } from "@/components/shared/StorageImage";
 import { getToolIcon } from "@/lib/tool-icons";
+import { useLanguage } from "@/components/shared/LanguageContext";
 
 export default function OwnerToolsPage() {
     const { user } = useUser();
+    const { t, locale } = useLanguage();
     const [tools, setTools] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -73,7 +75,7 @@ export default function OwnerToolsPage() {
 
     return (
         <div className="flex flex-col gap-6 p-4">
-            <PageHeader title="أدواتي" description="أدوات إضافية تساعدك على النمو" />
+            <PageHeader title={t('nav.myTools')} description={t('tools.subtitle')} />
             {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
@@ -82,10 +84,10 @@ export default function OwnerToolsPage() {
                 <Card>
                     <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
                         <Wrench className="h-12 w-12 text-gray-200" />
-                        <p className="text-gray-600 text-center text-sm">لا توجد أدوات مفعّلة حالياً</p>
+                        <p className="text-gray-600 text-center text-sm">{t('tools.noActiveTools')}</p>
                         <Link href="/owner/store">
                             <button className="h-10 px-5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors">
-                                متجر الأدوات
+                                {t('tools.toolsStore')}
                             </button>
                         </Link>
                     </CardContent>
@@ -115,13 +117,13 @@ export default function OwnerToolsPage() {
                                         <div className="flex items-center gap-1.5 text-[10px]">
                                             <Clock className="h-3 w-3 text-gray-600" />
                                             <span className={expired ? 'text-red-500 font-bold' : 'text-gray-600'}>
-                                                {expired ? 'منتهية الصلاحية' : `صالح حتى ${new Date(tool.expires_at).toLocaleDateString('ar-SA')}`}
+                                                {expired ? t('tools.expired') : `${t('tools.validUntil')} ${new Date(tool.expires_at).toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US')}`}
                                             </span>
                                         </div>
                                     )}
                                     <Link href={`/owner/tools/${tool.id}`}>
                                         <button className="w-full h-9 rounded-xl border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors">
-                                            فتح الأداة
+                                            {t('tools.openTool')}
                                         </button>
                                     </Link>
                                 </div>

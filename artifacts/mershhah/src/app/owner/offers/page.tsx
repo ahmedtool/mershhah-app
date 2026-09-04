@@ -17,10 +17,12 @@ import {
 import { EditOfferDialog } from '@/components/dashboard/EditOfferDialog';
 import { supabase } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/components/shared/LanguageContext';
 import type { Branch } from '@/lib/types';
 
 export default function OffersPage() {
   const { user, isLoading: isUserLoading } = useUser();
+  const { t, dir } = useLanguage();
   const [offerToDelete, setOfferToDelete] = useState<any | null>(null);
   const [isDeleting, startDelete] = useTransition();
   const { toast } = useToast();
@@ -76,9 +78,9 @@ export default function OffersPage() {
     startDelete(async () => {
       const { error } = await supabase.from('offers').delete().eq('id', offerToDelete.id);
       if (error) {
-        toast({ variant: "destructive", title: "خطأ في الحذف", description: error.message });
+        toast({ variant: "destructive", title: t('menu.deleteError'), description: error.message });
       } else {
-        toast({ title: "تم حذف العرض بنجاح" });
+        toast({ title: t('offers.offerDeleted') });
         fetchOffers(restaurantId);
       }
       setOfferToDelete(null);
@@ -88,12 +90,12 @@ export default function OffersPage() {
   return (
     <>
       <div className="space-y-5">
-        <PageHeader title="إدارة العروض" description="سوّ عروض ترويجية عشان تجذب زباين أكثر.">
+        <PageHeader title={t('offers.title')} description={t('offers.subtitle')}>
           <EditOfferDialog restaurantId={restaurantId!} userId={user?.uid} branches={branches} onSave={() => restaurantId && fetchOffers(restaurantId)}>
             <button disabled={loadingData || !restaurantId}
               className="h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2">
               <PlusCircle className="h-3.5 w-3.5" />
-              عرض جديد
+              {t('offers.newOffer')}
             </button>
           </EditOfferDialog>
         </PageHeader>
@@ -124,8 +126,8 @@ export default function OffersPage() {
             <div className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
               <AlertTriangle className="h-5 w-5 text-gray-600" />
             </div>
-            <p className="text-sm font-bold text-gray-900 mb-1">لا توجد عروض</p>
-            <p className="text-[11px] text-gray-600">أضف عروض جديدة لتظهر هنا</p>
+            <p className="text-sm font-bold text-gray-900 mb-1">{t('offers.noOffers')}</p>
+            <p className="text-[11px] text-gray-600">{t('offers.addToSeeHere')}</p>
           </div>
         )}
 
@@ -144,20 +146,20 @@ export default function OffersPage() {
       </div>
 
       <AlertDialog open={!!offerToDelete} onOpenChange={(open) => !open && setOfferToDelete(null)}>
-        <AlertDialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
+        <AlertDialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir={dir}>
           <div className="px-5 pt-5 pb-3">
-            <AlertDialogTitle className="text-base font-black text-gray-900">حذف العرض</AlertDialogTitle>
+            <AlertDialogTitle className="text-base font-black text-gray-900">{t('offers.deleteOfferTitle')}</AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">
-              سيتم حذف "{offerToDelete?.title}" نهائياً
+              {t('offers.deleteConfirmPrefix')} "{offerToDelete?.title}" {t('offers.deleteConfirmSuffix')}
             </AlertDialogDescription>
           </div>
           <div className="flex flex-wrap gap-2 px-5 pb-5 pt-2">
             <AlertDialogCancel disabled={isDeleting} className="flex-1 h-10 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50">
-              إلغاء
+              {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={isDeleting}
               className="flex-1 h-10 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 disabled:opacity-50">
-              {isDeleting ? 'جاري الحذف...' : 'حذف'}
+              {isDeleting ? t('menu.deleting') : t('common.delete')}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>

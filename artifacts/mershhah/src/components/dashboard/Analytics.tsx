@@ -319,11 +319,11 @@ export default function Analytics({ ...props }) {
               </div>
             </div>
             <div className="flex justify-between mt-2 text-[9px] text-gray-600 shrink-0">
-              <span>12ص</span>
-              <span>6ص</span>
-              <span>12م</span>
-              <span>6م</span>
-              <span>11م</span>
+              <span>12{isRTL ? 'ص' : 'AM'}</span>
+              <span>6{isRTL ? 'ص' : 'AM'}</span>
+              <span>12{isRTL ? 'م' : 'PM'}</span>
+              <span>6{isRTL ? 'م' : 'PM'}</span>
+              <span>11{isRTL ? 'م' : 'PM'}</span>
             </div>
           </div>
         </div>
