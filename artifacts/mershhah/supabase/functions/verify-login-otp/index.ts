@@ -37,43 +37,64 @@ serve(async (req) => {
       return json({ error: "code is required" }, 400);
     }
 
-    const { data: otpRow, error: fetchError } = await supabase
+    // Check against every still-active code for this profile, not just the
+    // latest one - if a second code was ever requested (resend, or two
+    // overlapping sends) while an earlier one is still unexpired, a code
+    // from an older email is just as real and must still be accepted.
+    const nowIso = new Date().toISOString();
+    const { data: activeRows, error: fetchError } = await supabase
       .from("login_otp_codes")
       .select("*")
       .eq("profile_id", user.id)
       .is("verified_at", null)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .gt("expires_at", nowIso)
+      .order("created_at", { ascending: false });
 
     if (fetchError) throw fetchError;
 
-    if (!otpRow) {
-      return json({ verified: false, error: "لم يتم إرسال كود بعد. اطلب كوداً جديداً." }, 400);
+    if (!activeRows || activeRows.length === 0) {
+      // Distinguish "never sent" from "sent but expired" for a clearer message.
+      const { data: latestAny } = await supabase
+        .from("login_otp_codes")
+        .select("id")
+        .eq("profile_id", user.id)
+        .is("verified_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const message = latestAny
+        ? "انتهت صلاحية الكود. اطلب كوداً جديداً."
+        : "لم يتم إرسال كود بعد. اطلب كوداً جديداً.";
+      return json({ verified: false, error: message }, 400);
     }
 
-    if (new Date(otpRow.expires_at) < new Date()) {
-      return json({ verified: false, error: "انتهت صلاحية الكود. اطلب كوداً جديداً." }, 400);
-    }
-
-    if (otpRow.attempts >= MAX_ATTEMPTS) {
+    if (activeRows.every((r) => r.attempts >= MAX_ATTEMPTS)) {
       return json({ verified: false, error: "تجاوزت عدد المحاولات المسموح. اطلب كوداً جديداً." }, 429);
     }
 
-    if (otpRow.code !== code.trim()) {
-      await supabase
-        .from("login_otp_codes")
-        .update({ attempts: otpRow.attempts + 1 })
-        .eq("id", otpRow.id);
-      const remaining = MAX_ATTEMPTS - (otpRow.attempts + 1);
+    const trimmedCode = code.trim();
+    const matched = activeRows.find((r) => r.code === trimmedCode && r.attempts < MAX_ATTEMPTS);
+
+    if (!matched) {
+      const eligible = activeRows.filter((r) => r.attempts < MAX_ATTEMPTS);
+      await Promise.all(
+        eligible.map((r) =>
+          supabase.from("login_otp_codes").update({ attempts: r.attempts + 1 }).eq("id", r.id)
+        )
+      );
+      const remaining = Math.min(...eligible.map((r) => MAX_ATTEMPTS - (r.attempts + 1)));
       return json({ verified: false, error: `كود غير صحيح${remaining > 0 ? ` — باقي ${remaining} محاولات` : ""}` }, 400);
     }
 
     const verifiedAt = new Date().toISOString();
+    // Invalidate every other still-active code for this profile too, so a
+    // leftover valid code from an older email can't be reused after a
+    // successful login has already happened.
     await supabase
       .from("login_otp_codes")
       .update({ verified_at: verifiedAt })
-      .eq("id", otpRow.id);
+      .eq("profile_id", user.id)
+      .is("verified_at", null);
 
     // Feeds the custom access token hook, which stamps an `otp_ok` claim
     // into the JWT on the next token refresh - this is what RLS actually

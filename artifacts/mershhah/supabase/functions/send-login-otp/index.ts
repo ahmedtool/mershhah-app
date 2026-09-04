@@ -13,7 +13,7 @@ function json(body: unknown, status = 200) {
   });
 }
 
-const OTP_TTL_MINUTES = 10;
+const OTP_TTL_SECONDS = 90;
 const RESEND_COOLDOWN_SECONDS = 45;
 
 serve(async (req) => {
@@ -74,7 +74,7 @@ serve(async (req) => {
     }
 
     const code = String(Math.floor(1000 + Math.random() * 9000));
-    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+    const expiresAt = new Date(Date.now() + OTP_TTL_SECONDS * 1000);
 
     const { error: insertError } = await supabase.from("login_otp_codes").insert({
       profile_id: profile.id,
@@ -102,7 +102,7 @@ serve(async (req) => {
               <p style="font-size: 14px; color: #6b7280; margin: 0 0 24px;">مرحباً ${profile.full_name || ""}،</p>
               <p style="font-size: 14px; color: #111827; margin: 0 0 8px;">كود تسجيل الدخول إلى لوحة تحكم مرشح:</p>
               <div style="font-size: 36px; font-weight: 900; letter-spacing: 8px; color: #111827; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 16px; text-align: center; margin: 16px 0; direction: ltr;">${code}</div>
-              <p style="font-size: 12px; color: #9ca3af; margin: 0;">صالح لمدة ${OTP_TTL_MINUTES} دقائق. إذا لم تطلب تسجيل الدخول، تجاهل هذا البريد.</p>
+              <p style="font-size: 12px; color: #9ca3af; margin: 0;">صالح لمدة دقيقة ونصف (90 ثانية). إذا لم تطلب تسجيل الدخول، تجاهل هذا البريد.</p>
               <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #f0f0f0;">
                 <p style="font-size: 13px; color: #374151; margin: 0 0 2px; font-weight: 700;">فريق مرشح</p>
                 <p style="font-size: 11px; color: #9ca3af; margin: 0 0 14px;">نساعدك تدير مطعمك بذكاء</p>
