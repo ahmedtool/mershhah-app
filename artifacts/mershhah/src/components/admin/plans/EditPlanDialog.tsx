@@ -146,11 +146,11 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-              <CreditCard className="h-5 w-5 text-gray-500" />
+              <CreditCard className="h-5 w-5 text-gray-600" />
             </div>
             <div>
               <h2 className="text-base font-bold text-gray-900">{isEditing ? 'تعديل الباقة' : 'إنشاء باقة جديدة'}</h2>
-              <p className="text-xs text-gray-400 mt-0.5">{isEditing ? 'عدّل بيانات الباقة ثم احفظ' : 'أدخل بيانات الباقة الجديدة'}</p>
+              <p className="text-xs text-gray-600 mt-0.5">{isEditing ? 'عدّل بيانات الباقة ثم احفظ' : 'أدخل بيانات الباقة الجديدة'}</p>
             </div>
           </div>
         </div>
@@ -160,7 +160,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
             {/* Name & Description */}
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">اسم الباقة</FormLabel>
+                <FormLabel className="text-xs text-gray-600">اسم الباقة</FormLabel>
                 <FormControl>
                   <Input placeholder="مثال: الباقة السنوية" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                 </FormControl>
@@ -170,7 +170,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
 
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">الوصف <span className="text-gray-300">(اختياري)</span></FormLabel>
+                <FormLabel className="text-xs text-gray-600">الوصف <span className="text-gray-600">(اختياري)</span></FormLabel>
                 <FormControl>
                   <Textarea placeholder="وصف قصير للباقة..." {...field} className="rounded-xl border-gray-200 text-sm min-h-[60px] resize-none" disabled={isSaving} />
                 </FormControl>
@@ -181,11 +181,11 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
             {/* Price (yearly-only billing) */}
             <FormField control={form.control} name="price_yearly" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">السعر السنوي (ر.س) — 0 = مجانية</FormLabel>
+                <FormLabel className="text-xs text-gray-600">السعر السنوي (ر.س) — 0 = مجانية</FormLabel>
                 <FormControl>
                   <Input type="number" min={0} {...field} className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
                 </FormControl>
-                <p className="text-[10px] text-gray-300">كل الباقات سنوية فقط — لا يوجد تسعير شهري</p>
+                <p className="text-[10px] text-gray-600">كل الباقات سنوية فقط — لا يوجد تسعير شهري</p>
                 <FormMessage className="text-[10px]" />
               </FormItem>
             )} />
@@ -193,7 +193,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
             {/* Payment Link */}
             <FormField control={form.control} name="payment_link" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">رابط الدفع <span className="text-gray-300">(اختياري)</span></FormLabel>
+                <FormLabel className="text-xs text-gray-600">رابط الدفع <span className="text-gray-600">(اختياري)</span></FormLabel>
                 <FormControl>
                   <Input dir="ltr" placeholder="https://..." {...field} value={field.value ?? ''} className="h-11 rounded-xl border-gray-200 text-sm text-left" disabled={isSaving} />
                 </FormControl>
@@ -207,7 +207,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <FormField control={form.control} name="max_branches" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] text-gray-400">الفروع</FormLabel>
+                    <FormLabel className="text-[10px] text-gray-600">الفروع</FormLabel>
                     <FormControl>
                       <Input type="number" min={0} {...field} className="h-10 rounded-lg border-gray-200 text-xs" dir="ltr" disabled={isSaving} />
                     </FormControl>
@@ -216,7 +216,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
                 )} />
                 <FormField control={form.control} name="max_menu_items" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] text-gray-400">أصناف المنيو</FormLabel>
+                    <FormLabel className="text-[10px] text-gray-600">أصناف المنيو</FormLabel>
                     <FormControl>
                       <Input type="number" min={0} {...field} className="h-10 rounded-lg border-gray-200 text-xs" dir="ltr" disabled={isSaving} />
                     </FormControl>
@@ -225,7 +225,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
                 )} />
                 <FormField control={form.control} name="max_tools" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] text-gray-400">الأدوات</FormLabel>
+                    <FormLabel className="text-[10px] text-gray-600">الأدوات</FormLabel>
                     <FormControl>
                       <Input type="number" min={0} {...field} className="h-10 rounded-lg border-gray-200 text-xs" dir="ltr" disabled={isSaving} />
                     </FormControl>
@@ -243,7 +243,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
                   <FormField key={key} control={form.control} name={key} render={({ field }) => (
                     <FormItem>
                       <button type="button" onClick={() => field.onChange(!field.value)}
-                        className={`w-full h-10 rounded-lg text-[11px] font-medium transition-all border ${field.value ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}>
+                        className={`w-full h-10 rounded-lg text-[11px] font-medium transition-all border ${field.value ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
                         {FEATURE_LABELS[key]}
                       </button>
                     </FormItem>
@@ -257,7 +257,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
               <FormField control={form.control} name="is_active" render={({ field }) => (
                 <FormItem>
                   <button type="button" onClick={() => field.onChange(!field.value)}
-                    className={`w-full h-11 rounded-xl text-xs font-medium transition-all border ${field.value ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}>
+                    className={`w-full h-11 rounded-xl text-xs font-medium transition-all border ${field.value ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
                     {field.value ? 'نشطة' : 'غير نشطة'}
                   </button>
                 </FormItem>
@@ -265,7 +265,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
               <FormField control={form.control} name="is_featured" render={({ field }) => (
                 <FormItem>
                   <button type="button" onClick={() => field.onChange(!field.value)}
-                    className={`w-full h-11 rounded-xl text-xs font-medium transition-all border ${field.value ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}>
+                    className={`w-full h-11 rounded-xl text-xs font-medium transition-all border ${field.value ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
                     {field.value ? 'موصى بها' : 'غير موصى بها'}
                   </button>
                 </FormItem>

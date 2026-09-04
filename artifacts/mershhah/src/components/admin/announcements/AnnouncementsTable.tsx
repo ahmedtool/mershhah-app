@@ -51,7 +51,7 @@ export function AnnouncementsTable({ announcements, onActionComplete }: Announce
       <div className="bg-white border border-gray-100 rounded-2xl p-10 text-center">
         <Megaphone className="h-8 w-8 text-gray-200 mx-auto mb-3" />
         <p className="text-sm font-bold text-gray-900 mb-1">لا توجد إعلانات</p>
-        <p className="text-[11px] text-gray-400">أنشئ إعلاناً جديداً ليظهر لأصحاب المطاعم</p>
+        <p className="text-[11px] text-gray-600">أنشئ إعلاناً جديداً ليظهر لأصحاب المطاعم</p>
       </div>
     );
   }
@@ -76,20 +76,20 @@ export function AnnouncementsTable({ announcements, onActionComplete }: Announce
                     title={ann.isActive ? "نشط" : "غير نشط"}
                   />
                 </div>
-                <p className="text-[11px] text-gray-400 mt-0.5 truncate">{ann.content}</p>
+                <p className="text-[11px] text-gray-600 mt-0.5 truncate">{ann.content}</p>
               </div>
 
               <span className={cn("hidden sm:inline-flex shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full", config.tileBg, config.tileColor)}>
                 {config.text}
               </span>
 
-              <span className="hidden md:inline text-[10px] text-gray-400 shrink-0 w-20 text-center">
+              <span className="hidden md:inline text-[10px] text-gray-600 shrink-0 w-20 text-center">
                 {ann.createdAt ? format(new Date(ann.createdAt), 'd MMM yyyy', { locale: arSA }) : '-'}
               </span>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+                  <button className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-gray-600 transition-colors">
                     <MoreHorizontal className="h-4 w-4" />
                   </button>
                 </DropdownMenuTrigger>
@@ -113,7 +113,7 @@ export function AnnouncementsTable({ announcements, onActionComplete }: Announce
         <AlertDialogContent className="sm:max-w-md p-0 gap-0" dir="rtl">
           <div className="px-5 pt-5 pb-3 border-b border-gray-100">
             <AlertDialogTitle className="text-base font-bold text-gray-900">حذف "{announcementToDelete?.title}"</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs text-gray-400 mt-0.5">لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
+            <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">لا يمكن التراجع عن هذا الإجراء.</AlertDialogDescription>
           </div>
           <div className="flex gap-2 px-5 pb-5 pt-3">
             <AlertDialogCancel disabled={isDeleting} className="flex-1 h-10 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50">

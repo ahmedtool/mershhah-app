@@ -115,7 +115,7 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
             <div className="w-full max-w-5xl mx-auto p-4 py-10" dir="rtl">
                 <div className="text-center mb-10">
                     <h2 className="text-3xl font-bold mb-2 text-gray-900">باقي خطوة واحدة لتفعيل حسابك!</h2>
-                    <p className="text-gray-400 max-w-2xl mx-auto">شكراً لتسجيلك في مرشح. اختر الباقة التي تناسب مرحلة نمو مشروعك.</p>
+                    <p className="text-gray-600 max-w-2xl mx-auto">شكراً لتسجيلك في مرشح. اختر الباقة التي تناسب مرحلة نمو مشروعك.</p>
                 </div>
                 <PlanPricingGrid />
             </div>

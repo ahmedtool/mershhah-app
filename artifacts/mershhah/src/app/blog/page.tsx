@@ -58,7 +58,7 @@ export default function BlogPage() {
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 rounded-2xl" />)}
           </div>
         ) : posts.length === 0 ? (
-          <p className="text-center text-gray-400 text-sm mt-16">لا توجد مقالات منشورة بعد</p>
+          <p className="text-center text-gray-600 text-sm mt-16">لا توجد مقالات منشورة بعد</p>
         ) : (
           <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-12">
             {posts.map((post) => (

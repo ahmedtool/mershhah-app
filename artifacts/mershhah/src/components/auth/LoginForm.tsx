@@ -148,13 +148,13 @@ export function LoginForm() {
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
       {/* Email */}
       <div>
-        <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">البريد الإلكتروني</label>
+        <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">البريد الإلكتروني</label>
         <input
           type="email"
           placeholder="بريدك@example.com"
           {...form.register('email')}
           disabled={isLoading}
-          className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300 disabled:opacity-50"
+          className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300 disabled:opacity-50"
         />
         {form.formState.errors.email && <p className="text-[10px] text-red-500 mt-1">{form.formState.errors.email.message}</p>}
       </div>
@@ -162,8 +162,8 @@ export function LoginForm() {
       {/* Password */}
       <div>
         <div className="flex justify-between items-center mb-1.5">
-          <label className="text-[11px] font-bold text-gray-500">كلمة المرور</label>
-          <Link href="/forgot-password" className="text-[10px] text-gray-400 hover:text-gray-600">نسيت كلمة المرور؟</Link>
+          <label className="text-[11px] font-bold text-gray-600">كلمة المرور</label>
+          <Link href="/forgot-password" className="text-[10px] text-gray-600 hover:text-gray-600">نسيت كلمة المرور؟</Link>
         </div>
         <div className="relative">
           <input
@@ -171,10 +171,10 @@ export function LoginForm() {
             placeholder="••••••••"
             {...form.register('password')}
             disabled={isLoading}
-            className="w-full h-10 px-3 pl-9 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300 disabled:opacity-50"
+            className="w-full h-10 px-3 pl-9 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300 disabled:opacity-50"
           />
           <button type="button" onClick={() => setShowPassword(p => !p)}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-600">
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>

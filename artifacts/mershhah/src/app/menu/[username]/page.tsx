@@ -257,7 +257,7 @@ export default function PublicMenuPage() {
 
   if (!restaurant) return (
     <div className="h-screen w-full flex flex-col items-center justify-center bg-white text-center p-6 space-y-5">
-      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">
         <Info size={28} />
       </div>
       <h1 className="text-lg font-bold text-gray-900">المطعم غير موجود</h1>
@@ -277,7 +277,7 @@ export default function PublicMenuPage() {
         <Button
           variant="ghost"
           size="icon"
-          className="w-9 h-9 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+          className="w-9 h-9 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100"
           onClick={() => router.back()}
         >
           <ChevronRight className="h-5 w-5" />
@@ -298,7 +298,7 @@ export default function PublicMenuPage() {
         <div>
           <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
           {restaurant.description && (
-            <p className="text-sm text-gray-400 mt-0.5 line-clamp-1">{restaurant.description}</p>
+            <p className="text-sm text-gray-600 mt-0.5 line-clamp-1">{restaurant.description}</p>
           )}
         </div>
       </div>
@@ -307,7 +307,7 @@ export default function PublicMenuPage() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300 pointer-events-none" />
+          <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
           <Input
             placeholder="ابحث في القائمة..."
             className="w-full h-11 rounded-xl bg-gray-50 border border-gray-100 text-sm pr-10 pl-4 focus-visible:ring-1 focus-visible:ring-gray-200 focus-visible:border-gray-200"
@@ -326,7 +326,7 @@ export default function PublicMenuPage() {
                 "shrink-0 px-4 h-8 rounded-full text-xs font-medium transition-colors",
                 activeCategory === cat
                   ? "text-white"
-                  : "bg-gray-50 text-gray-500 hover:bg-gray-100"
+                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
               )}
               style={activeCategory === cat ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : {}}
             >
@@ -359,14 +359,14 @@ export default function PublicMenuPage() {
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-semibold text-gray-900 truncate">{item.name}</h3>
                       {item.description && (
-                        <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{item.description}</p>
+                        <p className="text-xs text-gray-600 mt-0.5 line-clamp-1">{item.description}</p>
                       )}
                       <div className="flex items-center gap-2 mt-1.5">
                         <p className="text-xs font-medium" style={{ color: primaryColor }}>
                           {getPriceDisplay(item)}
                         </p>
                         {!!item.review_count && (
-                          <span className="flex items-center gap-0.5 text-[10px] text-gray-400">
+                          <span className="flex items-center gap-0.5 text-[10px] text-gray-600">
                             <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
                             {item.rating?.toFixed(1)} ({item.review_count})
                           </span>
@@ -391,10 +391,10 @@ export default function PublicMenuPage() {
 
         {filteredItems.length === 0 && (
           <div className="text-center py-20 space-y-3">
-            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto text-gray-300">
+            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto text-gray-600">
               <Search size={24} />
             </div>
-            <p className="text-sm text-gray-400">لا توجد نتائج</p>
+            <p className="text-sm text-gray-600">لا توجد نتائج</p>
           </div>
         )}
       </div>
@@ -424,7 +424,7 @@ export default function PublicMenuPage() {
                 <div className="flex-1 min-w-0 text-right">
                   <h2 className="text-base font-bold text-gray-900">{activeItem.name}</h2>
                   {activeItem.description && (
-                    <p className="text-sm text-gray-400 leading-relaxed mt-1">{activeItem.description}</p>
+                    <p className="text-sm text-gray-600 leading-relaxed mt-1">{activeItem.description}</p>
                   )}
                 </div>
                 <span className="text-sm font-bold shrink-0 pt-0.5" style={{ color: primaryColor }}>
@@ -440,10 +440,10 @@ export default function PublicMenuPage() {
                   <div className="flex items-center gap-1.5">
                     <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
                     <span className="text-sm font-bold text-gray-900">{activeItem.rating?.toFixed(1)}</span>
-                    <span className="text-xs text-gray-400">({activeItem.review_count} تقييم)</span>
+                    <span className="text-xs text-gray-600">({activeItem.review_count} تقييم)</span>
                   </div>
                 ) : (
-                  <span className="text-xs text-gray-300">لا يوجد تقييم بعد</span>
+                  <span className="text-xs text-gray-600">لا يوجد تقييم بعد</span>
                 )}
                 {!showRatingForm && (
                   <button
@@ -508,7 +508,7 @@ export default function PublicMenuPage() {
               {Array.isArray(activeItem.sizes) && activeItem.sizes.length > 0 && (
                 <div dir="rtl" className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-gray-500">الحجم</p>
+                    <p className="text-xs font-semibold text-gray-600">الحجم</p>
                   </div>
                   <div className="flex gap-0 overflow-x-auto no-scrollbar pb-1 snap-x snap-mandatory">
                     {activeItem.sizes.map((size) => {
@@ -522,7 +522,7 @@ export default function PublicMenuPage() {
                             "shrink-0 px-6 py-3 snap-center transition-all duration-200 border-b-2",
                             isActive
                               ? "border-current"
-                              : "border-transparent text-gray-300"
+                              : "border-transparent text-gray-600"
                           )}
                           style={isActive ? { borderColor: primaryColor, color: primaryColor } : {}}
                         >
@@ -542,7 +542,7 @@ export default function PublicMenuPage() {
               {/* Suggestions */}
               {activeSuggestions.length > 0 && (
                 <div dir="rtl" className="space-y-3">
-                  <p className="text-xs font-semibold text-gray-500 text-right">يقترح معه</p>
+                  <p className="text-xs font-semibold text-gray-600 text-right">يقترح معه</p>
                   <div className="grid grid-cols-3 gap-3">
                     {activeSuggestions.map((sug) => (
                       <button

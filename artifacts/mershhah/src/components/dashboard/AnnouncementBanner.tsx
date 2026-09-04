@@ -92,7 +92,7 @@ export function AnnouncementBanner() {
             </div>
             <button
               onClick={handleDismiss}
-              className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-400 hover:bg-black/5 hover:text-gray-600 transition-colors"
+              className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:bg-black/5 hover:text-gray-600 transition-colors"
             >
               <X className="h-4 w-4" />
             </button>

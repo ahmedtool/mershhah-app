@@ -157,15 +157,15 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
             <div className="px-5 pt-5 pb-3 border-b border-gray-100 space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                  <Library className="h-5 w-5 text-gray-500" />
+                  <Library className="h-5 w-5 text-gray-600" />
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-gray-900">المكتبة المشتركة</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">اختر منتجاً جاهزاً بصورته وسعراته الحرارية</p>
+                  <p className="text-xs text-gray-600 mt-0.5">اختر منتجاً جاهزاً بصورته وسعراته الحرارية</p>
                 </div>
               </div>
               <div className="relative">
-                <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
+                <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث عن منتج..." className="h-10 rounded-xl border-gray-200 text-sm pe-9" />
               </div>
             </div>
@@ -173,10 +173,10 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
             <div className="p-5">
               {isLoading ? (
                 <div className="flex items-center justify-center py-10">
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-300" />
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
                 </div>
               ) : filteredProducts.length === 0 ? (
-                <p className="text-center text-sm text-gray-400 py-10">لا توجد منتجات مطابقة</p>
+                <p className="text-center text-sm text-gray-600 py-10">لا توجد منتجات مطابقة</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {filteredProducts.map((product) => (
@@ -191,7 +191,7 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
                       </div>
                       <div className="p-2">
                         <p className="text-xs font-bold text-gray-900 truncate">{product.name}</p>
-                        {!!product.calories && <p className="text-[10px] text-gray-400">{product.calories} سعرة</p>}
+                        {!!product.calories && <p className="text-[10px] text-gray-600">{product.calories} سعرة</p>}
                       </div>
                     </button>
                   ))}
@@ -213,9 +213,9 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-gray-200/50 transition-colors" onClick={() => fileInputRef.current?.click()}>
                   <div className="w-14 h-14 rounded-2xl bg-gray-200 flex items-center justify-center">
-                    <UploadCloud className="h-6 w-6 text-gray-400" />
+                    <UploadCloud className="h-6 w-6 text-gray-600" />
                   </div>
-                  <p className="text-sm text-gray-400">اضغط لرفع صورة</p>
+                  <p className="text-sm text-gray-600">اضغط لرفع صورة</p>
                 </div>
               )}
               <button type="button" onClick={() => fileInputRef.current?.click()}
@@ -226,24 +226,24 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
 
             <div className="p-5 space-y-4">
-              <button type="button" onClick={() => setSelected(null)} className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors">
+              <button type="button" onClick={() => setSelected(null)} className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-700 transition-colors">
                 <ArrowRight className="h-3.5 w-3.5" />
                 رجوع للمكتبة
               </button>
 
               <div>
                 <h3 className="text-base font-bold text-gray-900">{selected.name}</h3>
-                {!!selected.calories && <p className="text-xs text-gray-400 mt-0.5">{selected.calories} سعرة حرارية</p>}
+                {!!selected.calories && <p className="text-xs text-gray-600 mt-0.5">{selected.calories} سعرة حرارية</p>}
               </div>
 
               <div>
-                <label className="text-xs text-gray-500 block mb-1.5">التصنيف في منيوك</label>
+                <label className="text-xs text-gray-600 block mb-1.5">التصنيف في منيوك</label>
                 <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="مثال: مشروبات" className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                 {uniqueCategories.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {uniqueCategories.map((cat) => (
                       <button key={cat} type="button" onClick={() => setCategory(cat)}
-                        className={`px-2 py-0.5 rounded-full text-[10px] transition-colors ${category === cat ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                        className={`px-2 py-0.5 rounded-full text-[10px] transition-colors ${category === cat ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                         {cat}
                       </button>
                     ))}
@@ -253,11 +253,11 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1.5">السعر (ر.س)</label>
+                  <label className="text-xs text-gray-600 block mb-1.5">السعر (ر.س)</label>
                   <Input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-500 block mb-1.5">التكلفة (اختياري)</label>
+                  <label className="text-xs text-gray-600 block mb-1.5">التكلفة (اختياري)</label>
                   <Input type="number" min={0} step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0" className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
                 </div>
               </div>

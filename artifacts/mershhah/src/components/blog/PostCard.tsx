@@ -15,11 +15,11 @@ export function PostCard({ post }: { post: any }) {
   return (
     <div className="bg-white border border-gray-100 rounded-2xl p-6 flex flex-col hover:border-gray-200 transition-colors">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-1.5 text-[10px] text-gray-300">
+        <div className="flex items-center gap-1.5 text-[10px] text-gray-600">
           <Calendar className="h-3 w-3" />
           <span>{formattedDate}</span>
         </div>
-        <div className="flex items-center gap-1.5 text-[10px] text-gray-300">
+        <div className="flex items-center gap-1.5 text-[10px] text-gray-600">
           <Clock className="h-3 w-3" />
           <span>{post.metadata.readingTime}</span>
         </div>
@@ -31,13 +31,13 @@ export function PostCard({ post }: { post: any }) {
         </Link>
       </h3>
 
-      <p className="text-xs text-gray-400 leading-relaxed line-clamp-3 mb-4 flex-1">
+      <p className="text-xs text-gray-600 leading-relaxed line-clamp-3 mb-4 flex-1">
         {post.metadata.description}
       </p>
 
       <Link
         href={`/blog/${post.slug}`}
-        className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors mt-auto"
+        className="flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-gray-700 transition-colors mt-auto"
       >
         <span>اقرأ المزيد</span>
         <ArrowLeft className="h-3 w-3 rotate-180" />

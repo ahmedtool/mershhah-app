@@ -438,11 +438,11 @@ export default function CustomizePage() {
                 {/* Branding */}
                 <AccordionItem value="branding" className="border border-gray-100 rounded-2xl px-4 bg-white">
                     <AccordionTrigger className="font-bold hover:no-underline text-right text-sm text-gray-900 py-4">
-                        <div className="flex items-center gap-2"><Layout className="h-4 w-4 text-gray-400"/> الهوية البصرية</div>
+                        <div className="flex items-center gap-2"><Layout className="h-4 w-4 text-gray-600"/> الهوية البصرية</div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-5 pb-5 text-right">
                         <div className="space-y-2">
-                            <Label className="text-[11px] text-gray-400">شعار التطبيق</Label>
+                            <Label className="text-[11px] text-gray-600">شعار التطبيق</Label>
                             <div className="relative w-28 h-28 mx-auto border border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 cursor-pointer overflow-hidden group" onClick={() => fileInputRef.current?.click()}>
                                 <StorageImage imagePath={logoPreview} alt="Logo" fill className="object-contain p-2" sizes="112px" />
                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">تغيير</div>
@@ -450,12 +450,12 @@ export default function CustomizePage() {
                             <input type="file" ref={fileInputRef} onChange={e => { if(e.target.files?.[0]) { setLogoFile(e.target.files[0]); setLogoPreview(URL.createObjectURL(e.target.files[0])); } }} className="hidden" accept="image/*" />
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] text-gray-400">اسم المطعم</Label>
+                            <Label className="text-[11px] text-gray-600">اسم المطعم</Label>
                             <Input value={settings.name} onChange={e => setSettings({...settings, name: e.target.value})}
                               className="h-10 rounded-xl border-gray-200 text-xs text-right" />
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] text-gray-400">اسم المستخدم (للرابط)</Label>
+                            <Label className="text-[11px] text-gray-600">اسم المستخدم (للرابط)</Label>
                             <Input
                                 dir="ltr"
                                 value={settings.username ?? ''}
@@ -470,7 +470,7 @@ export default function CustomizePage() {
                                     return daysSince < 30;
                                 })()}
                             />
-                            <p className="text-[10px] text-gray-300">
+                            <p className="text-[10px] text-gray-600">
                                 {settings.username ? (
                                   <>mershhah.com/{settings.username}</>
                                 ) : (
@@ -479,7 +479,7 @@ export default function CustomizePage() {
                             </p>
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] text-gray-400">الوصف</Label>
+                            <Label className="text-[11px] text-gray-600">الوصف</Label>
                             <Textarea value={settings.description || ''} onChange={e => setSettings({...settings, description: e.target.value})}
                               rows={2} className="rounded-xl border-gray-200 text-xs text-right resize-none" />
                         </div>
@@ -489,7 +489,7 @@ export default function CustomizePage() {
                 {/* Colors */}
                 <AccordionItem value="colors" className="border border-gray-100 rounded-2xl px-4 bg-white">
                     <AccordionTrigger className="font-bold hover:no-underline text-right text-sm text-gray-900 py-4">
-                        <div className="flex items-center gap-2"><Palette className="h-4 w-4 text-gray-400"/> الألوان</div>
+                        <div className="flex items-center gap-2"><Palette className="h-4 w-4 text-gray-600"/> الألوان</div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pb-5 text-right">
                         <button
@@ -520,7 +520,7 @@ export default function CustomizePage() {
 
                         {/* Font */}
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] text-gray-400">الخط</Label>
+                            <Label className="text-[11px] text-gray-600">الخط</Label>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                                 {FONT_OPTIONS.map(font => (
                                     <button key={font.id} type="button"
@@ -530,7 +530,7 @@ export default function CustomizePage() {
                                             "h-14 rounded-xl border text-center transition-colors flex flex-col items-center justify-center gap-0.5",
                                             (settings.fontFamily || 'IBM Plex Sans Arabic') === font.id
                                                 ? "bg-gray-900 border-gray-900 text-white"
-                                                : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+                                                : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
                                         )}>
                                         <span className="text-sm">{font.sample}</span>
                                         <span className="text-[9px] opacity-70">{font.label}</span>
@@ -541,7 +541,7 @@ export default function CustomizePage() {
 
                         {/* Corner radius */}
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] text-gray-400">انحناء الحواف</Label>
+                            <Label className="text-[11px] text-gray-600">انحناء الحواف</Label>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                                 {RADIUS_PRESETS.map(preset => (
                                     <button key={preset.id} type="button"
@@ -556,7 +556,7 @@ export default function CustomizePage() {
                                             className={cn("w-5 h-5 border-2", (settings.borderRadius ?? 16) === preset.value ? "border-white" : "border-gray-400")}
                                             style={{ borderRadius: `${Math.min(preset.value, 10)}px` }}
                                         />
-                                        <span className={cn("text-[9px]", (settings.borderRadius ?? 16) === preset.value ? "text-white/70" : "text-gray-400")}>{preset.label}</span>
+                                        <span className={cn("text-[9px]", (settings.borderRadius ?? 16) === preset.value ? "text-white/70" : "text-gray-600")}>{preset.label}</span>
                                     </button>
                                 ))}
                             </div>
@@ -567,7 +567,7 @@ export default function CustomizePage() {
                 {/* Apps */}
                 <AccordionItem value="apps" className="border border-gray-100 rounded-2xl px-4 bg-white">
                     <AccordionTrigger className="font-bold hover:no-underline text-right text-sm text-gray-900 py-4">
-                        <div className="flex items-center gap-2"><AppWindow className="h-4 w-4 text-gray-400"/> التطبيقات</div>
+                        <div className="flex items-center gap-2"><AppWindow className="h-4 w-4 text-gray-600"/> التطبيقات</div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-5 pb-5 text-right">
                       {branches.length > 0 ? (
@@ -584,7 +584,7 @@ export default function CustomizePage() {
                                       <button key={app.id} type="button"
                                           className={cn(
                                               "h-8 gap-1.5 text-[10px] font-bold rounded-lg px-3 flex items-center border transition-colors",
-                                              isActive ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                                              isActive ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                                           )}
                                           onClick={() => toggleBranchApp(app)}
                                       >
@@ -601,7 +601,7 @@ export default function CustomizePage() {
                               <div key={app.id} className="space-y-2 border-t border-gray-100 pt-3">
                                   <div className="flex items-center justify-between">
                                       <button type="button" onClick={() => copyAppLinkToAllBranches(app.id)}
-                                          className="text-[10px] font-bold text-gray-400 hover:text-gray-900 flex items-center gap-1 transition-colors">
+                                          className="text-[10px] font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1 transition-colors">
                                           <Copy className="h-3 w-3" /> نسخ لكل الفروع
                                       </button>
                                       <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
@@ -614,7 +614,7 @@ export default function CustomizePage() {
                                           const entry = branch.applications.find((a: any) => a.platformId === app.id);
                                           return (
                                               <div key={branch.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
-                                                  <span className="text-[10px] font-bold text-gray-500 w-16 shrink-0 truncate">{branch.name}</span>
+                                                  <span className="text-[10px] font-bold text-gray-600 w-16 shrink-0 truncate">{branch.name}</span>
                                                   <Input dir="ltr" value={entry?.value || ''} onChange={e => updateBranchAppValue(branch.id, app.id, e.target.value)}
                                                       placeholder="https://..." className="h-8 text-[10px] rounded-lg border-gray-200 flex-1" />
                                               </div>
@@ -623,8 +623,8 @@ export default function CustomizePage() {
                                   </div>
                               </div>
                           ))}
-                          <p className="text-[10px] text-gray-300 pt-1">
-                              تبي تضيف فرع جديد أو تعدّل بياناته؟ <Link href="/owner/branches" className="text-gray-500 underline">من صفحة الفروع</Link>.
+                          <p className="text-[10px] text-gray-600 pt-1">
+                              تبي تضيف فرع جديد أو تعدّل بياناته؟ <Link href="/owner/branches" className="text-gray-600 underline">من صفحة الفروع</Link>.
                           </p>
                         </>
                       ) : (
@@ -636,7 +636,7 @@ export default function CustomizePage() {
                                     <button key={app.id}
                                         className={cn(
                                             "h-8 gap-1.5 text-[10px] font-bold rounded-lg px-3 flex items-center border transition-colors",
-                                            isAdded ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                                            isAdded ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                                         )}
                                         onClick={() => toggleGlobalApp(app)}
                                     >
@@ -652,7 +652,7 @@ export default function CustomizePage() {
                         <div className="space-y-3">
                             <div className="flex justify-between items-center flex-row-reverse">
                                 <h4 className="text-xs font-bold text-gray-900">تطبيقات خاصة</h4>
-                                <button onClick={addCustomApp} className="text-[10px] font-bold text-gray-400 hover:text-gray-900 flex items-center gap-1 transition-colors">
+                                <button onClick={addCustomApp} className="text-[10px] font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1 transition-colors">
                                     <PlusCircle className="h-3 w-3" /> إضافة
                                 </button>
                             </div>
@@ -668,7 +668,7 @@ export default function CustomizePage() {
                                         <div className="flex-1 min-w-0">
                                             {app.type === 'global' ? <p className="text-[11px] font-bold text-gray-900">{app.name}</p> : <Input value={app.name} onChange={e => updateAppField(app.id, 'name', e.target.value)} className="h-8 text-[11px] font-bold text-right rounded-lg border-gray-200" />}
                                         </div>
-                                        <button onClick={() => removeApp(app.id)} className="text-gray-300 hover:text-red-500 transition-colors p-1"><X size={12} /></button>
+                                        <button onClick={() => removeApp(app.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1"><X size={12} /></button>
                                     </div>
                                     <Input dir="ltr" value={app.value} onChange={e => updateAppField(app.id, 'value', e.target.value)} placeholder="https://..." className="h-8 text-[10px] rounded-lg border-gray-200" />
                                     {app.type === 'custom' && <input type="file" ref={el => { appLogoInputRefs.current[app.id] = el; }} onChange={e => e.target.files?.[0] && handleAppLogoChange(app.id, e.target.files[0])} className="hidden" accept="image/*" />}
@@ -683,13 +683,13 @@ export default function CustomizePage() {
                 {/* Social */}
                 <AccordionItem value="social" className="border border-gray-100 rounded-2xl px-4 bg-white">
                     <AccordionTrigger className="font-bold hover:no-underline text-right text-sm text-gray-900 py-4">
-                        <div className="flex items-center gap-2"><LinkIcon className="h-4 w-4 text-gray-400"/> التواصل الاجتماعي</div>
+                        <div className="flex items-center gap-2"><LinkIcon className="h-4 w-4 text-gray-600"/> التواصل الاجتماعي</div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pb-5 text-right">
                         <div className="flex flex-wrap gap-1.5 justify-end">
                             {SOCIAL_PLATFORMS.map(p => (
                                 <button key={p.value}
-                                    className="h-8 gap-1.5 text-[10px] font-bold rounded-lg px-3 flex items-center border border-gray-200 text-gray-500 hover:border-gray-300 transition-colors disabled:opacity-30"
+                                    className="h-8 gap-1.5 text-[10px] font-bold rounded-lg px-3 flex items-center border border-gray-200 text-gray-600 hover:border-gray-300 transition-colors disabled:opacity-30"
                                     onClick={() => addSocialLink(p.value)}
                                     disabled={(settings.socialLinks || []).some((l: any) => l.platform === p.value && p.value !== 'website')}
                                 >
@@ -708,7 +708,7 @@ export default function CustomizePage() {
                                             <Icon size={14} style={{ color: platform?.color }} />
                                         </div>
                                         <Input dir="ltr" value={link.value} onChange={e => updateSocialLink(link.id, e.target.value)} placeholder="الرابط..." className="h-8 text-[10px] rounded-lg border-gray-200 flex-1" />
-                                        <button onClick={() => removeSocialLink(link.id)} className="text-gray-300 hover:text-red-500 transition-colors p-1"><X size={12}/></button>
+                                        <button onClick={() => removeSocialLink(link.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1"><X size={12}/></button>
                                     </div>
                                 )
                             })}
@@ -733,14 +733,14 @@ export default function CustomizePage() {
                     sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
                   />
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-gray-300 text-xs p-6 text-center">
+                  <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-gray-600 text-xs p-6 text-center">
                     <Smartphone className="h-10 w-10 mb-3 text-gray-200" />
-                    <p className="font-bold text-gray-400">احفظ اسم المستخدم أولاً</p>
+                    <p className="font-bold text-gray-600">احفظ اسم المستخدم أولاً</p>
                   </div>
                 )}
               </div>
             </div>
-            <p className="text-[10px] text-gray-300 text-center mt-3 flex items-center justify-center gap-1.5">
+            <p className="text-[10px] text-gray-600 text-center mt-3 flex items-center justify-center gap-1.5">
                 <Smartphone className="h-3 w-3"/> معاينة حية
             </p>
           </div>

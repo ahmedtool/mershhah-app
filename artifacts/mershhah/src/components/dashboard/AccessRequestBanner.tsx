@@ -66,7 +66,7 @@ export function AccessRequestBanner() {
       </div>
       <div className="flex-1">
         <p className="text-sm font-bold text-gray-900">{adminName} من فريق الدعم يطلب دخول مؤقت لحسابك</p>
-        <p className="text-xs text-gray-500 mt-0.5">
+        <p className="text-xs text-gray-600 mt-0.5">
           {request.reason ? `السبب: ${request.reason} — ` : ''}
           لو وافقت، بيقدر يدخل لوحة تحكمك لمدة 24 ساعة بس عشان يساعدك.
         </p>

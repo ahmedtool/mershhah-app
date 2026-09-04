@@ -21,7 +21,7 @@ export default function TermsPage() {
       <main className="py-16 sm:py-24 px-4">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-2xl sm:text-3xl font-black text-gray-900 mb-3">الشروط والأحكام</h1>
-          <p className="text-xs text-gray-400 mb-10 leading-relaxed">
+          <p className="text-xs text-gray-600 mb-10 leading-relaxed">
             مرحبًا بك في منصة «مرشح». يرجى قراءة الشروط التالية بعناية قبل استخدام الخدمة. باستخدامك للمنصة فإنك تقبل الالتزام بهذه الشروط بالكامل.
           </p>
 
@@ -29,12 +29,12 @@ export default function TermsPage() {
             {sections.map((s, i) => (
               <div key={i}>
                 <h2 className="text-sm font-bold text-gray-900 mb-2">{s.title}</h2>
-                <p className="text-xs text-gray-400 leading-relaxed">{s.content}</p>
+                <p className="text-xs text-gray-600 leading-relaxed">{s.content}</p>
               </div>
             ))}
           </div>
 
-          <p className="text-[10px] text-gray-300 mt-10">ننصح بمراجعة هذه الصفحة دوريًا للاطلاع على أي تحديثات.</p>
+          <p className="text-[10px] text-gray-600 mt-10">ننصح بمراجعة هذه الصفحة دوريًا للاطلاع على أي تحديثات.</p>
         </div>
       </main>
 

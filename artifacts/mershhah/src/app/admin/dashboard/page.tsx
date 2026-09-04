@@ -175,7 +175,7 @@ export default function AdminDashboardPage() {
       {/* Header */}
       <div>
         <h1 className="text-lg font-bold text-gray-900">لوحة التحكم</h1>
-        <p className="text-xs text-gray-400 mt-0.5">نظرة عامة على أداء ونمو المنصة</p>
+        <p className="text-xs text-gray-600 mt-0.5">نظرة عامة على أداء ونمو المنصة</p>
       </div>
 
       {/* Main Stats */}
@@ -199,7 +199,7 @@ export default function AdminDashboardPage() {
                 </div>
                 <span className="text-2xl font-bold text-gray-900">{stat.value}</span>
               </div>
-              <p className="text-[11px] text-gray-400">{stat.label}</p>
+              <p className="text-[11px] text-gray-600">{stat.label}</p>
             </div>
           );
         })}
@@ -214,7 +214,7 @@ export default function AdminDashboardPage() {
           </div>
           <div>
             <p className="text-3xl font-bold text-gray-900">{stats.avgRating}</p>
-            <p className="text-[11px] text-gray-400">متوسط التقييم من {stats.totalReviews} تقييم</p>
+            <p className="text-[11px] text-gray-600">متوسط التقييم من {stats.totalReviews} تقييم</p>
           </div>
         </div>
 
@@ -225,13 +225,13 @@ export default function AdminDashboardPage() {
           </div>
           <div>
             <p className="text-3xl font-bold text-gray-900">{stats.totalApplications}</p>
-            <p className="text-[11px] text-gray-400">تطبيق متاح للمطاعم</p>
+            <p className="text-[11px] text-gray-600">تطبيق متاح للمطاعم</p>
           </div>
         </div>
 
         {/* Top Restaurant */}
         <div className="rounded-2xl border border-gray-100 p-5">
-          <p className="text-xs font-bold text-gray-500 mb-3">أكثر المطاعم زيارة</p>
+          <p className="text-xs font-bold text-gray-600 mb-3">أكثر المطاعم زيارة</p>
           {topRestaurants.length > 0 ? (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center text-white text-xs font-bold shrink-0">
@@ -239,11 +239,11 @@ export default function AdminDashboardPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-gray-900 truncate">{topRestaurants[0].name}</p>
-                <p className="text-[10px] text-gray-400">{topRestaurants[0].visits} زيارة · {topRestaurants[0].dishes} طبق · {topRestaurants[0].reviews} تقييم</p>
+                <p className="text-[10px] text-gray-600">{topRestaurants[0].visits} زيارة · {topRestaurants[0].dishes} طبق · {topRestaurants[0].reviews} تقييم</p>
               </div>
             </div>
           ) : (
-            <p className="text-xs text-gray-300">لا توجد بيانات</p>
+            <p className="text-xs text-gray-600">لا توجد بيانات</p>
           )}
         </div>
       </div>
@@ -257,13 +257,13 @@ export default function AdminDashboardPage() {
           <div className="divide-y divide-gray-50">
             {topRestaurants.map((r, i) => (
               <div key={i} className="flex items-center gap-3 px-5 py-3">
-                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-600 shrink-0">
                   {i + 1}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-gray-700 truncate">{r.name}</p>
                 </div>
-                <div className="flex items-center gap-3 text-[10px] text-gray-400 shrink-0">
+                <div className="flex items-center gap-3 text-[10px] text-gray-600 shrink-0">
                   <span>{r.visits} زيارة</span>
                   <span>{r.dishes} طبق</span>
                   <span>{r.reviews} تقييم</span>
@@ -282,10 +282,10 @@ export default function AdminDashboardPage() {
         {activities.length === 0 ? (
           <div className="py-16 text-center">
             <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
-              <Sparkles className="h-6 w-6 text-gray-300" />
+              <Sparkles className="h-6 w-6 text-gray-600" />
             </div>
-            <p className="text-xs font-bold text-gray-400">لا يوجد نشاط مسجل</p>
-            <p className="text-[11px] text-gray-300 mt-1">ستظهر الأنشطة هنا فور حدوثها</p>
+            <p className="text-xs font-bold text-gray-600">لا يوجد نشاط مسجل</p>
+            <p className="text-[11px] text-gray-600 mt-1">ستظهر الأنشطة هنا فور حدوثها</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
@@ -307,9 +307,9 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold text-gray-700">{config.label}</p>
-                    <p className="text-[11px] text-gray-400 truncate">{detail}</p>
+                    <p className="text-[11px] text-gray-600 truncate">{detail}</p>
                   </div>
-                  <span className="text-[10px] text-gray-300 shrink-0" title={ts.toLocaleString('ar-SA')}>
+                  <span className="text-[10px] text-gray-600 shrink-0" title={ts.toLocaleString('ar-SA')}>
                     {formatDistanceToNow(ts, { addSuffix: true, locale: ar })}
                   </span>
                 </div>

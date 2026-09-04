@@ -159,7 +159,7 @@ export default function PublicBranchesPage() {
   if (!restaurant) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white text-center p-6 space-y-5">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">
           <Info size={28} />
         </div>
         <h1 className="text-lg font-bold text-gray-900">المطعم غير موجود</h1>
@@ -177,7 +177,7 @@ export default function PublicBranchesPage() {
       <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-4 flex items-center justify-between">
         <button
           onClick={() => window.history.back()}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
@@ -196,9 +196,9 @@ export default function PublicBranchesPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
-          <p className="text-sm text-gray-400 mt-0.5">{branches.length > 0 ? `${branches.length} فروع` : 'الفروع'}</p>
+          <p className="text-sm text-gray-600 mt-0.5">{branches.length > 0 ? `${branches.length} فروع` : 'الفروع'}</p>
           {userLocation ? (
-            <p className="text-[10px] text-gray-300 mt-1 flex items-center justify-center gap-1">
+            <p className="text-[10px] text-gray-600 mt-1 flex items-center justify-center gap-1">
               <Navigation className="h-2.5 w-2.5" />
               مرتب حسب القرب منك
             </p>
@@ -221,7 +221,7 @@ export default function PublicBranchesPage() {
         {          branches.length === 0 ? (
           <div className="text-center py-20 space-y-3">
             <MapPin className="h-10 w-10 text-gray-200 mx-auto" />
-            <p className="text-sm text-gray-400">لا توجد فروع متاحة</p>
+            <p className="text-sm text-gray-600">لا توجد فروع متاحة</p>
           </div>
         ) : (
           sortedBranches.map((branch: any, index: number) => {
@@ -264,19 +264,19 @@ export default function PublicBranchesPage() {
                         </span>
                       )}
                       {isOpen !== null && (
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${isOpen ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'}`}>
+                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${isOpen ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'}`}>
                           {isOpen ? 'مفتوح' : 'مغلق'}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
                       {(branch.city || branch.district) && (
-                        <p className="text-xs text-gray-400 truncate">
+                        <p className="text-xs text-gray-600 truncate">
                           {[branch.city, branch.district].filter(Boolean).join(' · ')}
                         </p>
                       )}
                       {branch.distance != null && branch.distance !== Infinity && (
-                        <span className="text-[10px] text-gray-300 shrink-0">
+                        <span className="text-[10px] text-gray-600 shrink-0">
                           {branch.distance < 1 ? `${Math.round(branch.distance * 1000)} م` : `${branch.distance.toFixed(1)} كم`}
                         </span>
                       )}
@@ -284,7 +284,7 @@ export default function PublicBranchesPage() {
                   </div>
 
                   <ChevronRight
-                    className="h-4 w-4 text-gray-300 shrink-0 transition-transform duration-200"
+                    className="h-4 w-4 text-gray-600 shrink-0 transition-transform duration-200"
                     style={isExpanded ? { transform: 'rotate(-90deg)' } : {}}
                   />
                 </button>
@@ -294,15 +294,15 @@ export default function PublicBranchesPage() {
                   <div className="px-4 pb-4 space-y-3 border-t border-gray-50 text-right">
                     {branch.address && (
                       <div className="flex items-start gap-2.5 pt-3">
-                        <MapPin className="h-3.5 w-3.5 text-gray-300 mt-0.5 shrink-0" />
-                        <p className="text-xs text-gray-500 leading-relaxed">{branch.address}</p>
+                        <MapPin className="h-3.5 w-3.5 text-gray-600 mt-0.5 shrink-0" />
+                        <p className="text-xs text-gray-600 leading-relaxed">{branch.address}</p>
                       </div>
                     )}
 
                     {branch.opening_hours && (
                       <div className="flex items-center gap-2.5">
-                        <Clock className="h-3.5 w-3.5 text-gray-300 shrink-0" />
-                        <p className="text-xs text-gray-500">{branch.opening_hours}</p>
+                        <Clock className="h-3.5 w-3.5 text-gray-600 shrink-0" />
+                        <p className="text-xs text-gray-600">{branch.opening_hours}</p>
                       </div>
                     )}
 
@@ -351,7 +351,7 @@ export default function PublicBranchesPage() {
                     {/* Branch Delivery Apps */}
                     {branch.applications && branch.applications.length > 0 && (
                       <div className="pt-2">
-                        <p className="text-[10px] text-gray-400 font-medium mb-2">تطبيقات التوصيل</p>
+                        <p className="text-[10px] text-gray-600 font-medium mb-2">تطبيقات التوصيل</p>
                         <div className="flex gap-2 flex-wrap">
                           {branch.applications.map((app: any, idx: number) => (
                             <a

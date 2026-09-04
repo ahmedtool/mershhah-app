@@ -207,26 +207,26 @@ export function RegisterForm() {
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
       {/* Full Name */}
       <div>
-        <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">الاسم الكامل</label>
+        <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">الاسم الكامل</label>
         <input
           type="text"
           placeholder="مثال: خالد الأحمد"
           {...form.register('fullName')}
           disabled={isLoading}
-          className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300 disabled:opacity-50"
+          className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300 disabled:opacity-50"
         />
         {form.formState.errors.fullName && <p className="text-[10px] text-red-500 mt-1">{form.formState.errors.fullName.message}</p>}
       </div>
 
       {/* Email */}
       <div>
-        <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">البريد الإلكتروني</label>
+        <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">البريد الإلكتروني</label>
         <input
           type="email"
           placeholder="بريدك@example.com"
           {...form.register('email')}
           disabled={isLoading}
-          className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300 disabled:opacity-50"
+          className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300 disabled:opacity-50"
         />
         {form.formState.errors.email && <p className="text-[10px] text-red-500 mt-1">{form.formState.errors.email.message}</p>}
       </div>
@@ -235,29 +235,29 @@ export function RegisterForm() {
       {!isAdminFlow && (
         <>
           <div>
-            <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">اسم المشروع (مطعم/مقهى)</label>
+            <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">اسم المشروع (مطعم/مقهى)</label>
             <input
               type="text"
               placeholder="مشروعي"
               {...form.register('restaurantName')}
               disabled={isLoading}
-              className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300 disabled:opacity-50"
+              className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300 disabled:opacity-50"
             />
             {form.formState.errors.restaurantName && <p className="text-[10px] text-red-500 mt-1">{form.formState.errors.restaurantName.message}</p>}
           </div>
           <div>
-            <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">رقم الجوال</label>
+            <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">رقم الجوال</label>
             <input
               type="tel"
               placeholder="05xxxxxxxx"
               {...form.register('phoneNumber')}
               disabled={isLoading}
-              className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300 disabled:opacity-50"
+              className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300 disabled:opacity-50"
             />
             {form.formState.errors.phoneNumber && <p className="text-[10px] text-red-500 mt-1">{form.formState.errors.phoneNumber.message}</p>}
           </div>
           <div>
-            <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">نوع المشروع</label>
+            <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">نوع المشروع</label>
             <div className="grid grid-cols-5 gap-1.5">
               {BUSINESS_TYPES.map(({ value, label, icon: Icon }) => {
                 const selected = form.watch('businessType') === value;
@@ -269,7 +269,7 @@ export function RegisterForm() {
                     onClick={() => form.setValue('businessType', value, { shouldValidate: true })}
                     className={cn(
                       'flex flex-col items-center gap-1 py-2.5 rounded-xl border text-[10px] font-bold transition-colors disabled:opacity-50',
-                      selected ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      selected ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -285,17 +285,17 @@ export function RegisterForm() {
 
       {/* Password */}
       <div>
-        <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">كلمة المرور</label>
+        <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">كلمة المرور</label>
         <div className="relative">
           <input
             type={showPassword ? 'text' : 'password'}
             placeholder="••••••••"
             {...form.register('password')}
             disabled={isLoading || isDemoFlow}
-            className="w-full h-10 px-3 pl-9 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300 disabled:opacity-50"
+            className="w-full h-10 px-3 pl-9 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300 disabled:opacity-50"
           />
           <button type="button" onClick={() => setShowPassword(p => !p)}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-600">
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>

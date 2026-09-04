@@ -51,7 +51,7 @@ export function ForgotPasswordForm() {
           <CheckCircle2 className="h-6 w-6 text-emerald-500" />
         </div>
         <h3 className="text-sm font-bold text-gray-900 mb-2">تم إرسال الرابط</h3>
-        <p className="text-xs text-gray-400 mb-5 leading-relaxed">
+        <p className="text-xs text-gray-600 mb-5 leading-relaxed">
           أرسلنا رابط إعادة تعيين كلمة المرور إلى بريدك. تحقق من صندوق الوارد.
         </p>
         <Link href="/login"
@@ -66,13 +66,13 @@ export function ForgotPasswordForm() {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
       <div>
-        <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">البريد الإلكتروني</label>
+        <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">البريد الإلكتروني</label>
         <input
           type="email"
           placeholder="بريدك@example.com"
           {...form.register('email')}
           disabled={isLoading}
-          className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300 disabled:opacity-50"
+          className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300 disabled:opacity-50"
         />
         {form.formState.errors.email && <p className="text-[10px] text-red-500 mt-1">{form.formState.errors.email.message}</p>}
       </div>

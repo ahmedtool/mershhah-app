@@ -64,9 +64,9 @@ export default function HungerStationReportsReaderPage() {
             </>
           ) : (
             <>
-              <UploadCloud className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+              <UploadCloud className="h-10 w-10 text-gray-600 mx-auto mb-3" />
               <p className="text-sm font-bold text-gray-700">ارفع ملف تقرير هنقرستيشن</p>
-              <p className="text-xs text-gray-400 mt-1">Excel (.xlsx) أو CSV</p>
+              <p className="text-xs text-gray-600 mt-1">Excel (.xlsx) أو CSV</p>
             </>
           )}
         </div>
@@ -79,29 +79,29 @@ export default function HungerStationReportsReaderPage() {
               <FileSpreadsheet className="h-4 w-4 text-orange-500 shrink-0" />
               <span className="text-xs font-bold text-gray-700 truncate">{fileName}</span>
             </div>
-            <button onClick={reset} className="h-8 px-3 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-50 flex items-center gap-1.5 shrink-0">
+            <button onClick={reset} className="h-8 px-3 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-1.5 shrink-0">
               <RotateCw className="h-3.5 w-3.5" /> ملف جديد
             </button>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
-              <ListOrdered className="h-4 w-4 text-gray-300 mb-2" />
+              <ListOrdered className="h-4 w-4 text-gray-600 mb-2" />
               <p className="text-lg font-black text-gray-900">{report.rowCount}</p>
-              <p className="text-[11px] text-gray-400">عدد الصفوف</p>
+              <p className="text-[11px] text-gray-600">عدد الصفوف</p>
             </div>
             {report.totalAmount !== null && (
               <div className="bg-white border border-gray-100 rounded-2xl p-4">
                 <Receipt className="h-4 w-4 text-orange-400 mb-2" />
                 <p className="text-lg font-black text-gray-900">{report.totalAmount.toLocaleString('ar-SA', { maximumFractionDigits: 2 })}</p>
-                <p className="text-[11px] text-gray-400">إجمالي "{report.amountColumn}"</p>
+                <p className="text-[11px] text-gray-600">إجمالي "{report.amountColumn}"</p>
               </div>
             )}
             {report.dateRange && (
               <div className="bg-white border border-gray-100 rounded-2xl p-4">
-                <Calendar className="h-4 w-4 text-gray-300 mb-2" />
+                <Calendar className="h-4 w-4 text-gray-600 mb-2" />
                 <p className="text-xs font-black text-gray-900">{report.dateRange.from} → {report.dateRange.to}</p>
-                <p className="text-[11px] text-gray-400">الفترة</p>
+                <p className="text-[11px] text-gray-600">الفترة</p>
               </div>
             )}
           </div>
@@ -115,7 +115,7 @@ export default function HungerStationReportsReaderPage() {
                 {report.topItems.map((item) => (
                   <div key={item.name} className="flex items-center justify-between px-4 py-2.5 text-xs">
                     <span className="font-medium text-gray-700 truncate">{item.name}</span>
-                    <span className="text-gray-400 shrink-0 mr-3">{item.count} مرة{item.total > 0 ? ` · ${item.total.toLocaleString('ar-SA', { maximumFractionDigits: 2 })}` : ''}</span>
+                    <span className="text-gray-600 shrink-0 mr-3">{item.count} مرة{item.total > 0 ? ` · ${item.total.toLocaleString('ar-SA', { maximumFractionDigits: 2 })}` : ''}</span>
                   </div>
                 ))}
               </div>
@@ -131,7 +131,7 @@ export default function HungerStationReportsReaderPage() {
                 <thead className="sticky top-0 bg-gray-50">
                   <tr>
                     {report.headers.map((h) => (
-                      <th key={h} className="px-3 py-2 text-right font-bold text-gray-500 whitespace-nowrap">{h}</th>
+                      <th key={h} className="px-3 py-2 text-right font-bold text-gray-600 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>

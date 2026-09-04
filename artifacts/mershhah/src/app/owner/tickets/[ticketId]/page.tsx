@@ -17,7 +17,7 @@ const statusStyles: Record<string, string> = {
   open: 'bg-blue-50 text-blue-600 border-blue-100',
   contacted: 'bg-amber-50 text-amber-600 border-amber-100',
   resolved: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-  closed: 'bg-gray-50 text-gray-500 border-gray-100',
+  closed: 'bg-gray-50 text-gray-600 border-gray-100',
 };
 
 const statusText: Record<string, string> = {
@@ -32,7 +32,7 @@ const categoryStyles: Record<string, string> = {
   inquiry: 'bg-blue-50 text-blue-600 border-blue-100',
   employment: 'bg-teal-50 text-teal-600 border-teal-100',
   suggestion: 'bg-amber-50 text-amber-600 border-amber-100',
-  other: 'bg-gray-50 text-gray-500 border-gray-100',
+  other: 'bg-gray-50 text-gray-600 border-gray-100',
 };
 
 const categoryText: Record<string, string> = {
@@ -93,10 +93,10 @@ export default function TicketDetailPage() {
       <div className="space-y-5 pb-20">
         <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center">
           <div className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <SearchX className="h-5 w-5 text-gray-300" />
+            <SearchX className="h-5 w-5 text-gray-600" />
           </div>
           <p className="text-sm font-bold text-gray-900 mb-1">التذكرة غير موجودة</p>
-          <p className="text-[11px] text-gray-400 mb-4">يمكن تم حذفها أو الرابط غير صحيح</p>
+          <p className="text-[11px] text-gray-600 mb-4">يمكن تم حذفها أو الرابط غير صحيح</p>
           <Link href="/owner/tickets"
             className="h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors inline-flex items-center gap-2">
             <ArrowRight className="h-3.5 w-3.5" /> العودة للتذاكر
@@ -125,11 +125,11 @@ export default function TicketDetailPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <Link href="/owner/tickets" className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 mb-2">
+          <Link href="/owner/tickets" className="text-[11px] text-gray-600 hover:text-gray-600 transition-colors flex items-center gap-1 mb-2">
             <ArrowRight className="h-3 w-3" /> التذاكر
           </Link>
           <h1 className="text-lg font-bold text-gray-900">{ticket.subject}</h1>
-          <p className="text-[11px] text-gray-400">تذكرة من {ticket.name}</p>
+          <p className="text-[11px] text-gray-600">تذكرة من {ticket.name}</p>
         </div>
         <div className="flex items-center gap-2">
           <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md border", categoryStyles[ticket.category] || categoryStyles.other)}>
@@ -157,7 +157,7 @@ export default function TicketDetailPage() {
               {Object.entries(statusText).map(([key, label]) => (
                 <button key={key} onClick={() => handleStatusChange(key)}
                   className={cn("h-8 px-3 rounded-lg text-[11px] font-bold border transition-all",
-                    ticket.status === key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200')}>
+                    ticket.status === key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-100 hover:border-gray-200')}>
                   {label}
                 </button>
               ))}
@@ -169,18 +169,18 @@ export default function TicketDetailPage() {
             <h4 className="text-xs font-bold text-gray-900 mb-3">العميل</h4>
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-[11px] text-gray-600">
-                <UserIcon className="h-3.5 w-3.5 text-gray-400" />
+                <UserIcon className="h-3.5 w-3.5 text-gray-600" />
                 <span className="font-bold">{ticket.name}</span>
               </div>
               {ticket.phone && (
                 <div className="flex items-center gap-2 text-[11px] text-gray-600" dir="ltr">
-                  <Phone className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                  <Phone className="h-3.5 w-3.5 text-gray-600 shrink-0" />
                   <span className="font-mono">{ticket.phone}</span>
                 </div>
               )}
               {ticket.email && (
                 <div className="flex items-center gap-2 text-[11px] text-gray-600">
-                  <Mail className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                  <Mail className="h-3.5 w-3.5 text-gray-600 shrink-0" />
                   <span>{ticket.email}</span>
                 </div>
               )}
@@ -191,11 +191,11 @@ export default function TicketDetailPage() {
           <div className="bg-white border border-gray-100 rounded-2xl p-4">
             <h4 className="text-xs font-bold text-gray-900 mb-3">التفاصيل</h4>
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[11px] text-gray-400">
+              <div className="flex items-center gap-2 text-[11px] text-gray-600">
                 <Tag className="h-3.5 w-3.5" />
                 <span className="font-mono">{ticket.id.substring(0, 12)}</span>
               </div>
-              <div className="flex items-center gap-2 text-[11px] text-gray-400">
+              <div className="flex items-center gap-2 text-[11px] text-gray-600">
                 <Clock className="h-3.5 w-3.5" />
                 <span>{ticket.created_at ? formatDistanceToNow(new Date(ticket.created_at as any), { addSuffix: true, locale: ar }) : ''}</span>
               </div>

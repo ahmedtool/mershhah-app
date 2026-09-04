@@ -63,10 +63,10 @@ export function TimePicker({ value, onChange, label, className = '' }: TimePicke
         onClick={() => setOpen(!open)}
         className="w-full h-10 rounded-lg border border-gray-200 bg-white px-3 text-right flex items-center justify-between text-sm hover:border-gray-300 transition-colors"
       >
-        <span className={value ? 'text-gray-900 font-medium' : 'text-gray-400'}>
+        <span className={value ? 'text-gray-900 font-medium' : 'text-gray-600'}>
           {formatDisplay(value)}
         </span>
-        <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </button>
@@ -86,7 +86,7 @@ export function TimePicker({ value, onChange, label, className = '' }: TimePicke
                       type="button"
                       onClick={() => handleHourClick(h)}
                       className={`w-full h-8 flex items-center justify-center text-sm snap-center transition-all
-                        ${h === hour ? 'bg-gray-900 text-white font-bold scale-105' : 'text-gray-500 hover:bg-gray-100'}`}
+                        ${h === hour ? 'bg-gray-900 text-white font-bold scale-105' : 'text-gray-600 hover:bg-gray-100'}`}
                     >
                       {h}
                     </button>
@@ -94,7 +94,7 @@ export function TimePicker({ value, onChange, label, className = '' }: TimePicke
                 </div>
               </div>
 
-              <span className="text-xl font-bold text-gray-300 mt-6">:</span>
+              <span className="text-xl font-bold text-gray-600 mt-6">:</span>
 
               {/* Minute */}
               <div className="flex-1">
@@ -106,7 +106,7 @@ export function TimePicker({ value, onChange, label, className = '' }: TimePicke
                       type="button"
                       onClick={() => handleMinuteClick(m)}
                       className={`w-full h-8 flex items-center justify-center text-sm snap-center transition-all
-                        ${m === minute ? 'bg-gray-900 text-white font-bold scale-105' : 'text-gray-500 hover:bg-gray-100'}`}
+                        ${m === minute ? 'bg-gray-900 text-white font-bold scale-105' : 'text-gray-600 hover:bg-gray-100'}`}
                     >
                       {m}
                     </button>
@@ -114,7 +114,7 @@ export function TimePicker({ value, onChange, label, className = '' }: TimePicke
                 </div>
               </div>
 
-              <span className="text-xl font-bold text-gray-300 mt-6">:</span>
+              <span className="text-xl font-bold text-gray-600 mt-6">:</span>
 
               {/* Period */}
               <div className="w-14">
@@ -124,7 +124,7 @@ export function TimePicker({ value, onChange, label, className = '' }: TimePicke
                     type="button"
                     onClick={() => handlePeriodClick('ص')}
                     className={`flex-1 flex items-center justify-center text-sm font-bold rounded-t-lg transition-all
-                      ${period === 'ص' ? 'bg-gray-900 text-white scale-105' : 'text-gray-500 hover:bg-gray-100'}`}
+                      ${period === 'ص' ? 'bg-gray-900 text-white scale-105' : 'text-gray-600 hover:bg-gray-100'}`}
                   >
                     ص
                   </button>
@@ -133,7 +133,7 @@ export function TimePicker({ value, onChange, label, className = '' }: TimePicke
                     type="button"
                     onClick={() => handlePeriodClick('م')}
                     className={`flex-1 flex items-center justify-center text-sm font-bold rounded-b-lg transition-all
-                      ${period === 'م' ? 'bg-gray-900 text-white scale-105' : 'text-gray-500 hover:bg-gray-100'}`}
+                      ${period === 'م' ? 'bg-gray-900 text-white scale-105' : 'text-gray-600 hover:bg-gray-100'}`}
                   >
                     م
                   </button>

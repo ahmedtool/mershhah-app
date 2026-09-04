@@ -243,7 +243,7 @@ export default function AdminSupportPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-black text-gray-900">محادثات المالكين</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{chats.length} محادثة {unreadCount > 0 && `• ${unreadCount} جديدة`}</p>
+          <p className="text-xs text-gray-600 mt-0.5">{chats.length} محادثة {unreadCount > 0 && `• ${unreadCount} جديدة`}</p>
         </div>
         <button onClick={openNewChat} className="h-9 px-3 rounded-xl bg-gray-900 text-white text-xs font-bold flex items-center gap-1.5 hover:bg-gray-800 transition-colors">
           <Plus className="h-4 w-4" />
@@ -259,13 +259,13 @@ export default function AdminSupportPage() {
               <div className="p-3 border-b border-gray-100 flex items-center justify-between">
                 <h3 className="text-xs font-bold text-gray-900">اختر صاحب مطعم</h3>
                 <button onClick={() => setShowPicker(false)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100">
-                  <span className="text-xs text-gray-400">✕</span>
+                  <span className="text-xs text-gray-600">✕</span>
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto">
                 {restaurants.length === 0 ? (
                   <div className="text-center py-16 px-4">
-                    <p className="text-xs text-gray-400">لا يوجد مطاعم مسجلة</p>
+                    <p className="text-xs text-gray-600">لا يوجد مطاعم مسجلة</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-50">
@@ -280,14 +280,14 @@ export default function AdminSupportPage() {
                           {r.logo ? (
                             <StorageImage imagePath={r.logo} alt={r.name} width={40} height={40} className="object-cover w-full h-full" />
                           ) : (
-                            <span className="text-sm font-bold text-gray-400">{r.name?.charAt(0)}</span>
+                            <span className="text-sm font-bold text-gray-600">{r.name?.charAt(0)}</span>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-bold text-gray-900 truncate">{r.name}</p>
-                          {r.username && <p className="text-[10px] text-gray-400">@{r.username}</p>}
+                          {r.username && <p className="text-[10px] text-gray-600">@{r.username}</p>}
                         </div>
-                        {isCreating && <Loader2 className="h-4 w-4 animate-spin text-gray-300" />}
+                        {isCreating && <Loader2 className="h-4 w-4 animate-spin text-gray-600" />}
                       </button>
                     ))}
                   </div>
@@ -305,17 +305,17 @@ export default function AdminSupportPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
-                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto">
                 {filteredChats.length === 0 ? (
                   <div className="text-center py-16 px-4">
                     <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                      <MessageSquare className="h-5 w-5 text-gray-300" />
+                      <MessageSquare className="h-5 w-5 text-gray-600" />
                     </div>
                     <p className="text-xs font-bold text-gray-900 mb-1">لا توجد محادثات</p>
-                    <p className="text-[10px] text-gray-400">ابدأ محادثة مع صاحب مطعم</p>
+                    <p className="text-[10px] text-gray-600">ابدأ محادثة مع صاحب مطعم</p>
                   </div>
                 ) : filteredChats.map(chat => (
                   <button
@@ -329,19 +329,19 @@ export default function AdminSupportPage() {
                       {chat.ownerLogo ? (
                         <StorageImage imagePath={chat.ownerLogo} alt={chat.ownerName || ''} width={40} height={40} className="object-cover w-full h-full" />
                       ) : (
-                        <span className="text-xs font-bold text-gray-500">{chat.ownerName?.charAt(0) || 'م'}</span>
+                        <span className="text-xs font-bold text-gray-600">{chat.ownerName?.charAt(0) || 'م'}</span>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-gray-900">{chat.ownerName || 'صاحب مطعم'}</span>
                         {chat.lastMessageTimestamp && (
-                          <span className="text-[9px] text-gray-300 shrink-0">
+                          <span className="text-[9px] text-gray-600 shrink-0">
                             {formatDistanceToNow(new Date(chat.lastMessageTimestamp), { addSuffix: true, locale: ar })}
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] text-gray-400 truncate mt-0.5">{chat.lastMessage || 'محادثة جديدة'}</p>
+                      <p className="text-[10px] text-gray-600 truncate mt-0.5">{chat.lastMessage || 'محادثة جديدة'}</p>
                     </div>
                     {chat.adminHasUnread && (
                       <div className="w-2 h-2 rounded-full bg-gray-900 shrink-0" />
@@ -365,29 +365,29 @@ export default function AdminSupportPage() {
             <div className="flex-1 flex items-center justify-center text-center p-8">
               <div>
                 <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <MessageSquare className="h-7 w-7 text-gray-300" />
+                  <MessageSquare className="h-7 w-7 text-gray-600" />
                 </div>
                 <p className="text-sm font-bold text-gray-900 mb-1">اختر محادثة</p>
-                <p className="text-[11px] text-gray-400">اختر محادثة من القائمة للبدء</p>
+                <p className="text-[11px] text-gray-600">اختر محادثة من القائمة للبدء</p>
               </div>
             </div>
           ) : (
             <>
               {/* Chat Header */}
               <div className="p-3 border-b border-gray-100 flex items-center gap-3 shrink-0">
-                <button onClick={() => setShowChat(false)} className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100">
+                <button onClick={() => setShowChat(false)} className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100">
                   <ArrowLeft className="h-4 w-4" />
                 </button>
                 <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
                   {selectedChat.ownerLogo ? (
                     <StorageImage imagePath={selectedChat.ownerLogo} alt={selectedChat.ownerName || ''} width={36} height={36} className="object-cover w-full h-full" />
                   ) : (
-                    <span className="text-xs font-bold text-gray-400">{selectedChat.ownerName?.charAt(0) || 'م'}</span>
+                    <span className="text-xs font-bold text-gray-600">{selectedChat.ownerName?.charAt(0) || 'م'}</span>
                   )}
                 </div>
                 <div className="flex-1">
                   <p className="text-xs font-bold text-gray-900">{selectedChat.ownerName || 'صاحب المطعم'}</p>
-                  <p className="text-[10px] text-gray-400">محادثة مباشرة</p>
+                  <p className="text-[10px] text-gray-600">محادثة مباشرة</p>
                 </div>
               </div>
 
@@ -409,7 +409,7 @@ export default function AdminSupportPage() {
                             {selectedChat.ownerLogo ? (
                               <StorageImage imagePath={selectedChat.ownerLogo} alt={selectedChat.ownerName || ''} width={28} height={28} className="object-cover w-full h-full" />
                             ) : (
-                              <span className="text-[9px] font-bold text-gray-400">{(selectedChat.ownerName || 'م')[0]}</span>
+                              <span className="text-[9px] font-bold text-gray-600">{(selectedChat.ownerName || 'م')[0]}</span>
                             )}
                           </div>
                         )}
@@ -436,7 +436,7 @@ export default function AdminSupportPage() {
                   })}
                   {!isLoadingMessages && messages.length === 0 && (
                     <div className="text-center pt-16">
-                      <p className="text-xs text-gray-300">ابدأ المحادثة مع صاحب المطعم</p>
+                      <p className="text-xs text-gray-600">ابدأ المحادثة مع صاحب المطعم</p>
                     </div>
                   )}
                   <div ref={messagesEndRef} />
@@ -447,7 +447,7 @@ export default function AdminSupportPage() {
               <form onSubmit={handleSendMessage} className="p-3 border-t border-gray-100 flex items-center gap-2 shrink-0">
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                 <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoadingMessages || isUploading}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0 disabled:opacity-30">
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0 disabled:opacity-30">
                   {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                 </button>
                 <Input
@@ -477,7 +477,7 @@ export default function AdminSupportPage() {
               </div>
               <div>
                 <AlertDialogTitle className="text-base font-bold text-gray-900">حذف المحادثة</AlertDialogTitle>
-                <AlertDialogDescription className="text-xs text-gray-400 mt-0.5">لا يمكن التراجع عن هذا الإجراء</AlertDialogDescription>
+                <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">لا يمكن التراجع عن هذا الإجراء</AlertDialogDescription>
               </div>
             </div>
           </div>

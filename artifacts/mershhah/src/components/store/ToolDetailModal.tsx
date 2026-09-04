@@ -103,15 +103,15 @@ export function ToolDetailModal({
               <div className="min-w-0 flex-1">
                 <h2 className="text-base font-black text-gray-900">{tool.title}</h2>
                 <div className="flex items-center gap-2 flex-wrap mt-1">
-                  <span className="inline-flex items-center gap-1 text-[10.5px] text-gray-400">
+                  <span className="inline-flex items-center gap-1 text-[10.5px] text-gray-600">
                     <Tag className="h-3 w-3" /> {categoryLabel}
                   </span>
                   {tool.developer_name && (
-                    <span className="inline-flex items-center gap-1 text-[10.5px] text-gray-400">
+                    <span className="inline-flex items-center gap-1 text-[10.5px] text-gray-600">
                       <UserRound className="h-3 w-3" /> {tool.developer_name}
                     </span>
                   )}
-                  {tool.version && <span className="text-[10.5px] text-gray-300">v{tool.version}</span>}
+                  {tool.version && <span className="text-[10.5px] text-gray-600">v{tool.version}</span>}
                 </div>
               </div>
             </div>
@@ -122,12 +122,12 @@ export function ToolDetailModal({
             {/* Price */}
             <div className="mt-4 bg-gray-50 rounded-2xl p-4 flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-gray-400">السعر</p>
+                <p className="text-[10px] text-gray-600">السعر</p>
                 <p className="text-sm font-black text-gray-900 mt-0.5">{tool.price_label}</p>
               </div>
               {tool.installed && tool.expires_at && (
                 <div className="text-left">
-                  <p className="text-[10px] text-gray-400">صالحة حتى</p>
+                  <p className="text-[10px] text-gray-600">صالحة حتى</p>
                   <p className="text-[11px] font-bold text-gray-700 mt-0.5">
                     {new Date(tool.expires_at).toLocaleDateString('ar-SA')}
                   </p>
@@ -177,7 +177,7 @@ export function ToolDetailModal({
         <AlertDialogContent className="sm:max-w-md p-0 gap-0" dir="rtl">
           <div className="px-5 pt-5 pb-3 border-b border-gray-100">
             <AlertDialogTitle className="text-base font-bold text-gray-900">إلغاء تفعيل "{tool.title}"؟</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs text-gray-400 mt-0.5">
+            <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">
               راح تفقد الوصول لها فوراً. تقدر تفعّلها مرة ثانية بأي وقت.
             </AlertDialogDescription>
           </div>

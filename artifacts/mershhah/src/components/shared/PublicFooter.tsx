@@ -13,17 +13,17 @@ export function PublicFooter() {
           {/* Brand */}
           <div className="col-span-2 sm:col-span-1">
             <Logo />
-            <p className="text-[11px] text-gray-400 mt-3 leading-relaxed max-w-[200px]">
+            <p className="text-[11px] text-gray-600 mt-3 leading-relaxed max-w-[200px]">
               الواجهة الرقمية المتكاملة للمطاعم والمقاهي في السعودية.
             </p>
             <div className="flex gap-2 mt-4">
-              <a href="https://www.instagram.com/mershhah/" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+              <a href="https://www.instagram.com/mershhah/" target="_blank" rel="noopener noreferrer" aria-label="مرشح على انستقرام" className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600 hover:text-gray-600 transition-colors">
                 <InstagramIcon size={16} />
               </a>
-              <a href="https://wa.me/966560766880" target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+              <a href="https://wa.me/966560766880" target="_blank" rel="noopener noreferrer" aria-label="تواصل معنا عبر واتساب" className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600 hover:text-gray-600 transition-colors">
                 <WhatsAppIcon size={16} />
               </a>
-              <a href="mailto:info@mershhah.com" className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+              <a href="mailto:info@mershhah.com" aria-label="راسلنا عبر البريد الإلكتروني" className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600 hover:text-gray-600 transition-colors">
                 <Mail size={16} />
               </a>
             </div>
@@ -31,32 +31,32 @@ export function PublicFooter() {
 
           {/* Links */}
           <div>
-            <h4 className="text-xs font-bold text-gray-900 mb-3">المنتج</h4>
+            <h3 className="text-xs font-bold text-gray-900 mb-3">المنتج</h3>
             <ul className="space-y-2">
-              <li><Link href="/pricing" className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">الأسعار</Link></li>
-              <li><Link href="/blog" className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">المدونة</Link></li>
-              <li><Link href="/status" className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">حالة النظام</Link></li>
+              <li><Link href="/pricing" className="text-[11px] text-gray-600 hover:text-gray-600 transition-colors">الأسعار</Link></li>
+              <li><Link href="/blog" className="text-[11px] text-gray-600 hover:text-gray-600 transition-colors">المدونة</Link></li>
+              <li><Link href="/status" className="text-[11px] text-gray-600 hover:text-gray-600 transition-colors">حالة النظام</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="text-xs font-bold text-gray-900 mb-3">تعرف علينا</h4>
+            <h3 className="text-xs font-bold text-gray-900 mb-3">تعرف علينا</h3>
             <ul className="space-y-2">
-              <li><Link href="/about" className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">من نحن</Link></li>
-              <li><Link href="/contact" className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">تواصل معنا</Link></li>
+              <li><Link href="/about" className="text-[11px] text-gray-600 hover:text-gray-600 transition-colors">من نحن</Link></li>
+              <li><Link href="/contact" className="text-[11px] text-gray-600 hover:text-gray-600 transition-colors">تواصل معنا</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="text-xs font-bold text-gray-900 mb-3">قانوني</h4>
+            <h3 className="text-xs font-bold text-gray-900 mb-3">قانوني</h3>
             <ul className="space-y-2">
-              <li><Link href="/terms" className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">الشروط والأحكام</Link></li>
-              <li><Link href="/privacy" className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors">سياسة الخصوصية</Link></li>
+              <li><Link href="/terms" className="text-[11px] text-gray-600 hover:text-gray-600 transition-colors">الشروط والأحكام</Link></li>
+              <li><Link href="/privacy" className="text-[11px] text-gray-600 hover:text-gray-600 transition-colors">سياسة الخصوصية</Link></li>
             </ul>
           </div>
         </div>
 
         <div className="border-t border-gray-100 pt-6 flex flex-col sm:flex-row justify-between items-center gap-3">
-          <p className="text-[10px] font-bold text-gray-300">مرشح © {new Date().getFullYear()}</p>
-          <p className="text-[10px] text-gray-300">صُنع بكل حب في السعودية</p>
+          <p className="text-[10px] font-bold text-gray-600">مرشح © {new Date().getFullYear()}</p>
+          <p className="text-[10px] text-gray-600">صُنع بكل حب في السعودية</p>
         </div>
       </div>
     </footer>

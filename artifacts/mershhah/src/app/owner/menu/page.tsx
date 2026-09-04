@@ -195,9 +195,9 @@ export default function MenuPage() {
           <>
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-gray-400">إجمالي الأطباق</span>
+                <span className="text-[10px] font-bold text-gray-600">إجمالي الأطباق</span>
                 <div className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center">
-                  <Package className="h-3.5 w-3.5 text-gray-400" />
+                  <Package className="h-3.5 w-3.5 text-gray-600" />
                 </div>
               </div>
               <div className="text-2xl font-black text-gray-900">{totalItems}</div>
@@ -208,33 +208,33 @@ export default function MenuPage() {
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-gray-400">متوسط السعر</span>
+                <span className="text-[10px] font-bold text-gray-600">متوسط السعر</span>
                 <div className="w-7 h-7 rounded-lg bg-gray-50 flex items-center justify-center">
-                  <DollarSign className="h-3.5 w-3.5 text-gray-400" />
+                  <DollarSign className="h-3.5 w-3.5 text-gray-600" />
                 </div>
               </div>
-              <div className="text-2xl font-black text-gray-900">{avgPrice.toFixed(0)} <span className="text-sm text-gray-400">ر.س</span></div>
-              <p className="text-[9px] text-gray-300 mt-1">لكل الأطباق المتاحة</p>
+              <div className="text-2xl font-black text-gray-900">{avgPrice.toFixed(0)} <span className="text-sm text-gray-600">ر.س</span></div>
+              <p className="text-[9px] text-gray-600 mt-1">لكل الأطباق المتاحة</p>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-gray-400">الأكثر طلباً</span>
+                <span className="text-[10px] font-bold text-gray-600">الأكثر طلباً</span>
                 <div className="w-7 h-7 rounded-lg bg-amber-50 flex items-center justify-center">
                   <Flame className="h-3.5 w-3.5 text-amber-500" />
                 </div>
               </div>
               <div className="text-sm font-black text-gray-900 truncate">{popularItem?.name || '—'}</div>
-              <p className="text-[9px] text-gray-300 mt-1">بناءً على التفاعل</p>
+              <p className="text-[9px] text-gray-600 mt-1">بناءً على التفاعل</p>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-gray-400">إجمالي الربح</span>
+                <span className="text-[10px] font-bold text-gray-600">إجمالي الربح</span>
                 <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
                   <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
                 </div>
               </div>
-              <div className="text-2xl font-black text-emerald-600">{totalProfit.toFixed(0)} <span className="text-sm text-gray-400">ر.س</span></div>
-              <p className="text-[9px] text-gray-300 mt-1">تقديري من جميع الأطباق</p>
+              <div className="text-2xl font-black text-emerald-600">{totalProfit.toFixed(0)} <span className="text-sm text-gray-600">ر.س</span></div>
+              <p className="text-[9px] text-gray-600 mt-1">تقديري من جميع الأطباق</p>
             </div>
           </>
         )}
@@ -247,7 +247,7 @@ export default function MenuPage() {
             onClick={() => setActiveCategoryId('all')}
             className={cn(
               "shrink-0 h-9 px-4 rounded-full text-[12px] font-bold transition-colors",
-              activeCategoryId === 'all' ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100/80 text-gray-500 hover:bg-gray-200/70"
+              activeCategoryId === 'all' ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100/80 text-gray-600 hover:bg-gray-200/70"
             )}
           >
             الكل
@@ -261,7 +261,7 @@ export default function MenuPage() {
                 onClick={() => setActiveCategoryId(cat.id)}
                 className={cn(
                   "shrink-0 h-9 px-4 rounded-full text-[12px] font-bold transition-colors",
-                  activeCategoryId === cat.id ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100/80 text-gray-500 hover:bg-gray-200/70"
+                  activeCategoryId === cat.id ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100/80 text-gray-600 hover:bg-gray-200/70"
                 )}
               >
                 {cat.name} <span className="opacity-60">({count})</span>
@@ -276,7 +276,7 @@ export default function MenuPage() {
                 onClick={() => setActiveCategoryId('__uncategorized__')}
                 className={cn(
                   "shrink-0 h-9 px-4 rounded-full text-[12px] font-bold transition-colors",
-                  activeCategoryId === '__uncategorized__' ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100/80 text-gray-500 hover:bg-gray-200/70"
+                  activeCategoryId === '__uncategorized__' ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100/80 text-gray-600 hover:bg-gray-200/70"
                 )}
               >
                 بدون تصنيف <span className="opacity-60">({uncategorizedCount})</span>

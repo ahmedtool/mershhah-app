@@ -290,14 +290,14 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                <Bot className="h-5 w-5 text-gray-500" />
+                <Bot className="h-5 w-5 text-gray-600" />
               </div>
               <div>
                 <h2 className="text-base font-bold text-gray-900">{'استيراد المنيو بالذكاء الاصطناعي'}</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{'ارفع صورة أو PDF من قائمة طعامك ودع الذكاء الاصطناعي يستخرج الأصناف والأسعار.'}</p>
+                <p className="text-xs text-gray-600 mt-0.5">{'ارفع صورة أو PDF من قائمة طعامك ودع الذكاء الاصطناعي يستخرج الأصناف والأسعار.'}</p>
               </div>
             </div>
-            <div className="text-[10px] text-gray-400 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1.5 shrink-0">
+            <div className="text-[10px] text-gray-600 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1.5 shrink-0">
                 {isCheckingUsage ? <Loader2 className="h-3 w-3 animate-spin"/> : (
                     <>{'المحاولات:'} {usageStats.count}/{usageStats.limit}</>
                 )}
@@ -320,16 +320,16 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
                             ) : (
                                 <div className="space-y-3">
                                     <div className="bg-gray-100 p-4 rounded-xl w-fit mx-auto">
-                                        <UploadCloud className="h-8 w-8 text-gray-400" />
+                                        <UploadCloud className="h-8 w-8 text-gray-600" />
                                     </div>
                                     <div>
                                         <p className={`font-bold text-sm text-gray-900 ${isRTL ? 'text-right' : 'text-left'}`}>{isRTL ? 'اضغط لرفع صورة أو ملف PDF' : 'Click to upload image or PDF'}</p>
-                                        <p className={`text-[11px] text-gray-400 mt-1 ${isRTL ? 'text-right' : 'text-left'}`}>{isRTL ? 'يدعم جميع صيغ الصور + PDF — حتى 20 ميجابايت' : 'Supports all image formats + PDF — up to 20MB'}</p>
+                                        <p className={`text-[11px] text-gray-600 mt-1 ${isRTL ? 'text-right' : 'text-left'}`}>{isRTL ? 'يدعم جميع صيغ الصور + PDF — حتى 20 ميجابايت' : 'Supports all image formats + PDF — up to 20MB'}</p>
                                     </div>
                                 </div>
                             )}
                             {isLimitReached && <div className="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex flex-col items-center justify-center p-6 gap-2 rounded-xl">
-                                <Lock className="h-8 w-8 text-gray-300" />
+                                <Lock className="h-8 w-8 text-gray-600" />
                                 <p className="font-bold text-sm text-gray-900 text-center">{isRTL ? 'وصلت للحد الأقصى' : 'Monthly limit reached'}</p>
                                 {!isPaid && <Button asChild size="sm" variant="outline" className="rounded-xl mt-1 h-8 text-xs"><Link href="/pricing">{isRTL ? 'اشترك للمزيد' : 'Subscribe for more'}</Link></Button>}
                             </div>}
@@ -349,7 +349,7 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
                         </div>
                         <div className="space-y-1">
                             <h3 className="text-base font-black text-gray-900">{isRTL ? 'جاري تحليل الملف...' : 'Analyzing file...'}</h3>
-                            <p className="text-xs text-gray-400 max-w-xs">{isRTL ? 'يقوم الذكاء الاصطناعي بقراءة النصوص واستخراج الأصناف والأسعار.' : 'AI is reading the text and extracting items with prices.'}</p>
+                            <p className="text-xs text-gray-600 max-w-xs">{isRTL ? 'يقوم الذكاء الاصطناعي بقراءة النصوص واستخراج الأصناف والأسعار.' : 'AI is reading the text and extracting items with prices.'}</p>
                         </div>
                     </div>
                 )}
@@ -371,7 +371,7 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
                                            </div>
                                        </div>
                                    </div>
-                                   <Button variant="ghost" size="sm" onClick={resetState} className="text-gray-400 hover:text-gray-900 h-8 text-xs">
+                                   <Button variant="ghost" size="sm" onClick={resetState} className="text-gray-600 hover:text-gray-900 h-8 text-xs">
                                      <X className={`${iconMargin} h-3 w-3`}/> {isRTL ? 'إلغاء' : 'Cancel'}
                                    </Button>
                                 </div>
@@ -390,9 +390,9 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
                                                 : <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">{isRTL ? 'موجود' : 'EXISTS'}</span>
                                             }
                                         </div>
-                                        <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md">{item.category}</span>
+                                        <span className="text-[10px] text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">{item.category}</span>
                                     </div>
-                                    {item.description && <p className="text-[11px] text-gray-400 leading-relaxed mb-2">{item.description}</p>}
+                                    {item.description && <p className="text-[11px] text-gray-600 leading-relaxed mb-2">{item.description}</p>}
                                     <div className={`flex gap-1.5 flex-wrap ${isRTL ? 'justify-end' : 'justify-start'}`}>
                                         {item.sizes.map((size: any, sIndex: number) => (
                                             <span key={sIndex} className="text-[11px] font-mono font-bold text-gray-900 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-md">

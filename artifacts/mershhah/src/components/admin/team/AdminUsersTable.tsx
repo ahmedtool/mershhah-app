@@ -67,17 +67,17 @@ export function AdminUsersTable({ admins, onActionComplete }: AdminUsersTablePro
               return (
                 <div key={admin.id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 transition-colors">
                   <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
-                    <span className="text-xs font-bold text-gray-500">{admin.full_name?.charAt(0) || 'A'}</span>
+                    <span className="text-xs font-bold text-gray-600">{admin.full_name?.charAt(0) || 'A'}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-gray-700 truncate">{admin.full_name}</span>
-                      {isCurrentUser && <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">أنت</span>}
+                      {isCurrentUser && <span className="text-[9px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded-full">أنت</span>}
                       {isSuperAdmin && <span className="text-[9px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded-full flex items-center gap-0.5"><Crown className="h-2.5 w-2.5" />المدير</span>}
                     </div>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <Mail className="h-3 w-3 text-gray-300" />
-                      <span className="text-[11px] text-gray-400">{admin.email}</span>
+                      <Mail className="h-3 w-3 text-gray-600" />
+                      <span className="text-[11px] text-gray-600">{admin.email}</span>
                     </div>
                   </div>
                   <span className="text-[10px] font-medium text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full shrink-0">نشط</span>
@@ -85,7 +85,7 @@ export function AdminUsersTable({ admins, onActionComplete }: AdminUsersTablePro
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors shrink-0" disabled={isSendingReset}>
-                          {isSendingReset ? <Loader2 className="h-4 w-4 animate-spin text-gray-400" /> : <MoreHorizontal className="h-4 w-4 text-gray-400" />}
+                          {isSendingReset ? <Loader2 className="h-4 w-4 animate-spin text-gray-600" /> : <MoreHorizontal className="h-4 w-4 text-gray-600" />}
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
@@ -107,7 +107,7 @@ export function AdminUsersTable({ admins, onActionComplete }: AdminUsersTablePro
             })}
           </div>
         ) : (
-          <div className="py-12 text-center text-gray-300 text-xs">لا يوجد مسؤولون</div>
+          <div className="py-12 text-center text-gray-600 text-xs">لا يوجد مسؤولون</div>
         )}
       </div>
 
@@ -129,7 +129,7 @@ export function AdminUsersTable({ admins, onActionComplete }: AdminUsersTablePro
               </div>
               <div>
                 <AlertDialogTitle className="text-base font-bold text-gray-900">حذف المسؤول</AlertDialogTitle>
-                <AlertDialogDescription className="text-xs text-gray-400 mt-0.5">لا يمكن التراجع عن هذا الإجراء</AlertDialogDescription>
+                <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">لا يمكن التراجع عن هذا الإجراء</AlertDialogDescription>
               </div>
             </div>
           </div>

@@ -32,23 +32,23 @@ export function RestaurantsTable({ restaurants, selectedProfileId, onProfileSele
             )}
           >
             <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
-              <Building2 className="h-4 w-4 text-gray-400" />
+              <Building2 className="h-4 w-4 text-gray-600" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-bold text-gray-800 truncate">{profile.restaurant_name}</div>
-              <div className="text-[10px] text-gray-400 flex items-center gap-1 mt-0.5">
+              <div className="text-[10px] text-gray-600 flex items-center gap-1 mt-0.5">
                 <User className="h-2.5 w-2.5" />
                 <span className="truncate">{profile.full_name}</span>
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <span className={cn("w-1.5 h-1.5 rounded-full", status.dot)} />
-              <span className="text-[10px] text-gray-400">{status.text}</span>
+              <span className="text-[10px] text-gray-600">{status.text}</span>
             </div>
           </button>
         );
       }) : (
-        <div className="py-12 text-center text-gray-300 text-xs">
+        <div className="py-12 text-center text-gray-600 text-xs">
           لا يوجد مشتركين
         </div>
       )}

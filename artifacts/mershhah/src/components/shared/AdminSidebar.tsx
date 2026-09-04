@@ -107,7 +107,7 @@ export function AdminSidebar() {
             <div key={item.href}>
               {showGroupHeader && (
                 <div className="pt-3 pb-1 px-3">
-                  <span className="text-[9px] font-bold text-gray-300">{item.group}</span>
+                  <span className="text-[9px] font-bold text-gray-600">{item.group}</span>
                 </div>
               )}
               <Link
@@ -115,7 +115,7 @@ export function AdminSidebar() {
                 className={`flex items-center gap-3 h-10 px-3 rounded-xl text-xs font-bold transition-colors ${
                   isActive
                     ? 'bg-gray-900 text-white'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
                 }`}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
@@ -137,7 +137,7 @@ export function AdminSidebar() {
           className={`flex items-center gap-3 h-10 px-3 rounded-xl text-xs font-bold transition-colors ${
             pathname === '/admin/settings'
               ? 'bg-gray-900 text-white'
-              : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
           }`}
         >
           <Settings className="h-4 w-4 shrink-0" />

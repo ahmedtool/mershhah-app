@@ -130,7 +130,7 @@ export default function SalaryCalculatorPage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">حاسبة الرواتب</h1>
-            <p className="text-xs text-gray-400">احسب رواتب موظفينك بسهولة</p>
+            <p className="text-xs text-gray-600">احسب رواتب موظفينك بسهولة</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -161,7 +161,7 @@ export default function SalaryCalculatorPage() {
                 {/* Employee Header */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500">
+                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600">
                       {index + 1}
                     </div>
                     <input
@@ -176,13 +176,13 @@ export default function SalaryCalculatorPage() {
                       placeholder="الوظيفة"
                       value={emp.position}
                       onChange={(e) => updateEmployee(emp.id, 'position', e.target.value)}
-                      className="h-10 px-3 rounded-xl border border-gray-200 text-xs text-gray-500 w-32"
+                      className="h-10 px-3 rounded-xl border border-gray-200 text-xs text-gray-600 w-32"
                     />
                   </div>
                   {employees.length > 1 && (
                     <button
                       onClick={() => removeEmployee(emp.id)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -191,10 +191,10 @@ export default function SalaryCalculatorPage() {
 
                 {/* Allowances */}
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 mb-2">البدلات</p>
+                  <p className="text-[10px] font-bold text-gray-600 mb-2">البدلات</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div>
-                      <label className="text-[10px] text-gray-400 mb-1 block">الراتب الأساسي</label>
+                      <label className="text-[10px] text-gray-600 mb-1 block">الراتب الأساسي</label>
                       <input
                         type="number"
                         value={emp.basicSalary || ''}
@@ -204,7 +204,7 @@ export default function SalaryCalculatorPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-gray-400 mb-1 block">بدل سكن</label>
+                      <label className="text-[10px] text-gray-600 mb-1 block">بدل سكن</label>
                       <input
                         type="number"
                         value={emp.housingAllowance || ''}
@@ -214,7 +214,7 @@ export default function SalaryCalculatorPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-gray-400 mb-1 block">بدل نقل</label>
+                      <label className="text-[10px] text-gray-600 mb-1 block">بدل نقل</label>
                       <input
                         type="number"
                         value={emp.transportAllowance || ''}
@@ -224,7 +224,7 @@ export default function SalaryCalculatorPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-gray-400 mb-1 block">بدلات أخرى</label>
+                      <label className="text-[10px] text-gray-600 mb-1 block">بدلات أخرى</label>
                       <input
                         type="number"
                         value={emp.otherAllowances || ''}
@@ -238,10 +238,10 @@ export default function SalaryCalculatorPage() {
 
                 {/* Deductions */}
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 mb-2">الخصومات</p>
+                  <p className="text-[10px] font-bold text-gray-600 mb-2">الخصومات</p>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div>
-                      <label className="text-[10px] text-gray-400 mb-1 block">التأمينات (GOSI)</label>
+                      <label className="text-[10px] text-gray-600 mb-1 block">التأمينات (GOSI)</label>
                       <input
                         type="number"
                         value={emp.gosi || ''}
@@ -251,7 +251,7 @@ export default function SalaryCalculatorPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-gray-400 mb-1 block">سلفات</label>
+                      <label className="text-[10px] text-gray-600 mb-1 block">سلفات</label>
                       <input
                         type="number"
                         value={emp.loans || ''}
@@ -261,7 +261,7 @@ export default function SalaryCalculatorPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-gray-400 mb-1 block">غياب</label>
+                      <label className="text-[10px] text-gray-600 mb-1 block">غياب</label>
                       <input
                         type="number"
                         value={emp.absence || ''}
@@ -271,7 +271,7 @@ export default function SalaryCalculatorPage() {
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-gray-400 mb-1 block">خصومات أخرى</label>
+                      <label className="text-[10px] text-gray-600 mb-1 block">خصومات أخرى</label>
                       <input
                         type="number"
                         value={emp.otherDeductions || ''}
@@ -286,15 +286,15 @@ export default function SalaryCalculatorPage() {
                 {/* Summary */}
                 <div className="bg-gray-50 rounded-xl p-3 grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-center">
                   <div>
-                    <p className="text-[10px] text-gray-400">الراتب الإجمالي</p>
+                    <p className="text-[10px] text-gray-600">الراتب الإجمالي</p>
                     <p className="text-sm font-bold text-gray-900">{formatCurrency(totals.grossSalary)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400">إجمالي الخصومات</p>
+                    <p className="text-[10px] text-gray-600">إجمالي الخصومات</p>
                     <p className="text-sm font-bold text-red-500">{formatCurrency(totals.totalDeductions)}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-gray-400">صافي الراتب</p>
+                    <p className="text-[10px] text-gray-600">صافي الراتب</p>
                     <p className="text-sm font-bold text-emerald-600">{formatCurrency(totals.netSalary)}</p>
                   </div>
                 </div>
@@ -307,7 +307,7 @@ export default function SalaryCalculatorPage() {
       {/* Add Employee */}
       <button
         onClick={addEmployee}
-        className="w-full h-12 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 text-xs font-bold hover:border-gray-300 hover:text-gray-500 transition-colors flex items-center justify-center gap-2"
+        className="w-full h-12 rounded-xl border-2 border-dashed border-gray-200 text-gray-600 text-xs font-bold hover:border-gray-300 hover:text-gray-600 transition-colors flex items-center justify-center gap-2"
       >
         <Plus className="h-4 w-4" />
         إضافة موظف
@@ -319,15 +319,15 @@ export default function SalaryCalculatorPage() {
           <CardContent className="p-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-center">
               <div>
-                <p className="text-[10px] text-gray-400">إجمالي الرواتب</p>
+                <p className="text-[10px] text-gray-600">إجمالي الرواتب</p>
                 <p className="text-lg font-black text-gray-900">{formatCurrency(grandTotals.gross)}</p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-400">إجمالي الخصومات</p>
+                <p className="text-[10px] text-gray-600">إجمالي الخصومات</p>
                 <p className="text-lg font-black text-red-500">{formatCurrency(grandTotals.deductions)}</p>
               </div>
               <div>
-                <p className="text-[10px] text-gray-400">صافي الإجمالي</p>
+                <p className="text-[10px] text-gray-600">صافي الإجمالي</p>
                 <p className="text-lg font-black text-emerald-600">{formatCurrency(grandTotals.net)}</p>
               </div>
             </div>

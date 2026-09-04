@@ -205,11 +205,11 @@ export function EditBranchDialog({
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-              <MapPin className="h-5 w-5 text-gray-500" />
+              <MapPin className="h-5 w-5 text-gray-600" />
             </div>
             <div>
               <h2 className="text-base font-bold text-gray-900">{isEdit ? 'تعديل الفرع' : 'إضافة فرع جديد'}</h2>
-              <p className="text-xs text-gray-400 mt-0.5">{isEdit ? 'عدّل البيانات ثم احفظ' : 'أدخل بيانات الفرع'}</p>
+              <p className="text-xs text-gray-600 mt-0.5">{isEdit ? 'عدّل البيانات ثم احفظ' : 'أدخل بيانات الفرع'}</p>
             </div>
           </div>
         </div>
@@ -220,7 +220,7 @@ export function EditBranchDialog({
             {/* Name */}
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">اسم الفرع</FormLabel>
+                <FormLabel className="text-xs text-gray-600">اسم الفرع</FormLabel>
                 <FormControl>
                   <Input placeholder="مثال: فرع العليا" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={saving} />
                 </FormControl>
@@ -232,7 +232,7 @@ export function EditBranchDialog({
             <div className="grid grid-cols-2 gap-3">
               {/* City Searchable */}
               <div className="space-y-1.5">
-                <FormLabel className="text-xs text-gray-500">المدينة</FormLabel>
+                <FormLabel className="text-xs text-gray-600">المدينة</FormLabel>
                 <div className="relative">
                   <Input
                     value={citySearch}
@@ -269,7 +269,7 @@ export function EditBranchDialog({
 
               {/* District Searchable */}
               <div className="space-y-1.5">
-                <FormLabel className="text-xs text-gray-500">الحي</FormLabel>
+                <FormLabel className="text-xs text-gray-600">الحي</FormLabel>
                 <div className="relative">
                   <Input
                     value={districtSearch}
@@ -306,7 +306,7 @@ export function EditBranchDialog({
             {/* Phone */}
             <FormField control={form.control} name="phone" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">رقم الجوال <span className="text-gray-300">(اختياري)</span></FormLabel>
+                <FormLabel className="text-xs text-gray-600">رقم الجوال <span className="text-gray-600">(اختياري)</span></FormLabel>
                 <FormControl>
                   <Input placeholder="05XXXXXXXX" {...field} className="h-10 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={saving} />
                 </FormControl>
@@ -316,36 +316,36 @@ export function EditBranchDialog({
 
             {/* Opening Hours */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-500">أوقات العمل</FormLabel>
+              <FormLabel className="text-xs text-gray-600">أوقات العمل</FormLabel>
               <div className="flex items-end gap-2">
                 <TimePicker value={allDaysOpen} onChange={(v) => { setAllDaysOpen(v); form.setValue('opening_hours', generateHoursText(v, allDaysClose, fridayOpen, fridayClose), { shouldDirty: true }); }} label="الفتح" className="flex-1" />
-                <span className="text-xs text-gray-300 mb-3">—</span>
+                <span className="text-xs text-gray-600 mb-3">—</span>
                 <TimePicker value={allDaysClose} onChange={(v) => { setAllDaysClose(v); form.setValue('opening_hours', generateHoursText(allDaysOpen, v, fridayOpen, fridayClose), { shouldDirty: true }); }} label="الإغلاق" className="flex-1" />
               </div>
 
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={showFriday} onChange={(e) => { setShowFriday(e.target.checked); if (!e.target.checked) { setFridayOpen(''); setFridayClose(''); form.setValue('opening_hours', generateHoursText(allDaysOpen, allDaysClose, '', ''), { shouldDirty: true }); } }} className="w-3.5 h-3.5 rounded border-gray-300" />
-                <span className="text-[11px] text-gray-400">الجمعة مختلفة</span>
+                <span className="text-[11px] text-gray-600">الجمعة مختلفة</span>
               </label>
 
               {showFriday && (
                 <div className="flex items-end gap-2">
                   <TimePicker value={fridayOpen} onChange={(v) => { setFridayOpen(v); form.setValue('opening_hours', generateHoursText(allDaysOpen, allDaysClose, v, fridayClose), { shouldDirty: true }); }} label="فتح" className="flex-1" />
-                  <span className="text-xs text-gray-300 mb-3">—</span>
+                  <span className="text-xs text-gray-600 mb-3">—</span>
                   <TimePicker value={fridayClose} onChange={(v) => { setFridayClose(v); form.setValue('opening_hours', generateHoursText(allDaysOpen, allDaysClose, fridayOpen, v), { shouldDirty: true }); }} label="إغلاق" className="flex-1" />
                 </div>
               )}
 
               {allDaysOpen && allDaysClose && (
                 <div className="bg-gray-50 rounded-lg px-3 py-2">
-                  <p className="text-xs text-gray-500">{generateHoursText(allDaysOpen, allDaysClose, fridayOpen, fridayClose)}</p>
+                  <p className="text-xs text-gray-600">{generateHoursText(allDaysOpen, allDaysClose, fridayOpen, fridayClose)}</p>
                 </div>
               )}
             </div>
 
             {/* Location - URL only */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-500">موقع الفرع</FormLabel>
+              <FormLabel className="text-xs text-gray-600">موقع الفرع</FormLabel>
               <div className="flex gap-2">
                 <Input
                   placeholder="الصق رابط جوجل مابز..."
@@ -370,14 +370,14 @@ export function EditBranchDialog({
 
             {/* Status */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-500">الحالة</FormLabel>
+              <FormLabel className="text-xs text-gray-600">الحالة</FormLabel>
               <div className="flex gap-2">
                 <button type="button" onClick={() => form.setValue('status', 'active')}
-                  className={`flex-1 h-9 rounded-xl text-xs font-medium transition-all border ${form.watch('status') === 'active' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}>
+                  className={`flex-1 h-9 rounded-xl text-xs font-medium transition-all border ${form.watch('status') === 'active' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
                   نشط
                 </button>
                 <button type="button" onClick={() => form.setValue('status', 'inactive')}
-                  className={`flex-1 h-9 rounded-xl text-xs font-medium transition-all border ${form.watch('status') === 'inactive' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}>
+                  className={`flex-1 h-9 rounded-xl text-xs font-medium transition-all border ${form.watch('status') === 'inactive' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
                   غير نشط
                 </button>
               </div>
@@ -385,8 +385,8 @@ export function EditBranchDialog({
 
             {/* Branch Delivery Apps */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-500">تطبيقات التوصيل</FormLabel>
-              <p className="text-[10px] text-gray-300">أضف روابط التطبيقات الخاصة بهذا الفرع</p>
+              <FormLabel className="text-xs text-gray-600">تطبيقات التوصيل</FormLabel>
+              <p className="text-[10px] text-gray-600">أضف روابط التطبيقات الخاصة بهذا الفرع</p>
               
               {globalApps.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
@@ -409,7 +409,7 @@ export function EditBranchDialog({
                           }
                         }}
                         className={`h-8 gap-1.5 text-[10px] font-bold rounded-lg px-3 flex items-center border transition-colors ${
-                          isAdded ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                          isAdded ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
                         }`}>
                         {app.name}
                       </button>
@@ -432,7 +432,7 @@ export function EditBranchDialog({
                       className="h-7 text-[10px] rounded-lg border-gray-200 mt-1" />
                   </div>
                   <button type="button" onClick={() => setBranchApps(branchApps.filter((a: any) => a.id !== app.id))}
-                    className="text-gray-300 hover:text-red-500 transition-colors p-1">
+                    className="text-gray-600 hover:text-red-500 transition-colors p-1">
                     <X size={12} />
                   </button>
                 </div>

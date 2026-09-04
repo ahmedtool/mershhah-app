@@ -296,7 +296,7 @@ export default function CostCalculatorPage() {
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">حاسبة تكلفة المنتج</h1>
-            <p className="text-xs text-gray-400">احسب تكلفة منتجك واعرف السعر المناسب له</p>
+            <p className="text-xs text-gray-600">احسب تكلفة منتجك واعرف السعر المناسب له</p>
           </div>
         </div>
         <button
@@ -314,7 +314,7 @@ export default function CostCalculatorPage() {
         <CardContent className="p-5 space-y-4">
           {/* Apply scope */}
           <div>
-            <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">تطبيق التكلفة على</label>
+            <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">تطبيق التكلفة على</label>
             <div className="flex flex-wrap gap-1.5">
               {SCOPE_OPTIONS.map((opt) => (
                 <button
@@ -325,7 +325,7 @@ export default function CostCalculatorPage() {
                     "h-8 px-3 rounded-lg text-[11px] font-bold border transition-colors",
                     applyScope === opt.value
                       ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
                   )}
                 >
                   {opt.label}
@@ -336,7 +336,7 @@ export default function CostCalculatorPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-              <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">
+              <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">
                 {applyScope === 'single' ? 'اسم المنتج' : 'اسم/وصف الحساب'}
               </label>
 
@@ -372,7 +372,7 @@ export default function CostCalculatorPage() {
                             </button>
                           ))
                         ) : (
-                          <p className="px-3 py-3 text-[11px] text-gray-400 text-center">
+                          <p className="px-3 py-3 text-[11px] text-gray-600 text-center">
                             {menuItems.length === 0 ? 'ما فيه أصناف بالمنيو بعد' : 'ما فيه صنف مطابق — راح يُستخدم كمنتج جديد'}
                           </p>
                         )}
@@ -381,7 +381,7 @@ export default function CostCalculatorPage() {
                   </div>
                   {selectedItem && (selectedItem.sizes?.length || 0) > 1 && (
                     <div className="mt-2 flex items-center gap-2">
-                      <span className="text-[10px] text-gray-400 shrink-0">حفظ التكلفة على حجم:</span>
+                      <span className="text-[10px] text-gray-600 shrink-0">حفظ التكلفة على حجم:</span>
                       <select
                         value={selectedSizeId}
                         onChange={(e) => setSelectedSizeId(e.target.value)}
@@ -394,7 +394,7 @@ export default function CostCalculatorPage() {
                     </div>
                   )}
                   {selectedItem && isLoadingCalc && (
-                    <p className="text-[10px] text-gray-400 mt-1.5 flex items-center gap-1.5">
+                    <p className="text-[10px] text-gray-600 mt-1.5 flex items-center gap-1.5">
                       <Loader2 className="h-3 w-3 animate-spin" />
                       جاري استرجاع آخر حساب لهذا المنتج...
                     </p>
@@ -414,7 +414,7 @@ export default function CostCalculatorPage() {
               )}
             </div>
             <div>
-              <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">عدد الحصص الناتجة</label>
+              <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">عدد الحصص الناتجة</label>
               <input
                 type="number"
                 min={1}
@@ -429,7 +429,7 @@ export default function CostCalculatorPage() {
           {applyScope === 'items' && (
             <div className="border border-gray-100 rounded-xl p-3 space-y-2">
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
                 <input
                   type="text"
                   placeholder="ابحث عن صنف..."
@@ -440,7 +440,7 @@ export default function CostCalculatorPage() {
               </div>
               <div className="max-h-56 overflow-y-auto space-y-1">
                 {bulkFilteredItems.length === 0 ? (
-                  <p className="text-center text-[11px] text-gray-400 py-4">ما فيه نتائج</p>
+                  <p className="text-center text-[11px] text-gray-600 py-4">ما فيه نتائج</p>
                 ) : (
                   bulkFilteredItems.map((item) => {
                     const checked = selectedItemIds.has(item.id);
@@ -472,7 +472,7 @@ export default function CostCalculatorPage() {
           {applyScope === 'categories' && (
             <div className="border border-gray-100 rounded-xl p-3 space-y-1">
               {categories.length === 0 ? (
-                <p className="text-center text-[11px] text-gray-400 py-4">ما فيه تصنيفات بالمنيو بعد</p>
+                <p className="text-center text-[11px] text-gray-600 py-4">ما فيه تصنيفات بالمنيو بعد</p>
               ) : (
                 categories.map((cat) => {
                   const checked = selectedCategoryIds.has(cat.id);
@@ -491,7 +491,7 @@ export default function CostCalculatorPage() {
                         {checked && <Check className="h-3 w-3 text-gray-900" />}
                       </div>
                       <span className="flex-1 truncate">{cat.name}</span>
-                      <span className={cn("text-[10px]", checked ? "text-gray-300" : "text-gray-400")}>{count} صنف</span>
+                      <span className={cn("text-[10px]", checked ? "text-gray-400" : "text-gray-600")}>{count} صنف</span>
                     </button>
                   );
                 })
@@ -521,7 +521,7 @@ export default function CostCalculatorPage() {
         <CardContent className="p-5 space-y-3">
           <div>
             <p className="text-xs font-bold text-gray-900">المكونات</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">
+            <p className="text-[10px] text-gray-600 mt-0.5">
               اكتب سعر العبوة اللي تشتريها وكميتها، وبعدين قد إيش استخدمت منها بهذه الوصفة — والحاسبة تحسب التكلفة النسبية تلقائياً
             </p>
           </div>
@@ -539,7 +539,7 @@ export default function CostCalculatorPage() {
                   <button
                     onClick={() => removeIngredient(ing.id)}
                     disabled={ingredients.length === 1}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30 shrink-0"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30 shrink-0"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -547,7 +547,7 @@ export default function CostCalculatorPage() {
 
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-2 items-end">
                   <div className="col-span-2 md:col-span-1">
-                    <label className="text-[9px] text-gray-400 mb-1 block">سعر شراء العبوة</label>
+                    <label className="text-[9px] text-gray-600 mb-1 block">سعر شراء العبوة</label>
                     <input
                       type="number"
                       value={ing.packagePrice || ''}
@@ -557,7 +557,7 @@ export default function CostCalculatorPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] text-gray-400 mb-1 block">كمية العبوة</label>
+                    <label className="text-[9px] text-gray-600 mb-1 block">كمية العبوة</label>
                     <input
                       type="number"
                       value={ing.packageQty || ''}
@@ -567,7 +567,7 @@ export default function CostCalculatorPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] text-gray-400 mb-1 block">وحدة العبوة</label>
+                    <label className="text-[9px] text-gray-600 mb-1 block">وحدة العبوة</label>
                     <select
                       value={ing.packageUnit}
                       onChange={(e) => updateIngredient(ing.id, 'packageUnit', e.target.value)}
@@ -577,7 +577,7 @@ export default function CostCalculatorPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-[9px] text-gray-400 mb-1 block">المستخدم بالوصفة</label>
+                    <label className="text-[9px] text-gray-600 mb-1 block">المستخدم بالوصفة</label>
                     <input
                       type="number"
                       value={ing.usedQty || ''}
@@ -587,7 +587,7 @@ export default function CostCalculatorPage() {
                     />
                   </div>
                   <div>
-                    <label className="text-[9px] text-gray-400 mb-1 block">وحدة الاستخدام</label>
+                    <label className="text-[9px] text-gray-600 mb-1 block">وحدة الاستخدام</label>
                     <select
                       value={ing.usedUnit}
                       onChange={(e) => updateIngredient(ing.id, 'usedUnit', e.target.value)}
@@ -604,7 +604,7 @@ export default function CostCalculatorPage() {
                     وحدة الاستخدام "{ing.usedUnit}" ما تتحول لوحدة العبوة "{ing.packageUnit}" — اختر وحدتين من نفس النوع (وزن مع وزن، أو حجم مع حجم)
                   </p>
                 ) : (
-                  <p className="text-[10px] text-gray-500">
+                  <p className="text-[10px] text-gray-600">
                     تكلفة هذا المكوّن بالوصفة: <span className="font-bold text-gray-900">{formatCurrency(cost)} ر.س</span>
                   </p>
                 )}
@@ -613,7 +613,7 @@ export default function CostCalculatorPage() {
           </div>
           <button
             onClick={addIngredient}
-            className="w-full h-10 rounded-xl border-2 border-dashed border-gray-200 text-gray-400 text-xs font-bold hover:border-gray-300 hover:text-gray-500 transition-colors flex items-center justify-center gap-2"
+            className="w-full h-10 rounded-xl border-2 border-dashed border-gray-200 text-gray-600 text-xs font-bold hover:border-gray-300 hover:text-gray-600 transition-colors flex items-center justify-center gap-2"
           >
             <Plus className="h-3.5 w-3.5" />
             إضافة مكوّن
@@ -625,7 +625,7 @@ export default function CostCalculatorPage() {
       <Card className="border-gray-100">
         <CardContent className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <label className="text-[10px] text-gray-400 mb-1 block">تكلفة التغليف</label>
+            <label className="text-[10px] text-gray-600 mb-1 block">تكلفة التغليف</label>
             <input
               type="number"
               value={packagingCost || ''}
@@ -635,7 +635,7 @@ export default function CostCalculatorPage() {
             />
           </div>
           <div>
-            <label className="text-[10px] text-gray-400 mb-1 block">نسبة هدر/تشغيل %</label>
+            <label className="text-[10px] text-gray-600 mb-1 block">نسبة هدر/تشغيل %</label>
             <input
               type="number"
               value={overheadPercent || ''}
@@ -645,7 +645,7 @@ export default function CostCalculatorPage() {
             />
           </div>
           <div>
-            <label className="text-[10px] text-gray-400 mb-1 block">هامش الربح المستهدف %</label>
+            <label className="text-[10px] text-gray-600 mb-1 block">هامش الربح المستهدف %</label>
             <input
               type="number"
               value={targetMarginPercent || ''}
@@ -655,7 +655,7 @@ export default function CostCalculatorPage() {
             />
           </div>
           <div>
-            <label className="text-[10px] text-gray-400 mb-1 block">سعر البيع الحالي (اختياري)</label>
+            <label className="text-[10px] text-gray-600 mb-1 block">سعر البيع الحالي (اختياري)</label>
             <input
               type="number"
               value={sellingPrice}
@@ -680,38 +680,38 @@ export default function CostCalculatorPage() {
           )}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
-              <p className="text-[10px] text-gray-400">تكلفة المكونات</p>
+              <p className="text-[10px] text-gray-600">تكلفة المكونات</p>
               <p className="text-sm font-bold text-gray-900">{formatCurrency(ingredientsCost)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400">هدر/تشغيل + تغليف</p>
+              <p className="text-[10px] text-gray-600">هدر/تشغيل + تغليف</p>
               <p className="text-sm font-bold text-gray-900">{formatCurrency(overheadAmount + (packagingCost || 0))}</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400">التكلفة الإجمالية</p>
+              <p className="text-[10px] text-gray-600">التكلفة الإجمالية</p>
               <p className="text-sm font-bold text-gray-900">{formatCurrency(totalCost)}</p>
             </div>
             <div>
-              <p className="text-[10px] text-gray-400">تكلفة الحصة الواحدة</p>
+              <p className="text-[10px] text-gray-600">تكلفة الحصة الواحدة</p>
               <p className="text-lg font-black text-amber-600">{formatCurrency(costPerServing)} ر.س</p>
             </div>
           </div>
 
           <div className="border-t border-gray-200 pt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-[10px] text-gray-400">السعر المقترح (هامش {targetMarginPercent || 0}%)</p>
+              <p className="text-[10px] text-gray-600">السعر المقترح (هامش {targetMarginPercent || 0}%)</p>
               <p className="text-lg font-black text-emerald-600">{formatCurrency(suggestedPrice)} ر.س</p>
             </div>
             {hasSellingPrice && (
               <>
                 <div>
-                  <p className="text-[10px] text-gray-400">الربح عند سعرك الحالي</p>
+                  <p className="text-[10px] text-gray-600">الربح عند سعرك الحالي</p>
                   <p className={`text-lg font-black ${profitPerServing >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                     {formatCurrency(profitPerServing)} ر.س
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-gray-400">هامش الربح الفعلي</p>
+                  <p className="text-[10px] text-gray-600">هامش الربح الفعلي</p>
                   <p className={`text-lg font-black ${profitMarginPercent >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                     {profitMarginPercent.toFixed(1)}%
                   </p>

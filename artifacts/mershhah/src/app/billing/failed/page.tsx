@@ -12,7 +12,7 @@ export default function BillingFailedPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">فشلت عملية الدفع</h1>
-          <p className="text-sm text-gray-400 mt-2">حدثت مشكلة أثناء الدفع. يمكنك المحاولة مرة أخرى.</p>
+          <p className="text-sm text-gray-600 mt-2">حدثت مشكلة أثناء الدفع. يمكنك المحاولة مرة أخرى.</p>
         </div>
         <div className="flex gap-3">
           <Link href="/owner/billing" className="flex-1">

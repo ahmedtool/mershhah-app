@@ -188,7 +188,7 @@ export default function AdminFinancialsPage() {
               className={`flex items-center gap-1.5 h-9 px-4 rounded-lg text-[11px] font-bold transition-colors ${
                 isActive
                   ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-400 hover:text-gray-600'
+                  : 'text-gray-600 hover:text-gray-600'
               }`}
             >
               <tab.icon className="h-3.5 w-3.5" />
@@ -200,7 +200,7 @@ export default function AdminFinancialsPage() {
 
       <div>
         <h1 className="text-lg font-bold text-gray-900">المالية</h1>
-        <p className="text-xs text-gray-400 mt-1">نظرة عامة على الإيرادات والاشتراكات</p>
+        <p className="text-xs text-gray-600 mt-1">نظرة عامة على الإيرادات والاشتراكات</p>
       </div>
 
       {/* Main Stats */}
@@ -212,12 +212,12 @@ export default function AdminFinancialsPage() {
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="w-9 h-9 rounded-xl bg-gray-50 flex items-center justify-center">
-                  <DollarSign className="h-4 w-4 text-gray-500" />
+                  <DollarSign className="h-4 w-4 text-gray-600" />
                 </div>
-                <span className="text-[10px] text-gray-400">إجمالي</span>
+                <span className="text-[10px] text-gray-600">إجمالي</span>
               </div>
               <p className="text-xl font-black text-gray-900">{stats.totalRevenue.toLocaleString()} ر.س</p>
-              <p className="text-[10px] text-gray-400 mt-1">الإيراد الكلي</p>
+              <p className="text-[10px] text-gray-600 mt-1">الإيراد الكلي</p>
             </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
@@ -233,7 +233,7 @@ export default function AdminFinancialsPage() {
                 )}
               </div>
               <p className="text-xl font-black text-gray-900">{stats.monthlyRevenue.toLocaleString()} ر.س</p>
-              <p className="text-[10px] text-gray-400 mt-1">إيراد هذا الشهر (مقارنة بالشهر الماضي)</p>
+              <p className="text-[10px] text-gray-600 mt-1">إيراد هذا الشهر (مقارنة بالشهر الماضي)</p>
             </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
@@ -241,10 +241,10 @@ export default function AdminFinancialsPage() {
                 <div className="w-9 h-9 rounded-xl bg-red-50 flex items-center justify-center">
                   <Undo2 className="h-4 w-4 text-red-500" />
                 </div>
-                <span className="text-[10px] text-gray-400">مسترجع</span>
+                <span className="text-[10px] text-gray-600">مسترجع</span>
               </div>
               <p className="text-xl font-black text-gray-900">{stats.totalRefunded.toLocaleString()} ر.س</p>
-              <p className="text-[10px] text-gray-400 mt-1">إجمالي المبالغ المسترجعة</p>
+              <p className="text-[10px] text-gray-600 mt-1">إجمالي المبالغ المسترجعة</p>
             </div>
 
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
@@ -252,10 +252,10 @@ export default function AdminFinancialsPage() {
                 <div className="w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center">
                   <Users className="h-4 w-4 text-amber-500" />
                 </div>
-                <span className="text-[10px] text-gray-400">{stats.totalSubscriptions}</span>
+                <span className="text-[10px] text-gray-600">{stats.totalSubscriptions}</span>
               </div>
               <p className="text-xl font-black text-gray-900">{stats.activeSubscriptions}</p>
-              <p className="text-[10px] text-gray-400 mt-1">اشتراك نشط</p>
+              <p className="text-[10px] text-gray-600 mt-1">اشتراك نشط</p>
             </div>
           </>
         )}
@@ -299,10 +299,10 @@ export default function AdminFinancialsPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-sm font-bold text-gray-900">الإيرادات الشهرية</h3>
-              <p className="text-[10px] text-gray-400 mt-0.5">آخر 6 أشهر</p>
+              <p className="text-[10px] text-gray-600 mt-0.5">آخر 6 أشهر</p>
             </div>
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
-              <BarChart3 className="h-4 w-4 text-gray-400" />
+              <BarChart3 className="h-4 w-4 text-gray-600" />
             </div>
           </div>
 
@@ -312,14 +312,14 @@ export default function AdminFinancialsPage() {
             <div className="flex items-end gap-2 h-48">
               {stats.monthlyTrend.map((item, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                  <span className="text-[9px] font-bold text-gray-500">{item.revenue.toLocaleString()}</span>
+                  <span className="text-[9px] font-bold text-gray-600">{item.revenue.toLocaleString()}</span>
                   <div className="w-full bg-gray-100 rounded-lg relative" style={{ height: '120px' }}>
                     <div
                       className="absolute bottom-0 left-0 right-0 bg-gray-900 rounded-lg transition-all duration-500"
                       style={{ height: `${Math.max((item.revenue / maxRevenue) * 100, 4)}%` }}
                     />
                   </div>
-                  <span className="text-[9px] text-gray-400">{item.month}</span>
+                  <span className="text-[9px] text-gray-600">{item.month}</span>
                 </div>
               ))}
             </div>
@@ -331,10 +331,10 @@ export default function AdminFinancialsPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h3 className="text-sm font-bold text-gray-900">الإيراد حسب الباقة</h3>
-              <p className="text-[10px] text-gray-400 mt-0.5">توزيع الاشتراكات</p>
+              <p className="text-[10px] text-gray-600 mt-0.5">توزيع الاشتراكات</p>
             </div>
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
-              <PieChart className="h-4 w-4 text-gray-400" />
+              <PieChart className="h-4 w-4 text-gray-600" />
             </div>
           </div>
 
@@ -345,7 +345,7 @@ export default function AdminFinancialsPage() {
             </div>
           ) : stats.revenueByPlan.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-xs text-gray-400">لا توجد بيانات بعد</p>
+              <p className="text-xs text-gray-600">لا توجد بيانات بعد</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -356,7 +356,7 @@ export default function AdminFinancialsPage() {
                   <div key={i} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-gray-700">{item.plan}</span>
-                      <span className="text-[10px] text-gray-400">{item.count} اشتراك</span>
+                      <span className="text-[10px] text-gray-600">{item.count} اشتراك</span>
                     </div>
                     <div className="w-full bg-gray-100 rounded-full h-2">
                       <div
@@ -366,7 +366,7 @@ export default function AdminFinancialsPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-bold text-gray-900">{item.revenue.toLocaleString()} ر.س</span>
-                      <span className="text-[10px] text-gray-400">{percentage}%</span>
+                      <span className="text-[10px] text-gray-600">{percentage}%</span>
                     </div>
                   </div>
                 );
@@ -384,19 +384,19 @@ export default function AdminFinancialsPage() {
           <>
             <div className="bg-white border border-gray-100 rounded-2xl p-4 text-center">
               <p className="text-2xl font-black text-gray-900">{stats.activeSubscriptions}</p>
-              <p className="text-[10px] text-gray-400 mt-1">نشط</p>
+              <p className="text-[10px] text-gray-600 mt-1">نشط</p>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4 text-center">
               <p className="text-2xl font-black text-amber-500">{stats.pendingSubscriptions}</p>
-              <p className="text-[10px] text-gray-400 mt-1">قيد الإتمام</p>
+              <p className="text-[10px] text-gray-600 mt-1">قيد الإتمام</p>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4 text-center">
-              <p className="text-2xl font-black text-gray-400">{stats.totalSubscriptions - stats.activeSubscriptions - stats.cancelledSubscriptions - stats.pendingSubscriptions}</p>
-              <p className="text-[10px] text-gray-400 mt-1">منتهي</p>
+              <p className="text-2xl font-black text-gray-600">{stats.totalSubscriptions - stats.activeSubscriptions - stats.cancelledSubscriptions - stats.pendingSubscriptions}</p>
+              <p className="text-[10px] text-gray-600 mt-1">منتهي</p>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4 text-center">
               <p className="text-2xl font-black text-red-400">{stats.cancelledSubscriptions}</p>
-              <p className="text-[10px] text-gray-400 mt-1">ملغي</p>
+              <p className="text-[10px] text-gray-600 mt-1">ملغي</p>
             </div>
           </>
         )}
@@ -408,10 +408,10 @@ export default function AdminFinancialsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-gray-900">آخر المعاملات</h3>
-              <p className="text-[10px] text-gray-400 mt-0.5">جميع الدفعات الأخيرة</p>
+              <p className="text-[10px] text-gray-600 mt-0.5">جميع الدفعات الأخيرة</p>
             </div>
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
-              <Calendar className="h-4 w-4 text-gray-400" />
+              <Calendar className="h-4 w-4 text-gray-600" />
             </div>
           </div>
         </div>
@@ -424,19 +424,19 @@ export default function AdminFinancialsPage() {
           </div>
         ) : stats.recentPayments.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-xs text-gray-400">لا توجد معاملات بعد</p>
+            <p className="text-xs text-gray-600">لا توجد معاملات بعد</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-t border-gray-100">
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">المطعم</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الوصف</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">المبلغ</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الربح الصافي</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">التاريخ</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الحالة</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">المطعم</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">الوصف</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">المبلغ</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">الربح الصافي</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">التاريخ</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">الحالة</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -447,14 +447,14 @@ export default function AdminFinancialsPage() {
                     : payment.status === 'failed' ? 'فشل' : 'معلّق';
                   const statusColor = payment.status === 'completed'
                     ? (isRefund ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600')
-                    : payment.status === 'failed' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-500';
+                    : payment.status === 'failed' ? 'bg-red-50 text-red-500' : 'bg-gray-100 text-gray-600';
                   return (
                     <tr key={payment.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-5 py-3">
                         <span className="font-bold text-gray-700">{payment.restaurant}</span>
                       </td>
                       <td className="px-5 py-3">
-                        <span className="text-gray-500">{payment.description}</span>
+                        <span className="text-gray-600">{payment.description}</span>
                       </td>
                       <td className="px-5 py-3">
                         <span className={`font-bold ${isRefund ? 'text-red-500' : 'text-gray-900'}`}>
@@ -467,11 +467,11 @@ export default function AdminFinancialsPage() {
                             {payment.netProfit.toLocaleString(undefined, { maximumFractionDigits: 2 })} ر.س
                           </span>
                         ) : (
-                          <span className="text-gray-300">—</span>
+                          <span className="text-gray-600">—</span>
                         )}
                       </td>
                       <td className="px-5 py-3">
-                        <span className="text-gray-400">{date.toLocaleDateString('ar-SA')}</span>
+                        <span className="text-gray-600">{date.toLocaleDateString('ar-SA')}</span>
                       </td>
                       <td className="px-5 py-3">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${statusColor}`}>

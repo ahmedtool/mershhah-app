@@ -312,7 +312,7 @@ export default function ImageEnhancerPage() {
         </div>
         <div>
           <h1 className="text-lg font-bold text-gray-900">تحسين جودة صور المنتجات</h1>
-          <p className="text-xs text-gray-400">اختر صنف من منيوك، وحسّن وضوح صورته بضغطة زر</p>
+          <p className="text-xs text-gray-600">اختر صنف من منيوك، وحسّن وضوح صورته بضغطة زر</p>
         </div>
       </div>
 
@@ -357,14 +357,14 @@ export default function ImageEnhancerPage() {
                 {originalUrl ? (
                   <img src={originalUrl} alt={selectedItem.name} className="w-full h-full object-cover" />
                 ) : (
-                  <ImageOff className="h-4 w-4 text-gray-300" />
+                  <ImageOff className="h-4 w-4 text-gray-600" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-gray-900 truncate">{selectedItem.name}</p>
-                <p className="text-[10px] text-gray-400">{originalUrl ? 'صورته الحالية جاهزة للتحسين' : 'ماعنده صورة حالياً'}</p>
+                <p className="text-[10px] text-gray-600">{originalUrl ? 'صورته الحالية جاهزة للتحسين' : 'ماعنده صورة حالياً'}</p>
               </div>
-              <button onClick={clearProduct} className="h-8 px-3 rounded-lg border border-gray-200 text-gray-500 text-[11px] font-bold hover:bg-gray-50 transition-colors shrink-0">
+              <button onClick={clearProduct} className="h-8 px-3 rounded-lg border border-gray-200 text-gray-600 text-[11px] font-bold hover:bg-gray-50 transition-colors shrink-0">
                 تغيير
               </button>
             </div>
@@ -400,14 +400,14 @@ export default function ImageEnhancerPage() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <ImageOff className="h-3 w-3 text-gray-300" />
+                            <ImageOff className="h-3 w-3 text-gray-600" />
                           )}
                         </div>
                         <span className="truncate">{item.name}</span>
                       </button>
                     ))
                   ) : (
-                    <p className="px-3 py-3 text-[11px] text-gray-400 text-center">ما فيه صنف مطابق</p>
+                    <p className="px-3 py-3 text-[11px] text-gray-600 text-center">ما فيه صنف مطابق</p>
                   )}
                 </div>
               )}
@@ -427,7 +427,7 @@ export default function ImageEnhancerPage() {
 
             {!originalUrl ? (
               <div className="border border-dashed border-gray-200 rounded-xl p-6 text-center space-y-3">
-                <p className="text-[11px] text-gray-400">هذا الصنف ماعنده صورة بعد — ارفع وحدة أو اختر من مكتبة صور منيوك</p>
+                <p className="text-[11px] text-gray-600">هذا الصنف ماعنده صورة بعد — ارفع وحدة أو اختر من مكتبة صور منيوك</p>
                 <div className="flex gap-2 justify-center">
                   <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                   <button
@@ -450,18 +450,18 @@ export default function ImageEnhancerPage() {
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-[10px] font-bold text-gray-400 mb-1.5">قبل</p>
+                    <p className="text-[10px] font-bold text-gray-600 mb-1.5">قبل</p>
                     <div className="aspect-square rounded-xl overflow-hidden bg-gray-50 border border-gray-100">
                       <img src={originalUrl} alt="قبل" className="w-full h-full object-cover" />
                     </div>
                   </div>
                   <div>
-                    <p className="text-[10px] font-bold text-gray-400 mb-1.5">بعد</p>
+                    <p className="text-[10px] font-bold text-gray-600 mb-1.5">بعد</p>
                     <div className="aspect-square rounded-xl overflow-hidden bg-gray-50 border border-gray-100 flex items-center justify-center">
                       {isProcessing ? (
                         <div className="flex flex-col items-center gap-2 px-3 text-center">
-                          <Loader2 className="h-6 w-6 text-gray-300 animate-spin" />
-                          <p className="text-[10px] text-gray-400">{processingStatus}</p>
+                          <Loader2 className="h-6 w-6 text-gray-600 animate-spin" />
+                          <p className="text-[10px] text-gray-600">{processingStatus}</p>
                         </div>
                       ) : enhancedUrl ? (
                         <img src={enhancedUrl} alt="بعد" className="w-full h-full object-cover" />
@@ -474,14 +474,14 @@ export default function ImageEnhancerPage() {
 
                 {!isProcessing && (
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[10px] text-gray-400">يحوّل الخلفية لبيضاء نظيفة — عادةً أقل من دقيقة</p>
+                    <p className="text-[10px] text-gray-600">يحوّل الخلفية لبيضاء نظيفة — عادةً أقل من دقيقة</p>
                     <div className="flex gap-1.5 shrink-0">
                       <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                      <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-bold text-gray-400 hover:text-gray-600">
+                      <button onClick={() => fileInputRef.current?.click()} className="text-[10px] font-bold text-gray-600 hover:text-gray-600">
                         رفع صورة ثانية
                       </button>
                       <span className="text-gray-200">·</span>
-                      <button onClick={() => setGalleryOpen(true)} className="text-[10px] font-bold text-gray-400 hover:text-gray-600">
+                      <button onClick={() => setGalleryOpen(true)} className="text-[10px] font-bold text-gray-600 hover:text-gray-600">
                         اختيار من المكتبة
                       </button>
                     </div>
@@ -499,7 +499,7 @@ export default function ImageEnhancerPage() {
                   </button>
                   <button
                     onClick={resetImages}
-                    className="h-11 px-4 rounded-xl border border-gray-200 text-gray-500 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                    className="h-11 px-4 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
                     إلغاء
@@ -528,12 +528,12 @@ export default function ImageEnhancerPage() {
           <CardContent className="p-5 space-y-3">
             <div>
               <p className="text-xs font-bold text-gray-900">اشترِ رصيد إضافي</p>
-              <p className="text-[10px] text-gray-400 mt-0.5">الرصيد يترحّل — ما ينتهي بنهاية الشهر (حد أقصى 199 صورة بالمجموع)</p>
+              <p className="text-[10px] text-gray-600 mt-0.5">الرصيد يترحّل — ما ينتهي بنهاية الشهر (حد أقصى 199 صورة بالمجموع)</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {packs.map((pack) => (
                 <div key={pack.id} className="border border-gray-100 rounded-xl p-3.5 text-center space-y-2">
-                  <p className="text-[11px] font-bold text-gray-500">{pack.name}</p>
+                  <p className="text-[11px] font-bold text-gray-600">{pack.name}</p>
                   <p className="text-lg font-black text-gray-900">{pack.credits} صورة</p>
                   <p className="text-sm font-bold text-violet-600">{pack.price} ر.س</p>
                   <button
@@ -558,7 +558,7 @@ export default function ImageEnhancerPage() {
           <DialogDescription className="sr-only">اضغط على الصورة لاختيارها كنقطة بداية للتحسين</DialogDescription>
           <div className="px-5 pt-5 pb-3">
             <h2 className="text-lg font-bold">اختر صورة من صور منيوك</h2>
-            <p className="text-sm text-gray-400 mt-1">اضغط على الصورة لاختيارها كنقطة بداية للتحسين</p>
+            <p className="text-sm text-gray-600 mt-1">اضغط على الصورة لاختيارها كنقطة بداية للتحسين</p>
           </div>
           <div className="flex-1 overflow-y-auto -mx-6 px-6 pb-6">
             <ImageGallery onImageSelect={handleGallerySelect} />

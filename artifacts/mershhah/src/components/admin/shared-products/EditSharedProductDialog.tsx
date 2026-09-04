@@ -105,11 +105,11 @@ export function EditSharedProductDialog({ children, product, onSave }: EditShare
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-              <CupSoda className="h-5 w-5 text-gray-500" />
+              <CupSoda className="h-5 w-5 text-gray-600" />
             </div>
             <div>
               <h2 className="text-base font-bold text-gray-900">{isEditing ? 'تعديل المنتج' : 'إضافة منتج للمكتبة'}</h2>
-              <p className="text-xs text-gray-400 mt-0.5">يظهر لكل أصحاب المطاعم ليضيفوه لمنيوهم</p>
+              <p className="text-xs text-gray-600 mt-0.5">يظهر لكل أصحاب المطاعم ليضيفوه لمنيوهم</p>
             </div>
           </div>
         </div>
@@ -120,7 +120,7 @@ export function EditSharedProductDialog({ children, product, onSave }: EditShare
               <div className="flex-1 space-y-3">
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-500">اسم المنتج</FormLabel>
+                    <FormLabel className="text-xs text-gray-600">اسم المنتج</FormLabel>
                     <FormControl>
                       <Input placeholder="مثال: عصير مانجو" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                     </FormControl>
@@ -129,7 +129,7 @@ export function EditSharedProductDialog({ children, product, onSave }: EditShare
                 )} />
                 <FormField control={form.control} name="calories" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-500">السعرات الحرارية</FormLabel>
+                    <FormLabel className="text-xs text-gray-600">السعرات الحرارية</FormLabel>
                     <FormControl>
                       <Input type="number" min={0} placeholder="150" {...field} className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
                     </FormControl>
@@ -142,7 +142,7 @@ export function EditSharedProductDialog({ children, product, onSave }: EditShare
                 {previewImage ? (
                   <StorageImage imagePath={previewImage} alt="product" height={72} width={72} className="w-full h-full object-cover rounded-xl" />
                 ) : (
-                  <span className="text-[9px] text-gray-300 text-center">صورة<br />المنتج</span>
+                  <span className="text-[9px] text-gray-600 text-center">صورة<br />المنتج</span>
                 )}
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
@@ -156,14 +156,14 @@ export function EditSharedProductDialog({ children, product, onSave }: EditShare
 
             <FormField control={form.control} name="category" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">التصنيف</FormLabel>
+                <FormLabel className="text-xs text-gray-600">التصنيف</FormLabel>
                 <FormControl>
                   <Input placeholder="مثال: عصائر طبيعية" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                 </FormControl>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {CATEGORIES.map((cat) => (
                     <button key={cat} type="button" onClick={() => field.onChange(cat)}
-                      className={`px-2 py-0.5 rounded-full text-[10px] transition-colors ${field.value === cat ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                      className={`px-2 py-0.5 rounded-full text-[10px] transition-colors ${field.value === cat ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                       {cat}
                     </button>
                   ))}

@@ -145,7 +145,7 @@ export default function MarketingCalendarPage() {
                 </div>
                 <div>
                   <h2 className="text-base font-black text-gray-900">{category.title}</h2>
-                  <p className="text-[11px] text-gray-400">{category.data.length} مناسبة</p>
+                  <p className="text-[11px] text-gray-600">{category.data.length} مناسبة</p>
                 </div>
               </div>
 
@@ -173,7 +173,7 @@ export default function MarketingCalendarPage() {
                             title={isReminding ? "إلغاء التذكير" : "ذكرني قبل 3 أيام"}
                             className={cn(
                               "shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-colors",
-                              isReminding ? "bg-amber-100 text-amber-600" : "bg-gray-50 text-gray-300 hover:text-gray-500"
+                              isReminding ? "bg-amber-100 text-amber-600" : "bg-gray-50 text-gray-600 hover:text-gray-600"
                             )}
                           >
                             {isTogglingReminder ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Bell className="h-3.5 w-3.5" fill={isReminding ? "currentColor" : "none"} />}
@@ -189,7 +189,7 @@ export default function MarketingCalendarPage() {
 
                       <button
                         onClick={() => handleCreateOffer(event)}
-                        className="w-full h-8 mt-3 rounded-lg text-[11px] font-bold text-gray-500 hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-center gap-1"
+                        className="w-full h-8 mt-3 rounded-lg text-[11px] font-bold text-gray-600 hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-center gap-1"
                       >
                         <Ticket className="h-3.5 w-3.5" /> إنشاء عرض
                       </button>
@@ -202,9 +202,9 @@ export default function MarketingCalendarPage() {
         })}
 
         {filteredEvents.every(c => c.data.length === 0) && (
-          <div className="text-center py-16 text-gray-300">
+          <div className="text-center py-16 text-gray-600">
             <CalendarDays className="h-12 w-12 mx-auto mb-4" />
-            <p className="font-semibold text-gray-500">لا توجد مناسبات في هذا الشهر.</p>
+            <p className="font-semibold text-gray-600">لا توجد مناسبات في هذا الشهر.</p>
             <p className="text-sm">جرب اختيار شهر آخر أو عرض الكل.</p>
           </div>
         )}

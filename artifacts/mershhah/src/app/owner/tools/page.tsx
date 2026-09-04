@@ -82,7 +82,7 @@ export default function OwnerToolsPage() {
                 <Card>
                     <CardContent className="flex flex-col items-center justify-center py-16 gap-4">
                         <Wrench className="h-12 w-12 text-gray-200" />
-                        <p className="text-gray-400 text-center text-sm">لا توجد أدوات مفعّلة حالياً</p>
+                        <p className="text-gray-600 text-center text-sm">لا توجد أدوات مفعّلة حالياً</p>
                         <Link href="/owner/store">
                             <button className="h-10 px-5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors">
                                 متجر الأدوات
@@ -110,11 +110,11 @@ export default function OwnerToolsPage() {
                                     <h3 className="text-sm font-bold text-gray-900">{tool.title}</h3>
                                 </div>
                                 <div className="p-4 space-y-3">
-                                    <p className="text-[11px] text-gray-400 leading-relaxed line-clamp-2">{tool.description}</p>
+                                    <p className="text-[11px] text-gray-600 leading-relaxed line-clamp-2">{tool.description}</p>
                                     {tool.expires_at && (
                                         <div className="flex items-center gap-1.5 text-[10px]">
-                                            <Clock className="h-3 w-3 text-gray-300" />
-                                            <span className={expired ? 'text-red-500 font-bold' : 'text-gray-400'}>
+                                            <Clock className="h-3 w-3 text-gray-600" />
+                                            <span className={expired ? 'text-red-500 font-bold' : 'text-gray-600'}>
                                                 {expired ? 'منتهية الصلاحية' : `صالح حتى ${new Date(tool.expires_at).toLocaleDateString('ar-SA')}`}
                                             </span>
                                         </div>

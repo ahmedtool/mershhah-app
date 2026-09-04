@@ -60,32 +60,32 @@ export default function BillingSuccessPage() {
       <div className="w-full max-w-md bg-white rounded-2xl border border-gray-100 p-8 text-center space-y-5">
         <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto ${state === 'checking' ? 'bg-gray-50' : 'bg-emerald-50'}`}>
           {state === 'checking'
-            ? <Loader2 className="h-8 w-8 text-gray-300 animate-spin" />
+            ? <Loader2 className="h-8 w-8 text-gray-600 animate-spin" />
             : <CheckCircle className="h-8 w-8 text-emerald-500" />}
         </div>
         <div>
           {state === 'checking' && (
             <>
               <h1 className="text-xl font-bold text-gray-900">جاري تفعيل اشتراكك...</h1>
-              <p className="text-sm text-gray-400 mt-2">الدفع تم بنجاح، وراح يفعّل تلقائياً خلال لحظات.</p>
+              <p className="text-sm text-gray-600 mt-2">الدفع تم بنجاح، وراح يفعّل تلقائياً خلال لحظات.</p>
             </>
           )}
           {state === 'confirmed' && (
             <>
               <h1 className="text-xl font-bold text-gray-900">تم الدفع بنجاح!</h1>
-              <p className="text-sm text-gray-400 mt-2">تم تفعيل اشتراكك. يمكنك الآن الاستمتاع بجميع المميزات.</p>
+              <p className="text-sm text-gray-600 mt-2">تم تفعيل اشتراكك. يمكنك الآن الاستمتاع بجميع المميزات.</p>
             </>
           )}
           {state === 'delayed' && (
             <>
               <h1 className="text-xl font-bold text-gray-900">تم الدفع بنجاح!</h1>
-              <p className="text-sm text-gray-400 mt-2">التفعيل يأخذ وقت أطول من المعتاد — تحقق من صفحة الفواتير خلال دقيقة، أو حدّث الصفحة.</p>
+              <p className="text-sm text-gray-600 mt-2">التفعيل يأخذ وقت أطول من المعتاد — تحقق من صفحة الفواتير خلال دقيقة، أو حدّث الصفحة.</p>
             </>
           )}
         </div>
         {invoiceId && (
           <div className="bg-gray-50 rounded-xl p-3">
-            <p className="text-[10px] text-gray-400">رقم الفاتورة</p>
+            <p className="text-[10px] text-gray-600">رقم الفاتورة</p>
             <p className="text-xs font-mono text-gray-600 mt-0.5">{invoiceId}</p>
           </div>
         )}

@@ -127,7 +127,7 @@ function ActionPill({ tool, installing, hasPaidPlan, onActivate }: {
 
   if (tool.type === 'paid' && (tool.billing_type || 'plan') === 'plan' && !hasPaidPlan) {
     return (
-      <Link href="/owner/billing" className={cn(base, "bg-gray-100 text-gray-500 hover:bg-gray-200")}>
+      <Link href="/owner/billing" className={cn(base, "bg-gray-100 text-gray-600 hover:bg-gray-200")}>
         <Lock className="h-3 w-3" /> ترقية
       </Link>
     );
@@ -174,7 +174,7 @@ function ToolCard({ tool, installing, hasPaidPlan, onActivate, onOpenDetail, cat
           </div>
         </div>
         <h3 className="text-[14px] font-bold text-gray-900">{tool.title}</h3>
-        <p className="text-[10.5px] text-gray-400 mt-0.5 flex items-center gap-1">
+        <p className="text-[10.5px] text-gray-600 mt-0.5 flex items-center gap-1">
           {categoryLabel}
           {tool.popular && (
             <span className="inline-flex items-center gap-0.5 text-amber-500 font-bold">
@@ -182,7 +182,7 @@ function ToolCard({ tool, installing, hasPaidPlan, onActivate, onOpenDetail, cat
             </span>
           )}
         </p>
-        <p className="text-[11.5px] text-gray-500 leading-relaxed mt-2 line-clamp-2">{tool.description}</p>
+        <p className="text-[11.5px] text-gray-600 leading-relaxed mt-2 line-clamp-2">{tool.description}</p>
       </div>
     </div>
   );
@@ -498,7 +498,7 @@ export default function ToolsStorePage() {
     <div className="space-y-8 pb-20">
       <PageHeader title="متجر الأدوات" description="فعّل أدوات إضافية لتنمية مشروعك.">
         <div className="relative w-full max-w-sm">
-            <Search className="absolute end-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <Search className="absolute end-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
             <Input
                 placeholder="ابحث عن أداة..."
                 className="h-10 pe-10 text-xs rounded-full border-0 bg-gray-100/80 text-right focus-visible:ring-1 focus-visible:ring-gray-300 focus-visible:bg-white"
@@ -542,7 +542,7 @@ export default function ToolsStorePage() {
               "shrink-0 h-9 px-5 rounded-full text-[12px] font-bold transition-colors",
               activeTab === tab.value
                 ? "bg-gray-900 text-white shadow-sm"
-                : "bg-gray-100/80 text-gray-500 hover:bg-gray-200/70"
+                : "bg-gray-100/80 text-gray-600 hover:bg-gray-200/70"
             )}
           >
             {tab.label}
@@ -576,7 +576,7 @@ export default function ToolsStorePage() {
           <div className="bg-white border border-gray-100 rounded-[26px] p-10 text-center">
             <Box className="h-8 w-8 text-gray-200 mx-auto mb-3" />
             <p className="text-sm font-bold text-gray-900 mb-1">لا توجد أدوات</p>
-            <p className="text-[11px] text-gray-400">جرّب تغيير كلمة البحث</p>
+            <p className="text-[11px] text-gray-600">جرّب تغيير كلمة البحث</p>
           </div>
         )}
       </div>

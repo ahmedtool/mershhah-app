@@ -122,10 +122,10 @@ export default function OffersPage() {
         {!loadingData && offers.length === 0 && (
           <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center">
             <div className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <AlertTriangle className="h-5 w-5 text-gray-300" />
+              <AlertTriangle className="h-5 w-5 text-gray-600" />
             </div>
             <p className="text-sm font-bold text-gray-900 mb-1">لا توجد عروض</p>
-            <p className="text-[11px] text-gray-400">أضف عروض جديدة لتظهر هنا</p>
+            <p className="text-[11px] text-gray-600">أضف عروض جديدة لتظهر هنا</p>
           </div>
         )}
 
@@ -147,7 +147,7 @@ export default function OffersPage() {
         <AlertDialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
           <div className="px-5 pt-5 pb-3">
             <AlertDialogTitle className="text-base font-black text-gray-900">حذف العرض</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs text-gray-400 mt-0.5">
+            <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">
               سيتم حذف "{offerToDelete?.title}" نهائياً
             </AlertDialogDescription>
           </div>

@@ -93,11 +93,11 @@ export default function WorkflowPage() {
             <div className="flex items-center justify-between mb-5 shrink-0">
                 <div>
                     <h1 className="text-lg font-bold text-gray-900">سير العمل</h1>
-                    <p className="text-xs text-gray-400 mt-0.5">{tasks.length} مهمة</p>
+                    <p className="text-xs text-gray-600 mt-0.5">{tasks.length} مهمة</p>
                 </div>
                 <button
                     onClick={() => setMyTasksOnly(!myTasksOnly)}
-                    className={`h-9 px-4 rounded-xl text-xs font-medium transition-all border ${myTasksOnly ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}
+                    className={`h-9 px-4 rounded-xl text-xs font-medium transition-all border ${myTasksOnly ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
                 >
                     مهامي فقط
                 </button>
@@ -114,7 +114,7 @@ export default function WorkflowPage() {
                                 <div className="flex items-center gap-2 mb-3 px-1">
                                     <span className={`w-2 h-2 rounded-full ${col.color}`} />
                                     <h2 className="text-xs font-bold text-gray-700">{col.title}</h2>
-                                    <span className="text-[10px] text-gray-300 bg-gray-100 px-1.5 py-0.5 rounded-full">{colTasks.length}</span>
+                                    <span className="text-[10px] text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded-full">{colTasks.length}</span>
                                 </div>
 
                                 {/* Cards */}
@@ -123,10 +123,10 @@ export default function WorkflowPage() {
                                         <TaskCard key={task.id} task={task} onTaskUpdate={fetchTasks} />
                                     ))}
                                     {colTasks.length === 0 && (
-                                        <div className="py-8 text-center text-[11px] text-gray-300">لا توجد مهام</div>
+                                        <div className="py-8 text-center text-[11px] text-gray-600">لا توجد مهام</div>
                                     )}
                                     <AddTaskDialog admins={admins} status={col.id} onTaskAdded={fetchTasks}>
-                                        <button className="w-full h-9 rounded-xl border border-dashed border-gray-200 text-[11px] text-gray-400 hover:border-gray-300 hover:text-gray-500 transition-colors flex items-center justify-center gap-1 mt-1">
+                                        <button className="w-full h-9 rounded-xl border border-dashed border-gray-200 text-[11px] text-gray-600 hover:border-gray-300 hover:text-gray-600 transition-colors flex items-center justify-center gap-1 mt-1">
                                             <Plus className="h-3 w-3" />
                                             مهمة جديدة
                                         </button>

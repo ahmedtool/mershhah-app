@@ -53,7 +53,7 @@ export default function StoreManagementPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-bold text-gray-900">متجر الأدوات</h1>
-                    <p className="text-xs text-gray-400 mt-0.5">{tools.length} أداة متاحة</p>
+                    <p className="text-xs text-gray-600 mt-0.5">{tools.length} أداة متاحة</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <Link href="/admin/store/developers">

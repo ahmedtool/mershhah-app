@@ -87,7 +87,7 @@ export default function PlansPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-gray-900">باقات الاشتراك</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{plans.length} باقة · {subscriptions.length} اشتراك نشط</p>
+          <p className="text-xs text-gray-600 mt-0.5">{plans.length} باقة · {subscriptions.length} اشتراك نشط</p>
         </div>
         <EditPlanDialog onSave={fetchData}>
           <button className="h-10 px-4 rounded-xl bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
@@ -107,7 +107,7 @@ export default function PlansPage() {
               <div className={`px-5 pt-5 pb-4 ${plan.is_featured ? 'bg-gray-900' : 'bg-gray-50'}`}>
                 <div className="flex items-center gap-1.5">
                   {plan.is_featured && (
-                    <span className="text-[10px] font-medium text-gray-400 bg-white/10 px-2 py-0.5 rounded-full">الأكثر انتشاراً</span>
+                    <span className="text-[10px] font-medium text-gray-300 bg-white/10 px-2 py-0.5 rounded-full">الأكثر انتشاراً</span>
                   )}
                   {isTestPlan && (
                     <span className="text-[10px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -118,43 +118,43 @@ export default function PlansPage() {
                 </div>
                 <h3 className={`text-base font-bold mt-2 ${plan.is_featured ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
                 {plan.description && (
-                  <p className={`text-xs mt-1 ${plan.is_featured ? 'text-gray-300' : 'text-gray-400'}`}>{plan.description}</p>
+                  <p className={`text-xs mt-1 ${plan.is_featured ? 'text-gray-400' : 'text-gray-600'}`}>{plan.description}</p>
                 )}
               </div>
 
               <div className="px-5 py-4 border-b border-gray-100 space-y-2">
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-bold text-gray-900">{isFree ? 'مجاني' : plan.price_yearly}</span>
-                  {!isFree && <span className="text-xs text-gray-400">ر.س/سنة</span>}
+                  {!isFree && <span className="text-xs text-gray-600">ر.س/سنة</span>}
                 </div>
               </div>
 
               <div className="px-5 py-4 space-y-2.5 flex-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400 flex items-center gap-1.5"><Users className="h-3 w-3" />الاشتراكات</span>
+                  <span className="text-[11px] text-gray-600 flex items-center gap-1.5"><Users className="h-3 w-3" />الاشتراكات</span>
                   <span className="text-xs font-medium text-gray-600">{subCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400 flex items-center gap-1.5"><Zap className="h-3 w-3" />الحد الأقصى للفروع</span>
+                  <span className="text-[11px] text-gray-600 flex items-center gap-1.5"><Zap className="h-3 w-3" />الحد الأقصى للفروع</span>
                   <span className="text-xs font-medium text-gray-600">{plan.max_branches || '∞'}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400 flex items-center gap-1.5"><Utensils className="h-3 w-3" />الحد الأقصى للمنيو</span>
+                  <span className="text-[11px] text-gray-600 flex items-center gap-1.5"><Utensils className="h-3 w-3" />الحد الأقصى للمنيو</span>
                   <span className="text-xs font-medium text-gray-600">{plan.max_menu_items || '∞'}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400 flex items-center gap-1.5"><Clock className="h-3 w-3" />فترة التجربة</span>
+                  <span className="text-[11px] text-gray-600 flex items-center gap-1.5"><Clock className="h-3 w-3" />فترة التجربة</span>
                   <span className="text-xs font-medium text-gray-600">{plan.trial_days || 0} يوم</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400 flex items-center gap-1.5"><CreditCard className="h-3 w-3" />الحالة</span>
+                  <span className="text-[11px] text-gray-600 flex items-center gap-1.5"><CreditCard className="h-3 w-3" />الحالة</span>
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${plan.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
                     {plan.is_active ? 'نشطة' : 'غير نشطة'}
                   </span>
                 </div>
                 {plan.streampay_product_id && (
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-gray-400 flex items-center gap-1.5"><LinkIcon className="h-3 w-3" />StreamPay</span>
+                    <span className="text-[11px] text-gray-600 flex items-center gap-1.5"><LinkIcon className="h-3 w-3" />StreamPay</span>
                     <span className="text-[10px] font-medium text-emerald-600">متصل</span>
                   </div>
                 )}
@@ -180,7 +180,7 @@ export default function PlansPage() {
                   </EditPlanDialog>
                   <button
                     onClick={() => handleDelete(plan)}
-                    className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                    className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

@@ -82,10 +82,10 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-          <MapPin className="h-7 w-7 text-gray-300" />
+          <MapPin className="h-7 w-7 text-gray-600" />
         </div>
         <p className="text-sm font-medium text-gray-600">لا توجد فروع بعد</p>
-        <p className="text-xs text-gray-400 mt-1">اضغط "إضافة فرع" لبدء الإضافة</p>
+        <p className="text-xs text-gray-600 mt-1">اضغط "إضافة فرع" لبدء الإضافة</p>
       </div>
     );
   }
@@ -126,7 +126,7 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
             </div>
           </div>
         ) : branches.length > 1 ? (
-          <p className="text-[11px] text-gray-400 flex items-center gap-1.5 px-0.5">
+          <p className="text-[11px] text-gray-600 flex items-center gap-1.5 px-0.5">
             <CheckSquare className="h-3 w-3" />
             حدد أكثر من فرع لتعديلهم دفعة وحدة
           </p>
@@ -159,18 +159,18 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
                         <path d="M2 6l2.5 2.5L10 3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </button>
-                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-500 shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center text-sm font-bold text-gray-600 shrink-0">
                       {branch.name?.[0] || 'ف'}
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-sm font-semibold text-gray-900 leading-tight truncate">{branch.name}</h3>
-                      <p className="text-[11px] text-gray-400 mt-0.5 truncate">{branch.city} · {branch.district}</p>
+                      <p className="text-[11px] text-gray-600 mt-0.5 truncate">{branch.city} · {branch.district}</p>
                     </div>
                   </div>
 
                   {/* Status */}
                   <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                    branch.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-400'
+                    branch.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'
                   }`}>
                     {branch.status === 'active' ? 'نشط' : 'معطّل'}
                   </span>
@@ -179,20 +179,20 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
                 {/* Info */}
                 <div className="space-y-1.5 mb-3">
                   {branch.phone && (
-                    <a href={`tel:${branch.phone}`} className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors">
-                      <Phone className="h-3 w-3 text-gray-300" />
+                    <a href={`tel:${branch.phone}`} className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-gray-900 transition-colors">
+                      <Phone className="h-3 w-3 text-gray-600" />
                       {branch.phone}
                     </a>
                   )}
                   {branch.opening_hours && (
-                    <div className="flex items-center gap-1.5 text-xs text-gray-500">
-                      <Clock className="h-3 w-3 text-gray-300" />
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <Clock className="h-3 w-3 text-gray-600" />
                       <span className="truncate">{branch.opening_hours}</span>
                     </div>
                   )}
                   {branch.address && (
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                      <MapPin className="h-3 w-3 text-gray-300 shrink-0" />
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <MapPin className="h-3 w-3 text-gray-600 shrink-0" />
                       <span className="truncate">{branch.address}</span>
                     </div>
                   )}

@@ -138,7 +138,7 @@ export default function FinancialsOrdersPage() {
 
   const statusConfig = {
     active: { label: 'نشط', icon: CheckCircle, color: 'bg-emerald-50 text-emerald-600' },
-    inactive: { label: 'منتهي', icon: Clock, color: 'bg-gray-50 text-gray-500' },
+    inactive: { label: 'منتهي', icon: Clock, color: 'bg-gray-50 text-gray-600' },
     cancelled: { label: 'ملغي', icon: XCircle, color: 'bg-red-50 text-red-500' },
     pending: { label: 'قيد الإتمام', icon: Clock, color: 'bg-amber-50 text-amber-600' },
   };
@@ -166,7 +166,7 @@ export default function FinancialsOrdersPage() {
               className={`flex items-center gap-1.5 h-9 px-4 rounded-lg text-[11px] font-bold transition-colors ${
                 isActive
                   ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-400 hover:text-gray-600'
+                  : 'text-gray-600 hover:text-gray-600'
               }`}
             >
               <tab.icon className="h-3.5 w-3.5" />
@@ -180,7 +180,7 @@ export default function FinancialsOrdersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-bold text-gray-900">الطلبات والاشتراكات</h2>
-          <p className="text-[10px] text-gray-400 mt-0.5">{filteredOrders.length} طلب</p>
+          <p className="text-[10px] text-gray-600 mt-0.5">{filteredOrders.length} طلب</p>
         </div>
         <button className="h-9 px-4 rounded-xl border border-gray-200 text-[11px] font-bold text-gray-600 hover:bg-gray-50 transition-colors flex items-center gap-2">
           <Download className="h-3.5 w-3.5" />
@@ -191,10 +191,10 @@ export default function FinancialsOrdersPage() {
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[160px] max-w-xs">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
           <input
             placeholder="بحث بالاسم أو الباقة..."
-            className="w-full h-9 pr-8 pl-3 rounded-xl border border-gray-200 text-[11px] text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+            className="w-full h-9 pr-8 pl-3 rounded-xl border border-gray-200 text-[11px] text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -207,7 +207,7 @@ export default function FinancialsOrdersPage() {
               className={`h-8 px-3 rounded-lg text-[10px] font-bold transition-colors shrink-0 ${
                 statusFilter === status
                   ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-400 hover:text-gray-600'
+                  : 'text-gray-600 hover:text-gray-600'
               }`}
             >
               {status === 'all' ? 'الكل' : statusConfig[status].label}
@@ -227,21 +227,21 @@ export default function FinancialsOrdersPage() {
         ) : filteredOrders.length === 0 ? (
           <div className="text-center py-12">
             <ShoppingCart className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-            <p className="text-xs text-gray-400 font-bold">لا توجد طلبات</p>
+            <p className="text-xs text-gray-600 font-bold">لا توجد طلبات</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">المطعم</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">المالك</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الباقة</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">المبلغ</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">تاريخ البداية</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">تاريخ النهاية</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">الحالة</th>
-                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-400">إجراءات</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">المطعم</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">المالك</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">الباقة</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">المبلغ</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">تاريخ البداية</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">تاريخ النهاية</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">الحالة</th>
+                  <th className="text-right px-5 py-3 text-[10px] font-bold text-gray-600">إجراءات</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -261,7 +261,7 @@ export default function FinancialsOrdersPage() {
                         )}
                       </td>
                       <td className="px-5 py-3">
-                        <span className="text-gray-500">{order.ownerName}</span>
+                        <span className="text-gray-600">{order.ownerName}</span>
                       </td>
                       <td className="px-5 py-3">
                         <span className="text-gray-600">{order.plan}</span>
@@ -270,10 +270,10 @@ export default function FinancialsOrdersPage() {
                         <span className="font-bold text-gray-900">{order.amount.toLocaleString()} ر.س</span>
                       </td>
                       <td className="px-5 py-3">
-                        <span className="text-gray-400">{startDate.toLocaleDateString('ar-SA')}</span>
+                        <span className="text-gray-600">{startDate.toLocaleDateString('ar-SA')}</span>
                       </td>
                       <td className="px-5 py-3">
-                        <span className="text-gray-400">{endDate.toLocaleDateString('ar-SA')}</span>
+                        <span className="text-gray-600">{endDate.toLocaleDateString('ar-SA')}</span>
                       </td>
                       <td className="px-5 py-3">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${statusInfo.color}`}>
@@ -284,7 +284,7 @@ export default function FinancialsOrdersPage() {
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-1">
                           <button onClick={() => toggleStatus(order)} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors" title={order.status === 'active' ? 'إلغاء' : 'تفعيل'}>
-                            {order.status === 'active' ? <ToggleRight className="h-4 w-4 text-emerald-500" /> : <ToggleLeft className="h-4 w-4 text-gray-300" />}
+                            {order.status === 'active' ? <ToggleRight className="h-4 w-4 text-emerald-500" /> : <ToggleLeft className="h-4 w-4 text-gray-600" />}
                           </button>
                           {order.hasRefundablePayment && (
                             <button

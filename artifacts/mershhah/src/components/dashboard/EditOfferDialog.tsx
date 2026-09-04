@@ -189,9 +189,9 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                 <div className="w-14 h-14 rounded-2xl bg-gray-200 flex items-center justify-center">
-                  <ImageIcon className="h-6 w-6 text-gray-400" />
+                  <ImageIcon className="h-6 w-6 text-gray-600" />
                 </div>
-                <p className="text-sm text-gray-400">أضف صورة للعرض</p>
+                <p className="text-sm text-gray-600">أضف صورة للعرض</p>
               </div>
             )}
           </div>
@@ -228,7 +228,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-500">عنوان العرض</FormLabel>
+                    <FormLabel className="text-xs text-gray-600">عنوان العرض</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="مثال: خصم 30% على الوجبات"
@@ -248,7 +248,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-500">وصف العرض</FormLabel>
+                    <FormLabel className="text-xs text-gray-600">وصف العرض</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="صف العرض باختصار..."
@@ -269,7 +269,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 name="external_link"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-500">رابط خارجي <span className="text-gray-300">(اختياري)</span></FormLabel>
+                    <FormLabel className="text-xs text-gray-600">رابط خارجي <span className="text-gray-600">(اختياري)</span></FormLabel>
                     <FormControl>
                       <Input
                         dir="ltr"
@@ -290,7 +290,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 name="items"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-500">المنتجات <span className="text-gray-300">(اختياري)</span></FormLabel>
+                    <FormLabel className="text-xs text-gray-600">المنتجات <span className="text-gray-600">(اختياري)</span></FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -298,7 +298,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                             type="button"
                             className={cn(
                               "w-full h-10 rounded-xl border border-gray-200 bg-white px-3 text-right flex items-center justify-between text-sm transition-colors hover:border-gray-300",
-                              !field.value?.length && "text-gray-400"
+                              !field.value?.length && "text-gray-600"
                             )}
                           >
                             <div className="flex flex-wrap gap-1 overflow-hidden">
@@ -315,7 +315,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">+{(field.value?.length ?? 0) - 2}</Badge>
                               )}
                             </div>
-                            <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
+                            <ChevronDown className="h-4 w-4 text-gray-600 shrink-0" />
                           </button>
                         </FormControl>
                       </PopoverTrigger>
@@ -358,14 +358,14 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                   name="branch_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-gray-500">يظهر في <span className="text-gray-300">(اختياري)</span></FormLabel>
+                      <FormLabel className="text-xs text-gray-600">يظهر في <span className="text-gray-600">(اختياري)</span></FormLabel>
                       <div className="flex flex-wrap gap-1.5">
                         <button
                           type="button"
                           onClick={() => field.onChange(null)}
                           className={cn(
                             "px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors",
-                            !field.value ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                            !field.value ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                           )}
                         >
                           كل الفروع
@@ -377,14 +377,14 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                             onClick={() => field.onChange(branch.id)}
                             className={cn(
                               "px-3 py-1.5 rounded-full text-[11px] font-bold transition-colors",
-                              field.value === branch.id ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                              field.value === branch.id ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             )}
                           >
                             {branch.name}
                           </button>
                         ))}
                       </div>
-                      <p className="text-[10px] text-gray-300">حدد فرعاً ليظهر العرض لزوّاره فقط، عبر رابط الفرع الخاص به</p>
+                      <p className="text-[10px] text-gray-600">حدد فرعاً ليظهر العرض لزوّاره فقط، عبر رابط الفرع الخاص به</p>
                       <FormMessage className="text-[10px]" />
                     </FormItem>
                   )}
@@ -397,7 +397,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 name="valid_until"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-500">صالح حتى</FormLabel>
+                    <FormLabel className="text-xs text-gray-600">صالح حتى</FormLabel>
                     <FormControl>
                       <Input
                         type="date"
@@ -444,7 +444,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
         <GalleryDialogContent className="max-w-4xl max-h-[90vh] flex flex-col rounded-2xl" dir="rtl">
           <div className="px-5 pt-5 pb-3">
             <h2 className="text-lg font-bold">اختر صورة من المعرض</h2>
-            <p className="text-sm text-gray-400 mt-1">اضغط على الصورة لاختيارها</p>
+            <p className="text-sm text-gray-600 mt-1">اضغط على الصورة لاختيارها</p>
           </div>
           <div className="flex-1 overflow-y-auto -mx-6 px-6 pb-6">
             <ImageGallery onImageSelect={handleImageSelect} />

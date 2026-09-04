@@ -86,7 +86,7 @@ export default function SettingsPage() {
       {/* Header */}
       <div>
         <h1 className="text-lg font-bold text-gray-900">الإعدادات</h1>
-        <p className="text-xs text-gray-400 mt-0.5">إدارة حسابك الشخصي والأمان</p>
+        <p className="text-xs text-gray-600 mt-0.5">إدارة حسابك الشخصي والأمان</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -95,11 +95,11 @@ export default function SettingsPage() {
           <div className="px-5 pt-5 pb-3 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                <User className="h-5 w-5 text-gray-500" />
+                <User className="h-5 w-5 text-gray-600" />
               </div>
               <div>
                 <h2 className="text-sm font-bold text-gray-900">الملف الشخصي</h2>
-                <p className="text-[11px] text-gray-400">معلوماتك الشخصية</p>
+                <p className="text-[11px] text-gray-600">معلوماتك الشخصية</p>
               </div>
             </div>
           </div>
@@ -110,7 +110,7 @@ export default function SettingsPage() {
                 name="full_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-500">الاسم الكامل</FormLabel>
+                    <FormLabel className="text-xs text-gray-600">الاسم الكامل</FormLabel>
                     <FormControl>
                       <Input {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                     </FormControl>
@@ -119,9 +119,9 @@ export default function SettingsPage() {
                 )}
               />
               <div className="space-y-2">
-                <label className="text-xs text-gray-500">البريد الإلكتروني</label>
+                <label className="text-xs text-gray-600">البريد الإلكتروني</label>
                 <Input value={user?.email || ''} disabled className="h-11 rounded-xl border-gray-200 text-sm bg-gray-50" />
-                <p className="text-[10px] text-gray-300">لا يمكن تغيير البريد</p>
+                <p className="text-[10px] text-gray-600">لا يمكن تغيير البريد</p>
               </div>
               <button type="submit" disabled={isSaving}
                 className="h-11 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 w-full">
@@ -141,18 +141,18 @@ export default function SettingsPage() {
               </div>
               <div>
                 <h2 className="text-sm font-bold text-gray-900">الأمان</h2>
-                <p className="text-[11px] text-gray-400">إدارة كلمة المرور</p>
+                <p className="text-[11px] text-gray-600">إدارة كلمة المرور</p>
               </div>
             </div>
           </div>
           <div className="p-5 space-y-4">
-            <p className="text-xs text-gray-500">قم بتغيير كلمة المرور بشكل دوري لأمان حسابك.</p>
+            <p className="text-xs text-gray-600">قم بتغيير كلمة المرور بشكل دوري لأمان حسابك.</p>
             <button onClick={handlePasswordReset} disabled={isSendingReset}
               className="h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 w-full">
               {isSendingReset ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
               {isSendingReset ? 'جاري الإرسال...' : 'إرسال رابط تغيير كلمة المرور'}
             </button>
-            <p className="text-[10px] text-gray-300 text-center">سيتم إرسال الرابط إلى بريدك المسجل</p>
+            <p className="text-[10px] text-gray-600 text-center">سيتم إرسال الرابط إلى بريدك المسجل</p>
           </div>
         </div>
       </div>

@@ -12,7 +12,7 @@ export default function ForgotPasswordPage() {
         <div className="w-full max-w-sm">
           <div className="mb-8">
             <h1 className="text-2xl font-black text-gray-900 mb-1">مرشح</h1>
-            <p className="text-sm text-gray-400">أدخل بريدك وبنرسل لك رابط لإعادة تعيين كلمة المرور</p>
+            <p className="text-sm text-gray-600">أدخل بريدك وبنرسل لك رابط لإعادة تعيين كلمة المرور</p>
           </div>
 
           <ForgotPasswordForm />

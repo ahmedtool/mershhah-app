@@ -61,7 +61,7 @@ export default function AdminSalesPage() {
       {/* Header */}
       <div>
         <h1 className="text-lg font-bold text-gray-900">دليل المبيعات</h1>
-        <p className="text-xs text-gray-400 mt-0.5">تعرف على مرشح وكيف تسوق له</p>
+        <p className="text-xs text-gray-600 mt-0.5">تعرف على مرشح وكيف تسوق له</p>
       </div>
 
       {/* Tabs */}
@@ -70,7 +70,7 @@ export default function AdminSalesPage() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-500 hover:border-gray-300'}`}
+            className={`px-4 py-2 rounded-xl text-xs font-medium transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'}`}
           >
             {tab.label}
           </button>
@@ -89,18 +89,18 @@ export default function AdminSalesPage() {
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-gray-900">ما هو مرشح؟</h2>
-                  <p className="text-[11px] text-gray-400">تعريف مختصر للمنتج</p>
+                  <p className="text-[11px] text-gray-600">تعريف مختصر للمنتج</p>
                 </div>
               </div>
               <p className="text-sm text-gray-600 leading-relaxed">{pitchMedium}</p>
             </div>
             <div className="px-5 pb-5">
               <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-[11px] text-gray-400 mb-2">نسخة قصيرة:</p>
+                <p className="text-[11px] text-gray-600 mb-2">نسخة قصيرة:</p>
                 <p className="text-xs text-gray-600 mb-3">{pitchShort}</p>
                 <button
                   onClick={() => handleCopy(pitchShort)}
-                  className="h-8 px-3 rounded-lg bg-white border border-gray-200 text-[11px] font-medium text-gray-500 hover:border-gray-300 transition-colors flex items-center gap-1.5"
+                  className="h-8 px-3 rounded-lg bg-white border border-gray-200 text-[11px] font-medium text-gray-600 hover:border-gray-300 transition-colors flex items-center gap-1.5"
                 >
                   {copied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
                   {copied ? 'تم النسخ' : 'نسخ'}
@@ -119,7 +119,7 @@ export default function AdminSalesPage() {
               </div>
               <div>
                 <h2 className="text-sm font-bold text-gray-900">لمن مرشح؟</h2>
-                <p className="text-[11px] text-gray-400">الشريحة المستهدفة</p>
+                <p className="text-[11px] text-gray-600">الشريحة المستهدفة</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -132,7 +132,7 @@ export default function AdminSalesPage() {
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-2.5 py-2">
                   <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
-                    <span className="text-[10px] font-bold text-gray-500">{i + 1}</span>
+                    <span className="text-[10px] font-bold text-gray-600">{i + 1}</span>
                   </span>
                   <span className="text-xs text-gray-600">{item}</span>
                 </div>
@@ -149,11 +149,11 @@ export default function AdminSalesPage() {
               return (
                 <div key={f.title} className="rounded-2xl border border-gray-100 p-4 flex items-start gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center shrink-0">
-                    <Icon className="h-5 w-5 text-gray-500" />
+                    <Icon className="h-5 w-5 text-gray-600" />
                   </div>
                   <div>
                     <p className="text-xs font-bold text-gray-700 mb-0.5">{f.title}</p>
-                    <p className="text-[11px] text-gray-400">{f.desc}</p>
+                    <p className="text-[11px] text-gray-600">{f.desc}</p>
                   </div>
                 </div>
               );
@@ -171,15 +171,15 @@ export default function AdminSalesPage() {
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-gray-900">كيف تسوق لمرشح</h2>
-                  <p className="text-[11px] text-gray-400">نقاط الحديث الأساسية</p>
+                  <p className="text-[11px] text-gray-600">نقاط الحديث الأساسية</p>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-4">ركّز على الفائدة للعميل النهائي: تقليل التشتت، رد أسرع على الزبون، وجود رقمي واحد.</p>
+              <p className="text-xs text-gray-600 mb-4">ركّز على الفائدة للعميل النهائي: تقليل التشتت، رد أسرع على الزبون، وجود رقمي واحد.</p>
               <div className="space-y-2">
                 {talkingPoints.map((tp) => (
                   <div key={tp.title} className="bg-gray-50 rounded-xl p-3">
                     <p className="text-xs font-bold text-gray-700 mb-0.5">{tp.title}</p>
-                    <p className="text-[11px] text-gray-400">{tp.desc}</p>
+                    <p className="text-[11px] text-gray-600">{tp.desc}</p>
                   </div>
                 ))}
               </div>
@@ -204,11 +204,11 @@ export default function AdminSalesPage() {
                   className="w-full px-5 py-4 flex items-center justify-between text-right hover:bg-gray-50 transition-colors"
                 >
                   <span className="text-xs font-bold text-red-500">«{o.objection}»</span>
-                  <ChevronDown className={`h-4 w-4 text-gray-300 transition-transform ${expandedObjection === i ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 text-gray-600 transition-transform ${expandedObjection === i ? 'rotate-180' : ''}`} />
                 </button>
                 {expandedObjection === i && (
                   <div className="px-5 pb-4 border-t border-gray-50">
-                    <p className="text-xs text-gray-500 mt-3 leading-relaxed">{o.response}</p>
+                    <p className="text-xs text-gray-600 mt-3 leading-relaxed">{o.response}</p>
                   </div>
                 )}
               </div>
@@ -225,24 +225,24 @@ export default function AdminSalesPage() {
               </div>
               <div>
                 <h2 className="text-sm font-bold text-gray-900">روابط سريعة</h2>
-                <p className="text-[11px] text-gray-400">روابط تهم فريق المبيعات</p>
+                <p className="text-[11px] text-gray-600">روابط تهم فريق المبيعات</p>
               </div>
             </div>
             <div className="space-y-2">
               <Link href="/pricing" target="_blank" rel="noopener noreferrer">
                 <div className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer">
-                  <ExternalLink className="h-4 w-4 text-gray-400" />
+                  <ExternalLink className="h-4 w-4 text-gray-600" />
                   <span className="text-xs font-medium text-gray-700">صفحة التسعير</span>
                 </div>
               </Link>
               <Link href="/" target="_blank" rel="noopener noreferrer">
                 <div className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer">
-                  <ExternalLink className="h-4 w-4 text-gray-400" />
+                  <ExternalLink className="h-4 w-4 text-gray-600" />
                   <span className="text-xs font-medium text-gray-700">الصفحة الرئيسية</span>
                 </div>
               </Link>
             </div>
-            <p className="text-[11px] text-gray-300 mt-3">شارك رابط صفحة التسعير مع العملاء المحتملين لمعرفة الباقات والأسعار.</p>
+            <p className="text-[11px] text-gray-600 mt-3">شارك رابط صفحة التسعير مع العملاء المحتملين لمعرفة الباقات والأسعار.</p>
           </div>
         )}
       </div>

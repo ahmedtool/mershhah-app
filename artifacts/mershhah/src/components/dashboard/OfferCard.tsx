@@ -49,10 +49,10 @@ export function OfferCard({ offer, onDelete, restaurantId, branches = [], onActi
                         </span>
                     )}
                 </div>
-                <p className="text-[11px] text-gray-400 line-clamp-2 mb-3">{offer.description}</p>
+                <p className="text-[11px] text-gray-600 line-clamp-2 mb-3">{offer.description}</p>
 
                 {offer.external_link && (
-                    <div className="flex items-center gap-1.5 text-[10px] text-gray-500 bg-gray-50 border border-gray-100 p-2 rounded-lg mb-3">
+                    <div className="flex items-center gap-1.5 text-[10px] text-gray-600 bg-gray-50 border border-gray-100 p-2 rounded-lg mb-3">
                         <ExternalLink className="h-3 w-3 shrink-0" />
                         <span className="truncate" dir="ltr">{offer.external_link}</span>
                     </div>
@@ -61,18 +61,18 @@ export function OfferCard({ offer, onDelete, restaurantId, branches = [], onActi
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-2">
                     <div className="text-center bg-gray-50 border border-gray-100 rounded-xl p-2">
-                        <Eye className="h-3 w-3 text-gray-300 mx-auto mb-1" />
-                        <p className="text-[10px] text-gray-400">مشاهدة</p>
+                        <Eye className="h-3 w-3 text-gray-600 mx-auto mb-1" />
+                        <p className="text-[10px] text-gray-600">مشاهدة</p>
                         <p className="text-sm font-black text-gray-900">{offer.views_count || 0}</p>
                     </div>
                     <div className="text-center bg-gray-50 border border-gray-100 rounded-xl p-2">
-                        <MousePointer2 className="h-3 w-3 text-gray-300 mx-auto mb-1" />
-                        <p className="text-[10px] text-gray-400">نقرات</p>
+                        <MousePointer2 className="h-3 w-3 text-gray-600 mx-auto mb-1" />
+                        <p className="text-[10px] text-gray-600">نقرات</p>
                         <p className="text-sm font-black text-gray-900">{offer.clicks_count || 0}</p>
                     </div>
                     <div className="text-center bg-gray-50 border border-gray-100 rounded-xl p-2">
-                        <ExternalLink className="h-3 w-3 text-gray-300 mx-auto mb-1" />
-                        <p className="text-[10px] text-gray-400">رابط</p>
+                        <ExternalLink className="h-3 w-3 text-gray-600 mx-auto mb-1" />
+                        <p className="text-[10px] text-gray-600">رابط</p>
                         <p className="text-sm font-black text-gray-900">{offer.link_clicks_count || 0}</p>
                     </div>
                 </div>
@@ -80,12 +80,12 @@ export function OfferCard({ offer, onDelete, restaurantId, branches = [], onActi
 
             {/* Footer */}
             <div className="px-4 py-3 border-t border-gray-100 flex justify-between items-center">
-                <span className="text-[10px] text-gray-400">
+                <span className="text-[10px] text-gray-600">
                     {isExpired ? 'انتهى:' : 'ينتهي بعد:'} <span className="font-bold text-gray-600">{isExpired ? validUntilDate.toLocaleDateString('ar-SA') : `${timeRemaining} أيام`}</span>
                 </span>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-400 hover:text-gray-900">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-gray-600 hover:text-gray-900">
                             <MoreHorizontal className="h-3.5 w-3.5" />
                         </Button>
                     </DropdownMenuTrigger>

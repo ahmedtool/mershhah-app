@@ -90,14 +90,14 @@ export function ImpersonationAccessCard({ restaurantId }: ImpersonationAccessCar
   return (
     <div className="rounded-xl border border-gray-100 p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <KeyRound className="h-4 w-4 text-gray-400" />
+        <KeyRound className="h-4 w-4 text-gray-600" />
         <span className="text-xs font-bold text-gray-600">الدخول للوحة تحكم المطعم</span>
       </div>
 
       {(!request || effectiveStatus === 'denied' || effectiveStatus === 'expired') && (
         <>
           {effectiveStatus === 'denied' && <p className="text-[11px] text-red-500">رفض صاحب المطعم آخر طلب.</p>}
-          {effectiveStatus === 'expired' && <p className="text-[11px] text-gray-400">انتهت صلاحية آخر دخول (24 ساعة).</p>}
+          {effectiveStatus === 'expired' && <p className="text-[11px] text-gray-600">انتهت صلاحية آخر دخول (24 ساعة).</p>}
           <button onClick={handleRequest} disabled={isRequesting}
             className="w-full h-9 rounded-lg bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2">
             {isRequesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}

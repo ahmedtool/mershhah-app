@@ -121,11 +121,11 @@ export function EditApplicationDialog({ children, application, onSave }: EditApp
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-              <Package className="h-5 w-5 text-gray-500" />
+              <Package className="h-5 w-5 text-gray-600" />
             </div>
             <div>
               <h2 className="text-base font-bold text-gray-900">{isEditing ? 'تعديل التطبيق' : 'إضافة تطبيق جديد'}</h2>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-gray-600 mt-0.5">
                 {isEditing ? 'عدّل بيانات التطبيق ثم احفظ' : 'أدخل تفاصيل التطبيق ليظهر في قائمة التطبيقات'}
               </p>
             </div>
@@ -145,8 +145,8 @@ export function EditApplicationDialog({ children, application, onSave }: EditApp
                   <StorageImage imagePath={logoPreview} alt="logo" height={72} width={72} className="w-full h-full object-contain rounded-xl" />
                 ) : (
                   <div className="text-center">
-                    <UploadCloud className="h-6 w-6 text-gray-300 mx-auto" />
-                    <span className="text-[9px] text-gray-300 mt-1 block">شعار</span>
+                    <UploadCloud className="h-6 w-6 text-gray-600 mx-auto" />
+                    <span className="text-[9px] text-gray-600 mt-1 block">شعار</span>
                   </div>
                 )}
               </button>
@@ -154,7 +154,7 @@ export function EditApplicationDialog({ children, application, onSave }: EditApp
               <div className="flex-1">
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-500">اسم التطبيق</FormLabel>
+                    <FormLabel className="text-xs text-gray-600">اسم التطبيق</FormLabel>
                     <FormControl>
                       <Input placeholder="مثال: جاهز" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                     </FormControl>
@@ -167,7 +167,7 @@ export function EditApplicationDialog({ children, application, onSave }: EditApp
             {/* Platform ID */}
             <FormField control={form.control} name="platform_id" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">المعرّف <span className="text-gray-300">(إنجليزي)</span></FormLabel>
+                <FormLabel className="text-xs text-gray-600">المعرّف <span className="text-gray-600">(إنجليزي)</span></FormLabel>
                 <FormControl>
                   <Input placeholder="jahez" {...field} disabled={isEditing || isSaving} className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" />
                 </FormControl>
@@ -177,14 +177,14 @@ export function EditApplicationDialog({ children, application, onSave }: EditApp
 
             {/* Category */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-500">تصنيف التطبيق</FormLabel>
+              <FormLabel className="text-xs text-gray-600">تصنيف التطبيق</FormLabel>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {categories.map((cat) => (
                   <button
                     key={cat.value}
                     type="button"
                     onClick={() => form.setValue('category', cat.value)}
-                    className={`h-16 rounded-xl border text-center flex flex-col items-center justify-center gap-1 transition-all text-xs ${form.watch('category') === cat.value ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300'}`}
+                    className={`h-16 rounded-xl border text-center flex flex-col items-center justify-center gap-1 transition-all text-xs ${form.watch('category') === cat.value ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
                   >
                     <span className="text-base">{cat.icon}</span>
                     <span className="text-[10px] font-medium">{cat.label}</span>

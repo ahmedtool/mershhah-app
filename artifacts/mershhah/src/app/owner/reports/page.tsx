@@ -204,40 +204,40 @@ export default function InsightsHubPage() {
                         <div className="w-8 h-8 rounded-xl bg-gray-900 flex items-center justify-center">
                             <MousePointerClick className="h-3.5 w-3.5 text-white" />
                         </div>
-                        <span className="text-[10px] text-gray-400 font-medium">التفاعل</span>
+                        <span className="text-[10px] text-gray-600 font-medium">التفاعل</span>
                     </div>
                     <p className="text-2xl font-black text-gray-900">{totalClicks}</p>
-                    <p className="text-[10px] text-gray-300 mt-1">نقرة على المنيو</p>
+                    <p className="text-[10px] text-gray-600 mt-1">نقرة على المنيو</p>
                 </div>
                 <div className="bg-white border border-gray-100 rounded-2xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                         <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
                             <Star className="h-3.5 w-3.5 text-amber-500" />
                         </div>
-                        <span className="text-[10px] text-gray-400 font-medium">التقييم</span>
+                        <span className="text-[10px] text-gray-600 font-medium">التقييم</span>
                     </div>
                     <p className="text-2xl font-black text-gray-900">{restaurantRating.toFixed(1)}</p>
-                    <p className="text-[10px] text-gray-300 mt-1">{restaurantReviewCount} تقييم</p>
+                    <p className="text-[10px] text-gray-600 mt-1">{restaurantReviewCount} تقييم</p>
                 </div>
                 <div className="bg-white border border-gray-100 rounded-2xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                         <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
                             <Eye className="h-3.5 w-3.5 text-emerald-500" />
                         </div>
-                        <span className="text-[10px] text-gray-400 font-medium">الزيارات (30 يوم)</span>
+                        <span className="text-[10px] text-gray-600 font-medium">الزيارات (30 يوم)</span>
                     </div>
                     <p className="text-2xl font-black text-gray-900">{totalVisits}</p>
-                    <p className="text-[10px] text-gray-300 mt-1">زيارة للمنيو</p>
+                    <p className="text-[10px] text-gray-600 mt-1">زيارة للمنيو</p>
                 </div>
                 <div className="bg-white border border-gray-100 rounded-2xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                         <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
                             <Zap className="h-3.5 w-3.5 text-blue-500" />
                         </div>
-                        <span className="text-[10px] text-gray-400 font-medium">الحالة</span>
+                        <span className="text-[10px] text-gray-600 font-medium">الحالة</span>
                     </div>
                     <p className="text-lg font-black text-gray-900">{totalClicks > 0 ? 'نشط' : 'جديد'}</p>
-                    <p className="text-[10px] text-gray-300 mt-1">واجهتك الرقمية</p>
+                    <p className="text-[10px] text-gray-600 mt-1">واجهتك الرقمية</p>
                 </div>
             </div>
 
@@ -245,7 +245,7 @@ export default function InsightsHubPage() {
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
                     <div className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-gray-400" />
+                        <TrendingUp className="h-4 w-4 text-gray-600" />
                         <h3 className="text-sm font-bold text-gray-900">الزيارات آخر 30 يوم</h3>
                     </div>
                     {weekPct !== null && (
@@ -302,7 +302,7 @@ export default function InsightsHubPage() {
                             </div>
                             <div>
                                 <h3 className="text-sm font-bold text-gray-900">داخل الفرع</h3>
-                                <p className="text-[10px] text-gray-400">QR على الطاولة</p>
+                                <p className="text-[10px] text-gray-600">QR على الطاولة</p>
                             </div>
                         </div>
                         <p className="text-2xl font-black text-gray-900">{hubVisitsQr}</p>
@@ -315,11 +315,11 @@ export default function InsightsHubPage() {
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
-                                <Link2 className="h-4 w-4 text-gray-500" />
+                                <Link2 className="h-4 w-4 text-gray-600" />
                             </div>
                             <div>
                                 <h3 className="text-sm font-bold text-gray-900">خارج الفرع</h3>
-                                <p className="text-[10px] text-gray-400">رابط الانستقرام</p>
+                                <p className="text-[10px] text-gray-600">رابط الانستقرام</p>
                             </div>
                         </div>
                         <p className="text-2xl font-black text-gray-900">{hubVisitsLink}</p>
@@ -338,9 +338,9 @@ export default function InsightsHubPage() {
                     </div>
                     <div className="flex flex-col md:flex-row gap-8 items-start">
                         <div className="flex-1 space-y-3">
-                            <p className="text-[10px] text-gray-400 font-medium">الرابط الذكي</p>
+                            <p className="text-[10px] text-gray-600 font-medium">الرابط الذكي</p>
                             <div className="flex gap-2 items-center flex-wrap">
-                                <code className="text-xs text-gray-500 bg-gray-50 border border-gray-100 px-3 py-2 rounded-xl break-all">
+                                <code className="text-xs text-gray-600 bg-gray-50 border border-gray-100 px-3 py-2 rounded-xl break-all">
                                     mershhah.com/{hubUsername}
                                 </code>
                                 <Button size="sm" variant="outline" className="h-8 rounded-xl text-xs border-gray-200" onClick={() => {
@@ -351,7 +351,7 @@ export default function InsightsHubPage() {
                             </div>
                         </div>
                         <div className="space-y-3">
-                            <p className="text-[10px] text-gray-400 font-medium">QR للطاولة</p>
+                            <p className="text-[10px] text-gray-600 font-medium">QR للطاولة</p>
                             {qrDataUrl ? (
                                 <div className="inline-flex flex-col items-center gap-3">
                                     <div className="inline-block p-3 bg-white rounded-2xl border border-gray-100">
@@ -365,7 +365,7 @@ export default function InsightsHubPage() {
                                     }}>تحميل QR</Button>
                                 </div>
                             ) : (
-                                <div className="w-[180px] h-[180px] bg-gray-50 border border-gray-100 rounded-2xl animate-pulse flex items-center justify-center text-[10px] text-gray-300">جاري التوليد...</div>
+                                <div className="w-[180px] h-[180px] bg-gray-50 border border-gray-100 rounded-2xl animate-pulse flex items-center justify-center text-[10px] text-gray-600">جاري التوليد...</div>
                             )}
                         </div>
                     </div>
@@ -375,13 +375,13 @@ export default function InsightsHubPage() {
             {/* Smart Insights — paid tier */}
             <div className={cn("bg-white border border-gray-100 rounded-2xl p-5", !isPaid && "relative")}>
                 <div className="flex items-center gap-2 mb-4">
-                    <Sparkles className="h-4 w-4 text-gray-400" />
+                    <Sparkles className="h-4 w-4 text-gray-600" />
                     <h3 className="text-sm font-bold text-gray-900">لمحات ذكية</h3>
                 </div>
                 {!isPaid ? (
                     <UpgradeGate description="افتح لمحات ذكية توليك بالضبط وش تسوي بمنيوك وعروضك" />
                 ) : insights.length === 0 ? (
-                    <div className="py-10 text-center text-gray-300 text-xs">تحتاج بيانات أكثر عشان نطلع لك لمحات — رجّع بعد شوي.</div>
+                    <div className="py-10 text-center text-gray-600 text-xs">تحتاج بيانات أكثر عشان نطلع لك لمحات — رجّع بعد شوي.</div>
                 ) : (
                     <div className="space-y-2">
                         {insights.map(insight => (
@@ -404,20 +404,20 @@ export default function InsightsHubPage() {
                 {/* Popular Items */}
                 <div className="bg-white border border-gray-100 rounded-2xl p-5">
                     <div className="flex items-center gap-2 mb-4">
-                        <TrendingUp className="h-4 w-4 text-gray-400" />
+                        <TrendingUp className="h-4 w-4 text-gray-600" />
                         <h3 className="text-sm font-bold text-gray-900">الأصناف الأعلى تفاعلاً</h3>
                     </div>
                     {analysisData.length === 0 ? (
-                        <div className="py-12 text-center text-gray-300 text-xs">لا توجد بيانات تفاعل بعد</div>
+                        <div className="py-12 text-center text-gray-600 text-xs">لا توجد بيانات تفاعل بعد</div>
                     ) : (
                         <div className="space-y-2">
                             {analysisData.slice(0, 5).map((item, idx) => (
                                 <div key={item.id || `popular-${idx}`} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
                                     <div className="flex items-center gap-3">
-                                        <span className="text-[10px] font-bold text-gray-300 w-4">{idx + 1}</span>
+                                        <span className="text-[10px] font-bold text-gray-600 w-4">{idx + 1}</span>
                                         <span className="text-sm font-bold text-gray-900">{item.name}</span>
                                     </div>
-                                    <span className="text-[10px] font-mono font-bold text-gray-400 bg-white border border-gray-100 px-2 py-0.5 rounded-md">{item.popularity}</span>
+                                    <span className="text-[10px] font-mono font-bold text-gray-600 bg-white border border-gray-100 px-2 py-0.5 rounded-md">{item.popularity}</span>
                                 </div>
                             ))}
                         </div>
@@ -427,14 +427,14 @@ export default function InsightsHubPage() {
                 {/* Menu Engineering Matrix — paid tier */}
                 <div className={cn("bg-white border border-gray-100 rounded-2xl p-5", !isPaid && "relative")}>
                     <div className="flex items-center gap-2 mb-1">
-                        <BarChart3 className="h-4 w-4 text-gray-400" />
+                        <BarChart3 className="h-4 w-4 text-gray-600" />
                         <h3 className="text-sm font-bold text-gray-900">مصفوفة هندسة المنيو</h3>
                     </div>
-                    <p className="text-[10px] text-gray-400 mb-4">شعبية × ربحية كل صنف مقارنة بمتوسط منيوك</p>
+                    <p className="text-[10px] text-gray-600 mb-4">شعبية × ربحية كل صنف مقارنة بمتوسط منيوك</p>
                     {!isPaid ? (
                         <UpgradeGate description="اشترك لفتح تصنيف كل صنف بمنيوك وتوصيات تزيد أرباحك" />
                     ) : engineered.length < 2 ? (
-                        <div className="py-12 text-center text-gray-300 text-xs">تحتاج على الأقل صنفين لهم تفاعل وتكلفة محددة</div>
+                        <div className="py-12 text-center text-gray-600 text-xs">تحتاج على الأقل صنفين لهم تفاعل وتكلفة محددة</div>
                     ) : (
                         <MenuEngineeringMatrix items={engineered} />
                     )}
@@ -444,13 +444,13 @@ export default function InsightsHubPage() {
             {/* Reviews by topic — paid tier */}
             <div className={cn("bg-white border border-gray-100 rounded-2xl p-5", !isPaid && "relative")}>
                 <div className="flex items-center gap-2 mb-4">
-                    <Star className="h-4 w-4 text-gray-400" />
+                    <Star className="h-4 w-4 text-gray-600" />
                     <h3 className="text-sm font-bold text-gray-900">وش يتكلم عنه عملاؤك؟</h3>
                 </div>
                 {!isPaid ? (
                     <UpgradeGate description="اشترك لتشوف أكثر جوانب مطعمك اللي يذكرها العملاء بتقييماتهم" />
                 ) : reviewComments.length === 0 ? (
-                    <div className="py-10 text-center text-gray-300 text-xs">لا توجد تعليقات كافية بعد</div>
+                    <div className="py-10 text-center text-gray-600 text-xs">لا توجد تعليقات كافية بعد</div>
                 ) : (
                     <div className="space-y-3">
                         {REVIEW_TAGS.map(tag => {
@@ -461,7 +461,7 @@ export default function InsightsHubPage() {
                                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                                         <div className="h-full rounded-full bg-[#2a78d6] transition-all" style={{ width: `${(count / topicMax) * 100}%` }} />
                                     </div>
-                                    <span className="text-[10px] font-mono font-bold text-gray-400 w-6 text-left">{count}</span>
+                                    <span className="text-[10px] font-mono font-bold text-gray-600 w-6 text-left">{count}</span>
                                 </div>
                             );
                         })}
@@ -476,11 +476,11 @@ function UpgradeGate({ description }: { description: string }) {
     return (
         <div className="py-10 text-center space-y-4">
             <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto">
-                <Crown className="h-6 w-6 text-gray-400" />
+                <Crown className="h-6 w-6 text-gray-600" />
             </div>
             <div className="space-y-1">
                 <p className="text-sm font-bold text-gray-900">متاح في الباقات المدفوعة</p>
-                <p className="text-[10px] text-gray-400 max-w-xs mx-auto">{description}</p>
+                <p className="text-[10px] text-gray-600 max-w-xs mx-auto">{description}</p>
             </div>
             <Button asChild size="sm" className="h-9 rounded-xl bg-gray-900 text-white hover:bg-gray-800 font-bold text-xs px-6">
                 <Link href="/pricing">ترقية الحساب</Link>
@@ -550,7 +550,7 @@ function MenuEngineeringMatrix({ items }: { items: (AnalyzedItem & { classificat
                 {(Object.keys(CLASSIFICATION_INFO) as MenuClassification[]).filter(cls => byClass[cls]?.length).map(cls => (
                     <div key={cls} className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CLASSIFICATION_INFO[cls].color }} />
-                        <span className="text-[10px] text-gray-500 font-medium">{CLASSIFICATION_INFO[cls].label} ({byClass[cls].length})</span>
+                        <span className="text-[10px] text-gray-600 font-medium">{CLASSIFICATION_INFO[cls].label} ({byClass[cls].length})</span>
                     </div>
                 ))}
             </div>
@@ -560,7 +560,7 @@ function MenuEngineeringMatrix({ items }: { items: (AnalyzedItem & { classificat
                 const dominant = (Object.keys(byClass) as MenuClassification[]).sort((a, b) => (byClass[b]?.length || 0) - (byClass[a]?.length || 0))[0];
                 if (!dominant || !byClass[dominant]?.length) return null;
                 return (
-                    <p className="text-[11px] text-gray-500 leading-relaxed mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-[11px] text-gray-600 leading-relaxed mt-4 pt-4 border-t border-gray-100">
                         <span className="font-bold text-gray-700">{CLASSIFICATION_INFO[dominant].label}: </span>
                         {CLASSIFICATION_INFO[dominant].advice}
                     </p>

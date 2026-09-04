@@ -112,7 +112,7 @@ export function OwnerTopNav() {
 
         {/* Next page arrow - mobile */}
         <button onClick={() => navigatePage('next')} disabled={!canGoNext}
-          className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none sm:hidden relative z-10">
+          className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none sm:hidden relative z-10">
           <ChevronRight className="h-4 w-4" />
         </button>
 
@@ -128,7 +128,7 @@ export function OwnerTopNav() {
                 className={`flex items-center gap-1.5 h-9 px-3 rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap ${
                   isActive(item.href)
                     ? 'bg-gray-900 text-white'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-700'
                 }`}
               >
                 <item.icon className="h-3.5 w-3.5 shrink-0" />
@@ -140,7 +140,7 @@ export function OwnerTopNav() {
 
         {/* Prev page arrow - mobile */}
         <button onClick={() => navigatePage('prev')} disabled={!canGoPrev}
-          className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none sm:hidden relative z-10">
+          className="shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:pointer-events-none sm:hidden relative z-10">
           <ChevronLeft className="h-4 w-4" />
         </button>
 
@@ -151,11 +151,11 @@ export function OwnerTopNav() {
             className="flex items-center gap-2 h-9 px-3 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
-              <span className="text-[10px] font-bold text-gray-500">
+              <span className="text-[10px] font-bold text-gray-600">
                 {user?.full_name?.charAt(0) || 'U'}
               </span>
             </div>
-            <ChevronDown className={`h-3 w-3 text-gray-400 transition-transform hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-3 w-3 text-gray-600 transition-transform hidden sm:block ${showUserMenu ? 'rotate-180' : ''}`} />
           </button>
           {showUserMenu && (
             <>
@@ -163,16 +163,16 @@ export function OwnerTopNav() {
               <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 min-w-[200px]">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-xs font-bold text-gray-900">{user?.full_name || 'مستخدم'}</p>
-                  <p className="text-[10px] text-gray-400">{user?.email}</p>
+                  <p className="text-[10px] text-gray-600">{user?.email}</p>
                 </div>
                 <Link href="/owner/settings" onClick={() => setShowUserMenu(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold text-gray-500 hover:bg-gray-50">
-                  <Settings className="h-3.5 w-3.5 text-gray-400" />
+                  className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold text-gray-600 hover:bg-gray-50">
+                  <Settings className="h-3.5 w-3.5 text-gray-600" />
                   الإعدادات
                 </Link>
                 <Link href="/owner/billing" onClick={() => setShowUserMenu(false)}
-                  className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold text-gray-500 hover:bg-gray-50">
-                  <CreditCard className="h-3.5 w-3.5 text-gray-400" />
+                  className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-bold text-gray-600 hover:bg-gray-50">
+                  <CreditCard className="h-3.5 w-3.5 text-gray-600" />
                   الفواتير والاشتراكات
                 </Link>
                 <button onClick={handleLogout}

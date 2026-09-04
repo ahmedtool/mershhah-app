@@ -118,7 +118,7 @@ export default function PostPage() {
         <footer className="flex flex-col sm:flex-row justify-between items-center gap-8 bg-gray-50 p-12 rounded-[3.5rem] border border-gray-100 shadow-inner">
             <div className="space-y-2 text-center sm:text-right">
                 <p className="font-black text-2xl text-gray-900">هل وجدت هذه الأطروحة مفيدة؟</p>
-                <p className="text-gray-500 font-medium">شارك هذه الاستراتيجيات مع زملائك من رواد الأعمال.</p>
+                <p className="text-gray-600 font-medium">شارك هذه الاستراتيجيات مع زملائك من رواد الأعمال.</p>
             </div>
             <div className="flex gap-4">
                 <Button variant="outline" size="icon" className="h-12 w-12 rounded-2xl hover:bg-primary/10 hover:text-primary border-gray-200 transition-all hover:scale-110">

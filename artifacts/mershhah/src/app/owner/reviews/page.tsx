@@ -245,7 +245,7 @@ export default function ReviewsPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-lg font-black text-gray-900">التقارير</h1>
-        <p className="text-xs text-gray-400 mt-0.5">تتبع ذكي لتفاعلات عملائك</p>
+        <p className="text-xs text-gray-600 mt-0.5">تتبع ذكي لتفاعلات عملائك</p>
       </div>
 
       {/* Overview Stats */}
@@ -269,7 +269,7 @@ export default function ReviewsPage() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as typeof activeTab)}
             className={`flex-1 h-9 rounded-lg text-xs font-bold transition-all ${
-              activeTab === tab.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+              activeTab === tab.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-600'
             }`}
           >
             {tab.label}
@@ -300,7 +300,7 @@ export default function ReviewsPage() {
                   }}
                 />
               </div>
-              <p className="text-[11px] text-gray-400 text-center">{analysis.sentimentLabel} — {analysis.sentimentScore}%</p>
+              <p className="text-[11px] text-gray-600 text-center">{analysis.sentimentLabel} — {analysis.sentimentScore}%</p>
             </div>
           )}
 
@@ -312,7 +312,7 @@ export default function ReviewsPage() {
                   <ThumbsUp className="h-3 w-3" />نقاط القوة
                 </h4>
                 {analysis.positiveThemes.length === 0 ? (
-                  <p className="text-[10px] text-gray-400">لا توجد بعد.</p>
+                  <p className="text-[10px] text-gray-600">لا توجد بعد.</p>
                 ) : (
                   <ul className="space-y-1">
                     {analysis.positiveThemes.map((t, i) => <li key={i} className="text-[10px] text-gray-600">• {t}</li>)}
@@ -324,7 +324,7 @@ export default function ReviewsPage() {
                   <ThumbsDown className="h-3 w-3" />للتحسين
                 </h4>
                 {analysis.negativeThemes.length === 0 ? (
-                  <p className="text-[10px] text-gray-400">ممتاز! لا توجد ملاحظات سلبية.</p>
+                  <p className="text-[10px] text-gray-600">ممتاز! لا توجد ملاحظات سلبية.</p>
                 ) : (
                   <ul className="space-y-1">
                     {analysis.negativeThemes.map((t, i) => <li key={i} className="text-[10px] text-gray-600">• {t}</li>)}
@@ -340,13 +340,13 @@ export default function ReviewsPage() {
             <div className="space-y-3">
               {[5, 4, 3, 2, 1].map(star => (
                 <div key={star} className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold text-gray-500 w-4">{star}</span>
+                  <span className="text-[10px] font-bold text-gray-600 w-4">{star}</span>
                   <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
                   <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div className="h-full bg-amber-400 rounded-full transition-all"
                       style={{ width: `${stats.totalReviews > 0 ? (stats.distribution[star as keyof typeof stats.distribution] / stats.totalReviews) * 100 : 0}%` }} />
                   </div>
-                  <span className="text-[10px] text-gray-300 w-6 text-left">{stats.distribution[star as keyof typeof stats.distribution]}</span>
+                  <span className="text-[10px] text-gray-600 w-6 text-left">{stats.distribution[star as keyof typeof stats.distribution]}</span>
                 </div>
               ))}
             </div>
@@ -366,7 +366,7 @@ export default function ReviewsPage() {
                       <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${posPct}%` }} />
                       </div>
-                      <span className="text-[9px] text-gray-400 w-10 text-left">{posPct}%</span>
+                      <span className="text-[9px] text-gray-600 w-10 text-left">{posPct}%</span>
                     </div>
                   );
                 })}
@@ -380,7 +380,7 @@ export default function ReviewsPage() {
               <h4 className="text-[11px] font-bold text-gray-700 mb-1 flex items-center gap-1">
                 <Lightbulb className="h-3 w-3" />توصية
               </h4>
-              <p className="text-[10px] text-gray-500 leading-relaxed">{analysis.recommendation}</p>
+              <p className="text-[10px] text-gray-600 leading-relaxed">{analysis.recommendation}</p>
             </div>
           )}
         </div>
@@ -392,7 +392,7 @@ export default function ReviewsPage() {
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
             <h3 className="text-sm font-bold text-gray-900 mb-4">مصادر التقييمات</h3>
             {sourceStats.length === 0 ? (
-              <p className="text-xs text-gray-400 text-center py-6">لا توجد بيانات.</p>
+              <p className="text-xs text-gray-600 text-center py-6">لا توجد بيانات.</p>
             ) : (
               <div className="space-y-3">
                 {sourceStats.map(s => (
@@ -401,7 +401,7 @@ export default function ReviewsPage() {
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[11px] font-bold text-gray-700">{s.label}</span>
-                        <span className="text-[10px] text-gray-400">{s.count} ({s.pct}%)</span>
+                        <span className="text-[10px] text-gray-600">{s.count} ({s.pct}%)</span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all" style={{ width: `${s.pct}%`, backgroundColor: s.color }} />
@@ -419,9 +419,9 @@ export default function ReviewsPage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {deviceStats.map(d => (
                 <div key={d.device} className="text-center p-3 bg-gray-50 rounded-xl">
-                  <div className="flex justify-center mb-1 text-gray-400">{d.icon}</div>
+                  <div className="flex justify-center mb-1 text-gray-600">{d.icon}</div>
                   <p className="text-lg font-black text-gray-900">{d.count}</p>
-                  <p className="text-[10px] text-gray-400">{d.device} ({d.pct}%)</p>
+                  <p className="text-[10px] text-gray-600">{d.device} ({d.pct}%)</p>
                 </div>
               ))}
             </div>
@@ -433,11 +433,11 @@ export default function ReviewsPage() {
             <div className="space-y-2">
               {weeklyActivity.map(d => (
                 <div key={d.day} className="flex items-center gap-2">
-                  <span className="text-[10px] font-medium text-gray-500 w-12">{d.day}</span>
+                  <span className="text-[10px] font-medium text-gray-600 w-12">{d.day}</span>
                   <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${d.pct}%` }} />
                   </div>
-                  <span className="text-[9px] text-gray-400 w-6 text-left">{d.count}</span>
+                  <span className="text-[9px] text-gray-600 w-6 text-left">{d.count}</span>
                 </div>
               ))}
             </div>
@@ -449,7 +449,7 @@ export default function ReviewsPage() {
         <div className="bg-white border border-gray-100 rounded-2xl p-5">
           <h3 className="text-sm font-bold text-gray-900 mb-4">آخر الأحداث</h3>
           {eventStats.length === 0 ? (
-            <p className="text-xs text-gray-400 text-center py-6">لا توجد أحداث بعد.</p>
+            <p className="text-xs text-gray-600 text-center py-6">لا توجد أحداث بعد.</p>
           ) : (
             <div className="space-y-2">
               {eventStats.map(e => (
@@ -473,7 +473,7 @@ export default function ReviewsPage() {
           <h3 className="text-sm font-bold text-gray-900 mb-4">جميع التقييمات</h3>
           <div className="space-y-3 max-h-[32rem] overflow-y-auto">
             {reviews.length === 0 ? (
-              <p className="text-xs text-gray-400 text-center py-8">لا توجد تقييمات بعد.</p>
+              <p className="text-xs text-gray-600 text-center py-8">لا توجد تقييمات بعد.</p>
             ) : reviews.map(review => {
               const isVisible = review.is_visible !== false;
               const src = SOURCE_LABELS[review.source || 'direct'] || SOURCE_LABELS.direct;
@@ -490,13 +490,13 @@ export default function ReviewsPage() {
                         {src.icon} {src.label}
                       </span>
                     </div>
-                    <span className="text-[9px] text-gray-300">
+                    <span className="text-[9px] text-gray-600">
                       {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: ar }) : ''}
                     </span>
                   </div>
-                  {review.comment && <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">{review.comment}</p>}
+                  {review.comment && <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">{review.comment}</p>}
                   <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-gray-50">
-                    <span className="text-[9px] text-gray-300">{isVisible ? 'معروض' : 'مخفي'}</span>
+                    <span className="text-[9px] text-gray-600">{isVisible ? 'معروض' : 'مخفي'}</span>
                     <button
                       onClick={() => handleVisibilityToggle(review.id, !isVisible)}
                       disabled={updatingVisibility}
@@ -517,7 +517,7 @@ export default function ReviewsPage() {
           <h3 className="text-sm font-bold text-gray-900 mb-4">تقييمات المنتجات</h3>
           <div className="space-y-3 max-h-[32rem] overflow-y-auto">
             {itemReviews.length === 0 ? (
-              <p className="text-xs text-gray-400 text-center py-8">لا توجد تقييمات منتجات بعد.</p>
+              <p className="text-xs text-gray-600 text-center py-8">لا توجد تقييمات منتجات بعد.</p>
             ) : itemReviews.map(review => {
               const isVisible = review.is_visible !== false;
               return (
@@ -531,13 +531,13 @@ export default function ReviewsPage() {
                       </div>
                       <span className="text-[10px] font-bold text-gray-600">{itemNames[review.menu_item_id] || 'صنف محذوف'}</span>
                     </div>
-                    <span className="text-[9px] text-gray-300">
+                    <span className="text-[9px] text-gray-600">
                       {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: ar }) : ''}
                     </span>
                   </div>
-                  {review.comment && <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">{review.comment}</p>}
+                  {review.comment && <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">{review.comment}</p>}
                   <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-gray-50">
-                    <span className="text-[9px] text-gray-300">{isVisible ? 'معروض' : 'مخفي'}</span>
+                    <span className="text-[9px] text-gray-600">{isVisible ? 'معروض' : 'مخفي'}</span>
                     <button
                       onClick={() => handleItemVisibilityToggle(review.id, !isVisible)}
                       disabled={updatingItemVisibility}

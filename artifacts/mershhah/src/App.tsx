@@ -99,7 +99,7 @@ const OW = ({ children }: { children: React.ReactNode }) => <OwnerLayout>{childr
 function RouteLoadingFallback() {
   return (
     <div className="flex items-center justify-center h-screen bg-gray-50">
-      <Loader2 className="animate-spin h-6 w-6 text-gray-300" />
+      <Loader2 className="animate-spin h-6 w-6 text-gray-600" />
     </div>
   );
 }

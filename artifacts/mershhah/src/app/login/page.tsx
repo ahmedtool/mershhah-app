@@ -12,7 +12,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           <div className="mb-8">
             <h1 className="text-2xl font-black text-gray-900 mb-1">مرشح</h1>
-            <p className="text-sm text-gray-400">أهلاً بك! سجّل دخولك للوصول للوحة التحكم</p>
+            <p className="text-sm text-gray-600">أهلاً بك! سجّل دخولك للوصول للوحة التحكم</p>
           </div>
 
           <LoginForm />

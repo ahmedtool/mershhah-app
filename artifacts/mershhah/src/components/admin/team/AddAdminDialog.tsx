@@ -114,35 +114,35 @@ export function AddAdminDialog({ children, onAdminAdded }: AddAdminDialogProps) 
             <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0">
                 <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
                     <DialogTitle className="text-sm font-bold text-gray-900">إضافة مسؤول جديد</DialogTitle>
-                    <p className="text-[11px] text-gray-400 mt-1">أدخل بيانات المسؤول الجديد وحدد صلاحياته.</p>
+                    <p className="text-[11px] text-gray-600 mt-1">أدخل بيانات المسؤول الجديد وحدد صلاحياته.</p>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-4">
                         <FormField control={form.control} name="fullName" render={({ field }) => (
                             <FormItem>
-                                <FormLabel className="text-xs font-bold text-gray-500">الاسم الكامل</FormLabel>
+                                <FormLabel className="text-xs font-bold text-gray-600">الاسم الكامل</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="الاسم" {...field} disabled={isPending} className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900" />
+                                    <Input placeholder="الاسم" {...field} disabled={isPending} className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900" />
                                 </FormControl>
                                 <FormMessage className="text-[10px]" />
                             </FormItem>
                         )}/>
                         <FormField control={form.control} name="email" render={({ field }) => (
                             <FormItem>
-                                <FormLabel className="text-xs font-bold text-gray-500">البريد الإلكتروني</FormLabel>
+                                <FormLabel className="text-xs font-bold text-gray-600">البريد الإلكتروني</FormLabel>
                                 <FormControl>
-                                    <Input type="email" placeholder="admin@example.com" {...field} disabled={isPending} className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900" />
+                                    <Input type="email" placeholder="admin@example.com" {...field} disabled={isPending} className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900" />
                                 </FormControl>
                                 <FormMessage className="text-[10px]" />
                             </FormItem>
                         )}/>
                         <FormField control={form.control} name="password" render={({ field }) => (
                             <FormItem>
-                                <FormLabel className="text-xs font-bold text-gray-500">كلمة المرور</FormLabel>
+                                <FormLabel className="text-xs font-bold text-gray-600">كلمة المرور</FormLabel>
                                 <FormControl>
                                     <div className="relative">
-                                        <Input type={showPassword ? "text" : "password"} placeholder="••••••••" {...field} disabled={isPending} className="h-11 px-3 pr-10 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900" />
-                                        <button type="button" onClick={() => setShowPassword(prev => !prev)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500">
+                                        <Input type={showPassword ? "text" : "password"} placeholder="••••••••" {...field} disabled={isPending} className="h-11 px-3 pr-10 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900" />
+                                        <button type="button" onClick={() => setShowPassword(prev => !prev)} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-600">
                                             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                         </button>
                                     </div>
@@ -157,7 +157,7 @@ export function AddAdminDialog({ children, onAdminAdded }: AddAdminDialogProps) 
                                 name="admin_permissions"
                                 render={() => (
                                     <FormItem>
-                                        <FormLabel className="text-xs font-bold text-gray-500">صلاحيات المسؤول</FormLabel>
+                                        <FormLabel className="text-xs font-bold text-gray-600">صلاحيات المسؤول</FormLabel>
                                         <FormMessage className="text-[10px]" />
                                         <div className="grid grid-cols-2 gap-3 mt-3">
                                             {permissions.map((permission) => (

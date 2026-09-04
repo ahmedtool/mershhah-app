@@ -197,7 +197,7 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
   if (isCheckingGrant) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-300" />
+        <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
       </div>
     );
   }
@@ -211,7 +211,7 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
         </div>
         <div>
           <h1 className="text-lg font-bold text-gray-900">كود التحقق</h1>
-          <p className="text-xs text-gray-400 mt-1">
+          <p className="text-xs text-gray-600 mt-1">
             {isSending ? 'جاري إرسال الكود...' : maskedEmail ? `أدخل الكود المرسل إلى ${maskedEmail}` : 'أدخل كود التحقق المرسل إلى بريدك'}
           </p>
         </div>
@@ -234,7 +234,7 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
         </div>
 
         {isSubmitting && (
-          <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+          <div className="flex items-center justify-center gap-2 text-xs text-gray-600">
             <Loader2 className="h-3.5 w-3.5 animate-spin" /> جاري التحقق...
           </div>
         )}

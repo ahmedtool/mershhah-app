@@ -280,13 +280,13 @@ export function DashboardAssistant() {
             {/* Header */}
             <header className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center">
-                <Bot className="h-4.5 w-4.5 text-gray-500" />
+                <Bot className="h-4.5 w-4.5 text-gray-600" />
               </div>
               <div className="flex-1">
                 <h3 className="text-sm font-bold text-gray-900">رفيق الدرب</h3>
-                <p className="text-[10px] text-gray-400">مساعدك الذكي في مرشح</p>
+                <p className="text-[10px] text-gray-600">مساعدك الذكي في مرشح</p>
               </div>
-              <button onClick={() => setIsOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-gray-500 hover:bg-gray-50 transition-colors">
+              <button onClick={() => setIsOpen(false)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-50 transition-colors">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </header>
@@ -299,7 +299,7 @@ export function DashboardAssistant() {
                     <div key={msg.id} className={cn("flex gap-2.5", msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
                       {msg.sender === 'bot' && (
                         <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
-                          <Bot className="h-3.5 w-3.5 text-gray-400" />
+                          <Bot className="h-3.5 w-3.5 text-gray-600" />
                         </div>
                       )}
                       <div className={cn(
@@ -323,7 +323,7 @@ export function DashboardAssistant() {
                                   </div>
                                 )}
                                 <p className="text-[10px] font-bold text-gray-900 truncate">{card.name}</p>
-                                {card.price && <p className="text-[9px] text-gray-400">{card.price} ر.س</p>}
+                                {card.price && <p className="text-[9px] text-gray-600">{card.price} ر.س</p>}
                               </div>
                             ))}
                           </div>
@@ -334,7 +334,7 @@ export function DashboardAssistant() {
                           <div className="mt-3 grid grid-cols-2 gap-2">
                             {msg.stats.map((stat, i) => (
                               <div key={i} className="bg-white border border-gray-100 rounded-lg px-2.5 py-2">
-                                <p className="text-[9px] text-gray-400">{stat.label}</p>
+                                <p className="text-[9px] text-gray-600">{stat.label}</p>
                                 <p className="text-sm font-bold text-gray-900">{stat.value}</p>
                               </div>
                             ))}
@@ -357,7 +357,7 @@ export function DashboardAssistant() {
                       </div>
                       {msg.sender === 'user' && (
                         <div className="w-7 h-7 rounded-lg bg-gray-200 flex items-center justify-center shrink-0 mt-0.5">
-                          <User className="h-3.5 w-3.5 text-gray-500" />
+                          <User className="h-3.5 w-3.5 text-gray-600" />
                         </div>
                       )}
                     </div>
@@ -366,11 +366,11 @@ export function DashboardAssistant() {
                {isThinking && (
                  <div className="flex justify-start gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                      <Bot className="h-3.5 w-3.5 text-gray-400" />
+                      <Bot className="h-3.5 w-3.5 text-gray-600" />
                     </div>
                     <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-2">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400"/>
-                      <span className="text-[11px] text-gray-400">يفكر...</span>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-600"/>
+                      <span className="text-[11px] text-gray-600">يفكر...</span>
                     </div>
                  </div>
                )}
@@ -386,7 +386,7 @@ export function DashboardAssistant() {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   disabled={finalInputDisabled}
-                  className="flex-1 h-10 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-300 focus-visible:outline-none focus-visible:border-gray-900 transition-colors disabled:opacity-50"
+                  className="flex-1 h-10 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-600 focus-visible:outline-none focus-visible:border-gray-900 transition-colors disabled:opacity-50"
                 />
                 <button onClick={handleSend} disabled={finalInputDisabled || !input.trim()}
                   className="w-10 h-10 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center shrink-0">

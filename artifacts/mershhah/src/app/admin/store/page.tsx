@@ -54,7 +54,7 @@ export default function AdminStorePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-gray-900">متجر الأدوات</h1>
-          <p className="text-xs text-gray-400 mt-0.5">نظرة عامة على أدوات المنصة</p>
+          <p className="text-xs text-gray-600 mt-0.5">نظرة عامة على أدوات المنصة</p>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/admin/store/developers">
@@ -86,7 +86,7 @@ export default function AdminStorePage() {
                 <stat.icon className={`h-5 w-5 ${stat.color}`} />
               </div>
               <div>
-                <p className="text-[10px] text-gray-400">{stat.label}</p>
+                <p className="text-[10px] text-gray-600">{stat.label}</p>
                 <p className="text-lg font-black text-gray-900">{stat.value}</p>
               </div>
             </div>
@@ -104,13 +104,13 @@ export default function AdminStorePage() {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-bold text-gray-900 truncate">{tool.title}</h3>
-                <p className="text-[10px] text-gray-400 font-mono">{tool.id}</p>
+                <p className="text-[10px] text-gray-600 font-mono">{tool.id}</p>
               </div>
             </div>
-            <p className="text-[11px] text-gray-400 line-clamp-2 mb-3">{tool.description}</p>
+            <p className="text-[11px] text-gray-600 line-clamp-2 mb-3">{tool.description}</p>
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-gray-600">{tool.price_label}</span>
-              <span className="text-[9px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">{tool.category}</span>
+              <span className="text-[9px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{tool.category}</span>
             </div>
           </div>
         ))}

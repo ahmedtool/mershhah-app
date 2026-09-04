@@ -55,7 +55,7 @@ export default function TeamManagementPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-lg font-bold text-gray-900">الفريق</h1>
-                    <p className="text-xs text-gray-400 mt-0.5">{admins.length} مسؤول</p>
+                    <p className="text-xs text-gray-600 mt-0.5">{admins.length} مسؤول</p>
                 </div>
                 <AddAdminDialog onAdminAdded={fetchAdmins}>
                     <button className="h-10 px-4 rounded-xl bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">

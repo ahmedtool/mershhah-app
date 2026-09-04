@@ -117,11 +117,11 @@ export function EditBlogPostDialog({ children, post, onSave }: EditBlogPostDialo
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-              <FileText className="h-5 w-5 text-gray-500" />
+              <FileText className="h-5 w-5 text-gray-600" />
             </div>
             <div>
               <h2 className="text-base font-bold text-gray-900">{isEditing ? 'تعديل المقال' : 'مقال جديد'}</h2>
-              <p className="text-xs text-gray-400 mt-0.5">{isEditing ? 'عدّل بيانات المقال ثم احفظ' : 'اكتب مقالاً جديداً للمدونة'}</p>
+              <p className="text-xs text-gray-600 mt-0.5">{isEditing ? 'عدّل بيانات المقال ثم احفظ' : 'اكتب مقالاً جديداً للمدونة'}</p>
             </div>
           </div>
         </div>
@@ -130,7 +130,7 @@ export function EditBlogPostDialog({ children, post, onSave }: EditBlogPostDialo
           <form onSubmit={form.handleSubmit(onSubmit)} className="p-5 space-y-4">
             <FormField control={form.control} name="title" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">عنوان المقال</FormLabel>
+                <FormLabel className="text-xs text-gray-600">عنوان المقال</FormLabel>
                 <FormControl>
                   <Input placeholder="مثال: كيف تزيد أرباح مطعمك" {...field}
                     onChange={(e) => handleTitleChange(e.target.value)}
@@ -142,20 +142,20 @@ export function EditBlogPostDialog({ children, post, onSave }: EditBlogPostDialo
 
             <FormField control={form.control} name="slug" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">الرابط <span className="text-gray-300">(إنجليزي)</span></FormLabel>
+                <FormLabel className="text-xs text-gray-600">الرابط <span className="text-gray-600">(إنجليزي)</span></FormLabel>
                 <FormControl>
                   <Input placeholder="how-to-grow-profits" {...field}
                     onChange={(e) => { setSlugTouched(true); field.onChange(e); }}
                     className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
                 </FormControl>
-                <p className="text-[9px] text-gray-400 mt-1">mershhah.com/blog/{form.watch('slug') || '...'}</p>
+                <p className="text-[9px] text-gray-600 mt-1">mershhah.com/blog/{form.watch('slug') || '...'}</p>
                 <FormMessage className="text-[10px]" />
               </FormItem>
             )} />
 
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">وصف قصير (يظهر في بطاقة المقال)</FormLabel>
+                <FormLabel className="text-xs text-gray-600">وصف قصير (يظهر في بطاقة المقال)</FormLabel>
                 <FormControl>
                   <Textarea placeholder="ملخص جذاب في سطر أو سطرين..." {...field} className="rounded-xl border-gray-200 text-sm min-h-[60px] resize-none" disabled={isSaving} />
                 </FormControl>
@@ -165,7 +165,7 @@ export function EditBlogPostDialog({ children, post, onSave }: EditBlogPostDialo
 
             <FormField control={form.control} name="reading_time" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">وقت القراءة</FormLabel>
+                <FormLabel className="text-xs text-gray-600">وقت القراءة</FormLabel>
                 <FormControl>
                   <Input placeholder="مثال: 6 دقائق" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                 </FormControl>
@@ -175,7 +175,7 @@ export function EditBlogPostDialog({ children, post, onSave }: EditBlogPostDialo
 
             <FormField control={form.control} name="content" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">محتوى المقال (HTML)</FormLabel>
+                <FormLabel className="text-xs text-gray-600">محتوى المقال (HTML)</FormLabel>
                 <FormControl>
                   <Textarea
                     placeholder={`<h2>عنوان فرعي</h2>\n<p>فقرة نصية...</p>\n<ul><li>نقطة أولى</li></ul>\n<blockquote>اقتباس مهم</blockquote>`}
@@ -185,7 +185,7 @@ export function EditBlogPostDialog({ children, post, onSave }: EditBlogPostDialo
                     disabled={isSaving}
                   />
                 </FormControl>
-                <p className="text-[9px] text-gray-400 mt-1">استخدم وسوم HTML بسيطة: h2, p, ul/li, blockquote, strong</p>
+                <p className="text-[9px] text-gray-600 mt-1">استخدم وسوم HTML بسيطة: h2, p, ul/li, blockquote, strong</p>
                 <FormMessage className="text-[10px]" />
               </FormItem>
             )} />
@@ -193,7 +193,7 @@ export function EditBlogPostDialog({ children, post, onSave }: EditBlogPostDialo
             <FormField control={form.control} name="is_published" render={({ field }) => (
               <FormItem>
                 <button type="button" onClick={() => field.onChange(!field.value)}
-                  className={`w-full h-11 rounded-xl text-xs font-medium transition-all border ${field.value ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}>
+                  className={`w-full h-11 rounded-xl text-xs font-medium transition-all border ${field.value ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
                   {field.value ? '✓ منشور — يظهر للزوار' : 'مسودة — غير منشور بعد'}
                 </button>
               </FormItem>

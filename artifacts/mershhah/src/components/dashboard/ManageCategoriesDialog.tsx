@@ -195,11 +195,11 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
             <div className="px-5 pt-5 pb-3 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                  <Tag className="h-5 w-5 text-gray-500" />
+                  <Tag className="h-5 w-5 text-gray-600" />
                 </div>
                 <div>
                   <h2 className="text-base font-bold text-gray-900">إدارة التصنيفات</h2>
-                  <p className="text-xs text-gray-400 mt-0.5">رتّبها بالسحب، وحدد أصناف كل تصنيف</p>
+                  <p className="text-xs text-gray-600 mt-0.5">رتّبها بالسحب، وحدد أصناف كل تصنيف</p>
                 </div>
               </div>
             </div>
@@ -232,7 +232,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                       type="button"
                       onClick={() => handleAdd(name)}
                       disabled={isAdding}
-                      className="px-2.5 py-1 rounded-full border border-gray-200 text-[11px] font-medium text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors disabled:opacity-50"
+                      className="px-2.5 py-1 rounded-full border border-gray-200 text-[11px] font-medium text-gray-600 hover:border-gray-400 hover:text-gray-700 transition-colors disabled:opacity-50"
                     >
                       + {name}
                     </button>
@@ -242,21 +242,21 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
 
               {isLoading ? (
                 <div className="flex items-center justify-center py-10">
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-300" />
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
                 </div>
               ) : categories.length === 0 ? (
-                <p className="text-center text-sm text-gray-400 py-10">لا توجد تصنيفات بعد — أضف أول واحد فوق</p>
+                <p className="text-center text-sm text-gray-600 py-10">لا توجد تصنيفات بعد — أضف أول واحد فوق</p>
               ) : (
                 <div className="space-y-2">
                   {categories.map((cat, index) => (
                     <div key={cat.id} className="flex items-center gap-2 border border-gray-100 rounded-xl p-2.5">
                       <div className="flex flex-col shrink-0">
                         <button onClick={() => handleReorder(index, -1)} disabled={index === 0 || busyId === cat.id}
-                          className="text-gray-300 hover:text-gray-600 disabled:opacity-30">
+                          className="text-gray-600 hover:text-gray-600 disabled:opacity-30">
                           <ChevronUp className="h-3.5 w-3.5" />
                         </button>
                         <button onClick={() => handleReorder(index, 1)} disabled={index === categories.length - 1 || busyId === cat.id}
-                          className="text-gray-300 hover:text-gray-600 disabled:opacity-30">
+                          className="text-gray-600 hover:text-gray-600 disabled:opacity-30">
                           <ChevronDown className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -273,20 +273,20 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                       ) : (
                         <button onClick={() => openAssignment(cat)} className="flex-1 text-right min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{cat.name}</p>
-                          <p className="text-[10px] text-gray-400">{countInCategory(cat.id)} صنف</p>
+                          <p className="text-[10px] text-gray-600">{countInCategory(cat.id)} صنف</p>
                         </button>
                       )}
 
                       <button onClick={() => openAssignment(cat)}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors shrink-0" title="ربط الأصناف">
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-700 hover:bg-gray-50 transition-colors shrink-0" title="ربط الأصناف">
                         <ListChecks className="h-3.5 w-3.5" />
                       </button>
                       <button onClick={() => { setRenamingId(cat.id); setRenameValue(cat.name); }}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors shrink-0">
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-700 hover:bg-gray-50 transition-colors shrink-0">
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button onClick={() => handleDelete(cat)} disabled={busyId === cat.id}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0 disabled:opacity-50">
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0 disabled:opacity-50">
                         {busyId === cat.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                       </button>
                     </div>
@@ -298,17 +298,17 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
         ) : (
           <>
             <div className="px-5 pt-5 pb-3 border-b border-gray-100">
-              <button onClick={() => setAssigning(null)} className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors mb-3">
+              <button onClick={() => setAssigning(null)} className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-700 transition-colors mb-3">
                 <ArrowRight className="h-3.5 w-3.5" />
                 رجوع للتصنيفات
               </button>
               <h2 className="text-base font-bold text-gray-900">أصناف "{assigning.name}"</h2>
-              <p className="text-xs text-gray-400 mt-0.5">حدد الأصناف اللي تنتمي لهذا التصنيف</p>
+              <p className="text-xs text-gray-600 mt-0.5">حدد الأصناف اللي تنتمي لهذا التصنيف</p>
             </div>
 
             <div className="px-5 pt-3">
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
                 <Input
                   value={itemSearch}
                   onChange={(e) => setItemSearch(e.target.value)}
@@ -320,9 +320,9 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
 
             <div className="p-5 space-y-1.5 max-h-[50vh] overflow-y-auto">
               {menuItems.length === 0 ? (
-                <p className="text-center text-sm text-gray-400 py-10">لا توجد أصناف بالمنيو بعد</p>
+                <p className="text-center text-sm text-gray-600 py-10">لا توجد أصناف بالمنيو بعد</p>
               ) : visibleItems.length === 0 ? (
-                <p className="text-center text-sm text-gray-400 py-10">لا توجد نتائج لـ "{itemSearch}"</p>
+                <p className="text-center text-sm text-gray-600 py-10">لا توجد نتائج لـ "{itemSearch}"</p>
               ) : (
                 visibleItems.map((item) => {
                   const isSelected = selectedItemIds.has(item.id);
@@ -345,7 +345,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                       <div className="flex-1 min-w-0">
                         <p className={cn("text-xs font-bold truncate", isSelected ? "text-white" : "text-gray-900")}>{item.name}</p>
                         {item.category && item.category_id !== assigning.id && (
-                          <p className={cn("text-[10px]", isSelected ? "text-gray-300" : "text-gray-400")}>حالياً: {item.category}</p>
+                          <p className={cn("text-[10px]", isSelected ? "text-gray-400" : "text-gray-600")}>حالياً: {item.category}</p>
                         )}
                       </div>
                     </button>

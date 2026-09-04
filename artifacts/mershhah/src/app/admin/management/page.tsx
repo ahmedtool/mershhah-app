@@ -270,19 +270,19 @@ function ProfileDetails({
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-300" />
+        <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="h-full flex flex-col items-center justify-center text-center text-gray-300 py-20">
+      <div className="h-full flex flex-col items-center justify-center text-center text-gray-600 py-20">
         <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
           <Building2 className="h-8 w-8 text-gray-200" />
         </div>
-        <h3 className="text-sm font-bold text-gray-400">لم يتم اختيار مشترك</h3>
-        <p className="text-xs text-gray-300 mt-1 max-w-[200px]">
+        <h3 className="text-sm font-bold text-gray-600">لم يتم اختيار مشترك</h3>
+        <p className="text-xs text-gray-600 mt-1 max-w-[200px]">
           اختر مشتركاً من القائمة لعرض بياناته
         </p>
       </div>
@@ -299,11 +299,11 @@ function ProfileDetails({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-              <User className="h-5 w-5 text-gray-500" />
+              <User className="h-5 w-5 text-gray-600" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-gray-900">{profile.restaurant_name}</h2>
-              <p className="text-xs text-gray-400">{profile.full_name}</p>
+              <p className="text-xs text-gray-600">{profile.full_name}</p>
             </div>
           </div>
           <Badge className={cn('text-[10px] font-medium px-2.5 py-1 rounded-full', isSubActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200')}>
@@ -319,31 +319,31 @@ function ProfileDetails({
           {/* Current Subscription */}
           <div className="rounded-xl border border-gray-100 p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-gray-400" />
+              <CreditCard className="h-4 w-4 text-gray-600" />
               <span className="text-xs font-bold text-gray-600">الاشتراك الحالي</span>
             </div>
             {currentSub ? (
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] text-gray-400">الباقة</span>
+                  <span className="text-[11px] text-gray-600">الباقة</span>
                   <span className="text-xs font-bold text-gray-700">{currentSub.plan_name}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[11px] text-gray-400">ينتهي</span>
+                  <span className="text-[11px] text-gray-600">ينتهي</span>
                   <span className={cn('text-xs font-bold', isSubActive ? 'text-emerald-600' : 'text-red-600')}>
                     {currentSub.plan_id === 'free' ? 'دائم' : (subEndDate ? format(subEndDate, 'dd MMM yyyy', { locale: ar }) : '—')}
                   </span>
                 </div>
               </div>
             ) : (
-              <p className="text-[11px] text-gray-300 italic">لا يوجد اشتراك نشط</p>
+              <p className="text-[11px] text-gray-600 italic">لا يوجد اشتراك نشط</p>
             )}
           </div>
 
           {/* Renew */}
           <div className="rounded-xl border border-gray-100 p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-gray-400" />
+              <Clock className="h-4 w-4 text-gray-600" />
               <span className="text-xs font-bold text-gray-600">تجديد / تفعيل</span>
             </div>
             <Select onValueChange={setSelectedPlanId} value={selectedPlanId}>
@@ -374,13 +374,13 @@ function ProfileDetails({
 
         {/* Account Info */}
         <div className="space-y-3">
-          <h3 className="text-xs font-bold text-gray-500">بيانات الحساب</h3>
+          <h3 className="text-xs font-bold text-gray-600">بيانات الحساب</h3>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="restaurant_name" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] text-gray-400">اسم المشروع</FormLabel>
+                    <FormLabel className="text-[10px] text-gray-600">اسم المشروع</FormLabel>
                     <FormControl>
                       <Input {...field} className="h-10 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                     </FormControl>
@@ -389,7 +389,7 @@ function ProfileDetails({
                 )} />
                 <FormField control={form.control} name="full_name" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] text-gray-400">اسم المالك</FormLabel>
+                    <FormLabel className="text-[10px] text-gray-600">اسم المالك</FormLabel>
                     <FormControl>
                       <Input {...field} className="h-10 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                     </FormControl>
@@ -400,7 +400,7 @@ function ProfileDetails({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <FormField control={form.control} name="email" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] text-gray-400">البريد الإلكتروني</FormLabel>
+                    <FormLabel className="text-[10px] text-gray-600">البريد الإلكتروني</FormLabel>
                     <FormControl>
                       <Input type="email" {...field} disabled className="h-10 rounded-xl border-gray-200 text-sm bg-gray-50" />
                     </FormControl>
@@ -409,7 +409,7 @@ function ProfileDetails({
                 )} />
                 <FormField control={form.control} name="phone_number" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] text-gray-400">رقم الجوال</FormLabel>
+                    <FormLabel className="text-[10px] text-gray-600">رقم الجوال</FormLabel>
                     <FormControl>
                       <Input {...field} value={field.value || ''} dir="ltr" className="h-10 rounded-xl border-gray-200 text-sm text-left" placeholder="05XXXXXXXX" disabled={isSaving} />
                     </FormControl>
@@ -419,7 +419,7 @@ function ProfileDetails({
               </div>
               <FormField control={form.control} name="account_status" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-[10px] text-gray-400">حالة الحساب</FormLabel>
+                  <FormLabel className="text-[10px] text-gray-600">حالة الحساب</FormLabel>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {[
                       { value: 'active', label: 'نشط', color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
@@ -430,7 +430,7 @@ function ProfileDetails({
                         key={status.value}
                         type="button"
                         onClick={() => field.onChange(status.value)}
-                        className={`h-9 rounded-xl text-xs font-medium transition-all border ${field.value === status.value ? status.color : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                        className={`h-9 rounded-xl text-xs font-medium transition-all border ${field.value === status.value ? status.color : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
                       >
                         {status.label}
                       </button>
@@ -458,10 +458,10 @@ function ProfileDetails({
               className="h-auto p-4 rounded-xl border border-gray-200 text-right hover:bg-gray-50 transition-colors flex flex-col items-start gap-2"
             >
               <div className="flex items-center gap-2">
-                <KeyRound className="h-4 w-4 text-gray-400" />
+                <KeyRound className="h-4 w-4 text-gray-600" />
                 <span className="text-xs font-bold text-gray-600">إعادة تعيين كلمة المرور</span>
               </div>
-              <span className="text-[10px] text-gray-300">إرسال رابط آمن للبريد</span>
+              <span className="text-[10px] text-gray-600">إرسال رابط آمن للبريد</span>
             </button>
             <button
               type="button"
@@ -598,7 +598,7 @@ export default function ManagementPage() {
         {/* Page Header */}
         <div className="mb-4 shrink-0">
           <h1 className="text-lg font-bold text-gray-900">إدارة المشتركين</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{subscribers.length} مشترك في المنصة</p>
+          <p className="text-xs text-gray-600 mt-0.5">{subscribers.length} مشترك في المنصة</p>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 flex-1 min-h-0">
@@ -607,13 +607,13 @@ export default function ManagementPage() {
             {/* Search */}
             <div className="p-3 border-b border-gray-100 shrink-0">
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
                 <input
                   type="text"
                   placeholder="بحث بالاسم أو البريد..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-9 pr-9 pl-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                  className="w-full h-9 pr-9 pl-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
                 />
               </div>
             </div>
@@ -646,7 +646,7 @@ export default function ManagementPage() {
               </div>
               <div>
                 <AlertDialogTitle className="text-base font-bold text-gray-900">حذف المشترك</AlertDialogTitle>
-                <AlertDialogDescription className="text-xs text-gray-400 mt-0.5">لا يمكن التراجع عن هذا الإجراء</AlertDialogDescription>
+                <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">لا يمكن التراجع عن هذا الإجراء</AlertDialogDescription>
               </div>
             </div>
           </div>

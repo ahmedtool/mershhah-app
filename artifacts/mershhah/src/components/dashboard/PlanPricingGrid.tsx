@@ -66,7 +66,7 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
             placeholder="كوبون خصم (اختياري)"
             value={couponCode}
             onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-            className="flex-1 sm:w-40 h-10 px-3 rounded-xl border border-gray-200 text-xs text-center font-bold tracking-wider placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+            className="flex-1 sm:w-40 h-10 px-3 rounded-xl border border-gray-200 text-xs text-center font-bold tracking-wider placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
             dir="ltr"
           />
           <button onClick={checkCoupon} disabled={isCheckingCoupon || !couponCode} className="h-10 px-4 rounded-xl bg-gray-100 text-xs font-bold text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50 shrink-0">
@@ -107,7 +107,7 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
                   {plan.is_featured && !isCurrentPlan && <span className="text-[9px] font-bold bg-white/20 text-white/80 px-2 py-0.5 rounded-full shrink-0">الأكثر انتشاراً</span>}
                   {isTestPlan && <span className="text-[9px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full shrink-0">للتطوير فقط</span>}
                 </div>
-                {plan.description && <p className={cn("text-xs mt-1", plan.is_featured ? 'text-gray-300' : 'text-gray-400')}>{plan.description}</p>}
+                {plan.description && <p className={cn("text-xs mt-1", plan.is_featured ? 'text-gray-400' : 'text-gray-600')}>{plan.description}</p>}
               </div>
 
               <div className="px-5 py-4 border-b border-gray-100">
@@ -115,9 +115,9 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
                   <span className="text-2xl font-black text-gray-900">مجاني</span>
                 ) : (
                   <div className="flex items-baseline gap-1">
-                    {couponDiscount && price !== originalPrice && <span className="text-xs text-gray-300 line-through">{originalPrice}</span>}
+                    {couponDiscount && price !== originalPrice && <span className="text-xs text-gray-600 line-through">{originalPrice}</span>}
                     <span className="text-2xl font-black text-gray-900">{price}</span>
-                    <span className="text-xs text-gray-400">ر.س/سنة</span>
+                    <span className="text-xs text-gray-600">ر.س/سنة</span>
                   </div>
                 )}
                 {plan.trial_days > 0 && <p className="text-[10px] text-amber-600 font-bold mt-1">فترة تجربة {plan.trial_days} يوم</p>}
@@ -125,13 +125,13 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
 
               <div className="px-5 py-4 flex-1 space-y-2">
                 {features.length === 0 ? (
-                  <p className="text-xs text-gray-300 text-center py-2">لا توجد تفاصيل إضافية</p>
+                  <p className="text-xs text-gray-600 text-center py-2">لا توجد تفاصيل إضافية</p>
                 ) : (
                   features.map(([key, value]) => {
                     const { label, included } = describeFeature(key, value as boolean | number);
                     return (
-                      <div key={key} className={cn("flex items-center gap-2 text-xs", included ? 'text-gray-700 font-medium' : 'text-gray-300 line-through')}>
-                        {included ? <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> : <X className="h-3.5 w-3.5 text-gray-300 shrink-0" />}
+                      <div key={key} className={cn("flex items-center gap-2 text-xs", included ? 'text-gray-700 font-medium' : 'text-gray-600 line-through')}>
+                        {included ? <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> : <X className="h-3.5 w-3.5 text-gray-600 shrink-0" />}
                         <span>{label}</span>
                       </div>
                     );
@@ -145,8 +145,8 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
                   disabled={isCurrentPlan || isCheckoutInProgress || isFree}
                   className={cn(
                     "w-full h-11 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2",
-                    isCurrentPlan ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : isFree ? 'bg-gray-50 text-gray-400 cursor-default'
+                    isCurrentPlan ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
+                      : isFree ? 'bg-gray-50 text-gray-600 cursor-default'
                       : checking ? 'bg-gray-400 text-white cursor-wait'
                       : plan.is_featured ? 'bg-gray-900 text-white hover:bg-gray-800'
                       : 'border border-gray-200 text-gray-700 hover:bg-gray-50'

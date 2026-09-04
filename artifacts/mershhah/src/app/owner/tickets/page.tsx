@@ -17,7 +17,7 @@ const statusStyles: Record<string, string> = {
   open: 'bg-blue-50 text-blue-600 border-blue-100',
   contacted: 'bg-amber-50 text-amber-600 border-amber-100',
   resolved: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-  closed: 'bg-gray-50 text-gray-500 border-gray-100',
+  closed: 'bg-gray-50 text-gray-600 border-gray-100',
 };
 
 const statusText: Record<string, string> = {
@@ -32,7 +32,7 @@ const categoryStyles: Record<string, string> = {
   inquiry: 'bg-blue-50 text-blue-600 border-blue-100',
   employment: 'bg-teal-50 text-teal-600 border-teal-100',
   suggestion: 'bg-amber-50 text-amber-600 border-amber-100',
-  other: 'bg-gray-50 text-gray-500 border-gray-100',
+  other: 'bg-gray-50 text-gray-600 border-gray-100',
 };
 
 const categoryText: Record<string, string> = {
@@ -118,13 +118,13 @@ export default function OwnerTicketsPage() {
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1 [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%-16px),transparent)]">
             <button onClick={() => setFilterCategory('all')}
               className={cn("shrink-0 h-8 px-3 rounded-lg text-[11px] font-bold border transition-all",
-                filterCategory === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200')}>
+                filterCategory === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-100 hover:border-gray-200')}>
               الكل ({tickets.length})
             </button>
             {Object.entries(categoryText).map(([key, label]) => (
               <button key={key} onClick={() => setFilterCategory(key)}
                 className={cn("shrink-0 h-8 px-3 rounded-lg text-[11px] font-bold border transition-all",
-                  filterCategory === key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200')}>
+                  filterCategory === key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-100 hover:border-gray-200')}>
                 {label} ({categoryCounts[key] || 0})
               </button>
             ))}
@@ -133,7 +133,7 @@ export default function OwnerTicketsPage() {
             {Object.entries(statusText).map(([key, label]) => (
               <button key={key} onClick={() => setFilterStatus(filterStatus === key ? 'all' : key)}
                 className={cn("shrink-0 h-8 px-3 rounded-lg text-[11px] font-bold border transition-all",
-                  filterStatus === key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-100 hover:border-gray-200')}>
+                  filterStatus === key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-100 hover:border-gray-200')}>
                 {label}
               </button>
             ))}
@@ -148,10 +148,10 @@ export default function OwnerTicketsPage() {
       ) : filteredTickets.length === 0 ? (
         <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center">
           <div className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <AlertTriangle className="h-5 w-5 text-gray-300" />
+            <AlertTriangle className="h-5 w-5 text-gray-600" />
           </div>
           <p className="text-sm font-bold text-gray-900 mb-1">{tickets.length === 0 ? 'لا توجد تذاكر' : 'لا توجد نتائج'}</p>
-          <p className="text-[11px] text-gray-400">{tickets.length === 0 ? 'ستظهر التذاكر هنا عندما يتواصل معك العملاء' : 'جرّب تغيير الفلتر'}</p>
+          <p className="text-[11px] text-gray-600">{tickets.length === 0 ? 'ستظهر التذاكر هنا عندما يتواصل معك العملاء' : 'جرّب تغيير الفلتر'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -173,21 +173,21 @@ export default function OwnerTicketsPage() {
                     </span>
                   )}
                 </div>
-                <span className="text-[10px] text-gray-300 font-mono">{ticket.id.substring(0, 8)}</span>
+                <span className="text-[10px] text-gray-600 font-mono">{ticket.id.substring(0, 8)}</span>
               </div>
 
               {/* Subject */}
               <h3 className="text-sm font-bold text-gray-900 mb-2">{ticket.subject}</h3>
 
               {/* Meta */}
-              <div className="flex items-center gap-3 mb-2 text-[10px] text-gray-400">
+              <div className="flex items-center gap-3 mb-2 text-[10px] text-gray-600">
                 <span className="flex items-center gap-1"><User className="h-3 w-3" />{ticket.name}</span>
                 {ticket.phone && <span className="font-mono" dir="ltr">{ticket.phone}</span>}
                 <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{ticket.created_at ? formatDistanceToNow(new Date(ticket.created_at as any), { addSuffix: true, locale: ar }) : ''}</span>
               </div>
 
               {/* Message */}
-              <p className="text-[11px] text-gray-400 line-clamp-2 mb-3 flex-1">{ticket.message}</p>
+              <p className="text-[11px] text-gray-600 line-clamp-2 mb-3 flex-1">{ticket.message}</p>
 
               {/* Action */}
               <Link href={`/owner/tickets/${ticket.id}`}

@@ -47,12 +47,12 @@ export function TaskCard({ task, onTaskUpdate }: TaskCardProps) {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           <span className={`w-2 h-2 rounded-full ${dot}`} />
-          <span className="text-[10px] text-gray-400">{label}</span>
+          <span className="text-[10px] text-gray-600">{label}</span>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="w-6 h-6 rounded-md flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all">
-              <MoreHorizontal className="h-3.5 w-3.5 text-gray-400" />
+              <MoreHorizontal className="h-3.5 w-3.5 text-gray-600" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
@@ -75,12 +75,12 @@ export function TaskCard({ task, onTaskUpdate }: TaskCardProps) {
         </DropdownMenu>
       </div>
       <p className="text-xs font-bold text-gray-800 mb-1">{task.title}</p>
-      {task.description && <p className="text-[11px] text-gray-400 line-clamp-2">{task.description}</p>}
+      {task.description && <p className="text-[11px] text-gray-600 line-clamp-2">{task.description}</p>}
       <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-50">
         <div className="w-6 h-6 rounded-lg bg-gray-100 flex items-center justify-center">
-          <span className="text-[9px] font-bold text-gray-500">{getInitials(task.assigneeName)}</span>
+          <span className="text-[9px] font-bold text-gray-600">{getInitials(task.assigneeName)}</span>
         </div>
-        <span className="text-[10px] text-gray-300">
+        <span className="text-[10px] text-gray-600">
           {task.createdAt ? new Date(task.createdAt).toLocaleDateString('ar-SA') : ''}
         </span>
       </div>

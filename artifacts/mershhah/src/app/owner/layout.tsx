@@ -29,7 +29,7 @@ function OwnerLayoutContent({ children }: { children: React.ReactNode }) {
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="animate-spin h-6 w-6 text-gray-900" />
-          <span className="text-xs font-bold text-gray-400">مرشح</span>
+          <span className="text-xs font-bold text-gray-600">مرشح</span>
         </div>
       </div>
     );

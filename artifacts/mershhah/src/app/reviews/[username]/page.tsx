@@ -211,7 +211,7 @@ export default function PublicReviewsPage() {
   if (!restaurant) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white text-center p-6 space-y-5">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">
           <Info size={28} />
         </div>
         <h1 className="text-lg font-bold text-gray-900">المطعم غير موجود</h1>
@@ -240,7 +240,7 @@ export default function PublicReviewsPage() {
         <Button
           variant="ghost"
           size="icon"
-          className="w-9 h-9 rounded-xl text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+          className="w-9 h-9 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100"
           onClick={() => window.history.back()}
         >
           <ChevronRight className="h-5 w-5" />
@@ -260,7 +260,7 @@ export default function PublicReviewsPage() {
         </div>
         <div>
           <h1 className="text-xl font-black text-gray-900">{restaurant.name}</h1>
-          <p className="text-xs text-gray-400 mt-0.5">التقييمات وآراء العملاء</p>
+          <p className="text-xs text-gray-600 mt-0.5">التقييمات وآراء العملاء</p>
         </div>
       </div>
 
@@ -275,7 +275,7 @@ export default function PublicReviewsPage() {
               <div className="mt-1" dir="ltr">
                 <StarRating rating={averageRating} />
               </div>
-              <p className="text-[11px] text-gray-400 mt-1">{reviews.length} تقييم</p>
+              <p className="text-[11px] text-gray-600 mt-1">{reviews.length} تقييم</p>
             </div>
 
             {/* Bars */}
@@ -285,11 +285,11 @@ export default function PublicReviewsPage() {
                 const pct = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
                 return (
                   <div key={star} className="flex items-center gap-2">
-                    <span className="text-[11px] text-gray-400 w-3 text-center shrink-0">{star}</span>
+                    <span className="text-[11px] text-gray-600 w-3 text-center shrink-0">{star}</span>
                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: primaryColor }} />
                     </div>
-                    <span className="text-[10px] text-gray-300 w-5 text-left">{count}</span>
+                    <span className="text-[10px] text-gray-600 w-5 text-left">{count}</span>
                   </div>
                 );
               })}
@@ -327,7 +327,7 @@ export default function PublicReviewsPage() {
                     onClick={() => setFilterTag(isActive ? null : tag.id)}
                     className={cn(
                       "shrink-0 flex items-center gap-1.5 px-3.5 h-8 rounded-full text-xs font-medium transition-all border",
-                      isActive ? "border-transparent" : "bg-white text-gray-500 border-gray-100 hover:border-gray-200"
+                      isActive ? "border-transparent" : "bg-white text-gray-600 border-gray-100 hover:border-gray-200"
                     )}
                     style={isActive ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : {}}
                   >
@@ -336,7 +336,7 @@ export default function PublicReviewsPage() {
                     {count > 0 && (
                       <span className={cn(
                         "text-[9px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center",
-                        isActive ? "bg-white/20" : "bg-gray-100 text-gray-400"
+                        isActive ? "bg-white/20" : "bg-gray-100 text-gray-600"
                       )}>
                         {count}
                       </span>
@@ -350,7 +350,7 @@ export default function PublicReviewsPage() {
           {reviews.length === 0 ? (
             <div className="text-center py-16 space-y-3">
               <Star className="h-10 w-10 text-gray-200 mx-auto" />
-              <p className="text-sm text-gray-400">لا توجد تقييمات بعد</p>
+              <p className="text-sm text-gray-600">لا توجد تقييمات بعد</p>
               <button
                 onClick={() => setDialogOpen(true)}
                 className="text-xs font-bold mt-2"
@@ -372,13 +372,13 @@ export default function PublicReviewsPage() {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                        <span className="text-[11px] font-bold text-gray-400">م</span>
+                        <span className="text-[11px] font-bold text-gray-600">م</span>
                       </div>
                       <div>
                         <StarRating rating={review.rating} size="sm" />
                       </div>
                     </div>
-                    <span className="text-[10px] text-gray-300">
+                    <span className="text-[10px] text-gray-600">
                       {review.created_at
                         ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: ar })
                         : ''}
@@ -397,7 +397,7 @@ export default function PublicReviewsPage() {
         <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
           <DialogHeader className="p-5 pb-0 text-right">
             <DialogTitle className="text-base font-black text-gray-900">تقييم {restaurant.name}</DialogTitle>
-            <DialogDescription className="text-xs text-gray-400">
+            <DialogDescription className="text-xs text-gray-600">
               شاركنا رأيك لمساعدتنا على التحسن.
             </DialogDescription>
           </DialogHeader>
@@ -422,7 +422,7 @@ export default function PublicReviewsPage() {
                 </button>
               ))}
             </div>
-            <p className="text-center text-xs text-gray-300 mb-4">
+            <p className="text-center text-xs text-gray-600 mb-4">
               {rating === 0 && 'اضغط على النجمة'}
               {rating === 1 && 'سيء'}
               {rating === 2 && 'مقبول'}

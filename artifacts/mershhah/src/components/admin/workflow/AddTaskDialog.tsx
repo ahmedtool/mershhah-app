@@ -91,18 +91,18 @@ export function AddTaskDialog({ children, admins, status, onTaskAdded }: AddTask
                     <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-4">
                         <FormField control={form.control} name="title" render={({ field }) => (
                             <FormItem>
-                                <FormLabel className="text-xs font-bold text-gray-500">عنوان المهمة</FormLabel>
+                                <FormLabel className="text-xs font-bold text-gray-600">عنوان المهمة</FormLabel>
                                 <FormControl>
-                                    <Input {...field} placeholder="عنوان المهمة..." className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900" />
+                                    <Input {...field} placeholder="عنوان المهمة..." className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900" />
                                 </FormControl>
                                 <FormMessage className="text-[10px]" />
                             </FormItem>
                         )}/>
                         <FormField control={form.control} name="description" render={({ field }) => (
                             <FormItem>
-                                <FormLabel className="text-xs font-bold text-gray-500">الوصف <span className="text-gray-300 font-normal">(اختياري)</span></FormLabel>
+                                <FormLabel className="text-xs font-bold text-gray-600">الوصف <span className="text-gray-600 font-normal">(اختياري)</span></FormLabel>
                                 <FormControl>
-                                    <Textarea rows={3} {...field} placeholder="وصف المهمة..." className="px-3 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900 resize-none" />
+                                    <Textarea rows={3} {...field} placeholder="وصف المهمة..." className="px-3 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900 resize-none" />
                                 </FormControl>
                                 <FormMessage className="text-[10px]" />
                             </FormItem>
@@ -110,7 +110,7 @@ export function AddTaskDialog({ children, admins, status, onTaskAdded }: AddTask
                         <div className="grid grid-cols-2 gap-4">
                             <FormField control={form.control} name="assigneeId" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-xs font-bold text-gray-500">إسناد إلى</FormLabel>
+                                    <FormLabel className="text-xs font-bold text-gray-600">إسناد إلى</FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
                                             <SelectTrigger className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 focus:ring-0 focus:ring-offset-0 focus:border-gray-900">
@@ -119,7 +119,7 @@ export function AddTaskDialog({ children, admins, status, onTaskAdded }: AddTask
                                         </FormControl>
                                         <SelectContent className="rounded-xl border border-gray-100">
                                             {admins.map(admin => (
-                                                <SelectItem key={admin.id} value={admin.id} className="text-xs font-bold text-gray-500 focus:bg-gray-50 focus:text-gray-900">
+                                                <SelectItem key={admin.id} value={admin.id} className="text-xs font-bold text-gray-600 focus:bg-gray-50 focus:text-gray-900">
                                                     {admin.full_name}
                                                 </SelectItem>
                                             ))}
@@ -130,7 +130,7 @@ export function AddTaskDialog({ children, admins, status, onTaskAdded }: AddTask
                             )}/>
                             <FormField control={form.control} name="priority" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-xs font-bold text-gray-500">الأولوية</FormLabel>
+                                    <FormLabel className="text-xs font-bold text-gray-600">الأولوية</FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
                                             <SelectTrigger className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 focus:ring-0 focus:ring-offset-0 focus:border-gray-900">
@@ -138,9 +138,9 @@ export function AddTaskDialog({ children, admins, status, onTaskAdded }: AddTask
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent className="rounded-xl border border-gray-100">
-                                            <SelectItem value="low" className="text-xs font-bold text-gray-500 focus:bg-gray-50 focus:text-gray-900">منخفضة</SelectItem>
-                                            <SelectItem value="medium" className="text-xs font-bold text-gray-500 focus:bg-gray-50 focus:text-gray-900">متوسطة</SelectItem>
-                                            <SelectItem value="high" className="text-xs font-bold text-gray-500 focus:bg-gray-50 focus:text-gray-900">عالية</SelectItem>
+                                            <SelectItem value="low" className="text-xs font-bold text-gray-600 focus:bg-gray-50 focus:text-gray-900">منخفضة</SelectItem>
+                                            <SelectItem value="medium" className="text-xs font-bold text-gray-600 focus:bg-gray-50 focus:text-gray-900">متوسطة</SelectItem>
+                                            <SelectItem value="high" className="text-xs font-bold text-gray-600 focus:bg-gray-50 focus:text-gray-900">عالية</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage className="text-[10px]" />

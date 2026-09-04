@@ -295,7 +295,7 @@ export default function Analytics({ ...props }) {
         </div>
         <div className="bg-white border border-gray-100 rounded-2xl p-5">
           <h3 className="text-sm font-bold text-gray-900 mb-1">{isRTL ? 'خريطة النشاط' : 'Activity Map'}</h3>
-          <p className="text-[10px] text-gray-300 mb-4">
+          <p className="text-[10px] text-gray-600 mb-4">
             {isRTL ? 'الألوان الغامقة = نشاط أعلى' : 'Darker = higher activity'}
           </p>
           <div className="h-[220px] w-full flex flex-col">
@@ -318,7 +318,7 @@ export default function Analytics({ ...props }) {
                 ))}
               </div>
             </div>
-            <div className="flex justify-between mt-2 text-[9px] text-gray-300 shrink-0">
+            <div className="flex justify-between mt-2 text-[9px] text-gray-600 shrink-0">
               <span>12ص</span>
               <span>6ص</span>
               <span>12م</span>

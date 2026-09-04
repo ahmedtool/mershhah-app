@@ -33,7 +33,7 @@ export default function StatusPage() {
           <h1 className="text-2xl font-black text-gray-900 mb-2">
             {allOk ? 'كل الأنظمة شغالة' : 'توجد مشاكل في بعض الخدمات'}
           </h1>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-600">
             {allOk ? 'جميع خدماتنا تعمل بشكل طبيعي. لا توجد مشاكل حالية.' : 'بعض الخدمات قد تواجه تأخراً مؤقتاً.'}
           </p>
         </div>
@@ -42,7 +42,7 @@ export default function StatusPage() {
           {services.map((s) => (
             <div key={s.name} className="bg-white border border-gray-100 rounded-xl px-5 py-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <s.icon className="h-4 w-4 text-gray-300" />
+                <s.icon className="h-4 w-4 text-gray-600" />
                 <span className="text-xs font-bold text-gray-700">{s.name}</span>
               </div>
               <div className="flex items-center gap-2">

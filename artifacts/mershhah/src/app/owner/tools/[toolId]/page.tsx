@@ -102,7 +102,7 @@ export default function ToolDetailPage() {
             {/* Header */}
             <div className="flex items-center gap-4">
                 <Link href="/owner/tools">
-                    <button className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors">
+                    <button className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-50 transition-colors">
                         <ArrowRight className="h-5 w-5" />
                     </button>
                 </Link>
@@ -117,7 +117,7 @@ export default function ToolDetailPage() {
                 )}
                 <div className="flex-1">
                     <h1 className="text-xl font-bold text-gray-900">{tool.title}</h1>
-                    <p className="text-sm text-gray-400">{tool.description}</p>
+                    <p className="text-sm text-gray-600">{tool.description}</p>
                 </div>
             </div>
 
@@ -129,13 +129,13 @@ export default function ToolDetailPage() {
                         {expired ? 'منتهية الصلاحية' : 'مفعّلة'}
                     </div>
                 ) : (
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-500">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600">
                         <div className="w-2 h-2 rounded-full bg-gray-400" />
                         غير مفعّلة
                     </div>
                 )}
                 {activation?.expires_at && (
-                    <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
                         <Clock className="h-3.5 w-3.5" />
                         <span>صالح حتى {new Date(activation.expires_at).toLocaleDateString('ar-SA')}</span>
                     </div>
@@ -147,8 +147,8 @@ export default function ToolDetailPage() {
                 <Card className="border-gray-100">
                     <CardContent className="p-0">
                         <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border-b border-gray-100 rounded-t-2xl">
-                            <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
-                            <span className="text-[11px] text-gray-400 font-medium truncate" dir="ltr">{tool.external_url}</span>
+                            <ExternalLink className="h-3.5 w-3.5 text-gray-600" />
+                            <span className="text-[11px] text-gray-600 font-medium truncate" dir="ltr">{tool.external_url}</span>
                         </div>
                         <iframe
                             src={tool.external_url}
@@ -194,13 +194,13 @@ export default function ToolDetailPage() {
                                 </div>
                             )}
                             <h3 className="text-lg font-bold text-gray-900">{tool.title}</h3>
-                            <p className="text-sm text-gray-400 max-w-md">{tool.description}</p>
+                            <p className="text-sm text-gray-600 max-w-md">{tool.description}</p>
                             {tool.price_label && (
                                 <span className="text-sm font-bold text-gray-600">{tool.price_label}</span>
                             )}
                             <div className="flex items-center gap-2 mt-2">
-                                <Settings className="h-4 w-4 text-gray-300" />
-                                <span className="text-xs text-gray-400">هذه الأداة قيد التطوير</span>
+                                <Settings className="h-4 w-4 text-gray-600" />
+                                <span className="text-xs text-gray-600">هذه الأداة قيد التطوير</span>
                             </div>
                         </div>
                     </CardContent>
@@ -212,29 +212,29 @@ export default function ToolDetailPage() {
                 <Card className="border-gray-100">
                     <CardContent className="p-5 space-y-4">
                         <div className="flex items-center gap-2">
-                            <Settings className="h-4 w-4 text-gray-400" />
+                            <Settings className="h-4 w-4 text-gray-600" />
                             <h3 className="text-sm font-bold text-gray-900">إعدادات الأداة</h3>
                         </div>
                         <div className="space-y-3">
                             <div>
-                                <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">رابط التكامل (اختياري)</label>
+                                <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">رابط التكامل (اختياري)</label>
                                 <input
                                     type="url"
                                     placeholder="https://api.example.com/webhook"
                                     value={config.integration_url || ''}
                                     onChange={(e) => setConfig({ ...config, integration_url: e.target.value })}
-                                    className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                                    className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
                                     dir="ltr"
                                 />
                             </div>
                             <div>
-                                <label className="text-[11px] font-bold text-gray-500 mb-1.5 block">مفتاح API (اختياري)</label>
+                                <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">مفتاح API (اختياري)</label>
                                 <input
                                     type="password"
                                     placeholder="sk-..."
                                     value={config.api_key || ''}
                                     onChange={(e) => setConfig({ ...config, api_key: e.target.value })}
-                                    className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                                    className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
                                     dir="ltr"
                                 />
                             </div>

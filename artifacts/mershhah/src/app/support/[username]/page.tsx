@@ -125,7 +125,7 @@ export default function SupportPage() {
   if (!restaurant) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white text-center p-6 space-y-5">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-400">
+        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">
           <Info size={28} />
         </div>
         <h1 className="text-lg font-bold text-gray-900">المطعم غير موجود</h1>
@@ -143,7 +143,7 @@ export default function SupportPage() {
       <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-4 flex items-center justify-between">
         <button
           onClick={() => window.history.back()}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+          className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
@@ -162,7 +162,7 @@ export default function SupportPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
-          <p className="text-sm text-gray-400 mt-0.5">تذكرة دعم</p>
+          <p className="text-sm text-gray-600 mt-0.5">تذكرة دعم</p>
         </div>
       </div>
 
@@ -174,7 +174,7 @@ export default function SupportPage() {
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-900">تم الإرسال!</h2>
-              <p className="text-sm text-gray-400 mt-1 max-w-xs mx-auto">
+              <p className="text-sm text-gray-600 mt-1 max-w-xs mx-auto">
                 شكراً لتواصلك. تم استلام رسالتك وسنرد عليك قريباً.
               </p>
             </div>
@@ -195,7 +195,7 @@ export default function SupportPage() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-gray-500">الاسم</FormLabel>
+                      <FormLabel className="text-xs text-gray-600">الاسم</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -213,7 +213,7 @@ export default function SupportPage() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-gray-500">رقم الجوال</FormLabel>
+                      <FormLabel className="text-xs text-gray-600">رقم الجوال</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -233,7 +233,7 @@ export default function SupportPage() {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-gray-500">نوع التذكرة</FormLabel>
+                      <FormLabel className="text-xs text-gray-600">نوع التذكرة</FormLabel>
                       <div className="grid grid-cols-3 gap-2">
                         {categoryOptions.map((opt) => (
                           <button
@@ -243,7 +243,7 @@ export default function SupportPage() {
                             className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border text-xs font-bold transition-all ${
                               field.value === opt.value
                                 ? 'border-gray-900 bg-gray-900 text-white'
-                                : 'border-gray-100 bg-white text-gray-500 hover:border-gray-200'
+                                : 'border-gray-100 bg-white text-gray-600 hover:border-gray-200'
                             }`}
                           >
                             <span className="text-base">{opt.icon}</span>
@@ -261,7 +261,7 @@ export default function SupportPage() {
                   name="subject"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-gray-500">الموضوع</FormLabel>
+                      <FormLabel className="text-xs text-gray-600">الموضوع</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -279,7 +279,7 @@ export default function SupportPage() {
                   name="message"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-gray-500">الرسالة</FormLabel>
+                      <FormLabel className="text-xs text-gray-600">الرسالة</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}

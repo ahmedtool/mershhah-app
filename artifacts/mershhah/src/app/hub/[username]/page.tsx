@@ -249,7 +249,7 @@ export default function RestaurantHubPage() {
               onClick={handleShare}
               size="icon"
               variant="ghost"
-              className="rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 h-10 w-10"
+              className="rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 h-10 w-10"
             >
               <Share2 className="h-4 w-4" />
             </Button>
@@ -271,7 +271,7 @@ export default function RestaurantHubPage() {
             <h1 className="text-2xl font-black tracking-tight text-gray-900">
               {restaurant.name}
             </h1>
-            <p className="text-sm text-gray-500 font-medium max-w-xs mx-auto line-clamp-2">
+            <p className="text-sm text-gray-600 font-medium max-w-xs mx-auto line-clamp-2">
               {restaurant.description || "أهلاً بك في عالمنا الخاص."}
             </p>
           </div>
@@ -395,8 +395,8 @@ export default function RestaurantHubPage() {
               {branches.filter((b: any) => b.applications?.length > 0).map((branch: any) => (
                 <div key={branch.id} className="space-y-3">
                   <div className="flex items-center gap-2 px-1">
-                    <MapPin className="h-3.5 w-3.5 text-gray-400" />
-                    <h3 className="font-black text-sm text-gray-500">{branch.name}</h3>
+                    <MapPin className="h-3.5 w-3.5 text-gray-600" />
+                    <h3 className="font-black text-sm text-gray-600">{branch.name}</h3>
                   </div>
                   <div className="grid grid-cols-4 gap-3">
                     {branch.applications.map((app: any, idx: number) => (
@@ -421,7 +421,7 @@ export default function RestaurantHubPage() {
             if (activeApps.length === 0) return null;
             return (
               <section className="space-y-3">
-                <h3 className="font-black text-sm text-gray-500 px-1 text-right">التطبيقات</h3>
+                <h3 className="font-black text-sm text-gray-600 px-1 text-right">التطبيقات</h3>
                 <div className="grid grid-cols-4 gap-3">
                   {activeApps.map((app: any, idx: number) => (
                     <a key={app.id || idx} href={app.value || '#'} target="_blank" rel="noopener noreferrer"
@@ -441,7 +441,7 @@ export default function RestaurantHubPage() {
           {/* التواصل الاجتماعي */}
           {Array.isArray(socialLinks) && socialLinks.filter((link: any) => link?.value?.trim()).length > 0 && (
             <section className="space-y-3">
-              <h3 className="font-black text-sm text-gray-500 px-1 text-right">تواصل معنا</h3>
+              <h3 className="font-black text-sm text-gray-600 px-1 text-right">تواصل معنا</h3>
               <div className="flex flex-wrap justify-center gap-3 pb-8">
                 {socialLinks
                   .filter((link: any) => link?.platform && link?.value?.trim())
@@ -471,7 +471,7 @@ export default function RestaurantHubPage() {
                 href="/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[10px] font-black text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-[10px] font-black text-gray-600 hover:text-gray-600 transition-colors"
               >
                 مدعوم بواسطة مرشح
               </Link>

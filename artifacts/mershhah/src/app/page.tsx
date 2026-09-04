@@ -96,13 +96,13 @@ export default function HomePage() {
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-4 py-1.5 mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span className="text-[11px] font-bold text-gray-500">متوفر مجاناً للتجربة</span>
+              <span className="text-[11px] font-bold text-gray-600">متوفر مجاناً للتجربة</span>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-gray-900 leading-tight mb-6">
               الواجهة الرقمية <br className="hidden sm:block" />
-              <span className="text-gray-400">الموحدة لمشروعك</span>
+              <span className="text-gray-600">الموحدة لمشروعك</span>
             </h1>
-            <p className="text-base sm:text-lg text-gray-400 max-w-xl mx-auto mb-10 leading-relaxed">
+            <p className="text-base sm:text-lg text-gray-600 max-w-xl mx-auto mb-10 leading-relaxed">
               رابط واحد يجمع كل شيء: منيو تفاعلي، مساعد ذكي، وتحليلات. كل هذا مصمم خصيصاً للمطاعم والمقاهي.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -121,16 +121,16 @@ export default function HomePage() {
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-14">
               <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-3">فريق عمل رقمي في جيبك</h2>
-              <p className="text-sm text-gray-400 max-w-lg mx-auto">أدوات ذكية تعمل معاً لنمو مطعمك أو مقهاك.</p>
+              <p className="text-sm text-gray-600 max-w-lg mx-auto">أدوات ذكية تعمل معاً لنمو مطعمك أو مقهاك.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {features.map((f, i) => (
                 <div key={i} className="bg-white border border-gray-100 rounded-2xl p-6 hover:border-gray-200 transition-colors">
                   <div className="w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center mb-4">
-                    <f.icon className="h-5 w-5 text-gray-400" />
+                    <f.icon className="h-5 w-5 text-gray-600" />
                   </div>
                   <h3 className="text-sm font-bold text-gray-900 mb-2">{f.title}</h3>
-                  <p className="text-xs text-gray-400 leading-relaxed">{f.description}</p>
+                  <p className="text-xs text-gray-600 leading-relaxed">{f.description}</p>
                 </div>
               ))}
             </div>
@@ -142,7 +142,7 @@ export default function HomePage() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-14">
               <h2 className="text-2xl sm:text-3xl font-black text-gray-900 mb-3">بساطة في خطوتين</h2>
-              <p className="text-sm text-gray-400">صممنا منصة للسرعة والتبسيط في قطاع الأغذية والمشروبات.</p>
+              <p className="text-sm text-gray-600">صممنا منصة للسرعة والتبسيط في قطاع الأغذية والمشروبات.</p>
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               {steps.map((s, i) => (
@@ -153,10 +153,10 @@ export default function HomePage() {
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-gray-900">{s.title}</h3>
-                      <span className="text-[10px] font-bold text-gray-300">{s.subtitle}</span>
+                      <span className="text-[10px] font-bold text-gray-600">{s.subtitle}</span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-400 leading-relaxed">{s.description}</p>
+                  <p className="text-xs text-gray-600 leading-relaxed">{s.description}</p>
                 </div>
               ))}
             </div>

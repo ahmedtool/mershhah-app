@@ -86,12 +86,12 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
-                  <Tag className="h-4 w-4 text-gray-500" />
+                  <Tag className="h-4 w-4 text-gray-600" />
                 </div>
                 <h3 className="text-sm font-bold text-gray-900">{code ? 'تعديل الكود' : 'كود خصم جديد'}</h3>
               </div>
               <button onClick={() => setOpen(false)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-50">
-                <X className="h-4 w-4 text-gray-400" />
+                <X className="h-4 w-4 text-gray-600" />
               </button>
             </div>
 
@@ -105,7 +105,7 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
                   value={form.code}
                   onChange={(e) => setForm(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
                   placeholder="مثال: WELCOME20"
-                  className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right font-mono placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                  className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right font-mono placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
                 />
               </div>
 
@@ -117,7 +117,7 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
                   value={form.description}
                   onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="وصف اختياري للكود"
-                  className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                  className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
                 />
               </div>
 
@@ -142,7 +142,7 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
                     max={form.discount_type === 'percentage' ? 100 : undefined}
                     value={form.discount_value}
                     onChange={(e) => setForm(prev => ({ ...prev, discount_value: Number(e.target.value) }))}
-                    className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                    className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
                   />
                 </div>
               </div>
@@ -157,7 +157,7 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
                     value={form.max_uses}
                     onChange={(e) => setForm(prev => ({ ...prev, max_uses: e.target.value }))}
                     placeholder="بدون حد"
-                    className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                    className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
                   />
                 </div>
                 <div>
@@ -168,7 +168,7 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
                     value={form.min_amount}
                     onChange={(e) => setForm(prev => ({ ...prev, min_amount: e.target.value }))}
                     placeholder="0"
-                    className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                    className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
                   />
                 </div>
               </div>
@@ -181,7 +181,7 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
                   value={form.applicable_plans}
                   onChange={(e) => setForm(prev => ({ ...prev, applicable_plans: e.target.value }))}
                   placeholder="اترك فارغاً للتطبيق على الكل (مفصّلة بفاصلة)"
-                  className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                  className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
                 />
               </div>
 

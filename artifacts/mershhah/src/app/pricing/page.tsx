@@ -107,7 +107,7 @@ export default function PricingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
             <h1 className="text-3xl sm:text-4xl font-black text-gray-900 mb-3">باقات شفافة، مصممة لنموّك</h1>
-            <p className="text-sm text-gray-400 max-w-lg mx-auto">ابدأ مجاناً أو أطلق العنان للقوة الكاملة لمطعمك أو مقهاك.</p>
+            <p className="text-sm text-gray-600 max-w-lg mx-auto">ابدأ مجاناً أو أطلق العنان للقوة الكاملة لمطعمك أو مقهاك.</p>
           </div>
 
           {isLoading ? (
@@ -116,7 +116,7 @@ export default function PricingPage() {
               <Skeleton className="h-[460px] rounded-3xl" />
             </div>
           ) : plans.length === 0 ? (
-            <div className="text-center py-20 text-gray-400">
+            <div className="text-center py-20 text-gray-600">
               <p className="text-sm">لا توجد باقات متاحة حالياً.</p>
             </div>
           ) : (
@@ -162,7 +162,7 @@ export default function PricingPage() {
 
                     <div className="mb-5">
                       <h3 className="text-lg font-black mb-1">{plan.name}</h3>
-                      <p className={`text-xs ${featured ? 'text-gray-400' : 'text-gray-400'}`}>{plan.description || ''}</p>
+                      <p className={`text-xs ${featured ? 'text-gray-400' : 'text-gray-600'}`}>{plan.description || ''}</p>
                     </div>
 
                     <div className="flex items-baseline gap-1.5 mb-1">
@@ -171,11 +171,11 @@ export default function PricingPage() {
                       ) : (
                         <>
                           <span className="text-4xl font-black">{plan.price_yearly}</span>
-                          <span className={`text-sm font-bold ${featured ? 'text-gray-400' : 'text-gray-400'}`}>ر.س</span>
+                          <span className={`text-sm font-bold ${featured ? 'text-gray-400' : 'text-gray-600'}`}>ر.س</span>
                         </>
                       )}
                     </div>
-                    <p className={`text-[11px] mb-6 ${featured ? 'text-gray-500' : 'text-gray-300'}`}>
+                    <p className={`text-[11px] mb-6 ${featured ? 'text-gray-400' : 'text-gray-600'}`}>
                       {isFree ? 'دائماً مجاناً' : 'سنوياً'}
                     </p>
 
@@ -187,7 +187,7 @@ export default function PricingPage() {
                             <li key={row.label} className={`flex items-start gap-3 text-xs leading-relaxed ${
                               row.included
                                 ? featured ? 'text-gray-100' : 'text-gray-700'
-                                : featured ? 'text-gray-600' : 'text-gray-300 line-through'
+                                : featured ? 'text-gray-600' : 'text-gray-600 line-through'
                             }`}>
                               <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
                                 row.included
@@ -196,7 +196,7 @@ export default function PricingPage() {
                               }`}>
                                 {row.included
                                   ? <Icon className={`h-3.5 w-3.5 ${featured ? 'text-white' : 'text-gray-900'}`} />
-                                  : <Icon className={`h-3.5 w-3.5 ${featured ? 'text-gray-600' : 'text-gray-300'}`} />}
+                                  : <Icon className={`h-3.5 w-3.5 ${featured ? 'text-gray-600' : 'text-gray-600'}`} />}
                               </span>
                               <span>{row.label}</span>
                             </li>

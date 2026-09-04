@@ -155,7 +155,7 @@ export default function AdminSharedProductsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-lg font-bold text-gray-900">مكتبة المنتجات المشتركة</h1>
-          <p className="text-xs text-gray-400 mt-0.5">منتجات جاهزة (مشروبات، عصائر، حلويات، صوصات) يقدر أصحاب المطاعم إضافتها لمنيوهم</p>
+          <p className="text-xs text-gray-600 mt-0.5">منتجات جاهزة (مشروبات، عصائر، حلويات، صوصات) يقدر أصحاب المطاعم إضافتها لمنيوهم</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <input type="file" ref={fileInputRef} onChange={handleFileSelected} accept=".xlsx,.xls" className="hidden" />
@@ -196,7 +196,7 @@ export default function AdminSharedProductsPage() {
 
       <div className="space-y-3">
         <div className="relative max-w-sm">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
           <Input
             placeholder="ابحث بالاسم أو التصنيف..."
             value={search}
@@ -213,20 +213,20 @@ export default function AdminSharedProductsPage() {
                 "shrink-0 h-8 px-3.5 rounded-lg text-[11px] font-bold transition-colors border",
                 activeCategory === cat
                   ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
               )}
             >
               {cat}
             </button>
           ))}
         </div>
-        <p className="text-[11px] text-gray-400">{filteredProducts.length} من {products.length} منتج</p>
+        <p className="text-[11px] text-gray-600">{filteredProducts.length} من {products.length} منتج</p>
       </div>
 
       {filteredProducts.length === 0 ? (
         <div className="bg-white border border-gray-100 rounded-2xl p-10 flex flex-col items-center justify-center text-center gap-2">
-          <CupSoda className="h-8 w-8 text-gray-300" />
-          <p className="text-sm text-gray-400">{products.length === 0 ? 'لا توجد منتجات في المكتبة بعد' : 'ما فيه نتائج مطابقة'}</p>
+          <CupSoda className="h-8 w-8 text-gray-600" />
+          <p className="text-sm text-gray-600">{products.length === 0 ? 'لا توجد منتجات في المكتبة بعد' : 'ما فيه نتائج مطابقة'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -238,8 +238,8 @@ export default function AdminSharedProductsPage() {
               <div className="p-3 space-y-1">
                 <h3 className="text-sm font-bold text-gray-900 truncate">{product.name}</h3>
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">{product.category || '—'}</span>
-                  {!!product.calories && <span className="text-[10px] text-gray-400">{product.calories} سعرة</span>}
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">{product.category || '—'}</span>
+                  {!!product.calories && <span className="text-[10px] text-gray-600">{product.calories} سعرة</span>}
                 </div>
                 <div className="flex items-center gap-2 pt-2">
                   <EditSharedProductDialog product={product} onSave={fetchProducts}>
@@ -249,7 +249,7 @@ export default function AdminSharedProductsPage() {
                     </button>
                   </EditSharedProductDialog>
                   <button onClick={() => handleDelete(product)}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0">
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>

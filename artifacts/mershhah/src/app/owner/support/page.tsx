@@ -178,7 +178,7 @@ export default function OwnerSupportPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-lg font-black text-gray-900">محادثة مع الإدارة</h1>
-        <p className="text-xs text-gray-400 mt-0.5">{chats.length} محادثة {unreadCount > 0 && `• ${unreadCount} جديدة`}</p>
+        <p className="text-xs text-gray-600 mt-0.5">{chats.length} محادثة {unreadCount > 0 && `• ${unreadCount} جديدة`}</p>
       </div>
 
       <div className="flex gap-0 bg-white border border-gray-100 rounded-2xl overflow-hidden h-[calc(100vh-180px)]">
@@ -191,10 +191,10 @@ export default function OwnerSupportPage() {
             {chats.length === 0 ? (
               <div className="text-center py-16 px-4">
                 <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <MessageSquare className="h-5 w-5 text-gray-300" />
+                  <MessageSquare className="h-5 w-5 text-gray-600" />
                 </div>
                 <p className="text-xs font-bold text-gray-900 mb-1">لا توجد محادثات</p>
-                <p className="text-[10px] text-gray-400">ستظهر محادثاتك مع الإدارة هنا</p>
+                <p className="text-[10px] text-gray-600">ستظهر محادثاتك مع الإدارة هنا</p>
               </div>
             ) : chats.map(chat => (
               <button
@@ -211,12 +211,12 @@ export default function OwnerSupportPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-gray-900">الإدارة</span>
                     {chat.lastMessageTimestamp && (
-                      <span className="text-[9px] text-gray-300 shrink-0">
+                      <span className="text-[9px] text-gray-600 shrink-0">
                         {formatDistanceToNow(new Date(chat.lastMessageTimestamp), { addSuffix: true, locale: ar })}
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-gray-400 truncate mt-0.5">{chat.lastMessage || 'محادثة جديدة'}</p>
+                  <p className="text-[10px] text-gray-600 truncate mt-0.5">{chat.lastMessage || 'محادثة جديدة'}</p>
                 </div>
                 {chat.ownerHasUnread && (
                   <div className="w-2 h-2 rounded-full bg-gray-900 shrink-0" />
@@ -232,17 +232,17 @@ export default function OwnerSupportPage() {
             <div className="flex-1 flex items-center justify-center text-center p-8">
               <div>
                 <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
-                  <MessageSquare className="h-7 w-7 text-gray-300" />
+                  <MessageSquare className="h-7 w-7 text-gray-600" />
                 </div>
                 <p className="text-sm font-bold text-gray-900 mb-1">اختر محادثة</p>
-                <p className="text-[11px] text-gray-400">اختر محادثة من القائمة للبدء</p>
+                <p className="text-[11px] text-gray-600">اختر محادثة من القائمة للبدء</p>
               </div>
             </div>
           ) : (
             <>
               {/* Chat Header */}
               <div className="p-3 border-b border-gray-100 flex items-center gap-3 shrink-0">
-                <button onClick={() => setShowChat(false)} className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100">
+                <button onClick={() => setShowChat(false)} className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100">
                   <ArrowLeft className="h-4 w-4" />
                 </button>
                 <div className="w-9 h-9 rounded-full bg-gray-900 flex items-center justify-center">
@@ -250,7 +250,7 @@ export default function OwnerSupportPage() {
                 </div>
                 <div className="flex-1">
                   <p className="text-xs font-bold text-gray-900">الإدارة</p>
-                  <p className="text-[10px] text-gray-400">محادثة مباشرة</p>
+                  <p className="text-[10px] text-gray-600">محادثة مباشرة</p>
                 </div>
               </div>
 
@@ -295,7 +295,7 @@ export default function OwnerSupportPage() {
                   })}
                   {!isLoadingMessages && messages.length === 0 && (
                     <div className="text-center pt-16">
-                      <p className="text-xs text-gray-300">ابدأ المحادثة مع الإدارة</p>
+                      <p className="text-xs text-gray-600">ابدأ المحادثة مع الإدارة</p>
                     </div>
                   )}
                   <div ref={messagesEndRef} />
@@ -306,7 +306,7 @@ export default function OwnerSupportPage() {
               <form onSubmit={handleSendMessage} className="p-3 border-t border-gray-100 flex items-center gap-2 shrink-0">
                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                 <button type="button" onClick={() => fileInputRef.current?.click()} disabled={isLoadingMessages || isUploading}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0 disabled:opacity-30">
+                  className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-50 transition-colors shrink-0 disabled:opacity-30">
                   {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
                 </button>
                 <Input

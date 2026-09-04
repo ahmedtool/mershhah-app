@@ -33,7 +33,7 @@ function Card({ children, className }: { children: React.ReactNode; className?: 
 function SectionTitle({ icon: Icon, children }: { icon: any; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 mb-3">
-      <Icon className="h-4 w-4 text-gray-400" />
+      <Icon className="h-4 w-4 text-gray-600" />
       <h3 className="text-sm font-bold text-gray-900">{children}</h3>
     </div>
   );
@@ -42,7 +42,7 @@ function SectionTitle({ icon: Icon, children }: { icon: any; children: React.Rea
 function WaterfallRow({ label, value, isFinal }: { label: string; value: number; isFinal?: boolean }) {
   return (
     <div className={cn("flex items-center justify-between py-2.5", !isFinal && "border-b border-gray-50")}>
-      <span className={cn("text-xs", isFinal ? "font-bold text-gray-900" : "text-gray-500")}>{label}</span>
+      <span className={cn("text-xs", isFinal ? "font-bold text-gray-900" : "text-gray-600")}>{label}</span>
       <span className={cn("text-xs font-bold tabular-nums", isFinal ? "text-emerald-600 text-sm" : "text-red-500")}>
         {isFinal ? sar(value) : `- ${sar(value)}`}
       </span>
@@ -89,7 +89,7 @@ function CollapsibleTable({ title, count, headers, rows }: { title: string; coun
     <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
       <button onClick={() => setOpen((v) => !v)} className="w-full px-4 py-3 flex items-center justify-between text-sm font-bold text-gray-900">
         {title} ({count})
-        <ChevronDown className={cn("h-4 w-4 text-gray-400 transition-transform", open && "rotate-180")} />
+        <ChevronDown className={cn("h-4 w-4 text-gray-600 transition-transform", open && "rotate-180")} />
       </button>
       {open && (
         <div className="overflow-x-auto max-h-[480px] overflow-y-auto border-t border-gray-50">
@@ -97,7 +97,7 @@ function CollapsibleTable({ title, count, headers, rows }: { title: string; coun
             <thead className="sticky top-0 bg-gray-50">
               <tr>
                 {headers.map((h) => (
-                  <th key={h} className="px-3 py-2 text-right font-bold text-gray-500 whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-3 py-2 text-right font-bold text-gray-600 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
@@ -214,11 +214,11 @@ function OrderLogView({ summary }: { summary: Extract<KeetaParsedReport, { type:
           </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-          <div><p className="text-lg font-black text-gray-900">{sar(summary.totalOriginalPrice)}</p><p className="text-[10px] text-gray-400">إجمالي المبيعات</p></div>
-          <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalProfit)}</p><p className="text-[10px] text-gray-400">وصلك فعلياً</p></div>
-          <div><p className="text-lg font-black text-red-500">{sar(summary.gap)}</p><p className="text-[10px] text-gray-400">الفرق</p></div>
+          <div><p className="text-lg font-black text-gray-900">{sar(summary.totalOriginalPrice)}</p><p className="text-[10px] text-gray-600">إجمالي المبيعات</p></div>
+          <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalProfit)}</p><p className="text-[10px] text-gray-600">وصلك فعلياً</p></div>
+          <div><p className="text-lg font-black text-red-500">{sar(summary.gap)}</p><p className="text-[10px] text-gray-600">الفرق</p></div>
         </div>
-        <p className="text-[11px] text-gray-500 bg-gray-50 rounded-xl px-3 py-2.5">
+        <p className="text-[11px] text-gray-600 bg-gray-50 rounded-xl px-3 py-2.5">
           كل 100 ريال مبيعات عن طريق كيتا، يبقى لك تقريباً <span className="font-bold text-gray-900">{summary.netPer100} ريال</span> قبل تكلفة الأكل والتشغيل. ({summary.orderCount} طلب{summary.dateRange ? ` · ${summary.dateRange.from} → ${summary.dateRange.to}` : ''})
         </p>
       </Card>
@@ -268,11 +268,11 @@ function OrderDataView({ summary }: { summary: Extract<KeetaParsedReport, { type
           </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
-          <div><p className="text-lg font-black text-gray-900">{sar(summary.totalSales)}</p><p className="text-[10px] text-gray-400">إجمالي المبيعات</p></div>
-          <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalRevenue)}</p><p className="text-[10px] text-gray-400">وصلك فعلياً</p></div>
-          <div><p className="text-lg font-black text-red-500">{sar(summary.gap)}</p><p className="text-[10px] text-gray-400">الفرق</p></div>
+          <div><p className="text-lg font-black text-gray-900">{sar(summary.totalSales)}</p><p className="text-[10px] text-gray-600">إجمالي المبيعات</p></div>
+          <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalRevenue)}</p><p className="text-[10px] text-gray-600">وصلك فعلياً</p></div>
+          <div><p className="text-lg font-black text-red-500">{sar(summary.gap)}</p><p className="text-[10px] text-gray-600">الفرق</p></div>
         </div>
-        <p className="text-[11px] text-gray-500 bg-gray-50 rounded-xl px-3 py-2.5">
+        <p className="text-[11px] text-gray-600 bg-gray-50 rounded-xl px-3 py-2.5">
           كل 100 ريال مبيعات، يبقى لك تقريباً <span className="font-bold text-gray-900">{summary.netPer100} ريال</span>. ({summary.orderCount} طلب{summary.dateRange ? ` · ${summary.dateRange.from} → ${summary.dateRange.to}` : ''})
         </p>
       </Card>
@@ -332,16 +332,16 @@ function RatingsView({ summary }: { summary: Extract<KeetaParsedReport, { type: 
           <div className="flex-1">
             {[5, 4, 3, 2, 1].map((n) => (
               <div key={n} className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] text-gray-400 w-3">{n}</span>
+                <span className="text-[10px] text-gray-600 w-3">{n}</span>
                 <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full bg-amber-400 rounded-full" style={{ width: `${(summary.distribution[n as 1] / maxCount) * 100}%` }} />
                 </div>
-                <span className="text-[10px] text-gray-400 w-6 text-left">{summary.distribution[n as 1]}</span>
+                <span className="text-[10px] text-gray-600 w-6 text-left">{summary.distribution[n as 1]}</span>
               </div>
             ))}
           </div>
         </div>
-        <p className="text-[11px] text-gray-500 bg-gray-50 rounded-xl px-3 py-2.5">
+        <p className="text-[11px] text-gray-600 bg-gray-50 rounded-xl px-3 py-2.5">
           من أصل {summary.totalReviews} تقييم، {summary.unrepliedCount} بدون رد منك.
         </p>
       </Card>
@@ -365,7 +365,7 @@ function RatingsView({ summary }: { summary: Extract<KeetaParsedReport, { type: 
                   <span className="font-bold text-gray-700">{r.customer || 'عميل'}</span>
                   <span className="font-bold text-red-500">{r.rating}★</span>
                 </div>
-                {r.content && <p className="text-gray-500 leading-relaxed">{r.content}</p>}
+                {r.content && <p className="text-gray-600 leading-relaxed">{r.content}</p>}
               </li>
             ))}
           </ul>
@@ -381,9 +381,9 @@ function CampaignView({ summary }: { summary: Extract<KeetaParsedReport, { type:
       <Card>
         <SectionTitle icon={Megaphone}>ملخص الحملات</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div><p className="text-lg font-black text-red-500">{sar(summary.totalCost)}</p><p className="text-[10px] text-gray-400">إجمالي التكلفة</p></div>
-          <div><p className="text-lg font-black text-gray-900">{summary.totalOrders}</p><p className="text-[10px] text-gray-400">طلبات الحملات</p></div>
-          <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalSales)}</p><p className="text-[10px] text-gray-400">مبيعات الحملات</p></div>
+          <div><p className="text-lg font-black text-red-500">{sar(summary.totalCost)}</p><p className="text-[10px] text-gray-600">إجمالي التكلفة</p></div>
+          <div><p className="text-lg font-black text-gray-900">{summary.totalOrders}</p><p className="text-[10px] text-gray-600">طلبات الحملات</p></div>
+          <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalSales)}</p><p className="text-[10px] text-gray-600">مبيعات الحملات</p></div>
         </div>
       </Card>
       <Card>
@@ -406,11 +406,11 @@ function RestaurantDataView({ summary }: { summary: Extract<KeetaParsedReport, {
       <Card>
         <SectionTitle icon={Store}>ملخص الفترة</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-3">
-          <div><p className="text-lg font-black text-gray-900">{sar(summary.totalSales)}</p><p className="text-[10px] text-gray-400">إجمالي المبيعات</p></div>
-          <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalRevenue)}</p><p className="text-[10px] text-gray-400">وصلك فعلياً</p></div>
-          <div><p className="text-lg font-black text-red-500">{sar(summary.gap)}</p><p className="text-[10px] text-gray-400">الفرق</p></div>
+          <div><p className="text-lg font-black text-gray-900">{sar(summary.totalSales)}</p><p className="text-[10px] text-gray-600">إجمالي المبيعات</p></div>
+          <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalRevenue)}</p><p className="text-[10px] text-gray-600">وصلك فعلياً</p></div>
+          <div><p className="text-lg font-black text-red-500">{sar(summary.gap)}</p><p className="text-[10px] text-gray-600">الفرق</p></div>
         </div>
-        <p className="text-[11px] text-gray-500 bg-gray-50 rounded-xl px-3 py-2.5">
+        <p className="text-[11px] text-gray-600 bg-gray-50 rounded-xl px-3 py-2.5">
           كل 100 ريال مبيعات يبقى لك تقريباً <span className="font-bold text-gray-900">{summary.netPer100} ريال</span> · {summary.totalOrders} طلب، منها {summary.totalCancelled} ملغي{summary.avgPrepTime ? ` · متوسط وقت التحضير ${Math.round(summary.avgPrepTime)} دقيقة` : ''}
           {summary.dateRange ? ` · ${summary.dateRange.from} → ${summary.dateRange.to}` : ''}
         </p>
@@ -471,7 +471,7 @@ function ItemAnalysisView({ summary }: { summary: Extract<KeetaParsedReport, { t
                 <span className="font-bold text-emerald-600">+{Math.round(i.changePercent)}%</span>
               </li>
             ))}
-            {summary.topGrowing.length === 0 && <p className="text-[11px] text-gray-400">لا يوجد</p>}
+            {summary.topGrowing.length === 0 && <p className="text-[11px] text-gray-600">لا يوجد</p>}
           </ul>
         </Card>
         <Card>
@@ -483,7 +483,7 @@ function ItemAnalysisView({ summary }: { summary: Extract<KeetaParsedReport, { t
                 <span className="font-bold text-red-500">{Math.round(i.changePercent)}%</span>
               </li>
             ))}
-            {summary.topDeclining.length === 0 && <p className="text-[11px] text-gray-400">لا يوجد</p>}
+            {summary.topDeclining.length === 0 && <p className="text-[11px] text-gray-600">لا يوجد</p>}
           </ul>
         </Card>
       </div>
@@ -497,9 +497,9 @@ function InvoiceSummaryView({ summary }: { summary: Extract<KeetaParsedReport, {
       <Card>
         <SectionTitle icon={FileStack}>ملخص الفواتير</SectionTitle>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <div><p className="text-lg font-black text-gray-900">{sar(summary.totalGrossSales)}</p><p className="text-[10px] text-gray-400">إجمالي المبيعات</p></div>
-          <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalNetPayable)}</p><p className="text-[10px] text-gray-400">صافي المستحق</p></div>
-          <div><p className="text-lg font-black text-red-500">{sar(summary.totalCommission)}</p><p className="text-[10px] text-gray-400">إجمالي العمولة</p></div>
+          <div><p className="text-lg font-black text-gray-900">{sar(summary.totalGrossSales)}</p><p className="text-[10px] text-gray-600">إجمالي المبيعات</p></div>
+          <div><p className="text-lg font-black text-emerald-600">{sar(summary.totalNetPayable)}</p><p className="text-[10px] text-gray-600">صافي المستحق</p></div>
+          <div><p className="text-lg font-black text-red-500">{sar(summary.totalCommission)}</p><p className="text-[10px] text-gray-600">إجمالي العمولة</p></div>
         </div>
       </Card>
       {summary.periods.length > 1 && (
@@ -542,7 +542,7 @@ function ReportView({ parsed }: { parsed: KeetaParsedReport }) {
 
 function HistoryPanel({ history, onOpen, onOpenStatement }: { history: KeetaReportRow[]; onOpen: (row: KeetaReportRow) => void; onOpenStatement: (row: KeetaReportRow) => void }) {
   if (history.length === 0) {
-    return <p className="text-xs text-gray-400 text-center py-6">ما فيه تقارير محفوظة بعد.</p>;
+    return <p className="text-xs text-gray-600 text-center py-6">ما فيه تقارير محفوظة بعد.</p>;
   }
   return (
     <div className="divide-y divide-gray-50">
@@ -556,9 +556,9 @@ function HistoryPanel({ history, onOpen, onOpenStatement }: { history: KeetaRepo
             <p className="text-xs font-bold text-gray-800 truncate">
               {REPORT_TYPE_LABELS[row.report_type as keyof typeof REPORT_TYPE_LABELS] || 'كشف حساب'}
             </p>
-            <p className="text-[10px] text-gray-400 truncate">{row.file_name} · {fmtDate(row.created_at)}</p>
+            <p className="text-[10px] text-gray-600 truncate">{row.file_name} · {fmtDate(row.created_at)}</p>
           </div>
-          <ChevronDown className="h-3.5 w-3.5 text-gray-300 -rotate-90 shrink-0" />
+          <ChevronDown className="h-3.5 w-3.5 text-gray-600 -rotate-90 shrink-0" />
         </button>
       ))}
     </div>
@@ -686,9 +686,9 @@ export default function KeetaReportsReaderPage() {
               </>
             ) : (
               <>
-                <UploadCloud className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                <UploadCloud className="h-10 w-10 text-gray-600 mx-auto mb-3" />
                 <p className="text-sm font-bold text-gray-700">ارفع ملف تقرير من كيتا</p>
-                <p className="text-xs text-gray-400 mt-1">أي تقرير Excel أو CSV، أو كشف حساب PDF</p>
+                <p className="text-xs text-gray-600 mt-1">أي تقرير Excel أو CSV، أو كشف حساب PDF</p>
               </>
             )}
           </div>
@@ -698,7 +698,7 @@ export default function KeetaReportsReaderPage() {
               <FileSpreadsheet className="h-4 w-4 text-emerald-500 shrink-0" />
               <span className="text-xs font-bold text-gray-700 truncate">{fileName}</span>
             </div>
-            <button onClick={reset} className="h-8 px-3 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-50 flex items-center gap-1.5 shrink-0">
+            <button onClick={reset} className="h-8 px-3 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-50 flex items-center gap-1.5 shrink-0">
               <RotateCw className="h-3.5 w-3.5" /> ملف جديد
             </button>
           </div>
@@ -721,9 +721,9 @@ export default function KeetaReportsReaderPage() {
 
       {statementSaved && (
         <Card className="text-center py-8">
-          <FileText className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+          <FileText className="h-10 w-10 text-gray-600 mx-auto mb-3" />
           <p className="text-sm font-bold text-gray-800 mb-1">تم حفظ كشف الحساب</p>
-          <p className="text-xs text-gray-400 mb-4">هذا النوع من الملفات (PDF) نحفظه لك كما هو بدون تحليل تلقائي للأرقام.</p>
+          <p className="text-xs text-gray-600 mb-4">هذا النوع من الملفات (PDF) نحفظه لك كما هو بدون تحليل تلقائي للأرقام.</p>
           {statementSaved.storage_path && (
             <a
               href={getReportFileUrl(statementSaved.storage_path)}
@@ -741,22 +741,22 @@ export default function KeetaReportsReaderPage() {
         <div className="space-y-5">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
-              <ListOrdered className="h-4 w-4 text-gray-300 mb-2" />
+              <ListOrdered className="h-4 w-4 text-gray-600 mb-2" />
               <p className="text-lg font-black text-gray-900">{genericReport.rowCount}</p>
-              <p className="text-[11px] text-gray-400">عدد الصفوف</p>
+              <p className="text-[11px] text-gray-600">عدد الصفوف</p>
             </div>
             {genericReport.totalAmount !== null && (
               <div className="bg-white border border-gray-100 rounded-2xl p-4">
                 <Receipt className="h-4 w-4 text-emerald-400 mb-2" />
                 <p className="text-lg font-black text-gray-900">{genericReport.totalAmount.toLocaleString('ar-SA', { maximumFractionDigits: 2 })}</p>
-                <p className="text-[11px] text-gray-400">إجمالي "{genericReport.amountColumn}"</p>
+                <p className="text-[11px] text-gray-600">إجمالي "{genericReport.amountColumn}"</p>
               </div>
             )}
             {genericReport.dateRange && (
               <div className="bg-white border border-gray-100 rounded-2xl p-4">
-                <Calendar className="h-4 w-4 text-gray-300 mb-2" />
+                <Calendar className="h-4 w-4 text-gray-600 mb-2" />
                 <p className="text-xs font-black text-gray-900">{genericReport.dateRange.from} → {genericReport.dateRange.to}</p>
-                <p className="text-[11px] text-gray-400">الفترة</p>
+                <p className="text-[11px] text-gray-600">الفترة</p>
               </div>
             )}
           </div>
@@ -770,7 +770,7 @@ export default function KeetaReportsReaderPage() {
                 {genericReport.topItems.map((item) => (
                   <div key={item.name} className="flex items-center justify-between px-4 py-2.5 text-xs">
                     <span className="font-medium text-gray-700 truncate">{item.name}</span>
-                    <span className="text-gray-400 shrink-0 mr-3">{item.count} مرة{item.total > 0 ? ` · ${item.total.toLocaleString('ar-SA', { maximumFractionDigits: 2 })}` : ''}</span>
+                    <span className="text-gray-600 shrink-0 mr-3">{item.count} مرة{item.total > 0 ? ` · ${item.total.toLocaleString('ar-SA', { maximumFractionDigits: 2 })}` : ''}</span>
                   </div>
                 ))}
               </div>
@@ -786,7 +786,7 @@ export default function KeetaReportsReaderPage() {
                 <thead className="sticky top-0 bg-gray-50">
                   <tr>
                     {genericReport.headers.map((h) => (
-                      <th key={h} className="px-3 py-2 text-right font-bold text-gray-500 whitespace-nowrap">{h}</th>
+                      <th key={h} className="px-3 py-2 text-right font-bold text-gray-600 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>

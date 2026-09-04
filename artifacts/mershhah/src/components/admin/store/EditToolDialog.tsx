@@ -234,11 +234,11 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                <Box className="h-5 w-5 text-gray-500" />
+                <Box className="h-5 w-5 text-gray-600" />
               </div>
               <div>
                 <h2 className="text-base font-bold text-gray-900">{isEditing ? 'تعديل الأداة' : 'إضافة أداة جديدة'}</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{isEditing ? 'عدّل بيانات الأداة ثم احفظ' : 'أدخل البيانات أو استخدم الذكاء الاصطناعي'}</p>
+                <p className="text-xs text-gray-600 mt-0.5">{isEditing ? 'عدّل بيانات الأداة ثم احفظ' : 'أدخل البيانات أو استخدم الذكاء الاصطناعي'}</p>
               </div>
             </div>
             {!isEditing && (
@@ -258,7 +258,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
               <div className="flex-1 space-y-3">
                 <FormField control={form.control} name="title" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-500">عنوان الأداة</FormLabel>
+                    <FormLabel className="text-xs text-gray-600">عنوان الأداة</FormLabel>
                     <FormControl>
                       <Input placeholder="مثال: تحليلات متقدمة" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                     </FormControl>
@@ -267,7 +267,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
                 )} />
                 <FormField control={form.control} name="id" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-500">المعرّف <span className="text-gray-300">(إنجليزي)</span></FormLabel>
+                    <FormLabel className="text-xs text-gray-600">المعرّف <span className="text-gray-600">(إنجليزي)</span></FormLabel>
                     <FormControl>
                       <Input placeholder="advanced-analytics" {...field} disabled={isEditing || isSaving} className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" />
                     </FormControl>
@@ -281,7 +281,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
                 {previewImage ? (
                   <StorageImage imagePath={previewImage} alt="tool" height={72} width={72} className="w-full h-full object-contain rounded-xl" />
                 ) : (
-                  <span className="text-[9px] text-gray-300 text-center">صورة<br />الأداة</span>
+                  <span className="text-[9px] text-gray-600 text-center">صورة<br />الأداة</span>
                 )}
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
@@ -295,7 +295,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
 
             {/* Screenshots */}
             <div>
-              <p className="text-xs text-gray-500 mb-2">لقطات شاشة للأداة (تظهر لصاحب المطعم عند فتح تفاصيل الأداة)</p>
+              <p className="text-xs text-gray-600 mb-2">لقطات شاشة للأداة (تظهر لصاحب المطعم عند فتح تفاصيل الأداة)</p>
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {existingScreenshots.map((path, i) => (
                   <div key={`existing-${i}`} className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gray-50">
@@ -318,7 +318,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
                 {existingScreenshots.length + newScreenshots.length < MAX_SCREENSHOTS && (
                   <button type="button" onClick={() => screenshotsInputRef.current?.click()}
                     className="w-16 h-16 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center hover:border-gray-300 hover:bg-gray-50 transition-all shrink-0">
-                    <Plus className="h-4 w-4 text-gray-300" />
+                    <Plus className="h-4 w-4 text-gray-600" />
                   </button>
                 )}
               </div>
@@ -335,23 +335,23 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
             {/* Tool Type */}
             <FormField control={form.control} name="tool_type" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">نوع الأداة</FormLabel>
+                <FormLabel className="text-xs text-gray-600">نوع الأداة</FormLabel>
                 <div className="grid grid-cols-2 gap-2">
                   <button type="button" onClick={() => field.onChange('external')}
                     className={`h-14 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${
                       field.value === 'external' ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
                     }`}>
-                    <Globe className={`h-4 w-4 ${field.value === 'external' ? 'text-gray-900' : 'text-gray-400'}`} />
-                    <span className={`text-[10px] font-bold ${field.value === 'external' ? 'text-gray-900' : 'text-gray-500'}`}>أداة خارجية</span>
-                    <span className="text-[8px] text-gray-400">رابط URL</span>
+                    <Globe className={`h-4 w-4 ${field.value === 'external' ? 'text-gray-900' : 'text-gray-600'}`} />
+                    <span className={`text-[10px] font-bold ${field.value === 'external' ? 'text-gray-900' : 'text-gray-600'}`}>أداة خارجية</span>
+                    <span className="text-[8px] text-gray-600">رابط URL</span>
                   </button>
                   <button type="button" onClick={() => field.onChange('embedded')}
                     className={`h-14 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${
                       field.value === 'embedded' ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
                     }`}>
-                    <FileCode className={`h-4 w-4 ${field.value === 'embedded' ? 'text-gray-900' : 'text-gray-400'}`} />
-                    <span className={`text-[10px] font-bold ${field.value === 'embedded' ? 'text-gray-900' : 'text-gray-500'}`}>أداة مدمجة</span>
-                    <span className="text-[8px] text-gray-400">HTML/CSS/JS</span>
+                    <FileCode className={`h-4 w-4 ${field.value === 'embedded' ? 'text-gray-900' : 'text-gray-600'}`} />
+                    <span className={`text-[10px] font-bold ${field.value === 'embedded' ? 'text-gray-900' : 'text-gray-600'}`}>أداة مدمجة</span>
+                    <span className="text-[8px] text-gray-600">HTML/CSS/JS</span>
                   </button>
                 </div>
               </FormItem>
@@ -361,14 +361,14 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
             {toolType === 'external' && (
               <FormField control={form.control} name="external_url" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs text-gray-500">رابط الأداة الخارجي</FormLabel>
+                  <FormLabel className="text-xs text-gray-600">رابط الأداة الخارجي</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Globe className="absolute end-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-300" />
+                      <Globe className="absolute end-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
                       <Input placeholder="https://my-tool.com" {...field} className="h-11 rounded-xl border-gray-200 text-sm pe-9" dir="ltr" disabled={isSaving} />
                     </div>
                   </FormControl>
-                  <p className="text-[9px] text-gray-400 mt-1">الأداة ستفتح داخل iframe في المنصة</p>
+                  <p className="text-[9px] text-gray-600 mt-1">الأداة ستفتح داخل iframe في المنصة</p>
                   <FormMessage className="text-[10px]" />
                 </FormItem>
               )} />
@@ -378,7 +378,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
             {toolType === 'embedded' && (
               <FormField control={form.control} name="content" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs text-gray-500">كود الأداة (HTML + CSS + JS)</FormLabel>
+                  <FormLabel className="text-xs text-gray-600">كود الأداة (HTML + CSS + JS)</FormLabel>
                   <FormControl>
                     <Textarea
                       placeholder={`<div class="tool-container">\n  <h2>أداتي</h2>\n  <p>مرحباً!</p>\n</div>\n\n<style>\n  .tool-container { padding: 20px; }\n</style>\n\n<script>\n  console.log('أداة جديدة!');\n</script>`}
@@ -388,7 +388,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
                       disabled={isSaving}
                     />
                   </FormControl>
-                  <p className="text-[9px] text-gray-400 mt-1">اكتب الكود بالكامل — HTML + CSS + JS في ملف واحد</p>
+                  <p className="text-[9px] text-gray-600 mt-1">اكتب الكود بالكامل — HTML + CSS + JS في ملف واحد</p>
                   <FormMessage className="text-[10px]" />
                 </FormItem>
               )} />
@@ -397,14 +397,14 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
             {/* Category */}
             <FormField control={form.control} name="category" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">التصنيف</FormLabel>
+                <FormLabel className="text-xs text-gray-600">التصنيف</FormLabel>
                 <FormControl>
                   <Input placeholder="مثال: marketing, operations, analytics" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                 </FormControl>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {uniqueCategories.slice(0, 5).map((cat) => (
                     <button key={cat} type="button" onClick={() => field.onChange(cat)}
-                      className={`px-2 py-0.5 rounded-full text-[10px] transition-colors ${field.value === cat ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+                      className={`px-2 py-0.5 rounded-full text-[10px] transition-colors ${field.value === cat ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                       {cat}
                     </button>
                   ))}
@@ -417,7 +417,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
             <div className="grid grid-cols-2 gap-3">
               <FormField control={form.control} name="billing_type" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs text-gray-500">نوع الصلاحية</FormLabel>
+                  <FormLabel className="text-xs text-gray-600">نوع الصلاحية</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger className="h-11 rounded-xl border-gray-200 text-xs"><SelectValue /></SelectTrigger>
@@ -432,7 +432,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
               )} />
               <FormField control={form.control} name="period_months" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs text-gray-500">المدة (أشهر)</FormLabel>
+                  <FormLabel className="text-xs text-gray-600">المدة (أشهر)</FormLabel>
                   <FormControl>
                     <Input type="number" min={1} placeholder="1" {...field} value={field.value ?? ''} disabled={billingType !== 'addon'} className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" />
                   </FormControl>
@@ -444,7 +444,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
             {/* Description */}
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">الوصف</FormLabel>
+                <FormLabel className="text-xs text-gray-600">الوصف</FormLabel>
                 <FormControl>
                   <Textarea placeholder="وصف قصير وجذاب للأداة..." {...field} className="rounded-xl border-gray-200 text-sm min-h-[70px] resize-none" disabled={isSaving} />
                 </FormControl>
@@ -456,11 +456,11 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
             <div className="grid grid-cols-2 gap-3">
               <FormField control={form.control} name="price" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs text-gray-500">السعر (ر.س) — 0 = مجانية</FormLabel>
+                  <FormLabel className="text-xs text-gray-600">السعر (ر.س) — 0 = مجانية</FormLabel>
                   <FormControl>
                     <Input type="number" min={0} step="0.01" {...field} className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
                   </FormControl>
-                  <p className="text-[9px] text-gray-400 mt-1">
+                  <p className="text-[9px] text-gray-600 mt-1">
                     {billingType === 'addon'
                       ? `يُحصَّل فعليًا عبر StreamPay عند التفعيل${form.watch('period_months') ? ` كل ${form.watch('period_months')} شهر` : ''}`
                       : 'مطلوب اشتراك مدفوع بالمنصة لتفعيلها — بدون تحصيل منفصل'}
@@ -470,7 +470,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
               )} />
               <FormField control={form.control} name="price_label" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs text-gray-500">بطاقة السعر (نص العرض)</FormLabel>
+                  <FormLabel className="text-xs text-gray-600">بطاقة السعر (نص العرض)</FormLabel>
                   <FormControl>
                     <Input placeholder="مجاني أو 50 ر.س/شهر" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                   </FormControl>
@@ -483,7 +483,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
             <FormField control={form.control} name="popular" render={({ field }) => (
               <FormItem>
                 <button type="button" onClick={() => field.onChange(!field.value)}
-                  className={`w-full h-11 rounded-xl text-xs font-medium transition-all border ${field.value ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}>
+                  className={`w-full h-11 rounded-xl text-xs font-medium transition-all border ${field.value ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
                   {field.value ? '⭐ أداة شائعة' : 'تعيين كأداة شائعة'}
                 </button>
               </FormItem>
@@ -492,13 +492,13 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
             {/* Developer Info */}
             <div className="rounded-xl bg-gray-50 p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <Code2 className="h-4 w-4 text-gray-400" />
+                <Code2 className="h-4 w-4 text-gray-600" />
                 <span className="text-xs font-bold text-gray-600">معلومات المطور</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <FormField control={form.control} name="developer_name" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] text-gray-500">اسم المطور</FormLabel>
+                    <FormLabel className="text-[10px] text-gray-600">اسم المطور</FormLabel>
                     <FormControl>
                       <Input placeholder="اسم الشركة أو المطور" {...field} className="h-9 rounded-lg border-gray-200 text-[11px]" disabled={isSaving} />
                     </FormControl>
@@ -507,7 +507,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
                 )} />
                 <FormField control={form.control} name="version" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] text-gray-500">الإصدار</FormLabel>
+                    <FormLabel className="text-[10px] text-gray-600">الإصدار</FormLabel>
                     <FormControl>
                       <Input placeholder="1.0.0" {...field} className="h-9 rounded-lg border-gray-200 text-[11px]" dir="ltr" disabled={isSaving} />
                     </FormControl>
@@ -517,7 +517,7 @@ export function EditToolDialog({ children, tool, allTools = [], onSave }: EditTo
               </div>
               <FormField control={form.control} name="developer_url" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-[10px] text-gray-500">رابط المطور</FormLabel>
+                  <FormLabel className="text-[10px] text-gray-600">رابط المطور</FormLabel>
                   <FormControl>
                     <Input placeholder="https://developer.com" {...field} className="h-9 rounded-lg border-gray-200 text-[11px]" dir="ltr" disabled={isSaving} />
                   </FormControl>

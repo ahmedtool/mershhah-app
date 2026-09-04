@@ -102,18 +102,18 @@ export function EditAnnouncementDialog({
           <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-4">
             <FormField control={form.control} name="title" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-bold text-gray-500">عنوان الإعلان</FormLabel>
+                <FormLabel className="text-xs font-bold text-gray-600">عنوان الإعلان</FormLabel>
                 <FormControl>
-                  <Input placeholder="مثال: تحديث جديد للمنصة" {...field} className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900" />
+                  <Input placeholder="مثال: تحديث جديد للمنصة" {...field} className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900" />
                 </FormControl>
                 <FormMessage className="text-[10px]" />
               </FormItem>
             )} />
             <FormField control={form.control} name="content" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs font-bold text-gray-500">محتوى الإعلان</FormLabel>
+                <FormLabel className="text-xs font-bold text-gray-600">محتوى الإعلان</FormLabel>
                 <FormControl>
-                  <Textarea rows={4} placeholder="اشرح تفاصيل الإعلان هنا..." {...field} className="px-3 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900 resize-none" />
+                  <Textarea rows={4} placeholder="اشرح تفاصيل الإعلان هنا..." {...field} className="px-3 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900 resize-none" />
                 </FormControl>
                 <FormMessage className="text-[10px]" />
               </FormItem>
@@ -121,7 +121,7 @@ export function EditAnnouncementDialog({
             <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="type" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs font-bold text-gray-500">نوع الإعلان</FormLabel>
+                  <FormLabel className="text-xs font-bold text-gray-600">نوع الإعلان</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 focus:ring-0 focus:ring-offset-0 focus:border-gray-900">
@@ -129,10 +129,10 @@ export function EditAnnouncementDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="rounded-xl border border-gray-100">
-                      <SelectItem value="info" className="text-xs font-bold text-gray-500 focus:bg-gray-50 focus:text-gray-900">معلومات</SelectItem>
-                      <SelectItem value="warning" className="text-xs font-bold text-gray-500 focus:bg-gray-50 focus:text-gray-900">تحذير</SelectItem>
-                      <SelectItem value="success" className="text-xs font-bold text-gray-500 focus:bg-gray-50 focus:text-gray-900">نجاح</SelectItem>
-                      <SelectItem value="update" className="text-xs font-bold text-gray-500 focus:bg-gray-50 focus:text-gray-900">تحديث</SelectItem>
+                      <SelectItem value="info" className="text-xs font-bold text-gray-600 focus:bg-gray-50 focus:text-gray-900">معلومات</SelectItem>
+                      <SelectItem value="warning" className="text-xs font-bold text-gray-600 focus:bg-gray-50 focus:text-gray-900">تحذير</SelectItem>
+                      <SelectItem value="success" className="text-xs font-bold text-gray-600 focus:bg-gray-50 focus:text-gray-900">نجاح</SelectItem>
+                      <SelectItem value="update" className="text-xs font-bold text-gray-600 focus:bg-gray-50 focus:text-gray-900">تحديث</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage className="text-[10px]" />
@@ -140,7 +140,7 @@ export function EditAnnouncementDialog({
               )} />
               <FormField control={form.control} name="targetRole" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs font-bold text-gray-500">الجمهور المستهدف</FormLabel>
+                  <FormLabel className="text-xs font-bold text-gray-600">الجمهور المستهدف</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 focus:ring-0 focus:ring-offset-0 focus:border-gray-900">
@@ -148,8 +148,8 @@ export function EditAnnouncementDialog({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="rounded-xl border border-gray-100">
-                      <SelectItem value="owner" className="text-xs font-bold text-gray-500 focus:bg-gray-50 focus:text-gray-900">أصحاب المطاعم</SelectItem>
-                      <SelectItem value="all" className="text-xs font-bold text-gray-500 focus:bg-gray-50 focus:text-gray-900">الكل</SelectItem>
+                      <SelectItem value="owner" className="text-xs font-bold text-gray-600 focus:bg-gray-50 focus:text-gray-900">أصحاب المطاعم</SelectItem>
+                      <SelectItem value="all" className="text-xs font-bold text-gray-600 focus:bg-gray-50 focus:text-gray-900">الكل</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage className="text-[10px]" />
@@ -158,7 +158,7 @@ export function EditAnnouncementDialog({
             </div>
             <FormField control={form.control} name="isActive" render={({ field }) => (
               <FormItem className="flex flex-row items-center justify-between px-4 py-3 rounded-xl border border-gray-200">
-                <FormLabel className="text-xs font-bold text-gray-500">تفعيل الإعلان</FormLabel>
+                <FormLabel className="text-xs font-bold text-gray-600">تفعيل الإعلان</FormLabel>
                 <FormControl>
                   <button
                     type="button"

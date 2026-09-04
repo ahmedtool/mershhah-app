@@ -60,7 +60,7 @@ export default function AnnouncementsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-gray-900">الإعلانات</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{announcements.length} إعلان</p>
+          <p className="text-xs text-gray-600 mt-0.5">{announcements.length} إعلان</p>
         </div>
         <EditAnnouncementDialog onSave={fetchAnnouncements}>
           <button className="h-10 px-4 rounded-xl bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">

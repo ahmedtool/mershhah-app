@@ -44,11 +44,11 @@ function ActionButton({ icon: Icon, label, description, onClick, disabled, spinn
       className="w-full flex items-start gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors text-right disabled:opacity-50"
     >
       <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
-        {spinning ? <Loader2 className="h-4 w-4 text-gray-400 animate-spin" /> : <Icon className="h-4 w-4 text-gray-500" />}
+        {spinning ? <Loader2 className="h-4 w-4 text-gray-600 animate-spin" /> : <Icon className="h-4 w-4 text-gray-600" />}
       </div>
       <div className="min-w-0">
         <p className="text-xs font-bold text-gray-900">{label}</p>
-        <p className="text-[10.5px] text-gray-400 mt-0.5 leading-relaxed">{description}</p>
+        <p className="text-[10.5px] text-gray-600 mt-0.5 leading-relaxed">{description}</p>
       </div>
     </button>
   );
@@ -151,7 +151,7 @@ export function MenuPageToolbar({
           title="المزيد من الأدوات"
           className={cn(
             "h-9 w-9 rounded-xl border flex items-center justify-center shrink-0 transition-all duration-200 active:scale-[0.97]",
-            expanded ? "bg-gray-900 border-gray-900 text-white" : "border-gray-200 text-gray-500 hover:bg-gray-50 hover:border-gray-300"
+            expanded ? "bg-gray-900 border-gray-900 text-white" : "border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300"
           )}
         >
           {expanded ? <X className="h-4 w-4" /> : <MoreHorizontal className="h-4 w-4" />}
@@ -165,7 +165,7 @@ export function MenuPageToolbar({
           title="المزيد من الأدوات"
           className={cn(
             "h-9 w-9 rounded-xl border flex items-center justify-center transition-all duration-200 active:scale-[0.97]",
-            mobileMenuOpen ? "bg-gray-900 border-gray-900 text-white" : "border-gray-200 text-gray-500 hover:bg-gray-50"
+            mobileMenuOpen ? "bg-gray-900 border-gray-900 text-white" : "border-gray-200 text-gray-600 hover:bg-gray-50"
           )}
         >
           {mobileMenuOpen ? <X className="h-4 w-4" /> : <MoreHorizontal className="h-4 w-4" />}

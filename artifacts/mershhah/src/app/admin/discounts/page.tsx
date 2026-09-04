@@ -115,7 +115,7 @@ export default function AdminDiscountsPage() {
       case 'percentage': return <Percent className="h-4 w-4 text-blue-500" />;
       case 'fixed': return <DollarSign className="h-4 w-4 text-emerald-500" />;
       case 'free_trial': return <Gift className="h-4 w-4 text-amber-500" />;
-      default: return <Tag className="h-4 w-4 text-gray-400" />;
+      default: return <Tag className="h-4 w-4 text-gray-600" />;
     }
   };
 
@@ -142,7 +142,7 @@ export default function AdminDiscountsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-gray-900">كوبونات الخصم</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{codes.length} كوبون</p>
+          <p className="text-xs text-gray-600 mt-0.5">{codes.length} كوبون</p>
         </div>
         <button
           onClick={() => { setShowCreate(true); setEditingCode(null); }}
@@ -159,29 +159,29 @@ export default function AdminDiscountsPage() {
           <h3 className="text-sm font-bold text-gray-900">{editingCode ? 'تعديل الكوبون' : 'كوبون جديد'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-bold text-gray-400 mb-1 block">الكود</label>
+              <label className="text-[10px] font-bold text-gray-600 mb-1 block">الكود</label>
               <input
                 type="text"
                 value={form.code}
                 onChange={(e) => setForm({ ...form, code: e.target.value })}
                 placeholder="خصم20"
-                className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs font-bold tracking-wider text-center placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs font-bold tracking-wider text-center placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
                 dir="ltr"
                 disabled={!!editingCode}
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-gray-400 mb-1 block">الوصف</label>
+              <label className="text-[10px] font-bold text-gray-600 mb-1 block">الوصف</label>
               <input
                 type="text"
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
                 placeholder="خصم 20% على الباقة"
-                className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-gray-400 mb-1 block">نوع الخصم</label>
+              <label className="text-[10px] font-bold text-gray-600 mb-1 block">نوع الخصم</label>
               <select
                 value={form.discount_type}
                 onChange={(e) => setForm({ ...form, discount_type: e.target.value as any })}
@@ -193,7 +193,7 @@ export default function AdminDiscountsPage() {
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-bold text-gray-400 mb-1 block">
+              <label className="text-[10px] font-bold text-gray-600 mb-1 block">
                 {form.discount_type === 'percentage' ? 'النسبة (%)' : form.discount_type === 'fixed' ? 'المبلغ (ر.س)' : 'قيمة'}
               </label>
               <input
@@ -205,18 +205,18 @@ export default function AdminDiscountsPage() {
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-gray-400 mb-1 block">الحد الأقصى للاستخدام</label>
+              <label className="text-[10px] font-bold text-gray-600 mb-1 block">الحد الأقصى للاستخدام</label>
               <input
                 type="number"
                 value={form.max_uses || ''}
                 onChange={(e) => setForm({ ...form, max_uses: Number(e.target.value) })}
                 placeholder="0 = غير محدود"
-                className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs placeholder:text-gray-300 focus:outline-none focus:border-gray-300"
+                className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
                 dir="ltr"
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold text-gray-400 mb-1 block">صالح حتى</label>
+              <label className="text-[10px] font-bold text-gray-600 mb-1 block">صالح حتى</label>
               <input
                 type="date"
                 value={form.valid_until}
@@ -229,7 +229,7 @@ export default function AdminDiscountsPage() {
             <button onClick={handleSave} className="h-10 px-6 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors">
               {editingCode ? 'حفظ التعديل' : 'إنشاء'}
             </button>
-            <button onClick={() => { setShowCreate(false); setEditingCode(null); }} className="h-10 px-4 rounded-xl border border-gray-200 text-xs font-bold text-gray-500 hover:bg-gray-50 transition-colors">
+            <button onClick={() => { setShowCreate(false); setEditingCode(null); }} className="h-10 px-4 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors">
               إلغاء
             </button>
           </div>
@@ -241,7 +241,7 @@ export default function AdminDiscountsPage() {
         {codes.length === 0 ? (
           <div className="p-12 text-center">
             <Tag className="h-10 w-10 text-gray-200 mx-auto mb-3" />
-            <p className="text-xs text-gray-400">لا توجد كوبونات بعد</p>
+            <p className="text-xs text-gray-600">لا توجد كوبونات بعد</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
@@ -256,7 +256,7 @@ export default function AdminDiscountsPage() {
                         {code.is_active ? 'نشط' : 'معطل'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-gray-400 mt-0.5 truncate">
+                    <p className="text-[11px] text-gray-600 mt-0.5 truncate">
                       {getTypeLabel(code.discount_type)} · {code.discount_type === 'percentage' ? `${code.discount_value}%` : code.discount_type === 'fixed' ? `${code.discount_value} ر.س` : 'مجاني'}
                       {code.description && ` · ${code.description}`}
                     </p>
@@ -264,19 +264,19 @@ export default function AdminDiscountsPage() {
                 </div>
                 <div className="flex items-center gap-4 sm:gap-6 shrink-0">
                   <div className="text-center">
-                    <p className="text-[10px] text-gray-400">الاستخدام</p>
+                    <p className="text-[10px] text-gray-600">الاستخدام</p>
                     <p className="text-xs font-bold text-gray-900">{code.current_uses}/{code.max_uses || '∞'}</p>
                   </div>
                   {code.valid_until && (
                     <div className="text-center">
-                      <p className="text-[10px] text-gray-400">الصلاحية</p>
+                      <p className="text-[10px] text-gray-600">الصلاحية</p>
                       <p className="text-xs font-bold text-gray-900">{new Date(code.valid_until).toLocaleDateString('ar-SA')}</p>
                     </div>
                   )}
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => toggleActive(code.id, code.is_active)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                     >
                       <Tag className="h-3.5 w-3.5" />
                     </button>
@@ -294,13 +294,13 @@ export default function AdminDiscountsPage() {
                         });
                         setShowCreate(true);
                       }}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-100 transition-colors"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
                     >
                       <Edit className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => handleDelete(code.id)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>

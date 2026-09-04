@@ -305,7 +305,7 @@ export default function AiAssistantPage() {
     return (
       <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white text-center p-6" dir="rtl">
         <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-          <Info className="h-6 w-6 text-gray-300" />
+          <Info className="h-6 w-6 text-gray-600" />
         </div>
         <h1 className="text-lg font-black text-gray-900">المطعم غير موجود</h1>
         <Link href="/" className="mt-4 h-10 px-6 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 inline-flex items-center">
@@ -320,10 +320,10 @@ export default function AiAssistantPage() {
       <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white text-center p-6" dir="rtl">
         <div className="max-w-sm w-full bg-white border border-gray-100 rounded-2xl p-8 space-y-3">
           <div className="w-14 h-14 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center mx-auto">
-            <Bot className="h-6 w-6 text-gray-300" />
+            <Bot className="h-6 w-6 text-gray-600" />
           </div>
           <h1 className="text-base font-black text-gray-900">المساعد الذكي متاح في الباقات المدفوعة</h1>
-          <p className="text-[11px] text-gray-400">قم بترقية باقتك من لوحة التحكم</p>
+          <p className="text-[11px] text-gray-600">قم بترقية باقتك من لوحة التحكم</p>
           <Link href={`/${username}`} className="w-full h-10 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 flex items-center justify-center">
             العودة للرابط الرئيسي
           </Link>
@@ -337,7 +337,7 @@ export default function AiAssistantPage() {
       {/* Header */}
       <div className="border-b border-gray-100 px-4 py-5 flex flex-col items-center text-center relative">
         <Link href={`/${username}`}
-          className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+          className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-100 transition-colors">
           <ChevronRight className="h-4 w-4" />
         </Link>
 
@@ -352,11 +352,11 @@ export default function AiAssistantPage() {
         </div>
         <div className="space-y-0.5 mt-3">
           <h1 className="text-base font-black text-gray-900">{restaurant.name}</h1>
-          <p className="text-[11px] text-gray-400">المساعد الذكي</p>
+          <p className="text-[11px] text-gray-600">المساعد الذكي</p>
         </div>
         <Link
           href={`/menu/${username}`}
-          className="inline-flex items-center gap-1.5 mt-2 text-[11px] font-bold text-gray-500 rounded-lg px-3 py-1.5 border border-gray-100 hover:bg-gray-50 transition-colors"
+          className="inline-flex items-center gap-1.5 mt-2 text-[11px] font-bold text-gray-600 rounded-lg px-3 py-1.5 border border-gray-100 hover:bg-gray-50 transition-colors"
         >
           <Utensils className="h-3 w-3" />
           قائمة الطعام
@@ -384,7 +384,7 @@ export default function AiAssistantPage() {
                         </div>
                       ) : (
                         <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                          <User className="h-3 w-3 text-gray-400" />
+                          <User className="h-3 w-3 text-gray-600" />
                         </div>
                       )}
                     </div>
@@ -433,7 +433,7 @@ export default function AiAssistantPage() {
                   <div key={idx} className="border border-gray-100 rounded-xl p-3 bg-white shrink-0 w-[180px] text-right space-y-2" style={{ scrollSnapAlign: 'start' }}>
                     <p className="text-[11px] font-bold text-gray-900 truncate">{branch.name}</p>
                     {branch.address && (
-                      <p className="text-[9px] text-gray-400 truncate">{branch.address}{branch.city ? `، ${branch.city}` : ''}</p>
+                      <p className="text-[9px] text-gray-600 truncate">{branch.address}{branch.city ? `، ${branch.city}` : ''}</p>
                     )}
                     <div className="flex gap-1.5">
                       {branch.phone && String(branch.phone).trim() && (
@@ -476,7 +476,7 @@ export default function AiAssistantPage() {
                           <p className="text-[10px] font-bold text-gray-900">{card.price} ر.س</p>
                         )}
                         {card.category && (
-                          <p className="text-[9px] text-gray-400 truncate">{card.category}</p>
+                          <p className="text-[9px] text-gray-600 truncate">{card.category}</p>
                         )}
                       </div>
                     </div>
@@ -486,17 +486,17 @@ export default function AiAssistantPage() {
                 {messages[messages.length - 1]?.totalBudget && (
                   <div className="border border-gray-100 rounded-xl p-3 bg-gray-50">
                     <div className="flex justify-between items-center text-[11px]">
-                      <span className="text-gray-400">الميزانية</span>
+                      <span className="text-gray-600">الميزانية</span>
                       <span className="font-bold text-gray-900">{messages[messages.length - 1].totalBudget} ر.س</span>
                     </div>
                     <div className="flex justify-between items-center text-[11px] mt-1">
-                      <span className="text-gray-400">الإجمالي</span>
+                      <span className="text-gray-600">الإجمالي</span>
                       <span className="font-bold text-gray-900">
                         {messages[messages.length - 1].menuCards.reduce((sum: number, c: any) => sum + (c.price || 0), 0)} ر.س
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-[11px] mt-1 pt-1 border-t border-gray-100">
-                      <span className="text-gray-400">المتبقي</span>
+                      <span className="text-gray-600">المتبقي</span>
                       <span className="font-bold text-emerald-600">
                         {messages[messages.length - 1].totalBudget - messages[messages.length - 1].menuCards.reduce((sum: number, c: any) => sum + (c.price || 0), 0)} ر.س
                       </span>
@@ -528,7 +528,7 @@ export default function AiAssistantPage() {
                     <div className="p-2 space-y-0.5">
                       <p className="text-[11px] font-bold text-gray-900 truncate">{card.title}</p>
                       {card.description && (
-                        <p className="text-[9px] text-gray-400 line-clamp-2">{card.description}</p>
+                        <p className="text-[9px] text-gray-600 line-clamp-2">{card.description}</p>
                       )}
                     </div>
                   </div>

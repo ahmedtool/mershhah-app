@@ -79,9 +79,9 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-base font-bold text-gray-900">تعديل جماعي</h2>
-              <p className="text-xs text-gray-400 mt-0.5">{branches.length} فروع محددة</p>
+              <p className="text-xs text-gray-600 mt-0.5">{branches.length} فروع محددة</p>
             </div>
-            <button onClick={() => onOpenChange(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+            <button onClick={() => onOpenChange(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-100">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -99,13 +99,13 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
               <div className="flex gap-2 mr-6">
                 <button onClick={() => setStatus('active')}
                   className={`flex-1 h-10 rounded-xl text-xs font-medium transition-all border ${
-                    status === 'active' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-400'
+                    status === 'active' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-gray-200 text-gray-600'
                   }`}>
                   نشط
                 </button>
                 <button onClick={() => setStatus('inactive')}
                   className={`flex-1 h-10 rounded-xl text-xs font-medium transition-all border ${
-                    status === 'inactive' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-gray-200 text-gray-400'
+                    status === 'inactive' ? 'bg-red-50 border-red-200 text-red-700' : 'bg-white border-gray-200 text-gray-600'
                   }`}>
                   غير نشط
                 </button>
@@ -148,7 +148,7 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
                   dir="ltr"
                   className="h-10 rounded-xl border-gray-200 text-sm"
                 />
-                <p className="text-[10px] text-gray-300 mt-1">اتركه فاضي لحذف الرقم</p>
+                <p className="text-[10px] text-gray-600 mt-1">اتركه فاضي لحذف الرقم</p>
               </div>
             )}
           </div>

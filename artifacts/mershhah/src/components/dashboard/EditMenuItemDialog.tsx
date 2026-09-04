@@ -257,9 +257,9 @@ export function EditMenuItemDialog({
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="w-14 h-14 rounded-2xl bg-gray-200 flex items-center justify-center">
-                <UploadCloud className="h-6 w-6 text-gray-400" />
+                <UploadCloud className="h-6 w-6 text-gray-600" />
               </div>
-              <p className="text-sm text-gray-400">اضغط لرفع صورة</p>
+              <p className="text-sm text-gray-600">اضغط لرفع صورة</p>
             </div>
           )}
         </div>
@@ -271,7 +271,7 @@ export function EditMenuItemDialog({
             {/* Name */}
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">اسم الطبق</FormLabel>
+                <FormLabel className="text-xs text-gray-600">اسم الطبق</FormLabel>
                 <FormControl>
                   <Input placeholder="مثال: كباب لحم" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={pending} />
                 </FormControl>
@@ -283,12 +283,12 @@ export function EditMenuItemDialog({
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
                 <div className="flex items-center justify-between">
-                  <FormLabel className="text-xs text-gray-500">الوصف</FormLabel>
+                  <FormLabel className="text-xs text-gray-600">الوصف</FormLabel>
                   <button
                     type="button"
                     onClick={handleGenerateDesc}
                     disabled={pending}
-                    className="flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-gray-700 transition-colors"
+                    className="flex items-center gap-1 text-[11px] font-medium text-gray-600 hover:text-gray-700 transition-colors"
                   >
                     <Sparkles className="h-3 w-3" />
                     وصف بالذكاء الاصطناعي
@@ -304,7 +304,7 @@ export function EditMenuItemDialog({
             {/* Category */}
             <FormField control={form.control} name="category" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">التصنيف</FormLabel>
+                <FormLabel className="text-xs text-gray-600">التصنيف</FormLabel>
                 <Popover open={categoriesOpen} onOpenChange={setCategoriesOpen}>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -312,11 +312,11 @@ export function EditMenuItemDialog({
                         type="button"
                         className={cn(
                           "w-full h-10 rounded-xl border border-gray-200 bg-white px-3 text-right flex items-center justify-between text-sm transition-colors hover:border-gray-300",
-                          !field.value && "text-gray-400"
+                          !field.value && "text-gray-600"
                         )}
                       >
                         <span>{field.value || "اختر أو أنشئ تصنيف..."}</span>
-                        <ChevronDown className="h-4 w-4 text-gray-400 shrink-0" />
+                        <ChevronDown className="h-4 w-4 text-gray-600 shrink-0" />
                       </button>
                     </FormControl>
                   </PopoverTrigger>
@@ -339,7 +339,7 @@ export function EditMenuItemDialog({
                           ))}
                           {categorySearch.trim() && !categories.some(c => c.name.toLowerCase() === categorySearch.trim().toLowerCase()) && (
                             <CommandItem value={`__create__${categorySearch}`} onSelect={() => handleCreateCategory(categorySearch)} disabled={isCreatingCategory}>
-                              <Plus className="h-4 w-4 shrink-0 text-gray-400" />
+                              <Plus className="h-4 w-4 shrink-0 text-gray-600" />
                               <span className="mr-2">إنشاء تصنيف "{categorySearch.trim()}"</span>
                             </CommandItem>
                           )}
@@ -355,7 +355,7 @@ export function EditMenuItemDialog({
                             <CommandGroup heading="اقتراحات شائعة">
                               {suggestions.map(name => (
                                 <CommandItem key={name} value={`__suggest__${name}`} onSelect={() => handleCreateCategory(name)} disabled={isCreatingCategory}>
-                                  <Plus className="h-4 w-4 shrink-0 text-gray-400" />
+                                  <Plus className="h-4 w-4 shrink-0 text-gray-600" />
                                   <span className="mr-2">{name}</span>
                                 </CommandItem>
                               ))}
@@ -372,7 +372,7 @@ export function EditMenuItemDialog({
 
             {/* Sizes */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-500">الأحجام والأسعار</FormLabel>
+              <FormLabel className="text-xs text-gray-600">الأحجام والأسعار</FormLabel>
               <div className="space-y-2">
                 {fields.map((field, idx) => (
                   <div key={field.id} className="flex items-center gap-2">
@@ -389,7 +389,7 @@ export function EditMenuItemDialog({
                       type="button"
                       onClick={() => remove(idx)}
                       disabled={fields.length <= 1}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -399,7 +399,7 @@ export function EditMenuItemDialog({
               <button
                 type="button"
                 onClick={() => append({ id: `s-${Date.now()}`, name: '', price: 0, cost: 0 })}
-                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors mt-1"
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-700 transition-colors mt-1"
               >
                 <Plus className="h-3.5 w-3.5" />
                 إضافة حجم
@@ -409,26 +409,26 @@ export function EditMenuItemDialog({
             {/* Calories */}
             <FormField control={form.control} name="calories" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-500">السعرات الحرارية <span className="text-gray-300">(اختياري)</span></FormLabel>
+                <FormLabel className="text-xs text-gray-600">السعرات الحرارية <span className="text-gray-600">(اختياري)</span></FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     type="number"
                     placeholder="مثال: 350"
-                    className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-300 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900"
+                    className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900"
                     dir="ltr"
                     disabled={pending}
                   />
                 </FormControl>
-                <p className="text-[10px] text-gray-300">سعرات حرارية لكل حجم (اختياري)</p>
+                <p className="text-[10px] text-gray-600">سعرات حرارية لكل حجم (اختياري)</p>
                 <FormMessage className="text-[10px]" />
               </FormItem>
             )} />
 
             {/* Allergens */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-500">المواد الحساسية <span className="text-gray-300">(اختياري)</span></FormLabel>
-              <p className="text-[10px] text-gray-300 -mt-1">حدد المواد التي يحتويها هذا الطبق</p>
+              <FormLabel className="text-xs text-gray-600">المواد الحساسية <span className="text-gray-600">(اختياري)</span></FormLabel>
+              <p className="text-[10px] text-gray-600 -mt-1">حدد المواد التي يحتويها هذا الطبق</p>
               <div className="flex flex-wrap gap-2">
                 {COMMON_ALLERGENS.map((allergen) => {
                   const isSelected = form.watch('allergens')?.includes(allergen.id);
@@ -448,7 +448,7 @@ export function EditMenuItemDialog({
                         "flex items-center gap-1.5 h-8 px-3 rounded-lg text-[11px] font-bold transition-all border",
                         isSelected
                           ? "bg-red-50 border-red-200 text-red-700"
-                          : "bg-white border-gray-200 text-gray-500 hover:border-gray-300"
+                          : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
                       )}
                       disabled={pending}
                     >
@@ -469,7 +469,7 @@ export function EditMenuItemDialog({
 
             {/* Status */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-500">الحالة</FormLabel>
+              <FormLabel className="text-xs text-gray-600">الحالة</FormLabel>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -478,7 +478,7 @@ export function EditMenuItemDialog({
                     "flex-1 h-9 rounded-xl text-xs font-medium transition-all border",
                     form.watch('status') === 'available'
                       ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                      : "bg-white border-gray-200 text-gray-400 hover:border-gray-300"
+                      : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
                   )}
                 >
                   متاح
@@ -490,7 +490,7 @@ export function EditMenuItemDialog({
                     "flex-1 h-9 rounded-xl text-xs font-medium transition-all border",
                     form.watch('status') === 'unavailable'
                       ? "bg-red-50 border-red-200 text-red-700"
-                      : "bg-white border-gray-200 text-gray-400 hover:border-gray-300"
+                      : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
                   )}
                 >
                   غير متاح

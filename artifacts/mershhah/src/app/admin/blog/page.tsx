@@ -65,7 +65,7 @@ export default function AdminBlogPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-gray-900">المدونة</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{posts.length} مقال — {posts.filter(p => p.is_published).length} منشور</p>
+          <p className="text-xs text-gray-600 mt-0.5">{posts.length} مقال — {posts.filter(p => p.is_published).length} منشور</p>
         </div>
         <EditBlogPostDialog onSave={fetchPosts}>
           <button className="h-10 px-4 rounded-xl bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
@@ -79,39 +79,39 @@ export default function AdminBlogPage() {
         <div className="bg-white border border-gray-100 rounded-2xl p-12 text-center">
           <FileText className="h-10 w-10 text-gray-200 mx-auto mb-3" />
           <p className="text-sm font-bold text-gray-900 mb-1">لا توجد مقالات بعد</p>
-          <p className="text-[11px] text-gray-400">ابدأ بإضافة أول مقال بالمدونة</p>
+          <p className="text-[11px] text-gray-600">ابدأ بإضافة أول مقال بالمدونة</p>
         </div>
       ) : (
         <div className="bg-white border border-gray-100 rounded-2xl divide-y divide-gray-50">
           {posts.map((post) => (
             <div key={post.id} className="flex items-center gap-4 p-4">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${post.is_published ? 'bg-emerald-50' : 'bg-gray-100'}`}>
-                <FileText className={`h-4 w-4 ${post.is_published ? 'text-emerald-500' : 'text-gray-400'}`} />
+                <FileText className={`h-4 w-4 ${post.is_published ? 'text-emerald-500' : 'text-gray-600'}`} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-gray-900 truncate">{post.title}</p>
-                <p className="text-[11px] text-gray-400 truncate">
+                <p className="text-[11px] text-gray-600 truncate">
                   {post.description || 'بدون وصف'} — {new Date(post.published_at).toLocaleDateString('ar-SA')}
                 </p>
               </div>
-              <span className={`shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full ${post.is_published ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+              <span className={`shrink-0 text-[10px] font-bold px-2.5 py-1 rounded-full ${post.is_published ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'}`}>
                 {post.is_published ? 'منشور' : 'مسودة'}
               </span>
               <div className="flex items-center gap-1 shrink-0">
                 {post.is_published && (
                   <Link href={`/blog/${post.slug}`} target="_blank"
                     className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors" title="عرض المقال">
-                    <ExternalLink className="h-4 w-4 text-gray-400" />
+                    <ExternalLink className="h-4 w-4 text-gray-600" />
                   </Link>
                 )}
                 <button onClick={() => togglePublished(post)}
                   className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors"
                   title={post.is_published ? 'إخفاء' : 'نشر'}>
-                  {post.is_published ? <EyeOff className="h-4 w-4 text-gray-400" /> : <Eye className="h-4 w-4 text-gray-400" />}
+                  {post.is_published ? <EyeOff className="h-4 w-4 text-gray-600" /> : <Eye className="h-4 w-4 text-gray-600" />}
                 </button>
                 <EditBlogPostDialog post={post} onSave={fetchPosts}>
                   <button className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors" title="تعديل">
-                    <Pencil className="h-4 w-4 text-gray-400" />
+                    <Pencil className="h-4 w-4 text-gray-600" />
                   </button>
                 </EditBlogPostDialog>
                 <button onClick={() => deletePost(post)}
