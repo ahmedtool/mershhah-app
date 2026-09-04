@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { PublicFooter } from "@/components/shared/PublicFooter";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 
 export default function TermsPage() {
+  useDocumentMeta('الشروط والأحكام', 'الشروط والأحكام الخاصة باستخدام منصة مرشح لأصحاب المطاعم والمقاهي.');
   return (
     <div className="min-h-screen overflow-x-hidden" dir="rtl">
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">

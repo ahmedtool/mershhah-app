@@ -17,9 +17,15 @@ import {
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { PublicFooter } from '@/components/shared/PublicFooter';
+import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 
 export default function HomePage() {
   const [currentYear, setCurrentYear] = useState<number | null>(null);
+
+  useDocumentMeta(
+    'منصة إدارة المطاعم والمقاهي الرقمية',
+    'منيو رقمي تفاعلي، مساعد ذكاء اصطناعي للعملاء، وأدوات تحليلات ونمو لأصحاب المطاعم والمقاهي في السعودية — رابط واحد أو QR يجمع كل شيء لكل فرع.'
+  );
 
   useEffect(() => {
     setCurrentYear(new Date().getFullYear());

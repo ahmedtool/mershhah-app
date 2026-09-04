@@ -11,6 +11,7 @@ import type { Plan } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/hooks/useUser";
 import { usePlanCheckout } from "@/hooks/usePlanCheckout";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 
 // Dev-only test plans, hidden from every customer-facing screen.
 const HIDDEN_PLAN_IDS = ['93250b42-d34c-4996-8d83-359ea26ab264'];
@@ -66,6 +67,10 @@ function buildFeatureRows(plan: Plan): FeatureRow[] {
 }
 
 export default function PricingPage() {
+  useDocumentMeta(
+    'الأسعار والباقات',
+    'باقات اشتراك مرشح لأصحاب المطاعم والمقاهي — اختر الباقة المناسبة لعدد فروعك وأصنافك، مع منيو رقمي ومساعد ذكي وأدوات نمو.'
+  );
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useUser();

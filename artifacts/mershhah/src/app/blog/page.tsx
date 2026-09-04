@@ -9,8 +9,13 @@ import { ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { PublicFooter } from "@/components/shared/PublicFooter";
 import { Skeleton } from '@/components/ui/skeleton';
+import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 
 export default function BlogPage() {
+  useDocumentMeta(
+    'المدونة',
+    'مقالات عن إدارة المطاعم والمقاهي، القوائم الرقمية، تجربة العملاء، وأدوات النمو في السوق السعودي.'
+  );
   const [posts, setPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 

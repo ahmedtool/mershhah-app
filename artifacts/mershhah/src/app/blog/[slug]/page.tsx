@@ -10,12 +10,15 @@ import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'wouter';
 import { motion } from 'framer-motion';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 
 export default function PostPage() {
   const resolvedParams = useParams() as { slug: string };
   const [post, setPost] = useState<{ slug: string; metadata: { title: string; description: string; publishedAt: string; readingTime: string }; content: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [formattedDate, setFormattedDate] = useState<string>('');
+
+  useDocumentMeta(post?.metadata.title || 'المدونة', post?.metadata.description);
 
   useEffect(() => {
     const fetchPost = async () => {

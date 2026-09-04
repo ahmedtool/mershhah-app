@@ -23,6 +23,7 @@ import { trackAppClick, trackSocialClick, trackPageView } from '@/lib/event-trac
 import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useToast } from '@/hooks/use-toast';
+import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 
 const SOCIAL_ICONS: { [key: string]: React.ElementType } = {
     whatsapp: WhatsAppIcon,
@@ -60,6 +61,13 @@ export default function RestaurantHubPage() {
   const searchParams = useSearchParams();
   const hubVisitRecorded = useRef(false);
   const branchParam = searchParams.get('branch');
+
+  useDocumentMeta(
+    restaurant?.name ? `منيو ${restaurant.name}` : undefined,
+    restaurant
+      ? (restaurant.description || `منيو ${restaurant.name} الرقمي — تصفّح الأطباق والعروض واسأل المساعد الذكي.`)
+      : undefined
+  );
   // Offers with a branch_id only show to visitors known to be at that branch
   // (via a branch-specific link/QR); offers with no branch_id always show.
   const visibleOffers = branchParam ? offers.filter((o) => !o.branch_id || o.branch_id === branchParam) : offers;

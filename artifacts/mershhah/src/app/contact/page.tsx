@@ -7,6 +7,7 @@ import { Link } from "wouter";
 import { PublicFooter } from "@/components/shared/PublicFooter";
 import { InstagramIcon, WhatsAppIcon } from "@/components/shared/SocialIcons";
 import { Mail } from "lucide-react";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 
 const contactChannels = [
   {
@@ -33,6 +34,10 @@ const contactChannels = [
 ];
 
 export default function ContactPage() {
+  useDocumentMeta(
+    'تواصل معنا',
+    'تواصل مع فريق مرشح عبر واتساب أو انستقرام أو البريد الإلكتروني — نساعدك تبدأ واجهتك الرقمية لمطعمك أو مقهاك.'
+  );
   return (
     <div className="min-h-screen overflow-x-hidden" dir="rtl">
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">

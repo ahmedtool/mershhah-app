@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Target, Eye, Handshake, Sparkles } from "lucide-react";
 import { Link } from "wouter";
 import { PublicFooter } from "@/components/shared/PublicFooter";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 
 const values = [
   {
@@ -25,6 +26,10 @@ const values = [
 ];
 
 export default function AboutPage() {
+  useDocumentMeta(
+    'من نحن',
+    'مرشح منصة سعودية تبني الواجهة الرقمية الموحدة للمطاعم والمقاهي — تعرّف على رؤيتنا وقيمنا وسبب بناء المنصة.'
+  );
   return (
     <div className="min-h-screen overflow-x-hidden" dir="rtl">
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100">

@@ -16,6 +16,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useToast } from '@/hooks/use-toast';
+import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 
 export default function PublicMenuPage() {
   const params = useParams();
@@ -23,6 +24,12 @@ export default function PublicMenuPage() {
   const username = params.username as string;
 
   const [restaurant, setRestaurant] = useState<any>(null);
+  useDocumentMeta(
+    restaurant?.name ? `منيو ${restaurant.name}` : undefined,
+    restaurant
+      ? (restaurant.description || `تصفّح منيو ${restaurant.name} الرقمي — الأطباق والأسعار والعروض.`)
+      : undefined
+  );
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('الكل');
