@@ -25,16 +25,31 @@
          pages, instead of every page on the site paying for fonts almost
          nobody's menu actually uses. -->
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-11V9SH2EYQ"></script>
+    <!-- Google tag (gtag.js) - the dataLayer/gtag() stub is set up
+         immediately (it's just a local array push, costs nothing), but the
+         actual gtag.js script - real network + parse + execute weight,
+         confirmed by Lighthouse as ~66KB "unused" JS and real main-thread
+         time - is only fetched after window 'load', once the page's own
+         critical render is already done. Every gtag()/trackPageView() call
+         made before then (including the very first pageview) still queues
+         correctly into dataLayer and gets processed the moment the real
+         script initializes - this queueing is gtag.js's own documented
+         mechanism, not something specific to deferring it here. -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       // send_page_view is off here - this is a client-routed SPA, so page
-      // views are fired manually on route change (see useAnalyticsPageView),
-      // not just once on the initial full page load.
+      // views are fired manually on route change (see trackPageView in
+      // App.tsx), not just once on the initial full page load.
       gtag('config', 'G-11V9SH2EYQ', { send_page_view: false });
+
+      window.addEventListener('load', function () {
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=G-11V9SH2EYQ';
+        document.head.appendChild(s);
+      });
     </script>
   </head>
   <body>
