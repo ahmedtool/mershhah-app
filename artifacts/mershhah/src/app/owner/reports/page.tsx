@@ -17,6 +17,8 @@ import {
     Crown,
     Sparkles,
     Info,
+    MapPin,
+    Search,
 } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +30,25 @@ import { cn } from '@/lib/utils';
 import { classifyMenuItems, CLASSIFICATION_INFO, type MenuClassification } from '@/lib/menu-engineering';
 import { buildInsights, type Insight } from '@/lib/report-insights';
 import { REVIEW_TAGS, countReviewsByTag } from '@/lib/review-tags';
+import { WhatsAppIcon, InstagramIcon, SnapchatIcon, TikTokIcon, XIcon } from '@/components/shared/SocialIcons';
+import {
+    TRAFFIC_SOURCE_LABELS,
+    MARKETING_LINK_PLATFORMS,
+    buildMarketingLink,
+    type TrafficSource,
+} from '@/lib/traffic-source';
+
+const TRAFFIC_SOURCE_ICONS: Partial<Record<TrafficSource, React.ElementType>> = {
+    whatsapp: WhatsAppIcon,
+    instagram: InstagramIcon,
+    snapchat: SnapchatIcon,
+    tiktok: TikTokIcon,
+    x: XIcon,
+    google_maps: MapPin,
+    google_search: Search,
+    direct: Link2,
+    qr_branch: QrCode,
+};
 
 // Omit MenuItem's own (differently-cased) `classification` field so it
 // doesn't collide with this page's lowercase MenuClassification below.
@@ -51,6 +72,7 @@ export default function InsightsHubPage() {
     const [totalClicks, setTotalClicks] = useState(0);
     const [hubVisitsQr, setHubVisitsQr] = useState(0);
     const [hubVisitsLink, setHubVisitsLink] = useState(0);
+    const [sourceCounts, setSourceCounts] = useState<Partial<Record<TrafficSource, number>>>({});
     const [visitDates, setVisitDates] = useState<string[]>([]);
     const [reviewComments, setReviewComments] = useState<string[]>([]);
     const [restaurantRating, setRestaurantRating] = useState(0);
@@ -79,12 +101,16 @@ export default function InsightsHubPage() {
 
             let qrCount = 0; let linkCount = 0;
             const dates: string[] = [];
+            const sources: Partial<Record<TrafficSource, number>> = {};
             (hubVisitsRes.data || []).forEach((d: any) => {
                 if (d.source === 'qr_branch') qrCount++; else linkCount++;
                 if (d.created_at) dates.push(dayKey(new Date(d.created_at)));
+                const src = (d.source || 'direct') as TrafficSource;
+                sources[src] = (sources[src] || 0) + 1;
             });
             setHubVisitsQr(qrCount);
             setHubVisitsLink(linkCount);
+            setSourceCounts(sources);
             setVisitDates(dates);
 
             const rest = restRes.data as any;
@@ -158,6 +184,18 @@ export default function InsightsHubPage() {
         const lastWeek = trend.slice(-14, -7).reduce((s, d) => s + d.count, 0);
         return { thisWeek, lastWeek };
     }, [trend]);
+
+    // Highest-count source first, dropping sources with zero visits
+    const sortedSources = useMemo(() => {
+        return (Object.entries(sourceCounts) as [TrafficSource, number][])
+            .filter(([, count]) => count > 0)
+            .sort((a, b) => b[1] - a[1]);
+    }, [sourceCounts]);
+    const sourceMax = Math.max(1, ...sortedSources.map(([, count]) => count));
+
+    const baseUrl = typeof window !== 'undefined'
+        ? (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, '')
+        : '';
 
     const engineered = useMemo(() => classifyMenuItems(analysisData.map(i => ({ ...i, name: i.name || '' }))), [analysisData]);
 
@@ -330,6 +368,36 @@ export default function InsightsHubPage() {
                 </div>
             </div>
 
+            {/* Detailed traffic-source breakdown */}
+            {sortedSources.length > 0 && (
+                <div className="bg-white border border-gray-100 rounded-2xl p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                        <BarChart3 className="h-4 w-4 text-gray-600" />
+                        <h3 className="text-sm font-bold text-gray-900">تفصيل مصادر الزيارات</h3>
+                    </div>
+                    <div className="space-y-3">
+                        {sortedSources.map(([source, count]) => {
+                            const SourceIcon = TRAFFIC_SOURCE_ICONS[source] || Link2;
+                            return (
+                                <div key={source} className="flex items-center gap-3">
+                                    <div className="w-7 h-7 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 text-gray-600">
+                                        <SourceIcon className="h-3.5 w-3.5" size={14} />
+                                    </div>
+                                    <span className="text-xs font-bold text-gray-700 w-24 shrink-0">{TRAFFIC_SOURCE_LABELS[source]}</span>
+                                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                        <div className="h-full rounded-full bg-[#2a78d6] transition-all" style={{ width: `${(count / sourceMax) * 100}%` }} />
+                                    </div>
+                                    <span className="text-[10px] font-mono font-bold text-gray-600 w-8 text-left">{count}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-4 pt-4 border-t border-gray-100 leading-relaxed">
+                        بعض التطبيقات (زي واتساب وانستقرام) ما ترسل مصدر الزيارة تلقائيًا، فتظهر كـ"مباشر". عشان تعرف بالضبط وش يجيبك زوار من كل منصة، استخدم الروابط الجاهزة تحت.
+                    </p>
+                </div>
+            )}
+
             {/* QR & Link Section */}
             {hubUsername && (
                 <div className="bg-white border border-gray-100 rounded-2xl p-5">
@@ -368,6 +436,37 @@ export default function InsightsHubPage() {
                                 <div className="w-[180px] h-[180px] bg-gray-50 border border-gray-100 rounded-2xl animate-pulse flex items-center justify-center text-[10px] text-gray-600">جاري التوليد...</div>
                             )}
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Marketing links generator */}
+            {hubUsername && (
+                <div className="bg-white border border-gray-100 rounded-2xl p-5">
+                    <div className="mb-5">
+                        <h3 className="text-sm font-bold text-gray-900">روابط تسويقية</h3>
+                        <p className="text-[10px] text-gray-600 mt-1">انسخ الرابط المخصص لكل منصة وحطه هناك — كذا تقدر تشوف بالضبط كل منصة جابتك كم زيارة بدل ما تتحسب "مباشر".</p>
+                    </div>
+                    <div className="space-y-2">
+                        {MARKETING_LINK_PLATFORMS.map(({ source, label, hint }) => {
+                            const PlatformIcon = TRAFFIC_SOURCE_ICONS[source] || Link2;
+                            const link = buildMarketingLink(baseUrl, hubUsername, source);
+                            return (
+                                <div key={source} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl flex-wrap">
+                                    <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0 text-gray-700">
+                                        <PlatformIcon className="h-4 w-4" size={16} />
+                                    </div>
+                                    <div className="flex-1 min-w-[160px]">
+                                        <p className="text-xs font-bold text-gray-900">{label}</p>
+                                        <p className="text-[10px] text-gray-500">{hint}</p>
+                                    </div>
+                                    <Button size="sm" variant="outline" className="h-8 rounded-xl text-xs border-gray-200 shrink-0" onClick={() => {
+                                        navigator.clipboard.writeText(link);
+                                        toast({ title: `تم نسخ رابط ${label}` });
+                                    }}><Copy className="h-3 w-3 ml-1" /> نسخ</Button>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}

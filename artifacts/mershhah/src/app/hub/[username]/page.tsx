@@ -20,6 +20,7 @@ import { StorageImage } from '@/components/shared/StorageImage';
 import { InstagramIcon, TikTokIcon, SnapchatIcon, XIcon, WhatsAppIcon, WebsiteIcon, FacebookIcon, YoutubeIcon } from '@/components/shared/SocialIcons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trackAppClick, trackSocialClick, trackPageView } from '@/lib/event-tracker';
+import { detectTrafficSource } from '@/lib/traffic-source';
 import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useToast } from '@/hooks/use-toast';
@@ -77,7 +78,7 @@ export default function RestaurantHubPage() {
   useEffect(() => {
     if (!restaurant?.id || hubVisitRecorded.current) return;
     hubVisitRecorded.current = true;
-    const source = searchParams.get('source') === 'qr_branch' ? 'qr_branch' : 'link';
+    const source = detectTrafficSource(searchParams);
     supabase.from('hub_visits').insert({
       restaurant_id: restaurant.id,
       source,

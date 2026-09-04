@@ -1,11 +1,13 @@
 "use client";
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams } from 'wouter';
-import { useRouter } from '@/lib/navigation';
+import { useRouter, useSearchParams } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { ChevronRight, Search, Info, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage, syncPublicPage } from '@/lib/public-pages';
+import { trackPageView } from '@/lib/event-tracker';
+import { detectTrafficSource } from '@/lib/traffic-source';
 import { StorageImage } from '@/components/shared/StorageImage';
 import type { MenuItem } from '@/lib/types';
 import { Input } from '@/components/ui/input';
@@ -23,6 +25,8 @@ export default function PublicMenuPage() {
   const params = useParams();
   const router = useRouter();
   const username = params.username as string;
+  const searchParams = useSearchParams();
+  const visitRecorded = useRef(false);
 
   const [restaurant, setRestaurant] = useState<any>(null);
   useDocumentMeta(
@@ -32,6 +36,19 @@ export default function PublicMenuPage() {
       : undefined
   );
   useGoogleFont(restaurant?.fontFamily);
+
+  useEffect(() => {
+    if (!restaurant?.id || visitRecorded.current) return;
+    visitRecorded.current = true;
+    const source = detectTrafficSource(searchParams);
+    supabase.from('hub_visits').insert({
+      restaurant_id: restaurant.id,
+      source,
+      created_at: new Date().toISOString(),
+    }).then(() => {});
+    trackPageView(restaurant.id);
+  }, [restaurant?.id, searchParams]);
+
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('الكل');
