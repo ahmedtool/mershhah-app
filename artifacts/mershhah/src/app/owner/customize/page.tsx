@@ -34,21 +34,23 @@ import { extractColorsFromImage } from '@/lib/extract-colors-from-image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FONT_OPTIONS, RADIUS_PRESETS } from '@/lib/public-theme';
 import { Copy } from 'lucide-react';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 const SOCIAL_PLATFORMS = [
-  { label: 'واتساب', value: 'whatsapp', icon: WhatsAppIcon, color: '#25D366' },
-  { label: 'انستقرام', value: 'instagram', icon: InstagramIcon, color: '#E4405F' },
-  { label: 'تيك توك', value: 'tiktok', icon: TikTokIcon, color: '#000000' },
-  { label: 'تويتر (X)', value: 'twitter', icon: XIcon, color: '#000000' },
-  { label: 'سناب شات', value: 'snapchat', icon: SnapchatIcon, color: '#FFFC00' },
-  { label: 'فيسبوك', value: 'facebook', icon: FacebookIcon, color: '#1877F2' },
-  { label: 'يوتيوب', value: 'youtube', icon: YoutubeIcon, color: '#FF0000' },
-  { label: 'موقع إلكتروني', value: 'website', icon: WebsiteIcon, color: '#714dfa' },
+  { labelKey: 'customize.whatsapp', value: 'whatsapp', icon: WhatsAppIcon, color: '#25D366' },
+  { labelKey: 'customize.instagram', value: 'instagram', icon: InstagramIcon, color: '#E4405F' },
+  { labelKey: 'customize.tiktok', value: 'tiktok', icon: TikTokIcon, color: '#000000' },
+  { labelKey: 'customize.twitter', value: 'twitter', icon: XIcon, color: '#000000' },
+  { labelKey: 'customize.snapchat', value: 'snapchat', icon: SnapchatIcon, color: '#FFFC00' },
+  { labelKey: 'customize.facebook', value: 'facebook', icon: FacebookIcon, color: '#1877F2' },
+  { labelKey: 'customize.youtube', value: 'youtube', icon: YoutubeIcon, color: '#FF0000' },
+  { labelKey: 'customize.website', value: 'website', icon: WebsiteIcon, color: '#714dfa' },
 ];
 
 export default function CustomizePage() {
   const { user } = useUser();
   const { toast } = useToast();
+  const { t, dir } = useLanguage();
   const [settings, setSettings] = useState<any>(null);
   const [globalApps, setGlobalApps] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -152,9 +154,9 @@ export default function CustomizePage() {
             secondaryColor: result.secondaryColor,
             buttonTextColor: result.buttonTextColor
         });
-        toast({ title: "تم استخراج الألوان من الشعار!" });
+        toast({ title: t('customize.colorsExtracted') });
     } catch (error: any) {
-        toast({ title: "خطأ", description: error.message || "فشل تحليل الشعار.", variant: "destructive" });
+        toast({ title: t('common.errorTitle'), description: error.message || t('customize.logoAnalysisFailed'), variant: "destructive" });
     } finally {
         setIsSuggestingColors(false);
     }
@@ -194,7 +196,7 @@ export default function CustomizePage() {
         const { ...cleanSettings } = settings;
         const newUsername = (cleanSettings.username ?? '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '');
         if (!newUsername && initialUsernameRef.current) {
-          toast({ title: 'خطأ', description: 'اسم المستخدم مطلوب للرابط النهائي.', variant: 'destructive' });
+          toast({ title: t('common.errorTitle'), description: t('customize.usernameRequired'), variant: 'destructive' });
           return;
         }
         const usernameChanged = newUsername && newUsername !== (initialUsernameRef.current ?? '');
@@ -204,7 +206,7 @@ export default function CustomizePage() {
             const date = new Date(lastUpdated);
             const daysSince = (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24);
             if (daysSince < 30) {
-              toast({ title: 'خطأ', description: 'لا يمكن تغيير اسم المستخدم إلا مرة واحدة كل 30 يوماً.', variant: 'destructive' });
+              toast({ title: t('common.errorTitle'), description: t('customize.usernameCooldown'), variant: 'destructive' });
               return;
             }
           }
@@ -265,11 +267,11 @@ export default function CustomizePage() {
           if (actError) console.error('[Customize] Activity insert failed:', actError);
         }
 
-        toast({ title: "تم الحفظ بنجاح!" });
+        toast({ title: t('customize.savedSuccessfully') });
         setPreviewKey(k => k + 1);
 
       } catch (e: any) {
-          toast({ title: 'خطأ', description: e.message, variant: 'destructive' });
+          toast({ title: t('common.errorTitle'), description: e.message, variant: 'destructive' });
       }
     });
   };
@@ -300,13 +302,13 @@ export default function CustomizePage() {
   const addCustomApp = () => {
     const customCount = settings.applications?.filter((a: any) => a.type === 'custom').length || 0;
     if (customCount >= 2) {
-        toast({ title: "الحد الأقصى للتطبيقات الخاصة هو 2", variant: "destructive" });
+        toast({ title: t('customize.maxCustomApps'), variant: "destructive" });
         return;
     }
     const newApp = {
       id: `custom-${Date.now()}`,
       type: 'custom',
-      name: 'تطبيق جديد',
+      name: t('customize.newAppDefaultName'),
       logo: '',
       value: ''
     };
@@ -370,14 +372,14 @@ export default function CustomizePage() {
     const source = branches.find(b => b.applications?.some((a: any) => a.platformId === platformId && a.value?.trim()));
     const value = source?.applications.find((a: any) => a.platformId === platformId)?.value ?? '';
     if (!value) {
-      toast({ title: 'ما فيه رابط لنسخه', description: 'أدخل رابط بفرع واحد على الأقل أولاً.', variant: 'destructive' });
+      toast({ title: t('customize.nothingToCopy'), description: t('customize.enterLinkFirst'), variant: 'destructive' });
       return;
     }
     setBranches(branches.map(b => ({
       ...b,
       applications: b.applications.map((a: any) => a.platformId === platformId ? { ...a, value } : a),
     })));
-    toast({ title: 'تم النسخ لكل الفروع' });
+    toast({ title: t('customize.copiedToAllBranches') });
   };
 
   const addSocialLink = (platform: string) => {
@@ -415,19 +417,19 @@ export default function CustomizePage() {
   }
 
   return (
-    <div className="space-y-5 pb-20" dir="rtl">
-      <PageHeader title="تخصيص الواجهة" description="صمم هويتك البصرية والروابط الخاصة بك.">
+    <div className="space-y-5 pb-20" dir={dir}>
+      <PageHeader title={t('customize.title')} description={t('customize.subtitle')}>
           <button
             onClick={() => window.open(`/${settings.username}`, '_blank')}
             className="h-9 px-4 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center gap-2"
           >
             <Globe className="h-3.5 w-3.5" />
-            معاينة
+            {t('customize.preview')}
           </button>
           <button onClick={handleSave} disabled={isSaving}
             className="h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2">
             {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-            حفظ
+            {t('common.save')}
           </button>
       </PageHeader>
 
@@ -438,29 +440,29 @@ export default function CustomizePage() {
                 {/* Branding */}
                 <AccordionItem value="branding" className="border border-gray-100 rounded-2xl px-4 bg-white">
                     <AccordionTrigger className="font-bold hover:no-underline text-right text-sm text-gray-900 py-4">
-                        <div className="flex items-center gap-2"><Layout className="h-4 w-4 text-gray-600"/> الهوية البصرية</div>
+                        <div className="flex items-center gap-2"><Layout className="h-4 w-4 text-gray-600"/> {t('customize.branding')}</div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-5 pb-5 text-right">
                         <div className="space-y-2">
-                            <Label className="text-[11px] text-gray-600">شعار التطبيق</Label>
+                            <Label className="text-[11px] text-gray-600">{t('customize.appLogo')}</Label>
                             <div className="relative w-28 h-28 mx-auto border border-dashed border-gray-200 rounded-2xl flex items-center justify-center bg-gray-50 cursor-pointer overflow-hidden group" onClick={() => fileInputRef.current?.click()}>
                                 <StorageImage imagePath={logoPreview} alt="Logo" fill className="object-contain p-2" sizes="112px" />
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">تغيير</div>
+                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-white text-[10px] font-bold">{t('customize.change')}</div>
                             </div>
                             <input type="file" ref={fileInputRef} onChange={e => { if(e.target.files?.[0]) { setLogoFile(e.target.files[0]); setLogoPreview(URL.createObjectURL(e.target.files[0])); } }} className="hidden" accept="image/*" />
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] text-gray-600">اسم المطعم</Label>
+                            <Label className="text-[11px] text-gray-600">{t('customize.restaurantName')}</Label>
                             <Input value={settings.name} onChange={e => setSettings({...settings, name: e.target.value})}
                               className="h-10 rounded-xl border-gray-200 text-xs text-right" />
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] text-gray-600">اسم المستخدم (للرابط)</Label>
+                            <Label className="text-[11px] text-gray-600">{t('customize.usernameForLink')}</Label>
                             <Input
                                 dir="ltr"
                                 value={settings.username ?? ''}
                                 onChange={e => setSettings({ ...settings, username: e.target.value })}
-                                placeholder="اسم-المطعم"
+                                placeholder={t('customize.usernamePlaceholder')}
                                 className="h-10 rounded-xl border-gray-200 text-xs text-right font-mono"
                                 disabled={(() => {
                                     const lastUpdated = settings.username_last_updated_at;
@@ -475,11 +477,11 @@ export default function CustomizePage() {
                                   <>mershhah.com/{settings.username}</>
                                 ) : (
                                   '...'
-                                )} — مرة كل 30 يوماً
+                                )} — {t('customize.onceEvery30Days')}
                             </p>
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] text-gray-600">الوصف</Label>
+                            <Label className="text-[11px] text-gray-600">{t('customize.description')}</Label>
                             <Textarea value={settings.description || ''} onChange={e => setSettings({...settings, description: e.target.value})}
                               rows={2} className="rounded-xl border-gray-200 text-xs text-right resize-none" />
                         </div>
@@ -489,7 +491,7 @@ export default function CustomizePage() {
                 {/* Colors */}
                 <AccordionItem value="colors" className="border border-gray-100 rounded-2xl px-4 bg-white">
                     <AccordionTrigger className="font-bold hover:no-underline text-right text-sm text-gray-900 py-4">
-                        <div className="flex items-center gap-2"><Palette className="h-4 w-4 text-gray-600"/> الألوان</div>
+                        <div className="flex items-center gap-2"><Palette className="h-4 w-4 text-gray-600"/> {t('customize.colors')}</div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pb-5 text-right">
                         <button
@@ -498,21 +500,21 @@ export default function CustomizePage() {
                             disabled={isSuggestingColors || !logoPreview}
                         >
                             {isSuggestingColors ? <Loader2 className="h-3 w-3 animate-spin" /> : <Palette className="h-3 w-3" />}
-                            استخراج من الشعار
+                            {t('customize.extractFromLogo')}
                         </button>
                         <div className="space-y-2">
                             <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                                <Label className="text-[11px] font-bold text-gray-600">اللون الأساسي</Label>
+                                <Label className="text-[11px] font-bold text-gray-600">{t('customize.primaryColor')}</Label>
                                 <input type="color" value={settings.primaryColor || '#111827'} onChange={e => setSettings({...settings, primaryColor: e.target.value})}
                                   className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer" />
                             </div>
                             <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                                <Label className="text-[11px] font-bold text-gray-600">لون الخلفية</Label>
+                                <Label className="text-[11px] font-bold text-gray-600">{t('customize.backgroundColor')}</Label>
                                 <input type="color" value={settings.secondaryColor || '#ffffff'} onChange={e => setSettings({...settings, secondaryColor: e.target.value})}
                                   className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer" />
                             </div>
                             <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                                <Label className="text-[11px] font-bold text-gray-600">لون نص الأزرار</Label>
+                                <Label className="text-[11px] font-bold text-gray-600">{t('customize.buttonTextColor')}</Label>
                                 <input type="color" value={settings.buttonTextColor || '#ffffff'} onChange={e => setSettings({...settings, buttonTextColor: e.target.value})}
                                   className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer" />
                             </div>
@@ -520,7 +522,7 @@ export default function CustomizePage() {
 
                         {/* Font */}
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] text-gray-600">الخط</Label>
+                            <Label className="text-[11px] text-gray-600">{t('customize.font')}</Label>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                                 {FONT_OPTIONS.map(font => (
                                     <button key={font.id} type="button"
@@ -541,7 +543,7 @@ export default function CustomizePage() {
 
                         {/* Corner radius */}
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] text-gray-600">انحناء الحواف</Label>
+                            <Label className="text-[11px] text-gray-600">{t('customize.cornerRadius')}</Label>
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                                 {RADIUS_PRESETS.map(preset => (
                                     <button key={preset.id} type="button"
@@ -567,14 +569,14 @@ export default function CustomizePage() {
                 {/* Apps */}
                 <AccordionItem value="apps" className="border border-gray-100 rounded-2xl px-4 bg-white">
                     <AccordionTrigger className="font-bold hover:no-underline text-right text-sm text-gray-900 py-4">
-                        <div className="flex items-center gap-2"><AppWindow className="h-4 w-4 text-gray-600"/> التطبيقات</div>
+                        <div className="flex items-center gap-2"><AppWindow className="h-4 w-4 text-gray-600"/> {t('customize.apps')}</div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-5 pb-5 text-right">
                       {branches.length > 0 ? (
                         <>
                           <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
                               <p className="text-[11px] text-blue-700 leading-relaxed">
-                                  عندك أكثر من فرع، فروابط التطبيقات تُدار لكل فرع لحاله — كل فرع غالباً له رابط توصيل مختلف. فعّل التطبيق ثم عبّي رابط كل فرع تحته.
+                                  {t('customize.multiBranchAppsNote')}
                               </p>
                           </div>
                           <div className="flex flex-wrap gap-2 justify-end">
@@ -602,7 +604,7 @@ export default function CustomizePage() {
                                   <div className="flex items-center justify-between">
                                       <button type="button" onClick={() => copyAppLinkToAllBranches(app.id)}
                                           className="text-[10px] font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1 transition-colors">
-                                          <Copy className="h-3 w-3" /> نسخ لكل الفروع
+                                          <Copy className="h-3 w-3" /> {t('customize.copyToAllBranches')}
                                       </button>
                                       <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
                                           {app.name}
@@ -616,7 +618,7 @@ export default function CustomizePage() {
                                               <div key={branch.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
                                                   <span className="text-[10px] font-bold text-gray-600 w-16 shrink-0 truncate">{branch.name}</span>
                                                   <Input dir="ltr" value={entry?.value || ''} onChange={e => updateBranchAppValue(branch.id, app.id, e.target.value)}
-                                                      placeholder="https://..." className="h-8 text-[10px] rounded-lg border-gray-200 flex-1" />
+                                                      placeholder={t('customize.linkPlaceholder')} className="h-8 text-[10px] rounded-lg border-gray-200 flex-1" />
                                               </div>
                                           );
                                       })}
@@ -624,7 +626,7 @@ export default function CustomizePage() {
                               </div>
                           ))}
                           <p className="text-[10px] text-gray-600 pt-1">
-                              تبي تضيف فرع جديد أو تعدّل بياناته؟ <Link href="/owner/branches" className="text-gray-600 underline">من صفحة الفروع</Link>.
+                              {t('customize.addBranchNote')} <Link href="/owner/branches" className="text-gray-600 underline">{t('customize.fromBranchesPage')}</Link>.
                           </p>
                         </>
                       ) : (
@@ -651,9 +653,9 @@ export default function CustomizePage() {
                         <div className="border-t border-gray-100" />
                         <div className="space-y-3">
                             <div className="flex justify-between items-center flex-row-reverse">
-                                <h4 className="text-xs font-bold text-gray-900">تطبيقات خاصة</h4>
+                                <h4 className="text-xs font-bold text-gray-900">{t('customize.customApps')}</h4>
                                 <button onClick={addCustomApp} className="text-[10px] font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1 transition-colors">
-                                    <PlusCircle className="h-3 w-3" /> إضافة
+                                    <PlusCircle className="h-3 w-3" /> {t('customize.add')}
                                 </button>
                             </div>
                             {settings.applications?.map((app: any) => (
@@ -670,7 +672,7 @@ export default function CustomizePage() {
                                         </div>
                                         <button onClick={() => removeApp(app.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1"><X size={12} /></button>
                                     </div>
-                                    <Input dir="ltr" value={app.value} onChange={e => updateAppField(app.id, 'value', e.target.value)} placeholder="https://..." className="h-8 text-[10px] rounded-lg border-gray-200" />
+                                    <Input dir="ltr" value={app.value} onChange={e => updateAppField(app.id, 'value', e.target.value)} placeholder={t('customize.linkPlaceholder')} className="h-8 text-[10px] rounded-lg border-gray-200" />
                                     {app.type === 'custom' && <input type="file" ref={el => { appLogoInputRefs.current[app.id] = el; }} onChange={e => e.target.files?.[0] && handleAppLogoChange(app.id, e.target.files[0])} className="hidden" accept="image/*" />}
                                 </div>
                             ))}
@@ -683,7 +685,7 @@ export default function CustomizePage() {
                 {/* Social */}
                 <AccordionItem value="social" className="border border-gray-100 rounded-2xl px-4 bg-white">
                     <AccordionTrigger className="font-bold hover:no-underline text-right text-sm text-gray-900 py-4">
-                        <div className="flex items-center gap-2"><LinkIcon className="h-4 w-4 text-gray-600"/> التواصل الاجتماعي</div>
+                        <div className="flex items-center gap-2"><LinkIcon className="h-4 w-4 text-gray-600"/> {t('customize.social')}</div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pb-5 text-right">
                         <div className="flex flex-wrap gap-1.5 justify-end">
@@ -694,7 +696,7 @@ export default function CustomizePage() {
                                     disabled={(settings.socialLinks || []).some((l: any) => l.platform === p.value && p.value !== 'website')}
                                 >
                                     <p.icon size={12} style={{ color: p.color }} />
-                                    {p.label}
+                                    {t(p.labelKey)}
                                 </button>
                             ))}
                         </div>
@@ -707,7 +709,7 @@ export default function CustomizePage() {
                                         <div className="p-1.5 bg-white rounded-lg border border-gray-100 shrink-0">
                                             <Icon size={14} style={{ color: platform?.color }} />
                                         </div>
-                                        <Input dir="ltr" value={link.value} onChange={e => updateSocialLink(link.id, e.target.value)} placeholder="الرابط..." className="h-8 text-[10px] rounded-lg border-gray-200 flex-1" />
+                                        <Input dir="ltr" value={link.value} onChange={e => updateSocialLink(link.id, e.target.value)} placeholder={t('customize.socialLinkPlaceholder')} className="h-8 text-[10px] rounded-lg border-gray-200 flex-1" />
                                         <button onClick={() => removeSocialLink(link.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1"><X size={12}/></button>
                                     </div>
                                 )
@@ -728,20 +730,20 @@ export default function CustomizePage() {
                   <iframe
                     key={`${settings.username}-${previewKey}`}
                     src={`/${settings.username}`}
-                    title="معاينة"
+                    title={t('customize.preview')}
                     className="w-full h-full min-h-[600px] border-0 rounded-b-[2rem] bg-white"
                     sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-gray-600 text-xs p-6 text-center">
                     <Smartphone className="h-10 w-10 mb-3 text-gray-200" />
-                    <p className="font-bold text-gray-600">احفظ اسم المستخدم أولاً</p>
+                    <p className="font-bold text-gray-600">{t('customize.saveUsernameFirst')}</p>
                   </div>
                 )}
               </div>
             </div>
             <p className="text-[10px] text-gray-600 text-center mt-3 flex items-center justify-center gap-1.5">
-                <Smartphone className="h-3 w-3"/> معاينة حية
+                <Smartphone className="h-3 w-3"/> {t('customize.livePreview')}
             </p>
           </div>
         </div>
