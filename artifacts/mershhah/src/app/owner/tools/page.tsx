@@ -2,15 +2,14 @@
 
 import PageHeader from "@/components/dashboard/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Box, icons, Loader2, Clock } from "lucide-react";
+import { Wrench, Box, Loader2, Clock } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { StorageImage } from "@/components/shared/StorageImage";
-
-const iconMap: { [key: string]: React.ElementType } = { ...icons, Box };
+import { getToolIcon } from "@/lib/tool-icons";
 
 export default function OwnerToolsPage() {
     const { user } = useUser();
@@ -54,7 +53,7 @@ export default function OwnerToolsPage() {
                         ...tool,
                         activated_at: activation?.activated_at,
                         expires_at: activation?.expires_at,
-                        Icon: iconMap[tool.icon] || Box,
+                        Icon: getToolIcon(tool.icon),
                     };
                 });
                 setTools(merged);

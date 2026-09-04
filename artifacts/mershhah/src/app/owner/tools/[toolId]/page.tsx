@@ -1,15 +1,14 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Box, icons, Loader2, Clock, Settings, ExternalLink, ArrowRight } from "lucide-react";
+import { Wrench, Box, Loader2, Clock, Settings, ExternalLink, ArrowRight } from "lucide-react";
 import { useParams, Link, useLocation } from 'wouter';
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 import { useUser } from "@/hooks/useUser";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StorageImage } from "@/components/shared/StorageImage";
-
-const iconMap: { [key: string]: React.ElementType } = { ...icons, Box };
+import { getToolIcon } from "@/lib/tool-icons";
 
 export default function ToolDetailPage() {
     const params = useParams();
@@ -85,7 +84,7 @@ export default function ToolDetailPage() {
         );
     }
 
-    const IconComp = iconMap[tool.icon] || Box;
+    const IconComp = getToolIcon(tool.icon);
     const expired = activation?.expires_at && new Date(activation.expires_at) < new Date();
 
     const toolPages: Record<string, string> = {

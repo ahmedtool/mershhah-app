@@ -6,7 +6,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Pencil, Trash2, Box, icons, Globe, FileCode } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Box, Globe, FileCode } from "lucide-react";
+import { getToolIcon } from "@/lib/tool-icons";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
@@ -42,8 +43,8 @@ export function ToolsTable({ tools, onActionComplete }: ToolsTableProps) {
   };
 
   const getIcon = (name: string) => {
-    const Icon = icons[name as keyof typeof icons];
-    return Icon ? <Icon className="h-4 w-4" /> : <Box className="h-4 w-4" />;
+    const Icon = getToolIcon(name);
+    return <Icon className="h-4 w-4" />;
   };
 
   return (
