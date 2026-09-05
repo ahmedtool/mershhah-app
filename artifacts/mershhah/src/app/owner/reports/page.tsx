@@ -39,6 +39,8 @@ import {
 } from '@/lib/traffic-source';
 import { useLanguage } from '@/components/shared/LanguageContext';
 
+const KNOWN_TRAFFIC_SOURCES = new Set(Object.keys(TRAFFIC_SOURCE_LABEL_KEYS));
+
 const TRAFFIC_SOURCE_ICONS: Partial<Record<TrafficSource, React.ElementType>> = {
     whatsapp: WhatsAppIcon,
     instagram: InstagramIcon,
@@ -107,7 +109,13 @@ export default function InsightsHubPage() {
             (hubVisitsRes.data || []).forEach((d: any) => {
                 if (d.source === 'qr_branch') qrCount++; else linkCount++;
                 if (d.created_at) dates.push(dayKey(new Date(d.created_at)));
-                const src = (d.source || 'direct') as TrafficSource;
+                // Rows from before the per-platform traffic-source upgrade
+                // stored a plain 'link' (or nothing) instead of a real
+                // TrafficSource value - fall back to 'other' for anything
+                // not in the known set instead of trusting the DB value,
+                // which would otherwise flow into a t()/labelKey lookup as
+                // an unrecognized key.
+                const src = (KNOWN_TRAFFIC_SOURCES.has(d.source) ? d.source : 'other') as TrafficSource;
                 sources[src] = (sources[src] || 0) + 1;
             });
             setHubVisitsQr(qrCount);

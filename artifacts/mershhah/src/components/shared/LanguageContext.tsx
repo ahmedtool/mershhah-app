@@ -47,6 +47,7 @@ export function LanguageProvider({
   }, []);
 
   const t = useCallback((key: string): string => {
+    if (!key) return '';
     const keys = key.split('.');
     let value: any = translations[locale];
     for (const k of keys) {
