@@ -235,7 +235,7 @@ export default function InsightsHubPage() {
             .filter(([, count]) => count > 0)
             .sort((a, b) => b[1] - a[1]);
     }, [sourceCounts]);
-    const sourceMax = Math.max(1, ...sortedSources.map(([, count]) => count));
+    const sourceTotal = sortedSources.reduce((s, [, count]) => s + count, 0);
 
     const baseUrl = typeof window !== 'undefined'
         ? (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, '')
@@ -420,19 +420,24 @@ export default function InsightsHubPage() {
                         <BarChart3 className="h-4 w-4 text-gray-600" />
                         <h3 className="text-sm font-bold text-gray-900">{t('reports.trafficSourceBreakdown')}</h3>
                     </div>
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
                         {sortedSources.map(([source, count]) => {
                             const SourceIcon = TRAFFIC_SOURCE_ICONS[source] || Link2;
+                            const pct = sourceTotal > 0 ? (count / sourceTotal) * 100 : 0;
                             return (
-                                <div key={source} className="flex items-center gap-3">
-                                    <div className="w-7 h-7 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 text-gray-600">
+                                <div key={source} className="flex items-center gap-2.5 p-2.5 bg-gray-50 border border-gray-100 rounded-xl">
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0 text-gray-600">
                                         <SourceIcon className="h-3.5 w-3.5" size={14} />
                                     </div>
-                                    <span className="text-xs font-bold text-gray-700 w-24 shrink-0">{t(TRAFFIC_SOURCE_LABEL_KEYS[source])}</span>
-                                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                        <div className="h-full rounded-full bg-[#2a78d6] transition-all" style={{ width: `${(count / sourceMax) * 100}%` }} />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-xs font-bold text-gray-900 truncate">{t(TRAFFIC_SOURCE_LABEL_KEYS[source])}</span>
+                                            <span className="text-[10px] font-mono font-bold text-gray-600 shrink-0">{count} · {pct.toFixed(0)}%</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1.5">
+                                            <div className="h-full rounded-full bg-[#2a78d6] transition-all" style={{ width: `${pct}%` }} />
+                                        </div>
                                     </div>
-                                    <span className="text-[10px] font-mono font-bold text-gray-600 w-8 text-left">{count}</span>
                                 </div>
                             );
                         })}
