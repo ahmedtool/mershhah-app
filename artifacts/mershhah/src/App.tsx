@@ -10,86 +10,106 @@ import { UserProvider } from "@/hooks/useUser";
 import { Loader2 } from "lucide-react";
 import { trackPageView } from "@/lib/analytics";
 
-const HomePage = lazy(() => import("@/app/page"));
-const LoginPage = lazy(() => import("@/app/login/page"));
-const RegisterPage = lazy(() => import("@/app/register/page"));
-const RegisterAffiliatePage = lazy(() => import("@/app/register-affiliate/page"));
-const ForgotPasswordPage = lazy(() => import("@/app/forgot-password/page"));
-const ResetPasswordPage = lazy(() => import("@/app/reset-password/page"));
-const PricingPage = lazy(() => import("@/app/pricing/page"));
-const NotFoundPage = lazy(() => import("@/app/not-found"));
+// Vite chunk URLs are content-hashed. If a deploy replaces the running
+// build while a tab is still open, stale lazy() imports 404 (served as
+// the SPA's index.html, hence "disallowed MIME type"). Reload once to
+// pick up the new build instead of leaving the page stuck.
+function lazyWithReload<T extends { default: React.ComponentType<any> }>(
+  factory: () => Promise<T>
+) {
+  return lazy(() =>
+    factory().catch((err) => {
+      const key = "chunk-reload-attempted";
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, "1");
+        window.location.reload();
+        return new Promise<T>(() => {});
+      }
+      throw err;
+    })
+  );
+}
 
-const OwnerLayout = lazy(() => import("@/app/owner/layout"));
-const OwnerDashboardPage = lazy(() => import("@/app/owner/dashboard/page"));
-const OwnerMenuPage = lazy(() => import("@/app/owner/menu/page"));
-const OwnerOffersPage = lazy(() => import("@/app/owner/offers/page"));
-const OwnerCustomizePage = lazy(() => import("@/app/owner/customize/page"));
-const OwnerBranchesPage = lazy(() => import("@/app/owner/branches/page"));
-const OwnerReviewsPage = lazy(() => import("@/app/owner/reviews/page"));
-const OwnerSettingsPage = lazy(() => import("@/app/owner/settings/page"));
-const OwnerStorePage = lazy(() => import("@/app/owner/store/page"));
-const OwnerReportsPage = lazy(() => import("@/app/owner/reports/page"));
-const OwnerTicketsPage = lazy(() => import("@/app/owner/tickets/page"));
-const OwnerTicketDetailPage = lazy(() => import("@/app/owner/tickets/[ticketId]/page"));
-const OwnerToolsPage = lazy(() => import("@/app/owner/tools/page"));
-const OwnerToolDetailPage = lazy(() => import("@/app/owner/tools/[toolId]/page"));
-const DailyPulsePage = lazy(() => import("@/app/owner/tools/daily-pulse-dashboard/page"));
-const MarketingCalendarPage = lazy(() => import("@/app/owner/tools/marketing-calendar/page"));
-const ReplyTemplatesPage = lazy(() => import("@/app/owner/tools/reply-templates/page"));
-const SummarizeFeedbackPage = lazy(() => import("@/app/owner/tools/summarize-feedback/page"));
-const WeeklyContentWriterPage = lazy(() => import("@/app/owner/tools/weekly-content-writer/page"));
-const SalaryCalculatorPage = lazy(() => import("@/app/owner/tools/salary-calculator/page"));
-const CostCalculatorPage = lazy(() => import("@/app/owner/tools/cost-calculator/page"));
-const ImageEnhancerPage = lazy(() => import("@/app/owner/tools/image-enhancer/page"));
-const KeetaReportsReaderPage = lazy(() => import("@/app/owner/tools/keeta-reports-reader/page"));
-const HungerStationReportsReaderPage = lazy(() => import("@/app/owner/tools/hungerstation-reports-reader/page"));
-const OwnerSupportPage = lazy(() => import("@/app/owner/support/page"));
-const OwnerBillingPage = lazy(() => import("@/app/owner/billing/page"));
+const HomePage = lazyWithReload(() => import("@/app/page"));
+const LoginPage = lazyWithReload(() => import("@/app/login/page"));
+const RegisterPage = lazyWithReload(() => import("@/app/register/page"));
+const RegisterAffiliatePage = lazyWithReload(() => import("@/app/register-affiliate/page"));
+const ForgotPasswordPage = lazyWithReload(() => import("@/app/forgot-password/page"));
+const ResetPasswordPage = lazyWithReload(() => import("@/app/reset-password/page"));
+const PricingPage = lazyWithReload(() => import("@/app/pricing/page"));
+const NotFoundPage = lazyWithReload(() => import("@/app/not-found"));
 
-const AdminLayout = lazy(() => import("@/app/admin/layout"));
-const AdminDashboardPage = lazy(() => import("@/app/admin/dashboard/page"));
-const AdminManagementPage = lazy(() => import("@/app/admin/management/page"));
-const AdminPlansPage = lazy(() => import("@/app/admin/plans/page"));
-const AdminStorePage = lazy(() => import("@/app/admin/store/page"));
-const AdminStoreDevelopersPage = lazy(() => import("@/app/admin/store/developers/page"));
-const AdminStoreManagementPage = lazy(() => import("@/app/admin/store-management/page"));
-const AdminSharedProductsPage = lazy(() => import("@/app/admin/shared-products/page"));
-const AdminSupportPage = lazy(() => import("@/app/admin/support/page"));
-const AdminSupportChatPage = lazy(() => import("@/app/admin/support/[chatId]/page"));
-const AdminSettingsPage = lazy(() => import("@/app/admin/settings/page"));
-const AdminTeamPage = lazy(() => import("@/app/admin/team/page"));
-const AdminSalesPage = lazy(() => import("@/app/admin/sales/page"));
-const AdminApplicationsPage = lazy(() => import("@/app/admin/applications/page"));
-const AdminAnnouncementsPage = lazy(() => import("@/app/admin/announcements/page"));
-const AdminBlogPage = lazy(() => import("@/app/admin/blog/page"));
-const AdminWorkflowPage = lazy(() => import("@/app/admin/workflow/page"));
-const AdminDiscountsPage = lazy(() => import("@/app/admin/discounts/page"));
-const AdminFinancialsPage = lazy(() => import("@/app/admin/financials/page"));
-const AdminFinancialsOrdersPage = lazy(() => import("@/app/admin/financials/orders/page"));
-const AdminFinancialsDiscountsPage = lazy(() => import("@/app/admin/financials/discounts/page"));
+const OwnerLayout = lazyWithReload(() => import("@/app/owner/layout"));
+const OwnerDashboardPage = lazyWithReload(() => import("@/app/owner/dashboard/page"));
+const OwnerMenuPage = lazyWithReload(() => import("@/app/owner/menu/page"));
+const OwnerOffersPage = lazyWithReload(() => import("@/app/owner/offers/page"));
+const OwnerCustomizePage = lazyWithReload(() => import("@/app/owner/customize/page"));
+const OwnerBranchesPage = lazyWithReload(() => import("@/app/owner/branches/page"));
+const OwnerReviewsPage = lazyWithReload(() => import("@/app/owner/reviews/page"));
+const OwnerSettingsPage = lazyWithReload(() => import("@/app/owner/settings/page"));
+const OwnerStorePage = lazyWithReload(() => import("@/app/owner/store/page"));
+const OwnerReportsPage = lazyWithReload(() => import("@/app/owner/reports/page"));
+const OwnerTicketsPage = lazyWithReload(() => import("@/app/owner/tickets/page"));
+const OwnerTicketDetailPage = lazyWithReload(() => import("@/app/owner/tickets/[ticketId]/page"));
+const OwnerToolsPage = lazyWithReload(() => import("@/app/owner/tools/page"));
+const OwnerToolDetailPage = lazyWithReload(() => import("@/app/owner/tools/[toolId]/page"));
+const DailyPulsePage = lazyWithReload(() => import("@/app/owner/tools/daily-pulse-dashboard/page"));
+const MarketingCalendarPage = lazyWithReload(() => import("@/app/owner/tools/marketing-calendar/page"));
+const ReplyTemplatesPage = lazyWithReload(() => import("@/app/owner/tools/reply-templates/page"));
+const SummarizeFeedbackPage = lazyWithReload(() => import("@/app/owner/tools/summarize-feedback/page"));
+const WeeklyContentWriterPage = lazyWithReload(() => import("@/app/owner/tools/weekly-content-writer/page"));
+const SalaryCalculatorPage = lazyWithReload(() => import("@/app/owner/tools/salary-calculator/page"));
+const CostCalculatorPage = lazyWithReload(() => import("@/app/owner/tools/cost-calculator/page"));
+const ImageEnhancerPage = lazyWithReload(() => import("@/app/owner/tools/image-enhancer/page"));
+const KeetaReportsReaderPage = lazyWithReload(() => import("@/app/owner/tools/keeta-reports-reader/page"));
+const HungerStationReportsReaderPage = lazyWithReload(() => import("@/app/owner/tools/hungerstation-reports-reader/page"));
+const OwnerSupportPage = lazyWithReload(() => import("@/app/owner/support/page"));
+const OwnerBillingPage = lazyWithReload(() => import("@/app/owner/billing/page"));
 
-const MenuPage = lazy(() => import("@/app/menu/[username]/page"));
-const HubPage = lazy(() => import("@/app/hub/[username]/page"));
-const AiPage = lazy(() => import("@/app/ai/[username]/page"));
-const BranchesPublicPage = lazy(() => import("@/app/branches/[username]/page"));
-const ChatPage = lazy(() => import("@/app/chat/[username]/page"));
-const ReviewsPublicPage = lazy(() => import("@/app/reviews/[username]/page"));
-const BlogListPage = lazy(() => import("@/app/blog/page"));
-const BlogPostPage = lazy(() => import("@/app/blog/[slug]/page"));
-const AboutPage = lazy(() => import("@/app/about/page"));
-const ContactPage = lazy(() => import("@/app/contact/page"));
-const PrivacyPage = lazy(() => import("@/app/privacy/page"));
-const TermsPage = lazy(() => import("@/app/terms/page"));
-const BioPage = lazy(() => import("@/app/bio/page"));
-const SuccessPage = lazy(() => import("@/app/success/page"));
-const FailurePage = lazy(() => import("@/app/failure/page"));
-const BillingSuccessPage = lazy(() => import("@/app/billing/success/page"));
-const BillingFailedPage = lazy(() => import("@/app/billing/failed/page"));
-const ReferPage = lazy(() => import("@/app/refer/page"));
-const StatusPage = lazy(() => import("@/app/status/page"));
-const TicketPage = lazy(() => import("@/app/ticket/page"));
-const SupportPublicPage = lazy(() => import("@/app/support/[username]/page"));
-const OAuthConsentPage = lazy(() => import("@/app/oauth/consent/page"));
+const AdminLayout = lazyWithReload(() => import("@/app/admin/layout"));
+const AdminDashboardPage = lazyWithReload(() => import("@/app/admin/dashboard/page"));
+const AdminManagementPage = lazyWithReload(() => import("@/app/admin/management/page"));
+const AdminPlansPage = lazyWithReload(() => import("@/app/admin/plans/page"));
+const AdminStorePage = lazyWithReload(() => import("@/app/admin/store/page"));
+const AdminStoreDevelopersPage = lazyWithReload(() => import("@/app/admin/store/developers/page"));
+const AdminStoreManagementPage = lazyWithReload(() => import("@/app/admin/store-management/page"));
+const AdminSharedProductsPage = lazyWithReload(() => import("@/app/admin/shared-products/page"));
+const AdminSupportPage = lazyWithReload(() => import("@/app/admin/support/page"));
+const AdminSupportChatPage = lazyWithReload(() => import("@/app/admin/support/[chatId]/page"));
+const AdminSettingsPage = lazyWithReload(() => import("@/app/admin/settings/page"));
+const AdminTeamPage = lazyWithReload(() => import("@/app/admin/team/page"));
+const AdminSalesPage = lazyWithReload(() => import("@/app/admin/sales/page"));
+const AdminApplicationsPage = lazyWithReload(() => import("@/app/admin/applications/page"));
+const AdminAnnouncementsPage = lazyWithReload(() => import("@/app/admin/announcements/page"));
+const AdminBlogPage = lazyWithReload(() => import("@/app/admin/blog/page"));
+const AdminWorkflowPage = lazyWithReload(() => import("@/app/admin/workflow/page"));
+const AdminDiscountsPage = lazyWithReload(() => import("@/app/admin/discounts/page"));
+const AdminFinancialsPage = lazyWithReload(() => import("@/app/admin/financials/page"));
+const AdminFinancialsOrdersPage = lazyWithReload(() => import("@/app/admin/financials/orders/page"));
+const AdminFinancialsDiscountsPage = lazyWithReload(() => import("@/app/admin/financials/discounts/page"));
+
+const MenuPage = lazyWithReload(() => import("@/app/menu/[username]/page"));
+const HubPage = lazyWithReload(() => import("@/app/hub/[username]/page"));
+const AiPage = lazyWithReload(() => import("@/app/ai/[username]/page"));
+const BranchesPublicPage = lazyWithReload(() => import("@/app/branches/[username]/page"));
+const ChatPage = lazyWithReload(() => import("@/app/chat/[username]/page"));
+const ReviewsPublicPage = lazyWithReload(() => import("@/app/reviews/[username]/page"));
+const BlogListPage = lazyWithReload(() => import("@/app/blog/page"));
+const BlogPostPage = lazyWithReload(() => import("@/app/blog/[slug]/page"));
+const AboutPage = lazyWithReload(() => import("@/app/about/page"));
+const ContactPage = lazyWithReload(() => import("@/app/contact/page"));
+const PrivacyPage = lazyWithReload(() => import("@/app/privacy/page"));
+const TermsPage = lazyWithReload(() => import("@/app/terms/page"));
+const BioPage = lazyWithReload(() => import("@/app/bio/page"));
+const SuccessPage = lazyWithReload(() => import("@/app/success/page"));
+const FailurePage = lazyWithReload(() => import("@/app/failure/page"));
+const BillingSuccessPage = lazyWithReload(() => import("@/app/billing/success/page"));
+const BillingFailedPage = lazyWithReload(() => import("@/app/billing/failed/page"));
+const ReferPage = lazyWithReload(() => import("@/app/refer/page"));
+const StatusPage = lazyWithReload(() => import("@/app/status/page"));
+const TicketPage = lazyWithReload(() => import("@/app/ticket/page"));
+const SupportPublicPage = lazyWithReload(() => import("@/app/support/[username]/page"));
+const OAuthConsentPage = lazyWithReload(() => import("@/app/oauth/consent/page"));
 
 const queryClient = new QueryClient();
 
