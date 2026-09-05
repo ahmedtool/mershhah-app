@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { supabase } from '@/lib/supabase';
+import { uploadToImageKit } from '@/lib/imagekit';
 import { syncPublicPage } from '@/lib/public-pages';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { InstagramIcon, XIcon, TikTokIcon, SnapchatIcon, YoutubeIcon, FacebookIcon, WhatsAppIcon, WebsiteIcon } from '@/components/shared/SocialIcons';
@@ -179,12 +180,7 @@ export default function CustomizePage() {
 
         let logoUrl = settings.logo;
         if (logoFile) {
-          const path = `restaurants/${user.restaurantId}/logo`;
-          const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('restaurant-assets')
-              .upload(path, logoFile, { upsert: true });
-          if (uploadError) throw uploadError;
-          logoUrl = uploadData.path;
+          logoUrl = await uploadToImageKit(logoFile, `restaurants/${user.restaurantId}`, 'logo');
         }
 
         const updatedApplications = await Promise.all((settings.applications || []).map(async (app: any) => {
