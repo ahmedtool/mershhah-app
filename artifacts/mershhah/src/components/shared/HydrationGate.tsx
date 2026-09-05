@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { FullScreenLoader } from './FullScreenLoader';
 
 /**
  * Renders children only after mount to avoid hydration mismatch between server
@@ -13,9 +14,11 @@ export function HydrationGate({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  // Server and first client render: same placeholder (key ensures React doesn't hydrate children)
+  // Same loader as the route/auth gates further down the tree, so this
+  // first-paint tick doesn't read as a separate blank screen before "the"
+  // loading screen shows up.
   if (!mounted) {
-    return <div key="hydration-placeholder" className="min-h-screen w-full bg-background" suppressHydrationWarning />;
+    return <div key="hydration-placeholder" suppressHydrationWarning><FullScreenLoader /></div>;
   }
 
   // After mount: render content in a new key so it mounts fresh (no hydration of this tree)
