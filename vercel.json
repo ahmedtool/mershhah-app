@@ -8,6 +8,10 @@
       "destination": "https://smmriycsboexindabanc.supabase.co/functions/v1/sitemap"
     },
     {
+      "source": "/api/:path*",
+      "destination": "/api/handler"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
