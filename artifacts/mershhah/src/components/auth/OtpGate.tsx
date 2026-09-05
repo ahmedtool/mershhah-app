@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter, useSearchParams } from '@/lib/navigation';
 import { Loader2, ShieldCheck, RotateCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { FullScreenLoader } from '@/components/shared/FullScreenLoader';
 
 const sessionKey = (uid: string) => `mershhah_otp_verified_${uid}`;
 const IDLE_SIGNOUT_MS = 60 * 60 * 1000;
@@ -195,11 +196,7 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
 
   if (isUserLoading || !user) return <>{children}</>;
   if (isCheckingGrant) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
-      </div>
-    );
+    return <FullScreenLoader />;
   }
   if (!needsOtp || isVerified || providerUnavailable) return <>{children}</>;
 

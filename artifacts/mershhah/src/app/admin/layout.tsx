@@ -6,7 +6,7 @@ import { AdminAccountStatusChecker } from "@/components/auth/AdminAccountStatusC
 import { OtpGate } from "@/components/auth/OtpGate";
 import { useUser } from "@/hooks/useUser";
 import { useRouter } from '@/lib/navigation';
-import { Loader2 } from "lucide-react";
+import { FullScreenLoader } from "@/components/shared/FullScreenLoader";
 
 export default function AdminLayout({
   children,
@@ -25,14 +25,7 @@ export default function AdminLayout({
   }, [user, isLoading]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="animate-spin h-6 w-6 text-gray-900" />
-          <span className="text-xs font-bold text-gray-600">مرشح</span>
-        </div>
-      </div>
-    );
+    return <FullScreenLoader />;
   }
 
   if (!user) return null;

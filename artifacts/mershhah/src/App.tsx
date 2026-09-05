@@ -7,8 +7,8 @@ import { ThemeProvider } from "@/components/shared/ThemeProvider";
 import { LanguageProvider } from "@/components/shared/LanguageContext";
 import { HydrationGate } from "@/components/shared/HydrationGate";
 import { UserProvider } from "@/hooks/useUser";
-import { Loader2 } from "lucide-react";
 import { trackPageView } from "@/lib/analytics";
+import { FullScreenLoader } from "@/components/shared/FullScreenLoader";
 
 // Vite chunk URLs are content-hashed. If a deploy replaces the running
 // build while a tab is still open, stale lazy() imports 404 (served as
@@ -117,14 +117,6 @@ const OW = ({ children }: { children: React.ReactNode }) => <OwnerLayout>{childr
 
 // Shown while a route's own JS chunk is still downloading (only happens the
 // first time a given route is visited in a session - cached afterward).
-function RouteLoadingFallback() {
-  return (
-    <div className="flex items-center justify-center h-screen bg-gray-50">
-      <Loader2 className="animate-spin h-6 w-6 text-gray-600" />
-    </div>
-  );
-}
-
 function Router() {
   const [location] = useLocation();
 
@@ -157,7 +149,7 @@ function Router() {
   }, [location]);
 
   return (
-    <Suspense fallback={<RouteLoadingFallback />}>
+    <Suspense fallback={<FullScreenLoader />}>
       <Switch>
         <Route path="/" component={HomePage} />
         <Route path="/login" component={LoginPage} />
