@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useTransition, useRef, useEffect } from 'react';
+import React, { useState, useTransition, useRef, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -13,6 +13,7 @@ import { Loader2, Plus, Trash2, Sparkles, Check, ChevronDown, UploadCloud, X } f
 import { supabase } from '@/lib/supabase';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { generateMenuDescriptions } from '@/ai/flows/generate-menu-descriptions';
+import { translateMenuItem } from '@/ai/flows/translate-menu-item';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { cn } from '@/lib/utils';
@@ -24,39 +25,43 @@ import { useLanguage } from '@/components/shared/LanguageContext';
 
 const BUCKET = 'restaurant-assets';
 
-const sizeSchema = z.object({
-  id: z.string(),
-  name: z.string().min(1, 'الاسم مطلوب'),
-  price: z.coerce.number().min(0, 'السعر مطلوب'),
-  cost: z.coerce.number().min(0, 'التكلفة مطلوبة'),
-  calories: z.coerce.number().optional(),
-});
-
-const COMMON_ALLERGENS = [
-  { id: 'nuts', label: 'مكسرات', icon: '🥜' },
-  { id: 'milk', label: 'حليب', icon: '🥛' },
-  { id: 'eggs', label: 'بيض', icon: '🥚' },
-  { id: 'wheat', label: 'قمح', icon: '🌾' },
-  { id: 'fish', label: 'سمك', icon: '🐟' },
-  { id: 'shellfish', label: 'محار', icon: '🦐' },
-  { id: 'soy', label: 'فول الصويا', icon: '🫘' },
-  { id: 'sesame', label: 'سمسم', icon: '⚪' },
-  { id: 'gluten', label: 'غلوتين', icon: '🍞' },
+const ALLERGEN_META = [
+  { id: 'nuts', labelKey: 'menuItem.allergenNuts', icon: '🥜' },
+  { id: 'milk', labelKey: 'menuItem.allergenMilk', icon: '🥛' },
+  { id: 'eggs', labelKey: 'menuItem.allergenEggs', icon: '🥚' },
+  { id: 'wheat', labelKey: 'menuItem.allergenWheat', icon: '🌾' },
+  { id: 'fish', labelKey: 'menuItem.allergenFish', icon: '🐟' },
+  { id: 'shellfish', labelKey: 'menuItem.allergenShellfish', icon: '🦐' },
+  { id: 'soy', labelKey: 'menuItem.allergenSoy', icon: '🫘' },
+  { id: 'sesame', labelKey: 'menuItem.allergenSesame', icon: '⚪' },
+  { id: 'gluten', labelKey: 'menuItem.allergenGluten', icon: '🍞' },
 ];
 
-const formSchema = z.object({
-  name: z.string().min(2, 'الاسم مطلوب'),
-  description: z.string().optional().or(z.literal('')),
-  image_url: z.string().optional().or(z.literal('')),
-  category: z.string().min(2, 'التصنيف مطلوب'),
-  category_id: z.string().nullable().optional(),
-  sizes: z.array(sizeSchema).min(1, 'أضف حجماً واحداً على الأقل'),
-  status: z.enum(['available', 'unavailable']).default('available'),
-  calories: z.coerce.number().min(0).optional().or(z.literal(0)),
-  allergens: z.array(z.string()).default([]),
-});
+function buildMenuItemSchema(t: (key: string) => string) {
+  const sizeSchema = z.object({
+    id: z.string(),
+    name: z.string().min(1, t('menuItem.nameRequired')),
+    price: z.coerce.number().min(0, t('menuItem.sizePriceRequired')),
+    cost: z.coerce.number().min(0, t('menuItem.sizeCostRequired')),
+    calories: z.coerce.number().optional(),
+  });
 
-type FormValues = z.infer<typeof formSchema>;
+  return z.object({
+    name: z.string().min(2, t('menuItem.nameRequired')),
+    name_en: z.string().optional().or(z.literal('')),
+    description: z.string().optional().or(z.literal('')),
+    description_en: z.string().optional().or(z.literal('')),
+    image_url: z.string().optional().or(z.literal('')),
+    category: z.string().min(2, t('menuItem.categoryRequired')),
+    category_id: z.string().nullable().optional(),
+    sizes: z.array(sizeSchema).min(1, t('menuItem.atLeastOneSize')),
+    status: z.enum(['available', 'unavailable']).default('available'),
+    calories: z.coerce.number().min(0).optional().or(z.literal(0)),
+    allergens: z.array(z.string()).default([]),
+  });
+}
+
+type FormValues = z.infer<ReturnType<typeof buildMenuItemSchema>>;
 
 interface EditMenuItemDialogProps {
   children: React.ReactNode;
@@ -77,10 +82,11 @@ const isToday = (d?: Date) => {
 export function EditMenuItemDialog({
   children, menuItem, menuItems, onSave, restaurantId, userId, itemCount = 0,
 }: EditMenuItemDialogProps) {
-  const { dir } = useLanguage();
+  const { t, dir, locale } = useLanguage();
   const [open, setOpen] = useState(false);
   const [isSaving, startSaving] = useTransition();
   const [isGeneratingDesc, startGeneratingDesc] = useTransition();
+  const [isTranslating, startTranslating] = useTransition();
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [categorySearch, setCategorySearch] = useState('');
@@ -92,8 +98,9 @@ export function EditMenuItemDialog({
   const { toast } = useToast();
   const { user } = useUser();
   const isEditing = !!menuItem;
+  const menuItemSchema = useMemo(() => buildMenuItemSchema(t), [t]);
 
-  const form = useForm<FormValues>({ resolver: zodResolver(formSchema) });
+  const form = useForm<FormValues>({ resolver: zodResolver(menuItemSchema) });
 
   useEffect(() => {
     if (open && restaurantId) {
@@ -111,13 +118,14 @@ export function EditMenuItemDialog({
         : defaultSizes;
 
       form.reset(isEditing ? {
-        name: menuItem.name, description: menuItem.description || '',
+        name: menuItem.name, name_en: menuItem.name_en || '',
+        description: menuItem.description || '', description_en: menuItem.description_en || '',
         category: menuItem.category || '', category_id: menuItem.category_id ?? null, image_url: menuItem.image_url || '',
         sizes, status: menuItem.status || 'available',
         calories: menuItem.calories || 0,
         allergens: menuItem.allergens || [],
       } : {
-        name: '', description: '', category: '', category_id: null, image_url: '', sizes: defaultSizes, status: 'available',
+        name: '', name_en: '', description: '', description_en: '', category: '', category_id: null, image_url: '', sizes: defaultSizes, status: 'available',
         calories: 0, allergens: [],
       });
       setImageFile(null);
@@ -133,7 +141,7 @@ export function EditMenuItemDialog({
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 4 * 1024 * 1024) {
-        toast({ title: 'الصورة كبيرة جداً', description: 'اختر صورة أقل من 4 ميجابايت', variant: 'destructive' });
+        toast({ title: t('offers.imageTooLarge'), description: t('offers.chooseSmallerImage'), variant: 'destructive' });
         return;
       }
       setImageFile(file);
@@ -157,7 +165,7 @@ export function EditMenuItemDialog({
       setCategoriesOpen(false);
       setCategorySearch('');
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+      toast({ variant: 'destructive', title: t('common.errorTitle'), description: e.message });
     } finally {
       setIsCreatingCategory(false);
     }
@@ -165,12 +173,12 @@ export function EditMenuItemDialog({
 
   const handleGenerateDesc = async () => {
     const name = form.getValues('name');
-    if (!name) { toast({ title: 'أدخل اسم الطبق أولاً', variant: 'destructive' }); return; }
+    if (!name) { toast({ title: t('menuItem.enterDishNameFirst'), variant: 'destructive' }); return; }
 
     if (isEditing && menuItem?.id) {
       const { data } = await supabase.from('menu_items').select('description_last_generated_at').eq('id', menuItem.id).single();
       if (data?.description_last_generated_at && isToday(new Date(data.description_last_generated_at))) {
-        toast({ title: 'وصلت للحد اليومي', description: 'وصف واحد فقط كل يوم', variant: 'destructive' });
+        toast({ title: t('menuItem.dailyLimitReached'), description: t('menuItem.oneDescriptionPerDay'), variant: 'destructive' });
         return;
       }
     }
@@ -180,9 +188,25 @@ export function EditMenuItemDialog({
         const result = await generateMenuDescriptions({ items: [{ name, category: form.getValues('category') }] });
         form.setValue('description', result.items?.[0]?.description ?? '', { shouldValidate: true });
         setDescGenerated(true);
-        toast({ title: 'تم إنشاء الوصف' });
+        toast({ title: t('menuItem.descriptionGenerated') });
       } catch (e: any) {
-        toast({ title: 'فشل', description: e.message, variant: 'destructive' });
+        toast({ title: t('menuItem.generationFailed'), description: e.message, variant: 'destructive' });
+      }
+    });
+  };
+
+  const handleTranslate = () => {
+    const name = form.getValues('name');
+    if (!name) { toast({ title: t('menuItem.enterDishNameFirst'), variant: 'destructive' }); return; }
+
+    startTranslating(async () => {
+      try {
+        const result = await translateMenuItem({ name, description: form.getValues('description') });
+        form.setValue('name_en', result.name_en ?? '', { shouldValidate: true });
+        form.setValue('description_en', result.description_en ?? '', { shouldValidate: true });
+        toast({ title: t('menuItem.translated') });
+      } catch (e: any) {
+        toast({ title: t('menuItem.translationFailed'), description: e.message, variant: 'destructive' });
       }
     });
   };
@@ -195,8 +219,8 @@ export function EditMenuItemDialog({
       if (itemCount >= maxMenuItems) {
         toast({
           variant: 'destructive',
-          title: 'وصلت للحد الأقصى من الأصناف',
-          description: `باقتك الحالية (${user?.entitlements?.planName || ''}) تسمح بحد أقصى ${maxMenuItems} صنف. رقّي باقتك لإضافة المزيد.`,
+          title: t('menuItem.maxItemsReached'),
+          description: `${t('branches.currentPlanPrefix')} (${user?.entitlements?.planName || ''}) ${t('branches.allowsMax')} ${maxMenuItems} ${t('menuItem.itemWord')}. ${t('branches.upgradeForMore')}`,
         });
         return;
       }
@@ -224,17 +248,18 @@ export function EditMenuItemDialog({
           if (error) throw error;
         }
 
-        toast({ title: isEditing ? 'تم التعديل' : 'تمت الإضافة' });
+        toast({ title: isEditing ? t('menuItem.itemUpdated') : t('menuItem.itemAdded') });
         syncPublicPage(restaurantId).catch(() => {});
         onSave?.();
         setOpen(false);
       } catch (e: any) {
-        toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+        toast({ variant: 'destructive', title: t('common.errorTitle'), description: e.message });
       }
     });
   }
 
-  const pending = isSaving || isGeneratingDesc;
+  const pending = isSaving || isGeneratingDesc || isTranslating;
+  const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -244,7 +269,7 @@ export function EditMenuItemDialog({
         <div className="relative w-full aspect-[16/9] bg-gray-100 overflow-hidden">
           {imagePreview ? (
             <>
-              <StorageImage imagePath={imagePreview} alt="صورة الطبق" fill className="object-cover" sizes="600px" />
+              <StorageImage imagePath={imagePreview} alt={t('menuItem.dishImageAlt')} fill className="object-cover" sizes="600px" />
               <button
                 type="button"
                 onClick={() => { setImagePreview(null); setImageFile(null); }}
@@ -261,7 +286,7 @@ export function EditMenuItemDialog({
               <div className="w-14 h-14 rounded-2xl bg-gray-200 flex items-center justify-center">
                 <UploadCloud className="h-6 w-6 text-gray-600" />
               </div>
-              <p className="text-sm text-gray-600">اضغط لرفع صورة</p>
+              <p className="text-sm text-gray-600">{t('menuItem.clickToUploadImage')}</p>
             </div>
           )}
         </div>
@@ -273,9 +298,9 @@ export function EditMenuItemDialog({
             {/* Name */}
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-600">اسم الطبق</FormLabel>
+                <FormLabel className="text-xs text-gray-600">{t('menuItem.dishName')}</FormLabel>
                 <FormControl>
-                  <Input placeholder="مثال: كباب لحم" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={pending} />
+                  <Input placeholder={t('menuItem.dishNamePlaceholder')} {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={pending} />
                 </FormControl>
                 <FormMessage className="text-[10px]" />
               </FormItem>
@@ -285,7 +310,7 @@ export function EditMenuItemDialog({
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
                 <div className="flex items-center justify-between">
-                  <FormLabel className="text-xs text-gray-600">الوصف</FormLabel>
+                  <FormLabel className="text-xs text-gray-600">{t('menuItem.description')}</FormLabel>
                   <button
                     type="button"
                     onClick={handleGenerateDesc}
@@ -293,40 +318,73 @@ export function EditMenuItemDialog({
                     className="flex items-center gap-1 text-[11px] font-medium text-gray-600 hover:text-gray-700 transition-colors"
                   >
                     <Sparkles className="h-3 w-3" />
-                    وصف بالذكاء الاصطناعي
+                    {t('menuItem.generateWithAi')}
                   </button>
                 </div>
                 <FormControl>
-                  <Textarea placeholder="وصف جذاب للطبق..." {...field} rows={2} className="rounded-xl border-gray-200 text-sm resize-none min-h-[72px]" disabled={pending} />
+                  <Textarea placeholder={t('menuItem.descriptionPlaceholder')} {...field} rows={2} className="rounded-xl border-gray-200 text-sm resize-none min-h-[72px]" disabled={pending} />
                 </FormControl>
                 <FormMessage className="text-[10px]" />
               </FormItem>
             )} />
 
+            {/* English version (optional) */}
+            <div className="space-y-3 p-3 bg-gray-50 border border-gray-100 rounded-xl">
+              <div className="flex items-center justify-between">
+                <FormLabel className="text-xs text-gray-600">{t('menuItem.englishVersion')}</FormLabel>
+                <button
+                  type="button"
+                  onClick={handleTranslate}
+                  disabled={pending}
+                  className="flex items-center gap-1 text-[11px] font-medium text-gray-600 hover:text-gray-700 transition-colors"
+                >
+                  {isTranslating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                  {t('menuItem.translateAuto')}
+                </button>
+              </div>
+              <FormField control={form.control} name="name_en" render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Input placeholder={t('menuItem.nameEnPlaceholder')} {...field} dir="ltr" className="h-10 rounded-xl border-gray-200 bg-white text-sm" disabled={pending} />
+                  </FormControl>
+                  <FormMessage className="text-[10px]" />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="description_en" render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Textarea placeholder={t('menuItem.descriptionEnPlaceholder')} {...field} dir="ltr" rows={2} className="rounded-xl border-gray-200 bg-white text-sm resize-none min-h-[64px]" disabled={pending} />
+                  </FormControl>
+                  <FormMessage className="text-[10px]" />
+                </FormItem>
+              )} />
+            </div>
+
             {/* Category */}
             <FormField control={form.control} name="category" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-600">التصنيف</FormLabel>
+                <FormLabel className="text-xs text-gray-600">{t('menuItem.category')}</FormLabel>
                 <Popover open={categoriesOpen} onOpenChange={setCategoriesOpen}>
                   <PopoverTrigger asChild>
                     <FormControl>
                       <button
                         type="button"
                         className={cn(
-                          "w-full h-10 rounded-xl border border-gray-200 bg-white px-3 text-right flex items-center justify-between text-sm transition-colors hover:border-gray-300",
+                          "w-full h-10 rounded-xl border border-gray-200 bg-white px-3 flex items-center justify-between text-sm transition-colors hover:border-gray-300",
+                          alignStart,
                           !field.value && "text-gray-600"
                         )}
                       >
-                        <span>{field.value || "اختر أو أنشئ تصنيف..."}</span>
+                        <span>{field.value || t('menuItem.chooseOrCreateCategory')}</span>
                         <ChevronDown className="h-4 w-4 text-gray-600 shrink-0" />
                       </button>
                     </FormControl>
                   </PopoverTrigger>
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" dir={dir}>
                     <Command filter={(v, s) => v.toLowerCase().includes(s.toLowerCase()) ? 1 : 0}>
-                      <CommandInput placeholder="ابحث أو اكتب تصنيف جديد..." className="h-9" value={categorySearch} onValueChange={setCategorySearch} />
+                      <CommandInput placeholder={t('menuItem.searchOrCreateCategory')} className="h-9" value={categorySearch} onValueChange={setCategorySearch} />
                       <CommandList>
-                        {categories.length === 0 && !categorySearch && <CommandEmpty>لا توجد تصنيفات — اكتب اسماً لإنشاء واحد</CommandEmpty>}
+                        {categories.length === 0 && !categorySearch && <CommandEmpty>{t('menuItem.noCategoriesYet')}</CommandEmpty>}
                         <CommandGroup>
                           {categories.map(cat => (
                             <CommandItem value={cat.name} key={cat.id} onSelect={() => {
@@ -336,13 +394,13 @@ export function EditMenuItemDialog({
                               setCategorySearch('');
                             }}>
                               <Check className={cn("h-4 w-4 shrink-0", cat.id === form.watch('category_id') ? "opacity-100" : "opacity-0")} />
-                              <span className="mr-2">{cat.name}</span>
+                              <span className="ms-2">{cat.name}</span>
                             </CommandItem>
                           ))}
                           {categorySearch.trim() && !categories.some(c => c.name.toLowerCase() === categorySearch.trim().toLowerCase()) && (
                             <CommandItem value={`__create__${categorySearch}`} onSelect={() => handleCreateCategory(categorySearch)} disabled={isCreatingCategory}>
                               <Plus className="h-4 w-4 shrink-0 text-gray-600" />
-                              <span className="mr-2">إنشاء تصنيف "{categorySearch.trim()}"</span>
+                              <span className="ms-2">{t('menuItem.createCategoryPrefix')} "{categorySearch.trim()}"</span>
                             </CommandItem>
                           )}
                         </CommandGroup>
@@ -354,11 +412,11 @@ export function EditMenuItemDialog({
                           ).slice(0, 6);
                           if (suggestions.length === 0) return null;
                           return (
-                            <CommandGroup heading="اقتراحات شائعة">
+                            <CommandGroup heading={t('menuItem.popularSuggestions')}>
                               {suggestions.map(name => (
                                 <CommandItem key={name} value={`__suggest__${name}`} onSelect={() => handleCreateCategory(name)} disabled={isCreatingCategory}>
                                   <Plus className="h-4 w-4 shrink-0 text-gray-600" />
-                                  <span className="mr-2">{name}</span>
+                                  <span className="ms-2">{name}</span>
                                 </CommandItem>
                               ))}
                             </CommandGroup>
@@ -374,18 +432,18 @@ export function EditMenuItemDialog({
 
             {/* Sizes */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-600">الأحجام والأسعار</FormLabel>
+              <FormLabel className="text-xs text-gray-600">{t('menuItem.sizesAndPrices')}</FormLabel>
               <div className="space-y-2">
                 {fields.map((field, idx) => (
                   <div key={field.id} className="flex items-center gap-2">
                     <FormField control={form.control} name={`sizes.${idx}.name`} render={({ field }) => (
-                      <Input {...field} placeholder="الحجم" className="h-9 text-xs rounded-lg border-gray-200 flex-1" disabled={pending} />
+                      <Input {...field} placeholder={t('menuItem.sizePlaceholder')} className="h-9 text-xs rounded-lg border-gray-200 flex-1" disabled={pending} />
                     )} />
                     <FormField control={form.control} name={`sizes.${idx}.price`} render={({ field }) => (
-                      <Input {...field} type="number" placeholder="السعر" className="h-9 text-xs rounded-lg border-gray-200 flex-1" dir="ltr" disabled={pending} />
+                      <Input {...field} type="number" placeholder={t('menuItem.pricePlaceholder')} className="h-9 text-xs rounded-lg border-gray-200 flex-1" dir="ltr" disabled={pending} />
                     )} />
                     <FormField control={form.control} name={`sizes.${idx}.cost`} render={({ field }) => (
-                      <Input {...field} type="number" placeholder="التكلفة" className="h-9 text-xs rounded-lg border-gray-200 flex-1" dir="ltr" disabled={pending} />
+                      <Input {...field} type="number" placeholder={t('menuItem.costPlaceholder')} className="h-9 text-xs rounded-lg border-gray-200 flex-1" dir="ltr" disabled={pending} />
                     )} />
                     <button
                       type="button"
@@ -404,35 +462,35 @@ export function EditMenuItemDialog({
                 className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-700 transition-colors mt-1"
               >
                 <Plus className="h-3.5 w-3.5" />
-                إضافة حجم
+                {t('menuItem.addSize')}
               </button>
             </div>
 
             {/* Calories */}
             <FormField control={form.control} name="calories" render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-xs text-gray-600">السعرات الحرارية <span className="text-gray-600">(اختياري)</span></FormLabel>
+                <FormLabel className="text-xs text-gray-600">{t('menuItem.calories')} <span className="text-gray-600">({t('common.optional')})</span></FormLabel>
                 <FormControl>
                   <Input
                     {...field}
                     type="number"
-                    placeholder="مثال: 350"
+                    placeholder={t('menuItem.caloriesPlaceholder')}
                     className="h-11 px-3 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder:text-gray-600 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:border-gray-900"
                     dir="ltr"
                     disabled={pending}
                   />
                 </FormControl>
-                <p className="text-[10px] text-gray-600">سعرات حرارية لكل حجم (اختياري)</p>
+                <p className="text-[10px] text-gray-600">{t('menuItem.caloriesHint')}</p>
                 <FormMessage className="text-[10px]" />
               </FormItem>
             )} />
 
             {/* Allergens */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-600">المواد الحساسية <span className="text-gray-600">(اختياري)</span></FormLabel>
-              <p className="text-[10px] text-gray-600 -mt-1">حدد المواد التي يحتويها هذا الطبق</p>
+              <FormLabel className="text-xs text-gray-600">{t('menuItem.allergensLabel')} <span className="text-gray-600">({t('common.optional')})</span></FormLabel>
+              <p className="text-[10px] text-gray-600 -mt-1">{t('menuItem.allergensHint')}</p>
               <div className="flex flex-wrap gap-2">
-                {COMMON_ALLERGENS.map((allergen) => {
+                {ALLERGEN_META.map((allergen) => {
                   const isSelected = form.watch('allergens')?.includes(allergen.id);
                   return (
                     <button
@@ -455,7 +513,7 @@ export function EditMenuItemDialog({
                       disabled={pending}
                     >
                       <span>{allergen.icon}</span>
-                      <span>{allergen.label}</span>
+                      <span>{t(allergen.labelKey)}</span>
                       {isSelected && <span className="text-red-400">✓</span>}
                     </button>
                   );
@@ -464,14 +522,17 @@ export function EditMenuItemDialog({
               {form.watch('allergens')?.length > 0 && (
                 <div className="flex items-center gap-1.5 text-[10px] text-red-500">
                   <span>⚠️</span>
-                  <span>يحتوي على: {form.watch('allergens').map((a: string) => COMMON_ALLERGENS.find(al => al.id === a)?.label).filter(Boolean).join('، ')}</span>
+                  <span>{t('menuItem.containsPrefix')} {form.watch('allergens').map((a: string) => {
+                    const meta = ALLERGEN_META.find(al => al.id === a);
+                    return meta ? t(meta.labelKey) : null;
+                  }).filter(Boolean).join(locale === 'ar' ? '، ' : ', ')}</span>
                 </div>
               )}
             </div>
 
             {/* Status */}
             <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-600">الحالة</FormLabel>
+              <FormLabel className="text-xs text-gray-600">{t('common.status')}</FormLabel>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -483,7 +544,7 @@ export function EditMenuItemDialog({
                       : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
                   )}
                 >
-                  متاح
+                  {t('menu.available')}
                 </button>
                 <button
                   type="button"
@@ -495,7 +556,7 @@ export function EditMenuItemDialog({
                       : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
                   )}
                 >
-                  غير متاح
+                  {t('menu.unavailable')}
                 </button>
               </div>
             </div>
@@ -507,7 +568,7 @@ export function EditMenuItemDialog({
                 onClick={() => setOpen(false)}
                 className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
-                إلغاء
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
@@ -515,7 +576,7 @@ export function EditMenuItemDialog({
                 className="flex-1 h-11 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {pending ? "جاري الحفظ..." : isEditing ? "حفظ التعديلات" : "إضافة الطبق"}
+                {pending ? t('common.saving') : isEditing ? t('common.saveChanges') : t('menuItem.addDishSubmit')}
               </button>
             </div>
           </form>

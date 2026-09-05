@@ -293,6 +293,38 @@ router.post("/generate-menu-descriptions", async (req: Request, res: Response) =
   }
 });
 
+router.post("/translate-menu-item", async (req: Request, res: Response) => {
+  try {
+    const { name, description } = req.body as { name: string; description?: string };
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5-mini",
+      max_completion_tokens: 512,
+      messages: [
+        {
+          role: "user",
+          content: `Translate this Saudi restaurant menu item from Arabic to natural, appetizing English menu copy (not a literal word-for-word translation). Name: ${JSON.stringify(name)}. Description: ${JSON.stringify(description || "")}. If the description is empty, return an empty string for description_en. Return JSON: { name_en: string, description_en: string }`,
+        },
+      ],
+      response_format: { type: "json_schema", json_schema: {
+        name: "menu_item_translation",
+        schema: {
+          type: "object",
+          properties: {
+            name_en: { type: "string" },
+            description_en: { type: "string" },
+          },
+          required: ["name_en", "description_en"],
+          additionalProperties: false,
+        },
+        strict: true,
+      }},
+    });
+    res.json(JSON.parse(completion.choices[0]?.message?.content ?? '{"name_en":"","description_en":""}'));
+  } catch (err) {
+    jsonError(res, err, { name_en: "", description_en: "" });
+  }
+});
+
 router.post("/summarize-feedback", async (req: Request, res: Response) => {
   try {
     const { chatMessages } = req.body as { chatMessages: Array<{ text: string; timestamp: string }> };
