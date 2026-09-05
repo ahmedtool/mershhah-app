@@ -4,6 +4,7 @@
 // dist/app.mjs — a plain bundled Express app with no `.listen()` call, safe
 // to import directly here. vercel.json's buildCommand runs that build before
 // Vercel packages this function, since dist/ isn't committed to git.
+// @ts-ignore - dist/app.mjs is esbuild output with no declaration file
 import app from "../artifacts/api-server/dist/app.mjs";
 
 export default app;
