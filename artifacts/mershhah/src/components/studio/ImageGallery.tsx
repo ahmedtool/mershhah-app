@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
+import { resolveStorageUrl } from '@/lib/storage-url';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -102,7 +103,8 @@ export function ImageGallery({ onImageSelect }: { onImageSelect?: (storagePath: 
         setDownloadingId(storagePath);
         toast({ title: "جاري تجهيز الصورة للتحميل..." });
         try {
-            const { data: { publicUrl } } = supabase.storage.from('restaurant-assets').getPublicUrl(storagePath);
+            const publicUrl = resolveStorageUrl(storagePath);
+            if (!publicUrl) throw new Error('تعذّر تحديد رابط الصورة');
             const response = await fetch(publicUrl);
             if (!response.ok) throw new Error('فشل تحميل الصورة من الخادم');
             const blob = await response.blob();

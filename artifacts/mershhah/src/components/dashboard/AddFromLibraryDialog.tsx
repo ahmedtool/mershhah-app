@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search, ArrowRight, UploadCloud, X, Library } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { uploadToImageKit } from '@/lib/imagekit';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { syncPublicPage } from '@/lib/public-pages';
 import { useUser } from '@/hooks/useUser';
@@ -105,11 +106,7 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
         let imagePath: string | null = null;
 
         if (imageFile) {
-          const ext = imageFile.name.split('.').pop();
-          const path = `restaurants/${restaurantId}/menu_items/${Date.now()}.${ext}`;
-          const { error } = await supabase.storage.from('restaurant-assets').upload(path, imageFile);
-          if (error) throw error;
-          imagePath = path;
+          imagePath = await uploadToImageKit(imageFile, `restaurants/${restaurantId}/menu_items`);
         } else if (selected.image_path) {
           // Independent snapshot copy: physically duplicates the storage object
           // so later admin edits to the library item never affect this restaurant's copy.

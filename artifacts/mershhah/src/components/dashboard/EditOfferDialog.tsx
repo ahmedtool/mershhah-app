@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { supabase } from "@/lib/supabase";
+import { uploadToImageKit } from "@/lib/imagekit";
 import { syncPublicPage } from '@/lib/public-pages';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { MenuItem, Branch } from "@/lib/types";
@@ -133,13 +134,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
         let finalImageUrl = values.image_url;
 
         if (imageFile) {
-          const fileExt = imageFile.name.split('.').pop();
-          const fileName = `restaurants/${restaurantId}/offers/offer-${Date.now()}.${fileExt}`;
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('restaurant-assets')
-            .upload(fileName, imageFile, { upsert: true });
-          if (uploadError) throw uploadError;
-          finalImageUrl = uploadData.path;
+          finalImageUrl = await uploadToImageKit(imageFile, `restaurants/${restaurantId}/offers`);
         }
 
         const offerData: any = {

@@ -1,18 +1,9 @@
 'use client';
 
 import React from 'react';
-import { supabase } from '@/lib/supabase';
+import { resolveStorageUrl } from '@/lib/storage-url';
 import { cn } from '@/lib/utils';
 import { ImageIcon } from 'lucide-react';
-
-const BUCKET = 'restaurant-assets';
-
-function resolveUrl(imagePath: string | null | undefined): string | null {
-  if (!imagePath || imagePath.trim() === '') return null;
-  if (imagePath.startsWith('http') || imagePath.startsWith('blob:')) return imagePath;
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(imagePath);
-  return data?.publicUrl || null;
-}
 
 type StorageImageProps = {
   imagePath: string | null | undefined;
@@ -34,7 +25,7 @@ export const StorageImage: React.FC<StorageImageProps> = ({
   className,
   fill,
 }) => {
-  const resolvedUrl = resolveUrl(imagePath);
+  const resolvedUrl = resolveStorageUrl(imagePath);
   const styleProps = width && height ? { width, height } : {};
 
   if (!resolvedUrl) {

@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
 import { supabase } from '@/lib/supabase';
+import { resolveStorageUrl } from '@/lib/storage-url';
+import { uploadToImageKit } from '@/lib/imagekit';
 import { useToast } from '@/hooks/use-toast';
 import { syncPublicPage } from '@/lib/public-pages';
 import { cn } from '@/lib/utils';
@@ -15,8 +17,6 @@ import { Link } from 'wouter';
 import { ImageGallery } from '@/components/studio/ImageGallery';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import type { MenuItem } from '@/lib/types';
-
-const BUCKET = 'restaurant-assets';
 
 function loadImageElement(imgSrc: string, isCrossOrigin: boolean): Promise<HTMLImageElement> {
   const img = document.createElement('img');
@@ -191,8 +191,7 @@ export default function ImageEnhancerPage() {
     setEnhancedUrl(null);
     setEnhancedBlob(null);
     if (item.image_url) {
-      const { data } = supabase.storage.from(BUCKET).getPublicUrl(item.image_url);
-      setOriginalUrl(data.publicUrl);
+      setOriginalUrl(resolveStorageUrl(item.image_url));
       setOriginalIsRemote(true);
     } else {
       setOriginalUrl(null);
@@ -225,10 +224,9 @@ export default function ImageEnhancerPage() {
   };
 
   const handleGallerySelect = (storagePath: string) => {
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
     setEnhancedUrl(null);
     setEnhancedBlob(null);
-    setOriginalUrl(data.publicUrl);
+    setOriginalUrl(resolveStorageUrl(storagePath));
     setOriginalIsRemote(true);
     setGalleryOpen(false);
   };
@@ -284,11 +282,10 @@ export default function ImageEnhancerPage() {
     if (!restaurantId || !selectedItem || !enhancedBlob) return;
     setIsSaving(true);
     try {
-      const path = `restaurants/${restaurantId}/menu_items/${selectedItem.id}-enhanced-${Date.now()}.webp`;
-      const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, enhancedBlob);
-      if (uploadError) throw uploadError;
+      const fileName = `${selectedItem.id}-enhanced-${Date.now()}.webp`;
+      const imageUrl = await uploadToImageKit(enhancedBlob, `restaurants/${restaurantId}/menu_items`, fileName);
 
-      const { error: updateError } = await supabase.from('menu_items').update({ image_url: path }).eq('id', selectedItem.id);
+      const { error: updateError } = await supabase.from('menu_items').update({ image_url: imageUrl }).eq('id', selectedItem.id);
       if (updateError) throw updateError;
 
       syncPublicPage(restaurantId).catch(() => {});
@@ -397,7 +394,7 @@ export default function ImageEnhancerPage() {
                         <div className="w-7 h-7 rounded-md overflow-hidden bg-gray-50 border border-gray-100 shrink-0 flex items-center justify-center">
                           {item.image_url ? (
                             <img
-                              src={supabase.storage.from(BUCKET).getPublicUrl(item.image_url).data.publicUrl}
+                              src={resolveStorageUrl(item.image_url) ?? undefined}
                               alt={item.name}
                               className="w-full h-full object-cover"
                             />

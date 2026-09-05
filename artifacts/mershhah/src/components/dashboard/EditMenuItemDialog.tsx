@@ -11,6 +11,7 @@ import { Textarea } from '../ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, Sparkles, Check, ChevronDown, UploadCloud, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { uploadToImageKit } from '@/lib/imagekit';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { generateMenuDescriptions } from '@/ai/flows/generate-menu-descriptions';
 import { translateMenuItem } from '@/ai/flows/translate-menu-item';
@@ -23,7 +24,6 @@ import { COMMON_CATEGORY_SUGGESTIONS } from '@/lib/category-suggestions';
 import { useUser } from '@/hooks/useUser';
 import { useLanguage } from '@/components/shared/LanguageContext';
 
-const BUCKET = 'restaurant-assets';
 
 const ALLERGEN_META = [
   { id: 'nuts', labelKey: 'menuItem.allergenNuts', icon: '🥜' },
@@ -230,11 +230,7 @@ export function EditMenuItemDialog({
       try {
         let imgUrl = values.image_url;
         if (imageFile) {
-          const ext = imageFile.name.split('.').pop();
-          const path = `restaurants/${restaurantId}/menu_items/${Date.now()}.${ext}`;
-          const { error } = await supabase.storage.from(BUCKET).upload(path, imageFile);
-          if (error) throw error;
-          imgUrl = path;
+          imgUrl = await uploadToImageKit(imageFile, `restaurants/${restaurantId}/menu_items`);
         }
 
         const data: any = { ...values, image_url: imgUrl, restaurant_id: restaurantId };
