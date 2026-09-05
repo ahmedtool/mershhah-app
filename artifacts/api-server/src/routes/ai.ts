@@ -262,37 +262,6 @@ router.post("/extract-menu-from-image", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/generate-menu-descriptions", async (req: Request, res: Response) => {
-  try {
-    const { items } = req.body as { items: unknown[] };
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      max_completion_tokens: 2048,
-      messages: [
-        {
-          role: "user",
-          content: `Generate appealing Arabic descriptions for these menu items: ${JSON.stringify(items)}. Return JSON: { items: array with same structure but improved/added description field }`,
-        },
-      ],
-      response_format: { type: "json_schema", json_schema: {
-        name: "menu_descriptions",
-        schema: {
-          type: "object",
-          properties: {
-            items: { type: "array", items: { type: "object", additionalProperties: true } },
-          },
-          required: ["items"],
-          additionalProperties: false,
-        },
-        strict: true,
-      }},
-    });
-    res.json(JSON.parse(completion.choices[0]?.message?.content ?? '{"items":[]}'));
-  } catch (err) {
-    jsonError(res, err, { items: [] });
-  }
-});
-
 router.post("/translate-menu-item", async (req: Request, res: Response) => {
   try {
     const { name, description } = req.body as { name: string; description?: string };

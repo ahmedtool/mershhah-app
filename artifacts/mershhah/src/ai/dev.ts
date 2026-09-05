@@ -1,4 +1,3 @@
-import '@/ai/flows/generate-menu-descriptions.ts';
 import '@/ai/flows/summarize-customer-feedback.ts';
 import '@/ai/flows/restaurant-chat-flow.ts';
 import '@/ai/flows/generate-smart-offers.ts';

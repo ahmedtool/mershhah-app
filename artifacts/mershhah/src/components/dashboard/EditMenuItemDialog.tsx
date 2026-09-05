@@ -13,7 +13,6 @@ import { Loader2, Plus, Trash2, Sparkles, Check, ChevronDown, UploadCloud, X } f
 import { supabase } from '@/lib/supabase';
 import { uploadToImageKit } from '@/lib/imagekit';
 import { StorageImage } from '@/components/shared/StorageImage';
-import { generateMenuDescriptions } from '@/ai/flows/generate-menu-descriptions';
 import { translateMenuItem } from '@/ai/flows/translate-menu-item';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
@@ -73,19 +72,12 @@ interface EditMenuItemDialogProps {
   itemCount?: number;
 }
 
-const isToday = (d?: Date) => {
-  if (!d) return false;
-  const t = new Date();
-  return d.getDate() === t.getDate() && d.getMonth() === t.getMonth() && d.getFullYear() === t.getFullYear();
-};
-
 export function EditMenuItemDialog({
   children, menuItem, menuItems, onSave, restaurantId, userId, itemCount = 0,
 }: EditMenuItemDialogProps) {
   const { t, dir, locale } = useLanguage();
   const [open, setOpen] = useState(false);
   const [isSaving, startSaving] = useTransition();
-  const [isGeneratingDesc, startGeneratingDesc] = useTransition();
   const [isTranslating, startTranslating] = useTransition();
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
@@ -94,7 +86,6 @@ export function EditMenuItemDialog({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [descGenerated, setDescGenerated] = useState(false);
   const { toast } = useToast();
   const { user } = useUser();
   const isEditing = !!menuItem;
@@ -130,7 +121,6 @@ export function EditMenuItemDialog({
       });
       setImageFile(null);
       setImagePreview(menuItem?.image_url || null);
-      setDescGenerated(false);
       setCategorySearch('');
     }
   }, [open, menuItem, isEditing, form]);
@@ -169,30 +159,6 @@ export function EditMenuItemDialog({
     } finally {
       setIsCreatingCategory(false);
     }
-  };
-
-  const handleGenerateDesc = async () => {
-    const name = form.getValues('name');
-    if (!name) { toast({ title: t('menuItem.enterDishNameFirst'), variant: 'destructive' }); return; }
-
-    if (isEditing && menuItem?.id) {
-      const { data } = await supabase.from('menu_items').select('description_last_generated_at').eq('id', menuItem.id).single();
-      if (data?.description_last_generated_at && isToday(new Date(data.description_last_generated_at))) {
-        toast({ title: t('menuItem.dailyLimitReached'), description: t('menuItem.oneDescriptionPerDay'), variant: 'destructive' });
-        return;
-      }
-    }
-
-    startGeneratingDesc(async () => {
-      try {
-        const result = await generateMenuDescriptions({ items: [{ name, category: form.getValues('category') }] });
-        form.setValue('description', result.items?.[0]?.description ?? '', { shouldValidate: true });
-        setDescGenerated(true);
-        toast({ title: t('menuItem.descriptionGenerated') });
-      } catch (e: any) {
-        toast({ title: t('menuItem.generationFailed'), description: e.message, variant: 'destructive' });
-      }
-    });
   };
 
   const handleTranslate = () => {
@@ -234,7 +200,6 @@ export function EditMenuItemDialog({
         }
 
         const data: any = { ...values, image_url: imgUrl, restaurant_id: restaurantId };
-        if (descGenerated) data.description_last_generated_at = new Date().toISOString();
 
         if (isEditing) {
           const { error } = await supabase.from('menu_items').update(data).eq('id', menuItem.id);
@@ -254,7 +219,7 @@ export function EditMenuItemDialog({
     });
   }
 
-  const pending = isSaving || isGeneratingDesc || isTranslating;
+  const pending = isSaving || isTranslating;
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
 
   return (
@@ -305,18 +270,7 @@ export function EditMenuItemDialog({
             {/* Description */}
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
-                <div className="flex items-center justify-between">
-                  <FormLabel className="text-xs text-gray-600">{t('menuItem.description')}</FormLabel>
-                  <button
-                    type="button"
-                    onClick={handleGenerateDesc}
-                    disabled={pending}
-                    className="flex items-center gap-1 text-[11px] font-medium text-gray-600 hover:text-gray-700 transition-colors"
-                  >
-                    <Sparkles className="h-3 w-3" />
-                    {t('menuItem.generateWithAi')}
-                  </button>
-                </div>
+                <FormLabel className="text-xs text-gray-600">{t('menuItem.description')}</FormLabel>
                 <FormControl>
                   <Textarea placeholder={t('menuItem.descriptionPlaceholder')} {...field} rows={2} className="rounded-xl border-gray-200 text-sm resize-none min-h-[72px]" disabled={pending} />
                 </FormControl>
