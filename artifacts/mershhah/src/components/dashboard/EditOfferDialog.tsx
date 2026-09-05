@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useRef, useEffect } from "react";
+import { useState, useTransition, useRef, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -24,18 +24,20 @@ import { StorageImage } from "../shared/StorageImage";
 import { ImageGallery } from "../studio/ImageGallery";
 import { useLanguage } from "@/components/shared/LanguageContext";
 
-const formSchema = z.object({
-  title: z.string().min(2, "العنوان مطلوب"),
-  description: z.string().min(10, "الوصف يجب أن يكون 10 أحرف على الأقل"),
-  image_url: z.string().optional().or(z.literal("")),
-  external_link: z.string().url({ message: "أدخل رابطاً صحيحاً" }).optional().or(z.literal('')),
-  valid_until: z.date({ required_error: "تاريخ الانتهاء مطلوب" }),
-  status: z.enum(['active', 'expired']).default('active'),
-  items: z.array(z.string()).optional(),
-  branch_id: z.string().nullable().optional(),
-});
+function buildOfferSchema(t: (key: string) => string) {
+  return z.object({
+    title: z.string().min(2, t('offers.titleRequired')),
+    description: z.string().min(10, t('offers.descriptionMinLength')),
+    image_url: z.string().optional().or(z.literal("")),
+    external_link: z.string().url({ message: t('offers.enterValidLink') }).optional().or(z.literal('')),
+    valid_until: z.date({ required_error: t('offers.expiryDateRequired') }),
+    status: z.enum(['active', 'expired']).default('active'),
+    items: z.array(z.string()).optional(),
+    branch_id: z.string().nullable().optional(),
+  });
+}
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildOfferSchema>>;
 
 interface EditOfferDialogProps {
   children: React.ReactNode;
@@ -55,16 +57,17 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
   const [open, setOpen] = useState(!!defaultOpen);
   const [isSaving, startSaving] = useTransition();
   const { toast } = useToast();
-  const { dir } = useLanguage();
+  const { t, dir } = useLanguage();
   const isEditing = !!offer;
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const offerSchema = useMemo(() => buildOfferSchema(t), [t]);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(offerSchema),
   });
 
   useEffect(() => {
@@ -113,7 +116,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 4 * 1024 * 1024) {
-        toast({ title: "الصورة كبيرة جداً", description: "اختر صورة أقل من 4 ميجابايت", variant: "destructive" });
+        toast({ title: t('offers.imageTooLarge'), description: t('offers.chooseSmallerImage'), variant: "destructive" });
         return;
       }
       setImageFile(file);
@@ -160,12 +163,12 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
           if (error) throw error;
         }
 
-        toast({ title: `تم ${isEditing ? 'تعديل' : 'إضافة'} العرض` });
+        toast({ title: isEditing ? t('offers.offerUpdatedToast') : t('offers.offerAddedToast') });
         syncPublicPage(restaurantId).catch(() => {});
         onSave?.();
         setOpen(false);
       } catch (error: any) {
-        toast({ variant: "destructive", title: "خطأ", description: error.message });
+        toast({ variant: "destructive", title: t('common.errorTitle'), description: error.message });
       }
     });
   }
@@ -179,7 +182,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
           <div className="relative w-full aspect-[16/9] bg-gray-100 overflow-hidden">
             {imagePreview ? (
               <>
-                <StorageImage imagePath={imagePreview} alt="صورة العرض" fill className="object-cover" sizes="600px" />
+                <StorageImage imagePath={imagePreview} alt={t('offers.offerImageAlt')} fill className="object-cover" sizes="600px" />
                 <button
                   type="button"
                   onClick={() => { setImagePreview(null); setImageFile(null); form.setValue('image_url', ''); }}
@@ -193,7 +196,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 <div className="w-14 h-14 rounded-2xl bg-gray-200 flex items-center justify-center">
                   <ImageIcon className="h-6 w-6 text-gray-600" />
                 </div>
-                <p className="text-sm text-gray-600">أضف صورة للعرض</p>
+                <p className="text-sm text-gray-600">{t('offers.addOfferImage')}</p>
               </div>
             )}
           </div>
@@ -207,7 +210,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
                 <UploadCloud className="h-4 w-4" />
-                من ملفاتي
+                {t('offers.fromMyFiles')}
               </button>
               <button
                 type="button"
@@ -215,7 +218,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 className="flex-1 flex items-center justify-center gap-2 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
               >
                 <ImageIcon className="h-4 w-4" />
-                من المعرض
+                {t('offers.fromGallery')}
               </button>
             </div>
           )}
@@ -230,10 +233,10 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-600">عنوان العرض</FormLabel>
+                    <FormLabel className="text-xs text-gray-600">{t('offers.offerTitle')}</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="مثال: خصم 30% على الوجبات"
+                        placeholder={t('offers.offerTitlePlaceholder')}
                         {...field}
                         className="h-11 rounded-xl border-gray-200 text-sm"
                         disabled={isSaving}
@@ -250,10 +253,10 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-600">وصف العرض</FormLabel>
+                    <FormLabel className="text-xs text-gray-600">{t('offers.offerDescriptionLabel')}</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="صف العرض باختصار..."
+                        placeholder={t('offers.offerDescriptionPlaceholder')}
                         {...field}
                         rows={3}
                         className="rounded-xl border-gray-200 text-sm resize-none min-h-[80px]"
@@ -271,7 +274,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 name="external_link"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-600">رابط خارجي <span className="text-gray-600">(اختياري)</span></FormLabel>
+                    <FormLabel className="text-xs text-gray-600">{t('offers.externalLink')} <span className="text-gray-600">({t('common.optional')})</span></FormLabel>
                     <FormControl>
                       <Input
                         dir="ltr"
@@ -292,14 +295,15 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 name="items"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-600">المنتجات <span className="text-gray-600">(اختياري)</span></FormLabel>
+                    <FormLabel className="text-xs text-gray-600">{t('offers.products')} <span className="text-gray-600">({t('common.optional')})</span></FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
                           <button
                             type="button"
                             className={cn(
-                              "w-full h-10 rounded-xl border border-gray-200 bg-white px-3 text-right flex items-center justify-between text-sm transition-colors hover:border-gray-300",
+                              "w-full h-10 rounded-xl border border-gray-200 bg-white px-3 flex items-center justify-between text-sm transition-colors hover:border-gray-300",
+                              dir === 'rtl' ? 'text-right' : 'text-left',
                               !field.value?.length && "text-gray-600"
                             )}
                           >
@@ -311,7 +315,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                                   </Badge>
                                 ))
                               ) : (
-                                <span>اختر المنتجات...</span>
+                                <span>{t('offers.chooseProductsPlaceholder')}</span>
                               )}
                               {(field.value?.length ?? 0) > 2 && (
                                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0">+{(field.value?.length ?? 0) - 2}</Badge>
@@ -323,9 +327,9 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                       </PopoverTrigger>
                       <PopoverContent className="w-[--radix-popover-trigger-width] p-0 rounded-xl" dir={dir}>
                         <Command>
-                          <CommandInput placeholder="ابحث..." className="h-9" />
+                          <CommandInput placeholder={t('offers.searchPlaceholder')} className="h-9" />
                           <CommandList>
-                            <CommandEmpty>لا يوجد منتجات</CommandEmpty>
+                            <CommandEmpty>{t('offers.noProducts')}</CommandEmpty>
                             <CommandGroup>
                               {menuItems.map((item) => (
                                 <CommandItem
@@ -340,7 +344,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                                   }}
                                 >
                                   <Check className={cn("h-4 w-4 shrink-0", field.value?.includes(item.id) ? "opacity-100" : "opacity-0")} />
-                                  <span className="mr-2">{item.name}</span>
+                                  <span className="ms-2">{item.name}</span>
                                 </CommandItem>
                               ))}
                             </CommandGroup>
@@ -360,7 +364,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                   name="branch_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-gray-600">يظهر في <span className="text-gray-600">(اختياري)</span></FormLabel>
+                      <FormLabel className="text-xs text-gray-600">{t('offers.showsIn')} <span className="text-gray-600">({t('common.optional')})</span></FormLabel>
                       <div className="flex flex-wrap gap-1.5">
                         <button
                           type="button"
@@ -370,7 +374,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                             !field.value ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                           )}
                         >
-                          كل الفروع
+                          {t('offers.allBranchesOption')}
                         </button>
                         {branches.map((branch) => (
                           <button
@@ -386,7 +390,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                           </button>
                         ))}
                       </div>
-                      <p className="text-[10px] text-gray-600">حدد فرعاً ليظهر العرض لزوّاره فقط، عبر رابط الفرع الخاص به</p>
+                      <p className="text-[10px] text-gray-600">{t('offers.branchTargetingNote')}</p>
                       <FormMessage className="text-[10px]" />
                     </FormItem>
                   )}
@@ -399,7 +403,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 name="valid_until"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs text-gray-600">صالح حتى</FormLabel>
+                    <FormLabel className="text-xs text-gray-600">{t('offers.validUntilLabel')}</FormLabel>
                     <FormControl>
                       <Input
                         type="date"
@@ -425,7 +429,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                   onClick={() => setOpen(false)}
                   className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                 >
-                  إلغاء
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
@@ -433,7 +437,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                   className="flex-1 h-11 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {isSaving ? "جاري الحفظ..." : isEditing ? "حفظ التعديلات" : "إضافة العرض"}
+                  {isSaving ? t('common.saving') : isEditing ? t('common.saveChanges') : t('offers.addOfferSubmit')}
                 </button>
               </div>
             </form>
@@ -445,8 +449,8 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
       <GalleryDialog open={galleryOpen} onOpenChange={setGalleryOpen}>
         <GalleryDialogContent className="max-w-4xl max-h-[90vh] flex flex-col rounded-2xl" dir={dir}>
           <div className="px-5 pt-5 pb-3">
-            <h2 className="text-lg font-bold">اختر صورة من المعرض</h2>
-            <p className="text-sm text-gray-600 mt-1">اضغط على الصورة لاختيارها</p>
+            <h2 className="text-lg font-bold">{t('offers.chooseImageFromGalleryTitle')}</h2>
+            <p className="text-sm text-gray-600 mt-1">{t('offers.clickImageToSelect')}</p>
           </div>
           <div className="flex-1 overflow-y-auto -mx-6 px-6 pb-6">
             <ImageGallery onImageSelect={handleImageSelect} />

@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, Pencil, Trash2, Eye, MousePointer2, ExternalLink } from "lucide-react";
 import { EditOfferDialog } from "./EditOfferDialog";
 import { StorageImage } from "../shared/StorageImage";
+import { useLanguage } from "@/components/shared/LanguageContext";
 import type { Offer, Branch } from "@/lib/types";
 
 interface OfferCardProps {
@@ -16,6 +17,7 @@ interface OfferCardProps {
 }
 
 export function OfferCard({ offer, onDelete, restaurantId, branches = [], onActionCompletion }: OfferCardProps) {
+    const { t, locale } = useLanguage();
     const validUntilDate = offer.valid_until?.toDate ? offer.valid_until.toDate() : new Date();
     const timeRemaining = Math.round((validUntilDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24));
     const isExpired = timeRemaining < 0;
@@ -34,7 +36,7 @@ export function OfferCard({ offer, onDelete, restaurantId, branches = [], onActi
                 />
                 <div className="absolute top-2 right-2">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isExpired ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
-                        {isExpired ? 'منتهي' : 'فعّال'}
+                        {isExpired ? t('offers.expired') : t('offers.offerActive')}
                     </span>
                 </div>
             </div>
@@ -62,17 +64,17 @@ export function OfferCard({ offer, onDelete, restaurantId, branches = [], onActi
                 <div className="grid grid-cols-3 gap-2">
                     <div className="text-center bg-gray-50 border border-gray-100 rounded-xl p-2">
                         <Eye className="h-3 w-3 text-gray-600 mx-auto mb-1" />
-                        <p className="text-[10px] text-gray-600">مشاهدة</p>
+                        <p className="text-[10px] text-gray-600">{t('offers.viewsShort')}</p>
                         <p className="text-sm font-black text-gray-900">{offer.views_count || 0}</p>
                     </div>
                     <div className="text-center bg-gray-50 border border-gray-100 rounded-xl p-2">
                         <MousePointer2 className="h-3 w-3 text-gray-600 mx-auto mb-1" />
-                        <p className="text-[10px] text-gray-600">نقرات</p>
+                        <p className="text-[10px] text-gray-600">{t('offers.clicksShort')}</p>
                         <p className="text-sm font-black text-gray-900">{offer.clicks_count || 0}</p>
                     </div>
                     <div className="text-center bg-gray-50 border border-gray-100 rounded-xl p-2">
                         <ExternalLink className="h-3 w-3 text-gray-600 mx-auto mb-1" />
-                        <p className="text-[10px] text-gray-600">رابط</p>
+                        <p className="text-[10px] text-gray-600">{t('offers.linkShort')}</p>
                         <p className="text-sm font-black text-gray-900">{offer.link_clicks_count || 0}</p>
                     </div>
                 </div>
@@ -81,7 +83,7 @@ export function OfferCard({ offer, onDelete, restaurantId, branches = [], onActi
             {/* Footer */}
             <div className="px-4 py-3 border-t border-gray-100 flex justify-between items-center">
                 <span className="text-[10px] text-gray-600">
-                    {isExpired ? 'انتهى:' : 'ينتهي بعد:'} <span className="font-bold text-gray-600">{isExpired ? validUntilDate.toLocaleDateString('ar-SA') : `${timeRemaining} أيام`}</span>
+                    {isExpired ? t('offers.expiredOn') : t('offers.expiresIn')} <span className="font-bold text-gray-600">{isExpired ? validUntilDate.toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US') : `${timeRemaining} ${t('offers.daysWord')}`}</span>
                 </span>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -93,12 +95,12 @@ export function OfferCard({ offer, onDelete, restaurantId, branches = [], onActi
                         <EditOfferDialog offer={offer} restaurantId={restaurantId} branches={branches} onSave={onActionCompletion}>
                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-xs gap-2">
                                 <Pencil className="h-3 w-3" />
-                                تعديل
+                                {t('common.edit')}
                             </DropdownMenuItem>
                         </EditOfferDialog>
                         <DropdownMenuItem onClick={onDelete} className="text-xs gap-2 text-red-600">
                             <Trash2 className="h-3 w-3" />
-                            حذف
+                            {t('common.delete')}
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
