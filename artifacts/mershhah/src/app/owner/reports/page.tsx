@@ -32,11 +32,12 @@ import { buildInsights, type Insight } from '@/lib/report-insights';
 import { REVIEW_TAGS, countReviewsByTag } from '@/lib/review-tags';
 import { WhatsAppIcon, InstagramIcon, SnapchatIcon, TikTokIcon, XIcon } from '@/components/shared/SocialIcons';
 import {
-    TRAFFIC_SOURCE_LABELS,
+    TRAFFIC_SOURCE_LABEL_KEYS,
     MARKETING_LINK_PLATFORMS,
     buildMarketingLink,
     type TrafficSource,
 } from '@/lib/traffic-source';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 const TRAFFIC_SOURCE_ICONS: Partial<Record<TrafficSource, React.ElementType>> = {
     whatsapp: WhatsAppIcon,
@@ -67,6 +68,7 @@ function dayKey(d: Date): string {
 export default function InsightsHubPage() {
     const { user, isLoading: isUserLoading } = useUser();
     const { toast } = useToast();
+    const { t, locale } = useLanguage();
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [analysisData, setAnalysisData] = useState<AnalyzedItem[]>([]);
     const [totalClicks, setTotalClicks] = useState(0);
@@ -132,7 +134,7 @@ export default function InsightsHubPage() {
             analyzed.sort((a, b) => b.popularity - a.popularity);
             setAnalysisData(analyzed);
         } catch (e: any) {
-            toast({ title: "خطأ في جلب البيانات", description: e.message, variant: "destructive" });
+            toast({ title: t('reports.fetchError'), description: e.message, variant: "destructive" });
         } finally {
             setIsLoadingData(false);
         }
@@ -174,10 +176,10 @@ export default function InsightsHubPage() {
         for (let i = TREND_DAYS - 1; i >= 0; i--) {
             const d = new Date(Date.now() - i * DAY_MS);
             const key = dayKey(d);
-            days.push({ key, label: d.toLocaleDateString('ar-SA', { day: 'numeric', month: 'short' }), count: counts.get(key) || 0 });
+            days.push({ key, label: d.toLocaleDateString(locale === 'ar' ? 'ar-SA' : 'en-US', { day: 'numeric', month: 'short' }), count: counts.get(key) || 0 });
         }
         return days;
-    }, [visitDates]);
+    }, [visitDates, locale]);
 
     const weekChange = useMemo(() => {
         const thisWeek = trend.slice(-7).reduce((s, d) => s + d.count, 0);
@@ -205,7 +207,8 @@ export default function InsightsHubPage() {
         visitsLastWeek: weekChange.lastWeek,
         qrVisits: hubVisitsQr,
         linkVisits: hubVisitsLink,
-    }), [engineered, weekChange, hubVisitsQr, hubVisitsLink]);
+        t,
+    }), [engineered, weekChange, hubVisitsQr, hubVisitsLink, t]);
 
     const topicCounts = useMemo(() => countReviewsByTag(reviewComments), [reviewComments]);
     const topicMax = Math.max(1, ...Object.values(topicCounts));
@@ -233,7 +236,7 @@ export default function InsightsHubPage() {
 
     return (
         <div className="space-y-5 pb-20">
-            <PageHeader title="مركز التقارير" description="حلل سلوك عملائك وحوّل البيانات إلى قرارات تزيد أرباحك." />
+            <PageHeader title={t('reports.title')} description={t('reports.subtitle')} />
 
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -242,40 +245,40 @@ export default function InsightsHubPage() {
                         <div className="w-8 h-8 rounded-xl bg-gray-900 flex items-center justify-center">
                             <MousePointerClick className="h-3.5 w-3.5 text-white" />
                         </div>
-                        <span className="text-[10px] text-gray-600 font-medium">التفاعل</span>
+                        <span className="text-[10px] text-gray-600 font-medium">{t('reports.interaction')}</span>
                     </div>
                     <p className="text-2xl font-black text-gray-900">{totalClicks}</p>
-                    <p className="text-[10px] text-gray-600 mt-1">نقرة على المنيو</p>
+                    <p className="text-[10px] text-gray-600 mt-1">{t('reports.menuClick')}</p>
                 </div>
                 <div className="bg-white border border-gray-100 rounded-2xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                         <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
                             <Star className="h-3.5 w-3.5 text-amber-500" />
                         </div>
-                        <span className="text-[10px] text-gray-600 font-medium">التقييم</span>
+                        <span className="text-[10px] text-gray-600 font-medium">{t('reports.rating')}</span>
                     </div>
                     <p className="text-2xl font-black text-gray-900">{restaurantRating.toFixed(1)}</p>
-                    <p className="text-[10px] text-gray-600 mt-1">{restaurantReviewCount} تقييم</p>
+                    <p className="text-[10px] text-gray-600 mt-1">{restaurantReviewCount} {t('reports.ratingCount')}</p>
                 </div>
                 <div className="bg-white border border-gray-100 rounded-2xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                         <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center">
                             <Eye className="h-3.5 w-3.5 text-emerald-500" />
                         </div>
-                        <span className="text-[10px] text-gray-600 font-medium">الزيارات (30 يوم)</span>
+                        <span className="text-[10px] text-gray-600 font-medium">{t('reports.visits30Days')}</span>
                     </div>
                     <p className="text-2xl font-black text-gray-900">{totalVisits}</p>
-                    <p className="text-[10px] text-gray-600 mt-1">زيارة للمنيو</p>
+                    <p className="text-[10px] text-gray-600 mt-1">{t('reports.menuVisit')}</p>
                 </div>
                 <div className="bg-white border border-gray-100 rounded-2xl p-4">
                     <div className="flex items-center gap-2 mb-3">
                         <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
                             <Zap className="h-3.5 w-3.5 text-blue-500" />
                         </div>
-                        <span className="text-[10px] text-gray-600 font-medium">الحالة</span>
+                        <span className="text-[10px] text-gray-600 font-medium">{t('reports.status')}</span>
                     </div>
-                    <p className="text-lg font-black text-gray-900">{totalClicks > 0 ? 'نشط' : 'جديد'}</p>
-                    <p className="text-[10px] text-gray-600 mt-1">واجهتك الرقمية</p>
+                    <p className="text-lg font-black text-gray-900">{totalClicks > 0 ? t('reports.active') : t('reports.newStatus')}</p>
+                    <p className="text-[10px] text-gray-600 mt-1">{t('reports.yourDigitalInterface')}</p>
                 </div>
             </div>
 
@@ -284,7 +287,7 @@ export default function InsightsHubPage() {
                 <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-gray-600" />
-                        <h3 className="text-sm font-bold text-gray-900">الزيارات آخر 30 يوم</h3>
+                        <h3 className="text-sm font-bold text-gray-900">{t('reports.visitsLast30Days')}</h3>
                     </div>
                     {weekPct !== null && (
                         <span className={cn(
@@ -292,7 +295,7 @@ export default function InsightsHubPage() {
                             weekPct >= 0 ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-500"
                         )}>
                             {weekPct >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                            {Math.abs(weekPct)}% مقارنة بالأسبوع اللي قبله
+                            {Math.abs(weekPct)}% {t('reports.comparedToLastWeek')}
                         </span>
                     )}
                 </div>
@@ -324,7 +327,7 @@ export default function InsightsHubPage() {
                             className="absolute -top-1 bg-gray-900 text-white text-[10px] font-bold px-2 py-1 rounded-lg pointer-events-none whitespace-nowrap"
                             style={{ right: `${100 - (pointX(hoveredDay) / chartW) * 100}%`, transform: 'translateX(50%)' }}
                         >
-                            {trend[hoveredDay].label} — {trend[hoveredDay].count} زيارة
+                            {trend[hoveredDay].label} — {trend[hoveredDay].count} {t('reports.visitWord')}
                         </div>
                     )}
                 </div>
@@ -339,8 +342,8 @@ export default function InsightsHubPage() {
                                 <QrCode className="h-4 w-4 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-sm font-bold text-gray-900">داخل الفرع</h3>
-                                <p className="text-[10px] text-gray-600">QR على الطاولة</p>
+                                <h3 className="text-sm font-bold text-gray-900">{t('reports.insideBranch')}</h3>
+                                <p className="text-[10px] text-gray-600">{t('reports.qrOnTable')}</p>
                             </div>
                         </div>
                         <p className="text-2xl font-black text-gray-900">{hubVisitsQr}</p>
@@ -356,8 +359,8 @@ export default function InsightsHubPage() {
                                 <Link2 className="h-4 w-4 text-gray-600" />
                             </div>
                             <div>
-                                <h3 className="text-sm font-bold text-gray-900">خارج الفرع</h3>
-                                <p className="text-[10px] text-gray-600">رابط الانستقرام</p>
+                                <h3 className="text-sm font-bold text-gray-900">{t('reports.outsideBranch')}</h3>
+                                <p className="text-[10px] text-gray-600">{t('reports.instagramLink')}</p>
                             </div>
                         </div>
                         <p className="text-2xl font-black text-gray-900">{hubVisitsLink}</p>
@@ -373,7 +376,7 @@ export default function InsightsHubPage() {
                 <div className="bg-white border border-gray-100 rounded-2xl p-5">
                     <div className="flex items-center gap-2 mb-4">
                         <BarChart3 className="h-4 w-4 text-gray-600" />
-                        <h3 className="text-sm font-bold text-gray-900">تفصيل مصادر الزيارات</h3>
+                        <h3 className="text-sm font-bold text-gray-900">{t('reports.trafficSourceBreakdown')}</h3>
                     </div>
                     <div className="space-y-3">
                         {sortedSources.map(([source, count]) => {
@@ -383,7 +386,7 @@ export default function InsightsHubPage() {
                                     <div className="w-7 h-7 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center shrink-0 text-gray-600">
                                         <SourceIcon className="h-3.5 w-3.5" size={14} />
                                     </div>
-                                    <span className="text-xs font-bold text-gray-700 w-24 shrink-0">{TRAFFIC_SOURCE_LABELS[source]}</span>
+                                    <span className="text-xs font-bold text-gray-700 w-24 shrink-0">{t(TRAFFIC_SOURCE_LABEL_KEYS[source])}</span>
                                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                                         <div className="h-full rounded-full bg-[#2a78d6] transition-all" style={{ width: `${(count / sourceMax) * 100}%` }} />
                                     </div>
@@ -393,7 +396,7 @@ export default function InsightsHubPage() {
                         })}
                     </div>
                     <p className="text-[10px] text-gray-500 mt-4 pt-4 border-t border-gray-100 leading-relaxed">
-                        بعض التطبيقات (زي واتساب وانستقرام) ما ترسل مصدر الزيارة تلقائيًا، فتظهر كـ"مباشر". عشان تعرف بالضبط وش يجيبك زوار من كل منصة، استخدم الروابط الجاهزة تحت.
+                        {t('reports.trafficSourceNote')}
                     </p>
                 </div>
             )}
@@ -402,11 +405,11 @@ export default function InsightsHubPage() {
             {hubUsername && (
                 <div className="bg-white border border-gray-100 rounded-2xl p-5">
                     <div className="flex items-center gap-2 mb-5">
-                        <h3 className="text-sm font-bold text-gray-900">الرابط الذكي و QR</h3>
+                        <h3 className="text-sm font-bold text-gray-900">{t('reports.smartLinkAndQr')}</h3>
                     </div>
                     <div className="flex flex-col md:flex-row gap-8 items-start">
                         <div className="flex-1 space-y-3">
-                            <p className="text-[10px] text-gray-600 font-medium">الرابط الذكي</p>
+                            <p className="text-[10px] text-gray-600 font-medium">{t('reports.smartLink')}</p>
                             <div className="flex gap-2 items-center flex-wrap">
                                 <code className="text-xs text-gray-600 bg-gray-50 border border-gray-100 px-3 py-2 rounded-xl break-all">
                                     mershhah.com/{hubUsername}
@@ -414,26 +417,26 @@ export default function InsightsHubPage() {
                                 <Button size="sm" variant="outline" className="h-8 rounded-xl text-xs border-gray-200" onClick={() => {
                                     const baseUrl = (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, '');
                                     navigator.clipboard.writeText(`${baseUrl}/${hubUsername}`);
-                                    toast({ title: 'تم نسخ الرابط' });
-                                }}><Copy className="h-3 w-3 ml-1" /> نسخ</Button>
+                                    toast({ title: t('reports.linkCopied') });
+                                }}><Copy className="h-3 w-3 me-1" /> {t('common.copy')}</Button>
                             </div>
                         </div>
                         <div className="space-y-3">
-                            <p className="text-[10px] text-gray-600 font-medium">QR للطاولة</p>
+                            <p className="text-[10px] text-gray-600 font-medium">{t('reports.qrForTable')}</p>
                             {qrDataUrl ? (
                                 <div className="inline-flex flex-col items-center gap-3">
                                     <div className="inline-block p-3 bg-white rounded-2xl border border-gray-100">
-                                        <img src={qrDataUrl} alt="QR للمنيو" className="w-[180px] h-[180px]" />
+                                        <img src={qrDataUrl} alt={t('reports.qrForMenuAlt')} className="w-[180px] h-[180px]" />
                                     </div>
                                     <Button size="sm" variant="outline" className="h-8 rounded-xl text-xs border-gray-200" onClick={() => {
                                         const link = document.createElement('a');
                                         link.href = qrDataUrl;
                                         link.download = `hub-qr-${hubUsername || 'menu'}.png`;
                                         document.body.appendChild(link); link.click(); link.remove();
-                                    }}>تحميل QR</Button>
+                                    }}>{t('reports.downloadQr')}</Button>
                                 </div>
                             ) : (
-                                <div className="w-[180px] h-[180px] bg-gray-50 border border-gray-100 rounded-2xl animate-pulse flex items-center justify-center text-[10px] text-gray-600">جاري التوليد...</div>
+                                <div className="w-[180px] h-[180px] bg-gray-50 border border-gray-100 rounded-2xl animate-pulse flex items-center justify-center text-[10px] text-gray-600">{t('reports.generating')}</div>
                             )}
                         </div>
                     </div>
@@ -444,13 +447,14 @@ export default function InsightsHubPage() {
             {hubUsername && (
                 <div className="bg-white border border-gray-100 rounded-2xl p-5">
                     <div className="mb-5">
-                        <h3 className="text-sm font-bold text-gray-900">روابط تسويقية</h3>
-                        <p className="text-[10px] text-gray-600 mt-1">انسخ الرابط المخصص لكل منصة وحطه هناك — كذا تقدر تشوف بالضبط كل منصة جابتك كم زيارة بدل ما تتحسب "مباشر".</p>
+                        <h3 className="text-sm font-bold text-gray-900">{t('reports.marketingLinksTitle')}</h3>
+                        <p className="text-[10px] text-gray-600 mt-1">{t('reports.marketingLinksDesc')}</p>
                     </div>
                     <div className="space-y-2">
-                        {MARKETING_LINK_PLATFORMS.map(({ source, label, hint }) => {
+                        {MARKETING_LINK_PLATFORMS.map(({ source, labelKey, hintKey }) => {
                             const PlatformIcon = TRAFFIC_SOURCE_ICONS[source] || Link2;
                             const link = buildMarketingLink(baseUrl, hubUsername, source);
+                            const label = t(labelKey);
                             return (
                                 <div key={source} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl flex-wrap">
                                     <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0 text-gray-700">
@@ -458,12 +462,12 @@ export default function InsightsHubPage() {
                                     </div>
                                     <div className="flex-1 min-w-[160px]">
                                         <p className="text-xs font-bold text-gray-900">{label}</p>
-                                        <p className="text-[10px] text-gray-500">{hint}</p>
+                                        <p className="text-[10px] text-gray-500">{t(hintKey)}</p>
                                     </div>
                                     <Button size="sm" variant="outline" className="h-8 rounded-xl text-xs border-gray-200 shrink-0" onClick={() => {
                                         navigator.clipboard.writeText(link);
-                                        toast({ title: `تم نسخ رابط ${label}` });
-                                    }}><Copy className="h-3 w-3 ml-1" /> نسخ</Button>
+                                        toast({ title: `${t('reports.linkCopiedForPrefix')} ${label}` });
+                                    }}><Copy className="h-3 w-3 me-1" /> {t('common.copy')}</Button>
                                 </div>
                             );
                         })}
@@ -475,12 +479,12 @@ export default function InsightsHubPage() {
             <div className={cn("bg-white border border-gray-100 rounded-2xl p-5", !isPaid && "relative")}>
                 <div className="flex items-center gap-2 mb-4">
                     <Sparkles className="h-4 w-4 text-gray-600" />
-                    <h3 className="text-sm font-bold text-gray-900">لمحات ذكية</h3>
+                    <h3 className="text-sm font-bold text-gray-900">{t('reports.smartInsights')}</h3>
                 </div>
                 {!isPaid ? (
-                    <UpgradeGate description="افتح لمحات ذكية توليك بالضبط وش تسوي بمنيوك وعروضك" />
+                    <UpgradeGate description={t('reports.smartInsightsGateDesc')} />
                 ) : insights.length === 0 ? (
-                    <div className="py-10 text-center text-gray-600 text-xs">تحتاج بيانات أكثر عشان نطلع لك لمحات — رجّع بعد شوي.</div>
+                    <div className="py-10 text-center text-gray-600 text-xs">{t('reports.needMoreDataForInsights')}</div>
                 ) : (
                     <div className="space-y-2">
                         {insights.map(insight => (
@@ -504,10 +508,10 @@ export default function InsightsHubPage() {
                 <div className="bg-white border border-gray-100 rounded-2xl p-5">
                     <div className="flex items-center gap-2 mb-4">
                         <TrendingUp className="h-4 w-4 text-gray-600" />
-                        <h3 className="text-sm font-bold text-gray-900">الأصناف الأعلى تفاعلاً</h3>
+                        <h3 className="text-sm font-bold text-gray-900">{t('reports.topEngagedItems')}</h3>
                     </div>
                     {analysisData.length === 0 ? (
-                        <div className="py-12 text-center text-gray-600 text-xs">لا توجد بيانات تفاعل بعد</div>
+                        <div className="py-12 text-center text-gray-600 text-xs">{t('reports.noInteractionDataYet')}</div>
                     ) : (
                         <div className="space-y-2">
                             {analysisData.slice(0, 5).map((item, idx) => (
@@ -527,15 +531,15 @@ export default function InsightsHubPage() {
                 <div className={cn("bg-white border border-gray-100 rounded-2xl p-5", !isPaid && "relative")}>
                     <div className="flex items-center gap-2 mb-1">
                         <BarChart3 className="h-4 w-4 text-gray-600" />
-                        <h3 className="text-sm font-bold text-gray-900">مصفوفة هندسة المنيو</h3>
+                        <h3 className="text-sm font-bold text-gray-900">{t('reports.menuEngineeringMatrix')}</h3>
                     </div>
-                    <p className="text-[10px] text-gray-600 mb-4">شعبية × ربحية كل صنف مقارنة بمتوسط منيوك</p>
+                    <p className="text-[10px] text-gray-600 mb-4">{t('reports.menuEngineeringDesc')}</p>
                     {!isPaid ? (
-                        <UpgradeGate description="اشترك لفتح تصنيف كل صنف بمنيوك وتوصيات تزيد أرباحك" />
+                        <UpgradeGate description={t('reports.menuEngineeringGateDesc')} />
                     ) : engineered.length < 2 ? (
-                        <div className="py-12 text-center text-gray-600 text-xs">تحتاج على الأقل صنفين لهم تفاعل وتكلفة محددة</div>
+                        <div className="py-12 text-center text-gray-600 text-xs">{t('reports.needTwoItemsMinimum')}</div>
                     ) : (
-                        <MenuEngineeringMatrix items={engineered} />
+                        <MenuEngineeringMatrix items={engineered} t={t} locale={locale} />
                     )}
                 </div>
             </div>
@@ -544,19 +548,19 @@ export default function InsightsHubPage() {
             <div className={cn("bg-white border border-gray-100 rounded-2xl p-5", !isPaid && "relative")}>
                 <div className="flex items-center gap-2 mb-4">
                     <Star className="h-4 w-4 text-gray-600" />
-                    <h3 className="text-sm font-bold text-gray-900">وش يتكلم عنه عملاؤك؟</h3>
+                    <h3 className="text-sm font-bold text-gray-900">{t('reports.whatCustomersSayTitle')}</h3>
                 </div>
                 {!isPaid ? (
-                    <UpgradeGate description="اشترك لتشوف أكثر جوانب مطعمك اللي يذكرها العملاء بتقييماتهم" />
+                    <UpgradeGate description={t('reports.reviewTopicsGateDesc')} />
                 ) : reviewComments.length === 0 ? (
-                    <div className="py-10 text-center text-gray-600 text-xs">لا توجد تعليقات كافية بعد</div>
+                    <div className="py-10 text-center text-gray-600 text-xs">{t('reports.notEnoughComments')}</div>
                 ) : (
                     <div className="space-y-3">
                         {REVIEW_TAGS.map(tag => {
                             const count = topicCounts[tag.id];
                             return (
                                 <div key={tag.id} className="flex items-center gap-3">
-                                    <span className="text-xs font-bold text-gray-600 w-14 shrink-0">{tag.label}</span>
+                                    <span className="text-xs font-bold text-gray-600 w-14 shrink-0">{t(tag.labelKey)}</span>
                                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                                         <div className="h-full rounded-full bg-[#2a78d6] transition-all" style={{ width: `${(count / topicMax) * 100}%` }} />
                                     </div>
@@ -572,23 +576,24 @@ export default function InsightsHubPage() {
 }
 
 function UpgradeGate({ description }: { description: string }) {
+    const { t } = useLanguage();
     return (
         <div className="py-10 text-center space-y-4">
             <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto">
                 <Crown className="h-6 w-6 text-gray-600" />
             </div>
             <div className="space-y-1">
-                <p className="text-sm font-bold text-gray-900">متاح في الباقات المدفوعة</p>
+                <p className="text-sm font-bold text-gray-900">{t('reports.availableOnPaidPlans')}</p>
                 <p className="text-[10px] text-gray-600 max-w-xs mx-auto">{description}</p>
             </div>
             <Button asChild size="sm" className="h-9 rounded-xl bg-gray-900 text-white hover:bg-gray-800 font-bold text-xs px-6">
-                <Link href="/pricing">ترقية الحساب</Link>
+                <Link href="/pricing">{t('reports.upgradeAccount')}</Link>
             </Button>
         </div>
     );
 }
 
-function MenuEngineeringMatrix({ items }: { items: (AnalyzedItem & { classification: MenuClassification })[] }) {
+function MenuEngineeringMatrix({ items, t, locale }: { items: (AnalyzedItem & { classification: MenuClassification })[]; t: (key: string) => string; locale: string }) {
     const size = 300;
     const pad = 28;
     const maxPop = Math.max(1, ...items.map(i => i.popularity));
@@ -629,13 +634,13 @@ function MenuEngineeringMatrix({ items }: { items: (AnalyzedItem & { classificat
                 <line x1={pad} y1={size - pad} x2={size - pad} y2={size - pad} stroke="#c3c2b7" strokeWidth="1" />
                 <line x1={pad} y1={pad} x2={pad} y2={size - pad} stroke="#c3c2b7" strokeWidth="1" />
 
-                <text x={size - pad} y={size - pad + 14} textAnchor="end" fontSize="9" fill="#898781">شعبية أكثر ←</text>
-                <text x={pad} y={pad - 8} textAnchor="start" fontSize="9" fill="#898781">↑ ربحية أعلى</text>
+                <text x={size - pad} y={size - pad + 14} textAnchor="end" fontSize="9" fill="#898781">{t('reports.morePopularAxis')}</text>
+                <text x={pad} y={pad - 8} textAnchor="start" fontSize="9" fill="#898781">{t('reports.higherProfitAxis')}</text>
 
                 {items.map(item => (
                     <g key={item.id}>
                         <circle cx={x(item.popularity)} cy={y(item.profitMargin)} r="5.5" fill={CLASSIFICATION_INFO[item.classification].color} stroke="white" strokeWidth="1.5">
-                            <title>{`${item.name} — ${CLASSIFICATION_INFO[item.classification].label} (شعبية ${item.popularity}، ربحية ${item.profitMargin.toFixed(0)}%)`}</title>
+                            <title>{`${item.name} — ${t(CLASSIFICATION_INFO[item.classification].labelKey)} (${t('reports.popularityWord')} ${item.popularity}${locale === 'ar' ? '،' : ','} ${t('reports.profitabilityWord')} ${item.profitMargin.toFixed(0)}%)`}</title>
                         </circle>
                         {labeled.has(item.id) && (
                             <text x={x(item.popularity) + 8} y={y(item.profitMargin) + 3} fontSize="9" fontWeight="700" fill="#0b0b0b">{item.name}</text>
@@ -649,7 +654,7 @@ function MenuEngineeringMatrix({ items }: { items: (AnalyzedItem & { classificat
                 {(Object.keys(CLASSIFICATION_INFO) as MenuClassification[]).filter(cls => byClass[cls]?.length).map(cls => (
                     <div key={cls} className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CLASSIFICATION_INFO[cls].color }} />
-                        <span className="text-[10px] text-gray-600 font-medium">{CLASSIFICATION_INFO[cls].label} ({byClass[cls].length})</span>
+                        <span className="text-[10px] text-gray-600 font-medium">{t(CLASSIFICATION_INFO[cls].labelKey)} ({byClass[cls].length})</span>
                     </div>
                 ))}
             </div>
@@ -660,8 +665,8 @@ function MenuEngineeringMatrix({ items }: { items: (AnalyzedItem & { classificat
                 if (!dominant || !byClass[dominant]?.length) return null;
                 return (
                     <p className="text-[11px] text-gray-600 leading-relaxed mt-4 pt-4 border-t border-gray-100">
-                        <span className="font-bold text-gray-700">{CLASSIFICATION_INFO[dominant].label}: </span>
-                        {CLASSIFICATION_INFO[dominant].advice}
+                        <span className="font-bold text-gray-700">{t(CLASSIFICATION_INFO[dominant].labelKey)}: </span>
+                        {t(CLASSIFICATION_INFO[dominant].adviceKey)}
                     </p>
                 );
             })()}

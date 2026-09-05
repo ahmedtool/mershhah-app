@@ -51,28 +51,28 @@ export function detectTrafficSource(searchParams: URLSearchParams): TrafficSourc
   return 'other';
 }
 
-export const TRAFFIC_SOURCE_LABELS: Record<TrafficSource, string> = {
-  qr_branch: 'QR داخل الفرع',
-  whatsapp: 'واتساب',
-  instagram: 'انستقرام',
-  snapchat: 'سناب شات',
-  tiktok: 'تيك توك',
-  x: 'اكس (تويتر)',
-  google_maps: 'خرائط جوجل',
-  google_search: 'بحث جوجل',
-  facebook: 'فيسبوك',
-  direct: 'مباشر',
-  other: 'أخرى',
+export const TRAFFIC_SOURCE_LABEL_KEYS: Record<TrafficSource, string> = {
+  qr_branch: 'trafficSource.qrBranch',
+  whatsapp: 'trafficSource.whatsapp',
+  instagram: 'trafficSource.instagram',
+  snapchat: 'trafficSource.snapchat',
+  tiktok: 'trafficSource.tiktok',
+  x: 'trafficSource.x',
+  google_maps: 'trafficSource.googleMaps',
+  google_search: 'trafficSource.googleSearch',
+  facebook: 'trafficSource.facebook',
+  direct: 'trafficSource.direct',
+  other: 'trafficSource.other',
 };
 
 /** Platforms offered by the marketing-links generator, in display order. */
-export const MARKETING_LINK_PLATFORMS: { source: TrafficSource; label: string; hint: string }[] = [
-  { source: 'whatsapp', label: 'واتساب', hint: 'الصقه في حالة واتساب أو بايو واتساب بزنس' },
-  { source: 'instagram', label: 'انستقرام', hint: 'الصقه في البايو أو الستوري' },
-  { source: 'snapchat', label: 'سناب شات', hint: 'الصقه في البايو' },
-  { source: 'tiktok', label: 'تيك توك', hint: 'الصقه في البايو' },
-  { source: 'x', label: 'اكس (تويتر)', hint: 'الصقه في البايو' },
-  { source: 'google_maps', label: 'خرائط جوجل', hint: 'الصقه في خانة "الموقع الإلكتروني" ببروفايل جوجل التجاري (Google Business Profile)' },
+export const MARKETING_LINK_PLATFORMS: { source: TrafficSource; labelKey: string; hintKey: string }[] = [
+  { source: 'whatsapp', labelKey: 'trafficSource.whatsapp', hintKey: 'trafficSource.whatsappHint' },
+  { source: 'instagram', labelKey: 'trafficSource.instagram', hintKey: 'trafficSource.instagramHint' },
+  { source: 'snapchat', labelKey: 'trafficSource.snapchat', hintKey: 'trafficSource.snapchatHint' },
+  { source: 'tiktok', labelKey: 'trafficSource.tiktok', hintKey: 'trafficSource.tiktokHint' },
+  { source: 'x', labelKey: 'trafficSource.x', hintKey: 'trafficSource.xHint' },
+  { source: 'google_maps', labelKey: 'trafficSource.googleMaps', hintKey: 'trafficSource.googleMapsHint' },
 ];
 
 export function buildMarketingLink(baseUrl: string, username: string, source: TrafficSource): string {

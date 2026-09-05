@@ -2,10 +2,10 @@
 // page (filter chips) and the owner reports page (topic breakdown), so both
 // classify comments the same way.
 export const REVIEW_TAGS = [
-  { id: 'quality', label: 'الجودة', icon: '✦', keywords: ['جودة', 'ممتاز', 'رائع', 'جميل', 'فخم', 'مميز', 'أفضل', 'نظيف', 'مرتب'] },
-  { id: 'taste', label: 'الطعم', icon: '◆', keywords: ['طعم', 'لذيذ', 'بنكه', 'مذاق', 'حلو', 'مر', 'مالح', 'حار', 'طازج'] },
-  { id: 'price', label: 'السعر', icon: '●', keywords: ['سعر', 'غالي', 'رخيص', 'مناسب', 'قيمة', 'فلوس', 'ميزانية', 'يبرد'] },
-  { id: 'speed', label: 'الخدمة', icon: '▲', keywords: ['سريع', 'بطيء', 'انتظار', 'خدمة', 'توصيل', 'استلام', 'زحمة', 'مهمل', 'ودود'] },
+  { id: 'quality', labelKey: 'reviewTags.quality', icon: '✦', keywords: ['جودة', 'ممتاز', 'رائع', 'جميل', 'فخم', 'مميز', 'أفضل', 'نظيف', 'مرتب'] },
+  { id: 'taste', labelKey: 'reviewTags.taste', icon: '◆', keywords: ['طعم', 'لذيذ', 'بنكه', 'مذاق', 'حلو', 'مر', 'مالح', 'حار', 'طازج'] },
+  { id: 'price', labelKey: 'reviewTags.price', icon: '●', keywords: ['سعر', 'غالي', 'رخيص', 'مناسب', 'قيمة', 'فلوس', 'ميزانية', 'يبرد'] },
+  { id: 'speed', labelKey: 'reviewTags.speed', icon: '▲', keywords: ['سريع', 'بطيء', 'انتظار', 'خدمة', 'توصيل', 'استلام', 'زحمة', 'مهمل', 'ودود'] },
 ] as const;
 
 export type ReviewTagId = typeof REVIEW_TAGS[number]['id'];

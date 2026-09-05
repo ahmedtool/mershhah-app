@@ -10,26 +10,26 @@ export type MenuClassification = 'star' | 'plow-horse' | 'puzzle' | 'dog';
 // light --pairs all` → ALL CHECKS PASS. The CVD 6-8 floor band on the
 // green/red pair is legal only with secondary encoding, which the matrix
 // already has (quadrant zone labels + legend + per-point labels).
-export const CLASSIFICATION_INFO: Record<MenuClassification, { label: string; color: string; advice: string }> = {
+export const CLASSIFICATION_INFO: Record<MenuClassification, { labelKey: string; color: string; adviceKey: string }> = {
   star: {
-    label: 'نجم',
+    labelKey: 'menuEngineering.star',
     color: '#1baf7a',
-    advice: 'شعبية وربحية فوق المتوسط — حافظ على الجودة وثبّته بمكان بارز بالمنيو.',
+    adviceKey: 'menuEngineering.starAdvice',
   },
   'plow-horse': {
-    label: 'حصان الحرث',
+    labelKey: 'menuEngineering.plowHorse',
     color: '#2a78d6',
-    advice: 'شعبي جداً بس هامش ربحه ضعيف — جرّب ترفع سعره شوي أو تقلل تكلفة مكوناته.',
+    adviceKey: 'menuEngineering.plowHorseAdvice',
   },
   puzzle: {
-    label: 'يحتاج ترويج',
+    labelKey: 'menuEngineering.puzzle',
     color: '#eda100',
-    advice: 'ربحية ممتازة بس ما يشوفه أحد — رشّحه بالمنيو أو ضيفه لعرض ترويجي.',
+    adviceKey: 'menuEngineering.puzzleAdvice',
   },
   dog: {
-    label: 'يحتاج مراجعة',
+    labelKey: 'menuEngineering.dog',
     color: '#e34948',
-    advice: 'شعبية وربحية تحت المتوسط — راجع سعره وتكلفته، أو فكّر تستبدله.',
+    adviceKey: 'menuEngineering.dogAdvice',
   },
 };
 
