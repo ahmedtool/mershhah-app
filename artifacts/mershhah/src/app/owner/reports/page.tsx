@@ -12,6 +12,7 @@ import {
     QrCode,
     Link2,
     Copy,
+    Check,
     Eye,
     Zap,
     Crown,
@@ -52,6 +53,39 @@ const TRAFFIC_SOURCE_ICONS: Partial<Record<TrafficSource, React.ElementType>> = 
     direct: Link2,
     qr_branch: QrCode,
 };
+
+function MarketingLinkCard({ icon: Icon, label, hint, link, onCopy }: {
+    icon: React.ElementType;
+    label: string;
+    hint: string;
+    link: string;
+    onCopy: () => void;
+}) {
+    const [copied, setCopied] = useState(false);
+    return (
+        <button
+            type="button"
+            onClick={() => {
+                navigator.clipboard.writeText(link);
+                setCopied(true);
+                onCopy();
+                setTimeout(() => setCopied(false), 1500);
+            }}
+            className="flex flex-col items-center gap-1 p-2.5 bg-gray-50 border border-gray-100 rounded-xl text-center hover:bg-gray-100 transition-colors"
+        >
+            <div className="w-7 h-7 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-gray-700 shrink-0">
+                <Icon className="h-3.5 w-3.5" size={14} />
+            </div>
+            <p className="text-[11px] font-bold text-gray-900 truncate w-full">{label}</p>
+            <p className="text-[9px] text-gray-500 truncate w-full">{hint}</p>
+            {copied ? (
+                <Check className="h-3 w-3 text-emerald-600 mt-0.5" />
+            ) : (
+                <Copy className="h-3 w-3 text-gray-400 mt-0.5" />
+            )}
+        </button>
+    );
+}
 
 // Omit MenuItem's own (differently-cased) `classification` field so it
 // doesn't collide with this page's lowercase MenuClassification below.
@@ -458,25 +492,20 @@ export default function InsightsHubPage() {
                         <h3 className="text-sm font-bold text-gray-900">{t('reports.marketingLinksTitle')}</h3>
                         <p className="text-[10px] text-gray-600 mt-1">{t('reports.marketingLinksDesc')}</p>
                     </div>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
                         {MARKETING_LINK_PLATFORMS.map(({ source, labelKey, hintKey }) => {
                             const PlatformIcon = TRAFFIC_SOURCE_ICONS[source] || Link2;
                             const link = buildMarketingLink(baseUrl, hubUsername, source);
                             const label = t(labelKey);
                             return (
-                                <div key={source} className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl flex-wrap">
-                                    <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0 text-gray-700">
-                                        <PlatformIcon className="h-4 w-4" size={16} />
-                                    </div>
-                                    <div className="flex-1 min-w-[160px]">
-                                        <p className="text-xs font-bold text-gray-900">{label}</p>
-                                        <p className="text-[10px] text-gray-500">{t(hintKey)}</p>
-                                    </div>
-                                    <Button size="sm" variant="outline" className="h-8 rounded-xl text-xs border-gray-200 shrink-0" onClick={() => {
-                                        navigator.clipboard.writeText(link);
-                                        toast({ title: `${t('reports.linkCopiedForPrefix')} ${label}` });
-                                    }}><Copy className="h-3 w-3 me-1" /> {t('common.copy')}</Button>
-                                </div>
+                                <MarketingLinkCard
+                                    key={source}
+                                    icon={PlatformIcon}
+                                    label={label}
+                                    hint={t(hintKey)}
+                                    link={link}
+                                    onCopy={() => toast({ title: `${t('reports.linkCopiedForPrefix')} ${label}` })}
+                                />
                             );
                         })}
                     </div>
