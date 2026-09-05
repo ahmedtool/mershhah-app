@@ -1,3 +1,5 @@
+import { compressImage } from '@/lib/compress-image';
+
 const UPLOAD_URL = "https://upload.imagekit.io/api/v1/files/upload";
 
 type AuthParams = { token: string; expire: number; signature: string; publicKey: string };
@@ -16,9 +18,10 @@ async function getAuthParams(): Promise<AuthParams> {
 export async function uploadToImageKit(file: File | Blob, folder: string, fileName?: string): Promise<string> {
   const { token, expire, signature, publicKey } = await getAuthParams();
   const resolvedName = fileName ?? (file instanceof File ? file.name : `${Date.now()}.jpg`);
+  const toUpload = file instanceof File ? await compressImage(file) : file;
 
   const formData = new FormData();
-  formData.append("file", file, resolvedName);
+  formData.append("file", toUpload, resolvedName);
   formData.append("fileName", resolvedName);
   formData.append("publicKey", publicKey);
   formData.append("signature", signature);

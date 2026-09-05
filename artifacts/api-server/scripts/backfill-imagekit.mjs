@@ -1,7 +1,13 @@
 // One-off backfill: move existing owner-hosted images (menu item photos,
 // offer images, restaurant logos) from Supabase Storage to ImageKit, so old
-// and new images all live in one place. Admin-owned content (store tools,
-// shared products, delivery-app logos) is untouched.
+// and new images all live in one place, each restaurant under its own
+// restaurants/<id>/... folder (same layout new uploads already use).
+// Admin-owned content (store tools, shared products, delivery-app logos)
+// is untouched.
+//
+// Gets its ImageKit upload signature from the live /api/imagekit/auth
+// route instead of needing IMAGEKIT_PRIVATE_KEY locally - only Supabase
+// service-role access is needed on this machine.
 //
 // Usage (from artifacts/api-server):
 //   node --env-file=.env scripts/backfill-imagekit.mjs --dry-run
@@ -11,7 +17,7 @@
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const IK_PRIVATE_KEY = process.env.IMAGEKIT_PRIVATE_KEY;
+const AUTH_ENDPOINT = process.env.IMAGEKIT_AUTH_ENDPOINT || "https://www.mershhah.com/api/imagekit/auth";
 const BUCKET = "restaurant-assets";
 const DRY_RUN = process.argv.includes("--dry-run");
 
@@ -45,16 +51,25 @@ async function supabaseUpdate(table, id, data) {
   if (!res.ok) throw new Error(`update ${table}#${id} failed: ${res.status} ${await res.text()}`);
 }
 
+async function getAuthParams() {
+  const res = await fetch(AUTH_ENDPOINT);
+  if (!res.ok) throw new Error(`imagekit auth failed: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
 async function uploadToImageKitFromUrl(sourceUrl, folder, fileName) {
-  const auth = Buffer.from(`${IK_PRIVATE_KEY}:`).toString("base64");
+  const { token, expire, signature, publicKey } = await getAuthParams();
   const form = new FormData();
   form.append("file", sourceUrl);
   form.append("fileName", fileName);
+  form.append("publicKey", publicKey);
+  form.append("signature", signature);
+  form.append("expire", String(expire));
+  form.append("token", token);
   form.append("folder", folder);
   form.append("useUniqueFileName", "true");
   const res = await fetch("https://upload.imagekit.io/api/v1/files/upload", {
     method: "POST",
-    headers: { Authorization: `Basic ${auth}` },
     body: form,
   });
   const data = await res.json();
@@ -89,7 +104,6 @@ async function migrate({ table, select, urlField, idField, folderOf }) {
 
 async function main() {
   if (!SUPABASE_URL || !SERVICE_KEY) throw new Error("Missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY");
-  if (!IK_PRIVATE_KEY) throw new Error("Missing IMAGEKIT_PRIVATE_KEY");
 
   console.log(DRY_RUN ? "=== DRY RUN (no writes) ===" : "=== LIVE RUN (writing) ===");
 
