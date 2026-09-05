@@ -1,9 +1,10 @@
 'use client';
 
 import { useUser } from '@/hooks/useUser';
-import { Loader2, ShieldAlert } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { usePathname } from '@/lib/navigation';
 import { useState, useEffect } from 'react';
+import { FullScreenLoader } from '@/components/shared/FullScreenLoader';
 
 // Define which permission is required for each route
 const routePermissions: Record<string, string> = {
@@ -24,11 +25,6 @@ const routePermissions: Record<string, string> = {
 const SUPER_ADMIN_EMAIL = 'ahmedsupsa@gmail.com';
 
 
-const FullPageLoader = () => (
-    <div className="flex items-center justify-center h-full min-h-[50vh]">
-        <Loader2 className="animate-spin h-10 w-10 text-primary" />
-    </div>
-);
 
 const CenteredMessage = ({ icon: Icon, title, children }: { icon: React.ElementType, title: string, children: React.ReactNode }) => (
     <div className="flex flex-col items-center justify-center h-full min-h-[50vh] text-center p-6 bg-background rounded-lg">
@@ -52,11 +48,11 @@ export function AdminAccountStatusChecker({ children }: { children: React.ReactN
     }, [isLoading, user]);
 
     if (isLoading || !ready) {
-        return <FullPageLoader />;
+        return <FullScreenLoader />;
     }
 
     if (!user) {
-        return <FullPageLoader />;
+        return <FullScreenLoader />;
     }
 
     // If there is a user, check their role.

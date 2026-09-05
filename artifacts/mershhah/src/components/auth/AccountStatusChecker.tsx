@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser } from '@/hooks/useUser';
-import { Loader2, ShieldAlert, BadgeInfo } from 'lucide-react';
+import { ShieldAlert, BadgeInfo } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Link } from 'wouter';
 import { useState, useEffect } from 'react';
@@ -10,12 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { FREE_PLAN_ID, freeSubscriptionEndDate } from '@/lib/free-plan';
 import { PlanPricingGrid } from '@/components/dashboard/PlanPricingGrid';
-
-const FullPageLoader = () => (
-    <div className="flex items-center justify-center h-full min-h-[50vh]">
-        <Loader2 className="animate-spin h-10 w-10 text-gray-900" />
-    </div>
-);
+import { FullScreenLoader } from '@/components/shared/FullScreenLoader';
 
 const CenteredMessage = ({ icon: Icon, title, children }: { icon: React.ElementType, title: string, children: React.ReactNode }) => (
     <div className="flex flex-col items-center justify-center h-full min-h-[50vh] text-center p-6 bg-background rounded-lg">
@@ -90,8 +85,8 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
 
     const isLoading = isUserLoading || isCheckingSubscription;
 
-    if (isLoading) return <FullPageLoader />;
-    if (!user) return <FullPageLoader />;
+    if (isLoading) return <FullScreenLoader />;
+    if (!user) return <FullScreenLoader />;
 
     if (user.role !== 'owner') {
         return <CenteredMessage icon={ShieldAlert} title="غير مصرح به">ليس لديك صلاحية الوصول لهذه الصفحة.</CenteredMessage>;
@@ -126,5 +121,5 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
         return <>{children}</>;
     }
 
-    return <FullPageLoader />;
+    return <FullScreenLoader />;
 }

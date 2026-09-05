@@ -8,9 +8,9 @@ import { Loader2 } from "lucide-react";
 export function FullScreenLoader() {
   return (
     <div className="flex items-center justify-center h-screen bg-gray-50">
-      <div className="flex flex-col items-center gap-3">
-        <Loader2 className="animate-spin h-6 w-6 text-gray-900" />
-        <span className="text-xs font-bold text-gray-600">مرشح</span>
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="animate-spin h-9 w-9 text-gray-900" />
+        <span className="text-base font-bold text-gray-600">مرشح</span>
       </div>
     </div>
   );
