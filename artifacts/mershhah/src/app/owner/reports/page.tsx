@@ -17,7 +17,6 @@ import {
     Zap,
     Crown,
     Sparkles,
-    Info,
     MapPin,
     Search,
 } from 'lucide-react';
@@ -29,7 +28,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'wouter';
 import { cn } from '@/lib/utils';
 import { classifyMenuItems, CLASSIFICATION_INFO, type MenuClassification } from '@/lib/menu-engineering';
-import { buildInsights, type Insight } from '@/lib/report-insights';
+import { buildInsights, type Insight, type InsightTone } from '@/lib/report-insights';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { REVIEW_TAGS, countReviewsByTag } from '@/lib/review-tags';
 import { WhatsAppIcon, InstagramIcon, SnapchatIcon, TikTokIcon, XIcon } from '@/components/shared/SocialIcons';
 import {
@@ -84,6 +84,51 @@ function MarketingLinkCard({ icon: Icon, label, hint, link, onCopy }: {
                 <Copy className="h-3 w-3 text-gray-400 mt-0.5" />
             )}
         </button>
+    );
+}
+
+const INSIGHT_TONE_BLOCK: Record<InsightTone, string> = {
+    good: "bg-emerald-50/60 border-emerald-100 text-emerald-800",
+    warning: "bg-amber-50/60 border-amber-100 text-amber-800",
+    neutral: "bg-gray-50 border-gray-100 text-gray-600",
+};
+
+function SmartInsightsCompact({ insights, detailsLabel }: { insights: Insight[]; detailsLabel: string }) {
+    const [activeIndex, setActiveIndex] = useState(0);
+    const active = insights[Math.min(activeIndex, insights.length - 1)];
+    return (
+        <div className={cn(
+            "inline-flex max-w-full flex-wrap sm:flex-nowrap items-center gap-2 rounded-xl border p-1.5 text-xs",
+            INSIGHT_TONE_BLOCK[active.tone],
+        )}>
+            <div className="flex items-center gap-1 shrink-0">
+                {insights.map((insight, idx) => (
+                    <button
+                        key={insight.id}
+                        type="button"
+                        onClick={() => setActiveIndex(idx)}
+                        className={cn(
+                            "w-5 h-5 rounded-md text-[10px] font-bold flex items-center justify-center transition-opacity",
+                            idx === activeIndex ? "bg-white/70 opacity-100" : "opacity-40 hover:opacity-70",
+                        )}
+                    >
+                        {idx + 1}
+                    </button>
+                ))}
+            </div>
+            <span className="hidden sm:inline-block w-px h-4 bg-current opacity-20 shrink-0" />
+            <span className="font-medium truncate min-w-0 max-w-[240px] sm:max-w-[420px]">{active.text}</span>
+            <Popover>
+                <PopoverTrigger asChild>
+                    <button type="button" className="shrink-0 text-[10px] font-bold underline decoration-dotted opacity-70 hover:opacity-100">
+                        {detailsLabel}
+                    </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 text-xs leading-relaxed" side="bottom" align="start">
+                    {active.text}
+                </PopoverContent>
+            </Popover>
+        </div>
     );
 }
 
@@ -518,8 +563,8 @@ export default function InsightsHubPage() {
             )}
 
             {/* Smart Insights — paid tier */}
-            <div className={cn("bg-white border border-gray-100 rounded-2xl p-5", !isPaid && "relative")}>
-                <div className="flex items-center gap-2 mb-4">
+            <div className={cn("bg-white border border-gray-100 rounded-2xl p-4", !isPaid && "relative")}>
+                <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="h-4 w-4 text-gray-600" />
                     <h3 className="text-sm font-bold text-gray-900">{t('reports.smartInsights')}</h3>
                 </div>
@@ -528,19 +573,7 @@ export default function InsightsHubPage() {
                 ) : insights.length === 0 ? (
                     <div className="py-10 text-center text-gray-600 text-xs">{t('reports.needMoreDataForInsights')}</div>
                 ) : (
-                    <div className="space-y-2">
-                        {insights.map(insight => (
-                            <div key={insight.id} className={cn(
-                                "flex items-start gap-3 p-3 rounded-xl border text-xs leading-relaxed",
-                                insight.tone === 'good' && "bg-emerald-50/60 border-emerald-100 text-emerald-800",
-                                insight.tone === 'warning' && "bg-amber-50/60 border-amber-100 text-amber-800",
-                                insight.tone === 'neutral' && "bg-gray-50 border-gray-100 text-gray-600",
-                            )}>
-                                <Info className="h-3.5 w-3.5 shrink-0 mt-0.5 opacity-60" />
-                                <span className="font-medium">{insight.text}</span>
-                            </div>
-                        ))}
-                    </div>
+                    <SmartInsightsCompact insights={insights} detailsLabel={t('reports.insightDetails')} />
                 )}
             </div>
 
