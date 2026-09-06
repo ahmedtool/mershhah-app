@@ -166,7 +166,7 @@ export function OwnerTopNav() {
           {showUserMenu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowUserMenu(false)} />
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 min-w-[200px]">
+              <div className="absolute top-full end-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50 min-w-[200px]">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <p className="text-xs font-bold text-gray-900">{user?.full_name || t('nav.user')}</p>
                   <p className="text-[10px] text-gray-600">{user?.email}</p>
