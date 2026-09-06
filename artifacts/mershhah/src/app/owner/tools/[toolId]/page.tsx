@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Wrench, Box, Loader2, Clock, Settings, ExternalLink, ArrowRight } from "lucide-react";
+import { Wrench, Box, Loader2, Clock, Settings, ExternalLink, ArrowRight, ArrowLeft } from "lucide-react";
 import { useParams, Link, useLocation } from 'wouter';
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
@@ -9,11 +9,15 @@ import { useUser } from "@/hooks/useUser";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StorageImage } from "@/components/shared/StorageImage";
 import { getToolIcon } from "@/lib/tool-icons";
+import { useLanguage } from "@/components/shared/LanguageContext";
 
 export default function ToolDetailPage() {
     const params = useParams();
     const toolId = params.toolId as string;
     const { user } = useUser();
+    const { t, dir, locale } = useLanguage();
+    const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
+    const dateLocale = locale === 'ar' ? 'ar-SA' : 'en-US';
     const [tool, setTool] = useState<any>(null);
     const [activation, setActivation] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -73,11 +77,11 @@ export default function ToolDetailPage() {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 p-4">
                 <Wrench className="h-12 w-12 text-gray-200" />
-                <h2 className="text-lg font-bold text-gray-900">الأداة غير موجودة</h2>
+                <h2 className="text-lg font-bold text-gray-900">{t('toolDetail.notFoundTitle')}</h2>
                 <Link href="/owner/tools">
                     <button className="h-10 px-5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors flex items-center gap-2">
-                        <ArrowRight className="h-4 w-4" />
-                        العودة لأدواتي
+                        {dir === 'rtl' ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
+                        {t('toolDetail.backToMyTools')}
                     </button>
                 </Link>
             </div>
@@ -103,7 +107,7 @@ export default function ToolDetailPage() {
             <div className="flex items-center gap-4">
                 <Link href="/owner/tools">
                     <button className="w-10 h-10 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-50 transition-colors">
-                        <ArrowRight className="h-5 w-5" />
+                        {dir === 'rtl' ? <ArrowRight className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
                     </button>
                 </Link>
                 {tool.image_path ? (
@@ -126,18 +130,18 @@ export default function ToolDetailPage() {
                 {activation ? (
                     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold ${expired ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600'}`}>
                         <div className={`w-2 h-2 rounded-full ${expired ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                        {expired ? 'منتهية الصلاحية' : 'مفعّلة'}
+                        {expired ? t('tools.expired') : t('toolDetail.statusActive')}
                     </div>
                 ) : (
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-600">
                         <div className="w-2 h-2 rounded-full bg-gray-400" />
-                        غير مفعّلة
+                        {t('toolDetail.statusInactive')}
                     </div>
                 )}
                 {activation?.expires_at && (
                     <div className="flex items-center gap-1.5 text-xs text-gray-600">
                         <Clock className="h-3.5 w-3.5" />
-                        <span>صالح حتى {new Date(activation.expires_at).toLocaleDateString('ar-SA')}</span>
+                        <span>{t('tools.validUntil')} {new Date(activation.expires_at).toLocaleDateString(dateLocale)}</span>
                     </div>
                 )}
             </div>
@@ -200,7 +204,7 @@ export default function ToolDetailPage() {
                             )}
                             <div className="flex items-center gap-2 mt-2">
                                 <Settings className="h-4 w-4 text-gray-600" />
-                                <span className="text-xs text-gray-600">هذه الأداة قيد التطوير</span>
+                                <span className="text-xs text-gray-600">{t('toolDetail.underDevelopment')}</span>
                             </div>
                         </div>
                     </CardContent>
@@ -213,28 +217,28 @@ export default function ToolDetailPage() {
                     <CardContent className="p-5 space-y-4">
                         <div className="flex items-center gap-2">
                             <Settings className="h-4 w-4 text-gray-600" />
-                            <h3 className="text-sm font-bold text-gray-900">إعدادات الأداة</h3>
+                            <h3 className="text-sm font-bold text-gray-900">{t('toolDetail.toolSettings')}</h3>
                         </div>
                         <div className="space-y-3">
                             <div>
-                                <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">رابط التكامل (اختياري)</label>
+                                <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">{t('toolDetail.integrationUrlLabel')}</label>
                                 <input
                                     type="url"
                                     placeholder="https://api.example.com/webhook"
                                     value={config.integration_url || ''}
                                     onChange={(e) => setConfig({ ...config, integration_url: e.target.value })}
-                                    className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
+                                    className={`w-full h-10 px-3 rounded-xl border border-gray-200 text-xs ${alignStart} placeholder:text-gray-600 focus:outline-none focus:border-gray-300`}
                                     dir="ltr"
                                 />
                             </div>
                             <div>
-                                <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">مفتاح API (اختياري)</label>
+                                <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">{t('toolDetail.apiKeyLabel')}</label>
                                 <input
                                     type="password"
                                     placeholder="sk-..."
                                     value={config.api_key || ''}
                                     onChange={(e) => setConfig({ ...config, api_key: e.target.value })}
-                                    className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
+                                    className={`w-full h-10 px-3 rounded-xl border border-gray-200 text-xs ${alignStart} placeholder:text-gray-600 focus:outline-none focus:border-gray-300`}
                                     dir="ltr"
                                 />
                             </div>
@@ -244,7 +248,7 @@ export default function ToolDetailPage() {
                                 className="h-10 px-5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2"
                             >
                                 {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                                حفظ الإعدادات
+                                {t('toolDetail.saveSettings')}
                             </button>
                         </div>
                     </CardContent>
