@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useTransition, useState } from 'react';
+import { useEffect, useMemo, useTransition, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -17,17 +17,21 @@ import { format, differenceInDays } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { PlanPricingGrid } from '@/components/dashboard/PlanPricingGrid';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
-const profileFormSchema = z.object({
-  full_name: z.string().min(3, { message: 'الاسم يجب أن يكون 3 أحرف على الأقل.' }),
-  phone_number: z.string().optional(),
-});
-
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
+type ProfileFormValues = { full_name: string; phone_number?: string };
 
 export default function OwnerSettingsPage() {
   const { user, isLoading: isUserLoading } = useUser();
   const { toast } = useToast();
+  const { t, dir } = useLanguage();
+  const alignEnd = dir === 'rtl' ? 'text-left' : 'text-right';
+  const dateLocale = dir === 'rtl' ? ar : undefined;
+
+  const profileFormSchema = useMemo(() => z.object({
+    full_name: z.string().min(3, { message: t('ownerSettings.nameMinLength') }),
+    phone_number: z.string().optional(),
+  }), [t]);
   const [isSaving, startSaving] = useTransition();
   const [isSendingReset, startSendingReset] = useTransition();
 
@@ -76,9 +80,9 @@ export default function OwnerSettingsPage() {
       try {
         const { error } = await supabase.from('profiles').update({ full_name: data.full_name, phone_number: data.phone_number }).eq('id', user.uid);
         if (error) throw error;
-        toast({ title: 'تم التحديث بنجاح!' });
+        toast({ title: t('ownerSettings.updateSuccess') });
       } catch (error: any) {
-        toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+        toast({ title: t('ownerSettings.errorTitle'), description: error.message, variant: 'destructive' });
       }
     });
   };
@@ -91,9 +95,9 @@ export default function OwnerSettingsPage() {
           redirectTo: `${window.location.origin}/reset-password`,
         });
         if (error) throw error;
-        toast({ title: 'تم الإرسال', description: 'رابط إعادة التعيين أُرسل لبريدك.' });
+        toast({ title: t('ownerSettings.resetSentTitle'), description: t('ownerSettings.resetSentDesc') });
       } catch (error: any) {
-        toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+        toast({ title: t('ownerSettings.errorTitle'), description: error.message, variant: 'destructive' });
       }
     });
   };
@@ -101,26 +105,26 @@ export default function OwnerSettingsPage() {
   const handleChangePassword = () => {
     if (!user?.email) return;
     if (newPassword.length < 6) {
-      toast({ variant: 'destructive', title: 'كلمة المرور الجديدة قصيرة', description: 'يجب أن تكون 6 أحرف على الأقل.' });
+      toast({ variant: 'destructive', title: t('ownerSettings.passwordTooShortTitle'), description: t('ownerSettings.passwordTooShortDesc') });
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast({ variant: 'destructive', title: 'كلمتا المرور غير متطابقتين' });
+      toast({ variant: 'destructive', title: t('ownerSettings.passwordsMismatchTitle') });
       return;
     }
     startChangingPassword(async () => {
       try {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPassword });
-        if (signInError) throw new Error('كلمة المرور الحالية غير صحيحة.');
+        if (signInError) throw new Error(t('ownerSettings.currentPasswordWrong'));
         const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
         if (updateError) throw updateError;
-        toast({ title: 'تم تغيير كلمة المرور بنجاح' });
+        toast({ title: t('ownerSettings.passwordChangedTitle') });
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
         setShowPasswordForm(false);
       } catch (error: any) {
-        toast({ title: 'تعذّر تغيير كلمة المرور', description: error.message, variant: 'destructive' });
+        toast({ title: t('ownerSettings.passwordChangeFailedTitle'), description: error.message, variant: 'destructive' });
       }
     });
   };
@@ -137,7 +141,7 @@ export default function OwnerSettingsPage() {
 
   return (
     <div className="space-y-5 pb-20">
-      <PageHeader title="الإعدادات" description="معلوماتك الشخصية وإدارة اشتراكك." />
+      <PageHeader title={t('ownerSettings.pageTitle')} description={t('ownerSettings.pageDescription')} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
         {/* Profile */}
@@ -145,34 +149,34 @@ export default function OwnerSettingsPage() {
           <div className="p-5 pb-0">
             <h3 className="text-sm font-black text-gray-900 flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center"><CreditCard className="h-3.5 w-3.5 text-gray-600" /></div>
-              الملف الشخصي
+              {t('ownerSettings.profileTitle')}
             </h3>
-            <p className="text-[11px] text-gray-600 mt-1">معلوماتك الشخصية في المنصة</p>
+            <p className="text-[11px] text-gray-600 mt-1">{t('ownerSettings.profileSubtitle')}</p>
           </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleProfileUpdate)} className="p-5 space-y-4">
               <FormField control={form.control} name="full_name" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-[11px] text-gray-600 font-bold">الاسم الكامل</FormLabel>
+                  <FormLabel className="text-[11px] text-gray-600 font-bold">{t('ownerSettings.fullNameLabel')}</FormLabel>
                   <FormControl><Input {...field} className="h-10 rounded-xl border-gray-200 text-xs" /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
               <FormField control={form.control} name="phone_number" render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-[11px] text-gray-600 font-bold">رقم الجوال</FormLabel>
+                  <FormLabel className="text-[11px] text-gray-600 font-bold">{t('ownerSettings.phoneLabel')}</FormLabel>
                   <FormControl><Input {...field} value={field.value || ''} className="h-10 rounded-xl border-gray-200 text-xs" /></FormControl>
                   <FormMessage />
                 </FormItem>
               )} />
               <div className="space-y-1.5">
-                <Label className="text-[11px] text-gray-600 font-bold">البريد الإلكتروني</Label>
+                <Label className="text-[11px] text-gray-600 font-bold">{t('ownerSettings.emailLabel')}</Label>
                 <Input value={user?.email || ''} disabled className="h-10 rounded-xl border-gray-200 text-xs bg-gray-50" />
-                <p className="text-[10px] text-gray-600">لا يمكن تغييره بعد التسجيل</p>
+                <p className="text-[10px] text-gray-600">{t('ownerSettings.emailImmutable')}</p>
               </div>
               <button type="submit" disabled={isSaving} className="w-full h-10 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                حفظ التغييرات
+                {t('ownerSettings.saveChanges')}
               </button>
             </form>
           </Form>
@@ -184,10 +188,10 @@ export default function OwnerSettingsPage() {
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-sm font-black text-gray-900 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center"><CreditCard className="h-3.5 w-3.5 text-gray-600" /></div>
-                اشتراكي الحالي
+                {t('ownerSettings.currentSubscriptionTitle')}
               </h3>
               <span className={cn("text-[10px] font-bold px-2.5 py-1 rounded-lg border", isFree ? "bg-gray-50 text-gray-600 border-gray-100" : isExpired ? "bg-red-50 text-red-600 border-red-100" : "bg-emerald-50 text-emerald-600 border-emerald-100")}>
-                {isFree ? 'مجاني' : isExpired ? 'منتهية' : subscription?.plan_name || entitlements.planName}
+                {isFree ? t('ownerSettings.free') : isExpired ? t('ownerSettings.expired') : subscription?.plan_name || entitlements.planName}
               </span>
             </div>
           </div>
@@ -195,38 +199,38 @@ export default function OwnerSettingsPage() {
             {!isFree && (
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                  <div className="flex items-center gap-1.5 text-gray-600 mb-1.5"><Calendar className="h-3 w-3" /><span className="text-[10px] font-bold">ينتهي في</span></div>
-                  <p className="text-sm font-black text-gray-900">{subscription?.end_date ? format(new Date(subscription.end_date), 'dd MMM yyyy', { locale: ar }) : '—'}</p>
+                  <div className="flex items-center gap-1.5 text-gray-600 mb-1.5"><Calendar className="h-3 w-3" /><span className="text-[10px] font-bold">{t('ownerSettings.expiresIn')}</span></div>
+                  <p className="text-sm font-black text-gray-900">{subscription?.end_date ? format(new Date(subscription.end_date), 'dd MMM yyyy', { locale: dateLocale }) : '—'}</p>
                 </div>
                 <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                  <div className="flex items-center gap-1.5 text-gray-600 mb-1.5"><Clock className="h-3 w-3" /><span className="text-[10px] font-bold">المتبقي</span></div>
-                  <p className="text-sm font-black text-gray-900">{isExpired ? 'منتهية' : `${daysRemaining} يوم`}</p>
+                  <div className="flex items-center gap-1.5 text-gray-600 mb-1.5"><Clock className="h-3 w-3" /><span className="text-[10px] font-bold">{t('ownerSettings.remaining')}</span></div>
+                  <p className="text-sm font-black text-gray-900">{isExpired ? t('ownerSettings.expired') : `${daysRemaining} ${t('ownerSettings.daySuffix')}`}</p>
                 </div>
               </div>
             )}
             {isFree && (
               <div className="p-3 bg-gray-50 border border-gray-100 rounded-xl text-center">
                 <Zap className="h-5 w-5 text-gray-600 mx-auto mb-1" />
-                <p className="text-xs font-bold text-gray-900">باقة مجانية</p>
-                <p className="text-[10px] text-gray-600">اختر باقة للمتابعة</p>
+                <p className="text-xs font-bold text-gray-900">{t('ownerSettings.freePlanTitle')}</p>
+                <p className="text-[10px] text-gray-600">{t('ownerSettings.choosePlanToContinue')}</p>
               </div>
             )}
 
             {/* Invoices */}
             {invoices.length > 0 && (
               <div>
-                <p className="text-[11px] font-bold text-gray-600 mb-2">آخر الفواتير</p>
+                <p className="text-[11px] font-bold text-gray-600 mb-2">{t('ownerSettings.recentInvoices')}</p>
                 <div className="space-y-1.5">
                   {invoices.slice(0, 3).map((inv) => (
                     <div key={inv.id} className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
                       <div className="flex items-center gap-2">
                         <Receipt className="h-3.5 w-3.5 text-gray-600" />
-                        <span className="text-[11px] text-gray-600">{inv.description || 'اشتراك'}</span>
+                        <span className="text-[11px] text-gray-600">{inv.description || t('ownerSettings.subscriptionFallback')}</span>
                       </div>
-                      <div className="text-left">
-                        <span className="text-xs font-bold text-gray-900">{inv.amount} ر.س</span>
-                        <span className={cn("text-[10px] font-bold mr-2", inv.status === 'paid' ? 'text-emerald-600' : 'text-red-500')}>
-                          {inv.status === 'paid' ? 'مدفوعة' : 'فشل'}
+                      <div className={alignEnd}>
+                        <span className="text-xs font-bold text-gray-900">{inv.amount} {t('ownerSettings.currency')}</span>
+                        <span className={cn("text-[10px] font-bold mx-2", inv.status === 'paid' ? 'text-emerald-600' : 'text-red-500')}>
+                          {inv.status === 'paid' ? t('ownerSettings.invoicePaid') : t('ownerSettings.invoiceFailed')}
                         </span>
                       </div>
                     </div>
@@ -243,39 +247,39 @@ export default function OwnerSettingsPage() {
             <div className="flex-1">
               <h3 className="text-sm font-black text-gray-900 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center"><KeyRound className="h-3.5 w-3.5 text-gray-600" /></div>
-                الأمان وكلمة المرور
+                {t('ownerSettings.securityTitle')}
               </h3>
-              <p className="text-[11px] text-gray-600 mt-1">غيّر كلمة المرور مباشرة، أو استلمها عبر رابط يُرسل إلى <span className="font-bold text-gray-600">{user?.email}</span></p>
+              <p className="text-[11px] text-gray-600 mt-1">{t('ownerSettings.securitySubtitlePrefix')} <span className="font-bold text-gray-600">{user?.email}</span></p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button onClick={() => setShowPasswordForm((v) => !v)} className="h-9 px-4 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors">
-                {showPasswordForm ? 'إلغاء' : 'تغيير كلمة المرور'}
+                {showPasswordForm ? t('ownerSettings.cancel') : t('ownerSettings.changePassword')}
               </button>
               <button onClick={handlePasswordReset} disabled={isSendingReset} className="h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2">
                 {isSendingReset && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                إرسال رابط بالبريد
+                {t('ownerSettings.sendResetLink')}
               </button>
             </div>
           </div>
           {showPasswordForm && (
             <div className="px-5 pb-5 pt-1 grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-gray-50">
               <div className="space-y-1.5 pt-4">
-                <Label className="text-[11px] text-gray-600 font-bold">كلمة المرور الحالية</Label>
+                <Label className="text-[11px] text-gray-600 font-bold">{t('ownerSettings.currentPasswordLabel')}</Label>
                 <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="h-10 rounded-xl border-gray-200 text-xs" />
               </div>
               <div className="space-y-1.5 pt-4">
-                <Label className="text-[11px] text-gray-600 font-bold">كلمة المرور الجديدة</Label>
+                <Label className="text-[11px] text-gray-600 font-bold">{t('ownerSettings.newPasswordLabel')}</Label>
                 <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="h-10 rounded-xl border-gray-200 text-xs" />
               </div>
               <div className="space-y-1.5 pt-4">
-                <Label className="text-[11px] text-gray-600 font-bold">تأكيد كلمة المرور الجديدة</Label>
+                <Label className="text-[11px] text-gray-600 font-bold">{t('ownerSettings.confirmPasswordLabel')}</Label>
                 <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="h-10 rounded-xl border-gray-200 text-xs" />
               </div>
               <div className="sm:col-span-3">
                 <button onClick={handleChangePassword} disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
                   className="h-10 px-5 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2">
                   {isChangingPassword && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                  حفظ كلمة المرور الجديدة
+                  {t('ownerSettings.saveNewPassword')}
                 </button>
               </div>
             </div>
@@ -283,11 +287,11 @@ export default function OwnerSettingsPage() {
         </div>
       </div>
 
-      {/* === قسم الباقات والتجديد === */}
+      {/* Plans and renewal section */}
       <div className="bg-white border border-gray-100 rounded-2xl p-5 space-y-4">
         <div>
-          <h3 className="text-sm font-black text-gray-900">الباقات والتجديد</h3>
-          <p className="text-[11px] text-gray-600 mt-0.5">اختر باقتك وجدد اشتراكك</p>
+          <h3 className="text-sm font-black text-gray-900">{t('ownerSettings.plansTitle')}</h3>
+          <p className="text-[11px] text-gray-600 mt-0.5">{t('ownerSettings.plansSubtitle')}</p>
         </div>
 
         {isBillingLoading ? (

@@ -9,6 +9,7 @@ import { useCouponCheck } from '@/hooks/useCouponCheck';
 import { usePlanCheckout } from '@/hooks/usePlanCheckout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/hooks/useUser';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 // Plans hidden from every customer-facing screen (dev-only test plans, etc.)
 // but still fully valid for a real checkout if visited directly by id.
@@ -32,6 +33,7 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
   const [plans, setPlans] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useUser();
+  const { t } = useLanguage();
   const isTestAccount = !!user?.email && TEST_ACCOUNT_EMAILS.includes(user.email);
   const { couponCode, setCouponCode, couponDiscount, isCheckingCoupon, checkCoupon, applyDiscount } = useCouponCheck();
   const { checkout, isCheckingOut, isCheckoutInProgress } = usePlanCheckout();
@@ -63,14 +65,14 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
         <div className="flex gap-2 w-full sm:w-auto">
           <input
             type="text"
-            placeholder="كوبون خصم (اختياري)"
+            placeholder={t('planPricing.couponPlaceholder')}
             value={couponCode}
             onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
             className="flex-1 sm:w-40 h-10 px-3 rounded-xl border border-gray-200 text-xs text-center font-bold tracking-wider placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
             dir="ltr"
           />
           <button onClick={checkCoupon} disabled={isCheckingCoupon || !couponCode} className="h-10 px-4 rounded-xl bg-gray-100 text-xs font-bold text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50 shrink-0">
-            تحقق
+            {t('planPricing.couponCheck')}
           </button>
         </div>
       </div>
@@ -79,7 +81,7 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
         <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2">
           <Tag className="h-3.5 w-3.5 text-emerald-500" />
           <span className="text-[11px] text-emerald-700 font-medium">
-            ✓ {couponDiscount.discount_type === 'percentage' ? `خصم ${couponDiscount.discount_value}%` : couponDiscount.discount_type === 'fixed' ? `خصم ثابت ${couponDiscount.discount_value} ر.س` : 'فترة مجانية'}
+            ✓ {couponDiscount.discount_type === 'percentage' ? `${t('planPricing.discountPercentPrefix')} ${couponDiscount.discount_value}%` : couponDiscount.discount_type === 'fixed' ? `${t('planPricing.discountFixedPrefix')} ${couponDiscount.discount_value} ${t('ownerSettings.currency')}` : t('planPricing.freeTrialPeriod')}
           </span>
         </div>
       )}
@@ -103,32 +105,32 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
               <div className={cn("px-5 pt-5 pb-4", plan.is_featured ? 'bg-gray-900' : 'bg-gray-50')}>
                 <div className="flex items-center justify-between gap-2">
                   <h3 className={cn("text-base font-bold", plan.is_featured ? 'text-white' : 'text-gray-900')}>{plan.name}</h3>
-                  {isCurrentPlan && <span className="text-[9px] font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full shrink-0">الحالية</span>}
-                  {plan.is_featured && !isCurrentPlan && <span className="text-[9px] font-bold bg-white/20 text-white/80 px-2 py-0.5 rounded-full shrink-0">الأكثر انتشاراً</span>}
-                  {isTestPlan && <span className="text-[9px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full shrink-0">للتطوير فقط</span>}
+                  {isCurrentPlan && <span className="text-[9px] font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full shrink-0">{t('planPricing.currentBadge')}</span>}
+                  {plan.is_featured && !isCurrentPlan && <span className="text-[9px] font-bold bg-white/20 text-white/80 px-2 py-0.5 rounded-full shrink-0">{t('planPricing.mostPopularBadge')}</span>}
+                  {isTestPlan && <span className="text-[9px] font-bold bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full shrink-0">{t('planPricing.devOnlyBadge')}</span>}
                 </div>
                 {plan.description && <p className={cn("text-xs mt-1", plan.is_featured ? 'text-gray-400' : 'text-gray-600')}>{plan.description}</p>}
               </div>
 
               <div className="px-5 py-4 border-b border-gray-100">
                 {isFree ? (
-                  <span className="text-2xl font-black text-gray-900">مجاني</span>
+                  <span className="text-2xl font-black text-gray-900">{t('planPricing.free')}</span>
                 ) : (
                   <div className="flex items-baseline gap-1">
                     {couponDiscount && price !== originalPrice && <span className="text-xs text-gray-600 line-through">{originalPrice}</span>}
                     <span className="text-2xl font-black text-gray-900">{price}</span>
-                    <span className="text-xs text-gray-600">ر.س/سنة</span>
+                    <span className="text-xs text-gray-600">{t('planPricing.perYear')}</span>
                   </div>
                 )}
-                {plan.trial_days > 0 && <p className="text-[10px] text-amber-600 font-bold mt-1">فترة تجربة {plan.trial_days} يوم</p>}
+                {plan.trial_days > 0 && <p className="text-[10px] text-amber-600 font-bold mt-1">{t('planPricing.trialPeriodPrefix')} {plan.trial_days} {t('planPricing.daySuffix')}</p>}
               </div>
 
               <div className="px-5 py-4 flex-1 space-y-2">
                 {features.length === 0 ? (
-                  <p className="text-xs text-gray-600 text-center py-2">لا توجد تفاصيل إضافية</p>
+                  <p className="text-xs text-gray-600 text-center py-2">{t('planPricing.noExtraDetails')}</p>
                 ) : (
                   features.map(([key, value]) => {
-                    const { label, included } = describeFeature(key, value as boolean | number);
+                    const { label, included } = describeFeature(key, value as boolean | number, t);
                     return (
                       <div key={key} className={cn("flex items-center gap-2 text-xs", included ? 'text-gray-700 font-medium' : 'text-gray-600 line-through')}>
                         {included ? <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" /> : <X className="h-3.5 w-3.5 text-gray-600 shrink-0" />}
@@ -153,12 +155,12 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
                   )}
                 >
                   {isCurrentPlan
-                    ? 'الباقة الحالية'
+                    ? t('planPricing.currentPlanButton')
                     : isFree
-                    ? 'الباقة المجانية'
+                    ? t('planPricing.freePlanButton')
                     : checking
-                    ? <><Loader2 className="h-4 w-4 animate-spin" /> جاري التوجيه...</>
-                    : 'اشتراك سنوي'}
+                    ? <><Loader2 className="h-4 w-4 animate-spin" /> {t('planPricing.redirecting')}</>
+                    : t('planPricing.subscribeYearly')}
                 </button>
               </div>
             </div>
