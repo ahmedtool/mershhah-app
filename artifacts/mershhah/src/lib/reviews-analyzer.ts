@@ -13,34 +13,34 @@ const NEGATIVE_WORDS = [
   'ندمت', 'خرب', 'تالف', 'منتهي', 'صفر', 'نار', 'حر', '.obnoxious',
 ];
 
-const TOPIC_KEYWORDS: Record<string, { label: string; keywords: string[]; positive: boolean }> = {
+const TOPIC_KEYWORDS: Record<string, { labelKey: string; keywords: string[]; positive: boolean }> = {
   quality: {
-    label: 'الجودة',
+    labelKey: 'ownerReviews.topicQuality',
     keywords: ['جودة', 'ممتاز', 'رائع', 'جميل', 'فخم', 'مميز', 'أفضل', 'نظيف', 'مرتب', 'طازج', 'خامة', 'material'],
     positive: true,
   },
   taste: {
-    label: 'الطعم',
+    labelKey: 'ownerReviews.topicTaste',
     keywords: ['طعم', 'لذيذ', 'بنكه', 'مذاق', 'حلو', 'مر', 'مالح', 'حار', 'طازج', ' seasoning'],
     positive: true,
   },
   price: {
-    label: 'السعر',
+    labelKey: 'ownerReviews.topicPrice',
     keywords: ['سعر', 'غالي', 'رخيص', 'مناسب', 'قيمة', 'فلوس', 'ميزانية', 'يبرد', 'worth'],
     positive: false,
   },
   speed: {
-    label: 'السرعة',
+    labelKey: 'ownerReviews.topicSpeed',
     keywords: ['سريع', 'بطيء', 'انتظار', 'خدمة', 'توصيل', 'استلام', 'زحمة', 'مهمل', 'ودود', 'slow', 'fast'],
     positive: false,
   },
   service: {
-    label: 'الخدمة',
+    labelKey: 'ownerReviews.topicService',
     keywords: ['خدمة', 'طاقم', 'موظف', 'استقبال', 'ودود', ' Friendly', 'staff', 'approached'],
     positive: true,
   },
   quantity: {
-    label: 'الكمية',
+    labelKey: 'ownerReviews.topicQuantity',
     keywords: ['كمية', 'كبير', 'صغير', 'شبع', 'جوع', ' portion', 'size'],
     positive: false,
   },
@@ -74,17 +74,18 @@ export type ReviewAnalysisResult = {
 };
 
 export function analyzeReviewsLocally(
-  reviews: { rating: number; comment?: string }[]
+  reviews: { rating: number; comment?: string }[],
+  t: (key: string) => string
 ): ReviewAnalysisResult {
   if (reviews.length === 0) {
     return {
       sentimentScore: 50,
-      sentimentLabel: 'لا توجد بيانات',
+      sentimentLabel: t('ownerReviews.noDataLabel'),
       positiveThemes: [],
       negativeThemes: [],
       topWords: [],
       topicBreakdown: [],
-      recommendation: 'أضف تقييمات لبدء التحليل.',
+      recommendation: t('ownerReviews.noDataRecommendation'),
       overallEmoji: '📊',
     };
   }
@@ -114,10 +115,10 @@ export function analyzeReviewsLocally(
 
   let sentimentLabel = '';
   let overallEmoji = '';
-  if (sentimentScore >= 80) { sentimentLabel = 'ممتاز - رضا عالي جداً'; overallEmoji = '🔥'; }
-  else if (sentimentScore >= 60) { sentimentLabel = 'جيد - رضا مقبول'; overallEmoji = '👍'; }
-  else if (sentimentScore >= 40) { sentimentLabel = 'متوسط - يحتاج تحسين'; overallEmoji = '⚠️'; }
-  else { sentimentLabel = 'ضعيف - يحتاج مراجعة'; overallEmoji = '🔴'; }
+  if (sentimentScore >= 80) { sentimentLabel = t('ownerReviews.sentimentExcellent'); overallEmoji = '🔥'; }
+  else if (sentimentScore >= 60) { sentimentLabel = t('ownerReviews.sentimentGood'); overallEmoji = '👍'; }
+  else if (sentimentScore >= 40) { sentimentLabel = t('ownerReviews.sentimentAverage'); overallEmoji = '⚠️'; }
+  else { sentimentLabel = t('ownerReviews.sentimentWeak'); overallEmoji = '🔴'; }
 
   // Topics
   const topicBreakdown = Object.entries(TOPIC_KEYWORDS).map(([key, config]) => {
@@ -133,15 +134,15 @@ export function analyzeReviewsLocally(
         else neutral++;
       }
     }
-    return { topic: config.label, positive, negative, neutral };
+    return { topic: t(config.labelKey), positive, negative, neutral };
   });
 
   // Positive themes
   const positiveThemes: string[] = [];
   const negativeThemes: string[] = [];
-  for (const t of topicBreakdown) {
-    if (t.positive > 0) positiveThemes.push(`${t.topic}: ${t.positive} تعليق إيجابي`);
-    if (t.negative > 0) negativeThemes.push(`${t.topic}: ${t.negative} تعليق سلبي`);
+  for (const tb of topicBreakdown) {
+    if (tb.positive > 0) positiveThemes.push(`${tb.topic}: ${tb.positive} ${t('ownerReviews.positiveThemeSuffix')}`);
+    if (tb.negative > 0) negativeThemes.push(`${tb.topic}: ${tb.negative} ${t('ownerReviews.negativeThemeSuffix')}`);
   }
 
   // Top words
@@ -153,19 +154,19 @@ export function analyzeReviewsLocally(
   // Recommendation
   let recommendation = '';
   if (sentimentScore >= 80) {
-    recommendation = 'عملاءك سعداء جداً! حافظ على هذا المستوى وشارك آراءهم على وسائل التواصل.';
+    recommendation = t('ownerReviews.recommendationExcellent');
   } else if (sentimentScore >= 60) {
     if (negativeThemes.length > 0) {
-      recommendation = `ركّز على تحسين: ${negativeThemes[0].split(':')[0]}. عملاؤك يقدّرون جهدك.`;
+      recommendation = `${t('ownerReviews.recommendationGoodWithIssuePrefix')} ${negativeThemes[0].split(':')[0]}. ${t('ownerReviews.recommendationGoodWithIssueSuffix')}`;
     } else {
-      recommendation = 'النتيجة جيدة. شجّع عملاءك على ترك تعليقات أكثر لتعزيز التقييم.';
+      recommendation = t('ownerReviews.recommendationGoodGeneric');
     }
   } else if (sentimentScore >= 40) {
-    const weakest = topicBreakdown.reduce((min, t) =>
-      (t.negative > min.negative) ? t : min, topicBreakdown[0]);
-    recommendation = `يحتاج ${weakest.topic} اهتمام أكبر. راجع الملاحظات واعمل خطة تحسين.`;
+    const weakest = topicBreakdown.reduce((min, tb) =>
+      (tb.negative > min.negative) ? tb : min, topicBreakdown[0]);
+    recommendation = `${t('ownerReviews.recommendationAveragePrefix')} ${weakest.topic} ${t('ownerReviews.recommendationAverageSuffix')}`;
   } else {
-    recommendation = 'يجب مراجعة شاملة. ابدأ بتحليل أسباب الشكاوى الرئيسية والتركيز على الإصلاح.';
+    recommendation = t('ownerReviews.recommendationWeak');
   }
 
   return { sentimentScore, sentimentLabel, positiveThemes, negativeThemes, topWords, topicBreakdown, recommendation, overallEmoji };

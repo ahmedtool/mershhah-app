@@ -16,6 +16,7 @@ import {
 import StatCard from '@/components/dashboard/StatCard';
 import { analyzeReviewsLocally, type ReviewAnalysisResult } from '@/lib/reviews-analyzer';
 import { syncPublicPage } from '@/lib/public-pages';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 interface Review {
   id: string;
@@ -35,26 +36,26 @@ interface PageEvent {
   created_at: string;
 }
 
-const SOURCE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
-  direct: { label: 'مباشر', icon: '🔗', color: '#6366f1' },
-  google: { label: 'جوجل', icon: '🔍', color: '#4285f4' },
-  social: { label: 'اجتماعي', icon: '📱', color: '#e4405f' },
-  delivery: { label: 'توصيل', icon: '🛵', color: '#f59e0b' },
-  app: { label: 'تطبيق', icon: '📲', color: '#10b981' },
-  branch: { label: 'فرع', icon: '📍', color: '#8b5cf6' },
-  qr: { label: 'QR', icon: '⬜', color: '#64748b' },
-  other: { label: 'أخرى', icon: '🌐', color: '#94a3b8' },
+const SOURCE_LABELS: Record<string, { labelKey: string; icon: string; color: string }> = {
+  direct: { labelKey: 'ownerReviews.sourceDirect', icon: '🔗', color: '#6366f1' },
+  google: { labelKey: 'ownerReviews.sourceGoogle', icon: '🔍', color: '#4285f4' },
+  social: { labelKey: 'ownerReviews.sourceSocial', icon: '📱', color: '#e4405f' },
+  delivery: { labelKey: 'ownerReviews.sourceDelivery', icon: '🛵', color: '#f59e0b' },
+  app: { labelKey: 'ownerReviews.sourceApp', icon: '📲', color: '#10b981' },
+  branch: { labelKey: 'ownerReviews.sourceBranch', icon: '📍', color: '#8b5cf6' },
+  qr: { labelKey: 'ownerReviews.sourceQr', icon: '⬜', color: '#64748b' },
+  other: { labelKey: 'ownerReviews.sourceOther', icon: '🌐', color: '#94a3b8' },
 };
 
-const EVENT_LABELS: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  app_click: { label: 'ضغط تطبيق', icon: <MousePointerClick className="h-3.5 w-3.5" />, color: '#10b981' },
-  delivery_click: { label: 'ضغط توصيل', icon: <ExternalLink className="h-3.5 w-3.5" />, color: '#f59e0b' },
-  social_click: { label: 'ضغط اجتماعي', icon: <MessageSquare className="h-3.5 w-3.5" />, color: '#e4405f' },
-  maps_click: { label: 'خرائط', icon: <MapPin className="h-3.5 w-3.5" />, color: '#4285f4' },
-  phone_click: { label: 'اتصال', icon: <Phone className="h-3.5 w-3.5" />, color: '#6366f1' },
-  whatsapp_click: { label: 'واتساب', icon: <MessageSquare className="h-3.5 w-3.5" />, color: '#25d366' },
-  page_view: { label: 'زيارة', icon: <Eye className="h-3.5 w-3.5" />, color: '#94a3b8' },
-  branch_view: { label: 'فرع', icon: <MapPin className="h-3.5 w-3.5" />, color: '#8b5cf6' },
+const EVENT_LABELS: Record<string, { labelKey: string; icon: React.ReactNode; color: string }> = {
+  app_click: { labelKey: 'ownerReviews.eventAppClick', icon: <MousePointerClick className="h-3.5 w-3.5" />, color: '#10b981' },
+  delivery_click: { labelKey: 'ownerReviews.eventDeliveryClick', icon: <ExternalLink className="h-3.5 w-3.5" />, color: '#f59e0b' },
+  social_click: { labelKey: 'ownerReviews.eventSocialClick', icon: <MessageSquare className="h-3.5 w-3.5" />, color: '#e4405f' },
+  maps_click: { labelKey: 'ownerReviews.eventMapsClick', icon: <MapPin className="h-3.5 w-3.5" />, color: '#4285f4' },
+  phone_click: { labelKey: 'ownerReviews.eventPhoneClick', icon: <Phone className="h-3.5 w-3.5" />, color: '#6366f1' },
+  whatsapp_click: { labelKey: 'ownerReviews.eventWhatsappClick', icon: <MessageSquare className="h-3.5 w-3.5" />, color: '#25d366' },
+  page_view: { labelKey: 'ownerReviews.eventPageView', icon: <Eye className="h-3.5 w-3.5" />, color: '#94a3b8' },
+  branch_view: { labelKey: 'ownerReviews.eventBranchView', icon: <MapPin className="h-3.5 w-3.5" />, color: '#8b5cf6' },
 };
 
 interface MenuItemReview {
@@ -68,6 +69,7 @@ interface MenuItemReview {
 
 export default function ReviewsPage() {
   const { user, isLoading: isUserLoading } = useUser();
+  const { t, dir } = useLanguage();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [itemReviews, setItemReviews] = useState<MenuItemReview[]>([]);
   const [itemNames, setItemNames] = useState<Record<string, string>>({});
@@ -162,8 +164,8 @@ export default function ReviewsPage() {
 
   const analysis = useMemo<ReviewAnalysisResult | null>(() => {
     if (reviews.length === 0) return null;
-    return analyzeReviewsLocally(reviews.map(r => ({ rating: r.rating, comment: r.comment })));
-  }, [reviews]);
+    return analyzeReviewsLocally(reviews.map(r => ({ rating: r.rating, comment: r.comment })), t);
+  }, [reviews, t]);
 
   const sourceStats = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -203,14 +205,17 @@ export default function ReviewsPage() {
     });
     const total = events.length || 1;
     return [
-      { device: 'جوال', count: counts.mobile, pct: Math.round((counts.mobile / total) * 100), icon: <Smartphone className="h-3.5 w-3.5" /> },
-      { device: 'كمبيوتر', count: counts.desktop, pct: Math.round((counts.desktop / total) * 100), icon: <Monitor className="h-3.5 w-3.5" /> },
-      { device: 'لوحي', count: counts.tablet, pct: Math.round((counts.tablet / total) * 100), icon: <Tablet className="h-3.5 w-3.5" /> },
+      { device: t('ownerReviews.deviceMobile'), count: counts.mobile, pct: Math.round((counts.mobile / total) * 100), icon: <Smartphone className="h-3.5 w-3.5" /> },
+      { device: t('ownerReviews.deviceDesktop'), count: counts.desktop, pct: Math.round((counts.desktop / total) * 100), icon: <Monitor className="h-3.5 w-3.5" /> },
+      { device: t('ownerReviews.deviceTablet'), count: counts.tablet, pct: Math.round((counts.tablet / total) * 100), icon: <Tablet className="h-3.5 w-3.5" /> },
     ];
-  }, [events]);
+  }, [events, t]);
 
   const weeklyActivity = useMemo(() => {
-    const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const days = [
+      t('ownerReviews.daySun'), t('ownerReviews.dayMon'), t('ownerReviews.dayTue'), t('ownerReviews.dayWed'),
+      t('ownerReviews.dayThu'), t('ownerReviews.dayFri'), t('ownerReviews.daySat'),
+    ];
     const counts = new Array(7).fill(0);
     events.forEach(e => {
       const d = new Date(e.created_at).getDay();
@@ -218,7 +223,7 @@ export default function ReviewsPage() {
     });
     const max = Math.max(...counts, 1);
     return days.map((day, i) => ({ day, count: counts[i], pct: Math.round((counts[i] / max) * 100) }));
-  }, [events]);
+  }, [events, t]);
 
   const handleVisibilityToggle = (reviewId: string, newVisibility: boolean) => {
     startVisibilityUpdate(async () => {
@@ -230,6 +235,7 @@ export default function ReviewsPage() {
   };
 
   const loading = isUserLoading || isLoadingData;
+  const alignEnd = dir === 'rtl' ? 'text-left' : 'text-right';
 
   if (loading) {
     return (
@@ -244,26 +250,26 @@ export default function ReviewsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-lg font-black text-gray-900">التقارير</h1>
-        <p className="text-xs text-gray-600 mt-0.5">تتبع ذكي لتفاعلات عملائك</p>
+        <h1 className="text-lg font-black text-gray-900">{t('ownerReviews.title')}</h1>
+        <p className="text-xs text-gray-600 mt-0.5">{t('ownerReviews.subtitle')}</p>
       </div>
 
       {/* Overview Stats */}
       <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-        <StatCard title="التقييمات" value={stats.totalReviews.toString()} icon={MessageCircle} />
-        <StatCard title="متوسط التقييم" value={stats.averageRating.toFixed(1)} icon={Star} />
-        <StatCard title="الزيارات" value={events.filter(e => e.event_type === 'page_view').length.toString()} icon={Eye} />
-        <StatCard title="النقرات" value={events.filter(e => e.event_type !== 'page_view').length.toString()} icon={MousePointerClick} />
+        <StatCard title={t('ownerReviews.statReviews')} value={stats.totalReviews.toString()} icon={MessageCircle} />
+        <StatCard title={t('ownerReviews.statAverageRating')} value={stats.averageRating.toFixed(1)} icon={Star} />
+        <StatCard title={t('ownerReviews.statVisits')} value={events.filter(e => e.event_type === 'page_view').length.toString()} icon={Eye} />
+        <StatCard title={t('ownerReviews.statClicks')} value={events.filter(e => e.event_type !== 'page_view').length.toString()} icon={MousePointerClick} />
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl">
         {[
-          { id: 'overview', label: 'نظرة عامة' },
-          { id: 'sources', label: 'المصادر' },
-          { id: 'events', label: 'الأحداث' },
-          { id: 'reviews', label: 'التقييمات' },
-          { id: 'products', label: 'تقييمات المنتجات' },
+          { id: 'overview', label: t('ownerReviews.tabOverview') },
+          { id: 'sources', label: t('ownerReviews.tabSources') },
+          { id: 'events', label: t('ownerReviews.tabEvents') },
+          { id: 'reviews', label: t('ownerReviews.tabReviews') },
+          { id: 'products', label: t('ownerReviews.tabProducts') },
         ].map(tab => (
           <button
             key={tab.id}
@@ -284,7 +290,7 @@ export default function ReviewsPage() {
           {analysis && (
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-gray-900">مؤشر الرضا</h3>
+                <h3 className="text-sm font-bold text-gray-900">{t('ownerReviews.satisfactionIndex')}</h3>
                 <span className="text-lg">{analysis.overallEmoji}</span>
               </div>
               <div className="h-3 bg-gray-100 rounded-full overflow-hidden mb-2">
@@ -309,25 +315,25 @@ export default function ReviewsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="bg-white border border-gray-100 rounded-2xl p-4">
                 <h4 className="text-[11px] font-bold text-emerald-700 mb-2 flex items-center gap-1">
-                  <ThumbsUp className="h-3 w-3" />نقاط القوة
+                  <ThumbsUp className="h-3 w-3" />{t('ownerReviews.strengthsTitle')}
                 </h4>
                 {analysis.positiveThemes.length === 0 ? (
-                  <p className="text-[10px] text-gray-600">لا توجد بعد.</p>
+                  <p className="text-[10px] text-gray-600">{t('ownerReviews.noneYet')}</p>
                 ) : (
                   <ul className="space-y-1">
-                    {analysis.positiveThemes.map((t, i) => <li key={i} className="text-[10px] text-gray-600">• {t}</li>)}
+                    {analysis.positiveThemes.map((theme, i) => <li key={i} className="text-[10px] text-gray-600">• {theme}</li>)}
                   </ul>
                 )}
               </div>
               <div className="bg-white border border-gray-100 rounded-2xl p-4">
                 <h4 className="text-[11px] font-bold text-red-700 mb-2 flex items-center gap-1">
-                  <ThumbsDown className="h-3 w-3" />للتحسين
+                  <ThumbsDown className="h-3 w-3" />{t('ownerReviews.improvementsTitle')}
                 </h4>
                 {analysis.negativeThemes.length === 0 ? (
-                  <p className="text-[10px] text-gray-600">ممتاز! لا توجد ملاحظات سلبية.</p>
+                  <p className="text-[10px] text-gray-600">{t('ownerReviews.noNegativeFeedback')}</p>
                 ) : (
                   <ul className="space-y-1">
-                    {analysis.negativeThemes.map((t, i) => <li key={i} className="text-[10px] text-gray-600">• {t}</li>)}
+                    {analysis.negativeThemes.map((theme, i) => <li key={i} className="text-[10px] text-gray-600">• {theme}</li>)}
                   </ul>
                 )}
               </div>
@@ -336,7 +342,7 @@ export default function ReviewsPage() {
 
           {/* Distribution */}
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
-            <h3 className="text-sm font-bold text-gray-900 mb-4">توزيع التقييمات</h3>
+            <h3 className="text-sm font-bold text-gray-900 mb-4">{t('ownerReviews.distributionTitle')}</h3>
             <div className="space-y-3">
               {[5, 4, 3, 2, 1].map(star => (
                 <div key={star} className="flex items-center gap-3">
@@ -346,27 +352,27 @@ export default function ReviewsPage() {
                     <div className="h-full bg-amber-400 rounded-full transition-all"
                       style={{ width: `${stats.totalReviews > 0 ? (stats.distribution[star as keyof typeof stats.distribution] / stats.totalReviews) * 100 : 0}%` }} />
                   </div>
-                  <span className="text-[10px] text-gray-600 w-6 text-left">{stats.distribution[star as keyof typeof stats.distribution]}</span>
+                  <span className={`text-[10px] text-gray-600 w-6 ${alignEnd}`}>{stats.distribution[star as keyof typeof stats.distribution]}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Topic Breakdown */}
-          {analysis && analysis.topicBreakdown.some(t => t.positive + t.negative + t.neutral > 0) && (
+          {analysis && analysis.topicBreakdown.some(topic => topic.positive + topic.negative + topic.neutral > 0) && (
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
-              <h3 className="text-sm font-bold text-gray-900 mb-3">تحليل المواضيع</h3>
+              <h3 className="text-sm font-bold text-gray-900 mb-3">{t('ownerReviews.topicAnalysisTitle')}</h3>
               <div className="space-y-2">
-                {analysis.topicBreakdown.filter(t => t.positive + t.negative + t.neutral > 0).map((t, i) => {
-                  const total = t.positive + t.negative + t.neutral;
-                  const posPct = Math.round((t.positive / total) * 100);
+                {analysis.topicBreakdown.filter(topic => topic.positive + topic.negative + topic.neutral > 0).map((topic, i) => {
+                  const total = topic.positive + topic.negative + topic.neutral;
+                  const posPct = Math.round((topic.positive / total) * 100);
                   return (
                     <div key={i} className="flex items-center gap-2">
-                      <span className="text-[10px] font-medium text-gray-600 w-14">{t.topic}</span>
+                      <span className="text-[10px] font-medium text-gray-600 w-14">{topic.topic}</span>
                       <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${posPct}%` }} />
                       </div>
-                      <span className="text-[9px] text-gray-600 w-10 text-left">{posPct}%</span>
+                      <span className={`text-[9px] text-gray-600 w-10 ${alignEnd}`}>{posPct}%</span>
                     </div>
                   );
                 })}
@@ -378,7 +384,7 @@ export default function ReviewsPage() {
           {analysis && (
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
               <h4 className="text-[11px] font-bold text-gray-700 mb-1 flex items-center gap-1">
-                <Lightbulb className="h-3 w-3" />توصية
+                <Lightbulb className="h-3 w-3" />{t('ownerReviews.recommendationTitle')}
               </h4>
               <p className="text-[10px] text-gray-600 leading-relaxed">{analysis.recommendation}</p>
             </div>
@@ -390,9 +396,9 @@ export default function ReviewsPage() {
         <div className="space-y-4">
           {/* Source Breakdown */}
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
-            <h3 className="text-sm font-bold text-gray-900 mb-4">مصادر التقييمات</h3>
+            <h3 className="text-sm font-bold text-gray-900 mb-4">{t('ownerReviews.sourcesBreakdownTitle')}</h3>
             {sourceStats.length === 0 ? (
-              <p className="text-xs text-gray-600 text-center py-6">لا توجد بيانات.</p>
+              <p className="text-xs text-gray-600 text-center py-6">{t('ownerReviews.noDataAvailable')}</p>
             ) : (
               <div className="space-y-3">
                 {sourceStats.map(s => (
@@ -400,7 +406,7 @@ export default function ReviewsPage() {
                     <span className="text-lg">{s.icon}</span>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-[11px] font-bold text-gray-700">{s.label}</span>
+                        <span className="text-[11px] font-bold text-gray-700">{t(s.labelKey)}</span>
                         <span className="text-[10px] text-gray-600">{s.count} ({s.pct}%)</span>
                       </div>
                       <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
@@ -415,7 +421,7 @@ export default function ReviewsPage() {
 
           {/* Device Stats */}
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
-            <h3 className="text-sm font-bold text-gray-900 mb-4">الأجهزة</h3>
+            <h3 className="text-sm font-bold text-gray-900 mb-4">{t('ownerReviews.devicesTitle')}</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {deviceStats.map(d => (
                 <div key={d.device} className="text-center p-3 bg-gray-50 rounded-xl">
@@ -429,7 +435,7 @@ export default function ReviewsPage() {
 
           {/* Weekly Activity */}
           <div className="bg-white border border-gray-100 rounded-2xl p-5">
-            <h3 className="text-sm font-bold text-gray-900 mb-4">النشاط الأسبوعي</h3>
+            <h3 className="text-sm font-bold text-gray-900 mb-4">{t('ownerReviews.weeklyActivityTitle')}</h3>
             <div className="space-y-2">
               {weeklyActivity.map(d => (
                 <div key={d.day} className="flex items-center gap-2">
@@ -437,7 +443,7 @@ export default function ReviewsPage() {
                   <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                     <div className="h-full bg-blue-400 rounded-full transition-all" style={{ width: `${d.pct}%` }} />
                   </div>
-                  <span className="text-[9px] text-gray-600 w-6 text-left">{d.count}</span>
+                  <span className={`text-[9px] text-gray-600 w-6 ${alignEnd}`}>{d.count}</span>
                 </div>
               ))}
             </div>
@@ -447,9 +453,9 @@ export default function ReviewsPage() {
 
       {activeTab === 'events' && (
         <div className="bg-white border border-gray-100 rounded-2xl p-5">
-          <h3 className="text-sm font-bold text-gray-900 mb-4">آخر الأحداث</h3>
+          <h3 className="text-sm font-bold text-gray-900 mb-4">{t('ownerReviews.recentEventsTitle')}</h3>
           {eventStats.length === 0 ? (
-            <p className="text-xs text-gray-600 text-center py-6">لا توجد أحداث بعد.</p>
+            <p className="text-xs text-gray-600 text-center py-6">{t('ownerReviews.noEventsYet')}</p>
           ) : (
             <div className="space-y-2">
               {eventStats.map(e => (
@@ -458,7 +464,7 @@ export default function ReviewsPage() {
                     {e.icon}
                   </div>
                   <div className="flex-1">
-                    <span className="text-[11px] font-bold text-gray-700">{e.label}</span>
+                    <span className="text-[11px] font-bold text-gray-700">{e.labelKey ? t(e.labelKey) : e.type}</span>
                   </div>
                   <span className="text-sm font-black text-gray-900">{e.count}</span>
                 </div>
@@ -470,10 +476,10 @@ export default function ReviewsPage() {
 
       {activeTab === 'reviews' && (
         <div className="bg-white border border-gray-100 rounded-2xl p-5">
-          <h3 className="text-sm font-bold text-gray-900 mb-4">جميع التقييمات</h3>
+          <h3 className="text-sm font-bold text-gray-900 mb-4">{t('ownerReviews.allReviewsTitle')}</h3>
           <div className="space-y-3 max-h-[32rem] overflow-y-auto">
             {reviews.length === 0 ? (
-              <p className="text-xs text-gray-600 text-center py-8">لا توجد تقييمات بعد.</p>
+              <p className="text-xs text-gray-600 text-center py-8">{t('ownerReviews.noReviewsYet')}</p>
             ) : reviews.map(review => {
               const isVisible = review.is_visible !== false;
               const src = SOURCE_LABELS[review.source || 'direct'] || SOURCE_LABELS.direct;
@@ -487,16 +493,16 @@ export default function ReviewsPage() {
                         ))}
                       </div>
                       <span className="text-[9px] px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${src.color}15`, color: src.color }}>
-                        {src.icon} {src.label}
+                        {src.icon} {t(src.labelKey)}
                       </span>
                     </div>
                     <span className="text-[9px] text-gray-600">
-                      {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: ar }) : ''}
+                      {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: dir === 'rtl' ? ar : undefined }) : ''}
                     </span>
                   </div>
                   {review.comment && <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">{review.comment}</p>}
                   <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-gray-50">
-                    <span className="text-[9px] text-gray-600">{isVisible ? 'معروض' : 'مخفي'}</span>
+                    <span className="text-[9px] text-gray-600">{isVisible ? t('ownerReviews.visible') : t('ownerReviews.hidden')}</span>
                     <button
                       onClick={() => handleVisibilityToggle(review.id, !isVisible)}
                       disabled={updatingVisibility}
@@ -514,10 +520,10 @@ export default function ReviewsPage() {
 
       {activeTab === 'products' && (
         <div className="bg-white border border-gray-100 rounded-2xl p-5">
-          <h3 className="text-sm font-bold text-gray-900 mb-4">تقييمات المنتجات</h3>
+          <h3 className="text-sm font-bold text-gray-900 mb-4">{t('ownerReviews.productReviewsTitle')}</h3>
           <div className="space-y-3 max-h-[32rem] overflow-y-auto">
             {itemReviews.length === 0 ? (
-              <p className="text-xs text-gray-600 text-center py-8">لا توجد تقييمات منتجات بعد.</p>
+              <p className="text-xs text-gray-600 text-center py-8">{t('ownerReviews.noProductReviewsYet')}</p>
             ) : itemReviews.map(review => {
               const isVisible = review.is_visible !== false;
               return (
@@ -529,15 +535,15 @@ export default function ReviewsPage() {
                           <Star key={s} className={`h-3 w-3 ${review.rating >= s ? 'text-amber-400 fill-amber-400' : 'text-gray-200'}`} />
                         ))}
                       </div>
-                      <span className="text-[10px] font-bold text-gray-600">{itemNames[review.menu_item_id] || 'صنف محذوف'}</span>
+                      <span className="text-[10px] font-bold text-gray-600">{itemNames[review.menu_item_id] || t('ownerReviews.deletedItem')}</span>
                     </div>
                     <span className="text-[9px] text-gray-600">
-                      {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: ar }) : ''}
+                      {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: dir === 'rtl' ? ar : undefined }) : ''}
                     </span>
                   </div>
                   {review.comment && <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">{review.comment}</p>}
                   <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-gray-50">
-                    <span className="text-[9px] text-gray-600">{isVisible ? 'معروض' : 'مخفي'}</span>
+                    <span className="text-[9px] text-gray-600">{isVisible ? t('ownerReviews.visible') : t('ownerReviews.hidden')}</span>
                     <button
                       onClick={() => handleItemVisibilityToggle(review.id, !isVisible)}
                       disabled={updatingItemVisibility}
