@@ -8,9 +8,13 @@ import { useUser } from "@/hooks/useUser";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreditCard, Clock, CheckCircle, AlertCircle, Zap, Calendar, Receipt, Tag } from "lucide-react";
 import { PlanPricingGrid } from "@/components/dashboard/PlanPricingGrid";
+import { useLanguage } from "@/components/shared/LanguageContext";
 
 export default function BillingPage() {
   const { user } = useUser();
+  const { t, dir } = useLanguage();
+  const alignEnd = dir === 'rtl' ? 'text-left' : 'text-right';
+  const dateLocale = dir === 'rtl' ? 'ar-SA' : 'en-US';
   const [subscription, setSubscription] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,7 +64,7 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6 p-4">
-      <PageHeader title="الفواتير والاشتراكات" description="إدارة اشتراكك وطرق الدفع" />
+      <PageHeader title={t('ownerBilling.pageTitle')} description={t('ownerBilling.pageDescription')} />
 
       {/* Current Subscription */}
       {subscription ? (
@@ -72,38 +76,38 @@ export default function BillingPage() {
                   {isExpired ? <AlertCircle className="h-5 w-5 text-red-500" /> : <CheckCircle className="h-5 w-5 text-emerald-500" />}
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-gray-900">{subscription.plan_name || "باقة"}</h3>
-                  <p className="text-[11px] text-gray-600">{subscription.billing_cycle === "yearly" ? "اشتراك سنوي" : "اشتراك شهري"}</p>
+                  <h3 className="text-sm font-bold text-gray-900">{subscription.plan_name || t('ownerBilling.planFallback')}</h3>
+                  <p className="text-[11px] text-gray-600">{subscription.billing_cycle === "yearly" ? t('ownerBilling.yearlySubscription') : t('ownerBilling.monthlySubscription')}</p>
                 </div>
               </div>
-              <div className="text-left">
-                <p className="text-lg font-bold text-gray-900">{subscription.amount} ر.س</p>
-                <p className="text-[10px] text-gray-600">/{subscription.billing_cycle === "yearly" ? "سنة" : "شهر"}</p>
+              <div className={alignEnd}>
+                <p className="text-lg font-bold text-gray-900">{subscription.amount} {t('ownerSettings.currency')}</p>
+                <p className="text-[10px] text-gray-600">/{subscription.billing_cycle === "yearly" ? t('ownerBilling.perYear') : t('ownerBilling.perMonth')}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div className="bg-gray-50 rounded-xl p-3 text-center">
                 <Calendar className="h-4 w-4 text-gray-600 mx-auto mb-1" />
-                <p className="text-[10px] text-gray-600">ينتهي</p>
-                <p className="text-xs font-bold text-gray-900">{daysLeft} يوم</p>
+                <p className="text-[10px] text-gray-600">{t('ownerBilling.expiresLabel')}</p>
+                <p className="text-xs font-bold text-gray-900">{daysLeft} {t('ownerSettings.daySuffix')}</p>
               </div>
               <div className="bg-gray-50 rounded-xl p-3 text-center">
                 <Clock className="h-4 w-4 text-gray-600 mx-auto mb-1" />
-                <p className="text-[10px] text-gray-600">الحالة</p>
+                <p className="text-[10px] text-gray-600">{t('ownerBilling.statusLabel')}</p>
                 <p className={`text-xs font-bold ${isExpired ? 'text-red-600' : 'text-emerald-600'}`}>
-                  {isExpired ? "منتهية" : subscription.status === "active" ? "نشطة" : "معلقة"}
+                  {isExpired ? t('ownerSettings.expired') : subscription.status === "active" ? t('ownerBilling.statusActive') : t('ownerBilling.statusPending')}
                 </p>
               </div>
               <div className="bg-gray-50 rounded-xl p-3 text-center">
                 <Receipt className="h-4 w-4 text-gray-600 mx-auto mb-1" />
-                <p className="text-[10px] text-gray-600">الفواتير</p>
+                <p className="text-[10px] text-gray-600">{t('ownerBilling.invoicesLabel')}</p>
                 <p className="text-xs font-bold text-gray-900">{invoices.length}</p>
               </div>
             </div>
             {subscription.discount_amount > 0 && (
               <div className="flex items-center gap-2 bg-emerald-50 rounded-xl px-3 py-2">
                 <Tag className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-[11px] text-emerald-700 font-medium">خصم {subscription.discount_amount} ر.س مُطبّق</span>
+                <span className="text-[11px] text-emerald-700 font-medium">{t('ownerBilling.discountAppliedPrefix')} {subscription.discount_amount} {t('ownerSettings.currency')} {t('ownerBilling.discountAppliedSuffix')}</span>
               </div>
             )}
           </CardContent>
@@ -112,22 +116,22 @@ export default function BillingPage() {
         <Card className="border-gray-100">
           <CardContent className="p-8 text-center space-y-4">
             <Zap className="h-12 w-12 text-gray-200 mx-auto" />
-            <h3 className="text-sm font-bold text-gray-900">لم تفعّل اشتراكاً بعد</h3>
-            <p className="text-[11px] text-gray-600">اختر باقة تناسبك وابدأ بإدارة مطعمك</p>
+            <h3 className="text-sm font-bold text-gray-900">{t('ownerBilling.noSubscriptionTitle')}</h3>
+            <p className="text-[11px] text-gray-600">{t('ownerBilling.noSubscriptionDesc')}</p>
           </CardContent>
         </Card>
       )}
 
       {/* Plans */}
       <div>
-        <h2 className="text-sm font-bold text-gray-900 mb-3">الباقات المتاحة</h2>
+        <h2 className="text-sm font-bold text-gray-900 mb-3">{t('ownerBilling.availablePlans')}</h2>
         <PlanPricingGrid currentPlanId={subscription?.plan_id} isCurrentSubscriptionExpired={isExpired} />
       </div>
 
       {/* Invoices History */}
       {invoices.length > 0 && (
         <div>
-          <h2 className="text-sm font-bold text-gray-900 mb-3">سجل الفواتير</h2>
+          <h2 className="text-sm font-bold text-gray-900 mb-3">{t('ownerBilling.invoiceHistory')}</h2>
           <Card className="border-gray-100">
             <CardContent className="p-0 divide-y divide-gray-50">
               {invoices.map((inv) => (
@@ -137,14 +141,14 @@ export default function BillingPage() {
                       <Receipt className={`h-4 w-4 ${inv.status === 'paid' ? 'text-emerald-500' : inv.status === 'failed' ? 'text-red-500' : 'text-gray-600'}`} />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-gray-900">{inv.description || "فاتورة اشتراك"}</p>
-                      <p className="text-[10px] text-gray-600">{new Date(inv.created_at).toLocaleDateString("ar-SA")}</p>
+                      <p className="text-xs font-bold text-gray-900">{inv.description || t('ownerBilling.invoiceFallback')}</p>
+                      <p className="text-[10px] text-gray-600">{new Date(inv.created_at).toLocaleDateString(dateLocale)}</p>
                     </div>
                   </div>
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-gray-900">{inv.amount} ر.س</p>
+                  <div className={alignEnd}>
+                    <p className="text-xs font-bold text-gray-900">{inv.amount} {t('ownerSettings.currency')}</p>
                     <span className={`text-[10px] font-medium ${inv.status === 'paid' ? 'text-emerald-600' : inv.status === 'failed' ? 'text-red-500' : 'text-gray-600'}`}>
-                      {inv.status === 'paid' ? 'مدفوعة' : inv.status === 'failed' ? 'فشل' : 'معلقة'}
+                      {inv.status === 'paid' ? t('ownerSettings.invoicePaid') : inv.status === 'failed' ? t('ownerSettings.invoiceFailed') : t('ownerBilling.statusPending')}
                     </span>
                   </div>
                 </div>
