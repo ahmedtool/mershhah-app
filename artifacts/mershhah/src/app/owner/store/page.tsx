@@ -27,21 +27,22 @@ import { toolGradient } from '@/lib/tool-gradient';
 import { ToolDetailModal } from '@/components/store/ToolDetailModal';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { isUnlimitedAccount } from '@/lib/unlimited-account';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 const iconMap: { [key: string]: React.ElementType } = { ...icons, Box };
 
 const TABS = [
-    { value: 'all', label: 'الكل' },
-    { value: 'marketing', label: 'التسويق' },
-    { value: 'operations', label: 'العمليات' },
-    { value: 'analytics', label: 'التحليلات' },
+    { value: 'all', labelKey: 'toolsStore.tabAll' },
+    { value: 'marketing', labelKey: 'toolsStore.tabMarketing' },
+    { value: 'operations', labelKey: 'toolsStore.tabOperations' },
+    { value: 'analytics', labelKey: 'toolsStore.tabAnalytics' },
 ];
 
 const SORTS = [
-    { value: 'relevance', label: 'الأنسب' },
-    { value: 'price_asc', label: 'الأقل سعراً' },
-    { value: 'price_desc', label: 'الأعلى سعراً' },
-    { value: 'installs', label: 'الأكثر تفعيلاً' },
+    { value: 'relevance', labelKey: 'toolsStore.sortRelevance' },
+    { value: 'price_asc', labelKey: 'toolsStore.sortPriceAsc' },
+    { value: 'price_desc', labelKey: 'toolsStore.sortPriceDesc' },
+    { value: 'installs', labelKey: 'toolsStore.sortInstalls' },
 ];
 
 // The tool's own screenshots/logo, used as real imagery behind its icon in
@@ -53,8 +54,10 @@ function coverImageOf(tool: any): string | null {
 }
 
 function SortDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t, dir } = useLanguage();
   const [open, setOpen] = useState(false);
-  const current = SORTS.find((s) => s.value === value)?.label || SORTS[0].label;
+  const current = t(SORTS.find((s) => s.value === value)?.labelKey || SORTS[0].labelKey);
+  const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
   return (
     <div className="relative">
       <button
@@ -68,17 +71,18 @@ function SortDropdown({ value, onChange }: { value: string; onChange: (v: string
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-11 z-20 bg-white border border-gray-100 rounded-2xl shadow-lg p-1.5 w-44">
+          <div className="absolute start-0 top-11 z-20 bg-white border border-gray-100 rounded-2xl shadow-lg p-1.5 w-44">
             {SORTS.map((s) => (
               <button
                 key={s.value}
                 onClick={() => { onChange(s.value); setOpen(false); }}
                 className={cn(
-                  "w-full text-right px-3 py-2 rounded-xl text-[12px] font-bold transition-colors",
+                  "w-full px-3 py-2 rounded-xl text-[12px] font-bold transition-colors",
+                  alignStart,
                   value === s.value ? "bg-gray-900 text-white" : "text-gray-600 hover:bg-gray-50"
                 )}
               >
-                {s.label}
+                {t(s.labelKey)}
               </button>
             ))}
           </div>
@@ -114,13 +118,14 @@ function IconTile({ tool, size = 'md', ring = 'thin' }: { tool: any; size?: 'md'
 function ActionPill({ tool, installing, hasPaidPlan, onActivate }: {
   tool: any; installing: string | null; hasPaidPlan: boolean; onActivate: (tool: any) => void;
 }) {
+  const { t } = useLanguage();
   const isBusy = installing === tool.id;
   const base = "shrink-0 h-8 min-w-[76px] px-4 rounded-full text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors";
 
   if (tool.installed) {
     return (
       <span className={cn(base, "bg-emerald-50 text-emerald-600")}>
-        <Check className="h-3 w-3" /> مُفعّلة
+        <Check className="h-3 w-3" /> {t('toolsStore.installed')}
       </span>
     );
   }
@@ -128,12 +133,12 @@ function ActionPill({ tool, installing, hasPaidPlan, onActivate }: {
   if (tool.type === 'paid' && (tool.billing_type || 'plan') === 'plan' && !hasPaidPlan) {
     return (
       <Link href="/owner/billing" className={cn(base, "bg-gray-100 text-gray-600 hover:bg-gray-200")}>
-        <Lock className="h-3 w-3" /> ترقية
+        <Lock className="h-3 w-3" /> {t('toolsStore.upgrade')}
       </Link>
     );
   }
 
-  const label = tool.type === 'paid' && tool.billing_type === 'addon' ? tool.price_label : 'تفعيل';
+  const label = tool.type === 'paid' && tool.billing_type === 'addon' ? tool.price_label : t('toolsStore.activate');
 
   return (
     <button
@@ -149,6 +154,7 @@ function ActionPill({ tool, installing, hasPaidPlan, onActivate }: {
 function ToolCard({ tool, installing, hasPaidPlan, onActivate, onOpenDetail, categoryLabel }: {
   tool: any; installing: string | null; hasPaidPlan: boolean; onActivate: (tool: any) => void; onOpenDetail: (tool: any) => void; categoryLabel: string;
 }) {
+  const { t } = useLanguage();
   const cover = coverImageOf(tool);
   return (
     <div
@@ -178,7 +184,7 @@ function ToolCard({ tool, installing, hasPaidPlan, onActivate, onOpenDetail, cat
           {categoryLabel}
           {tool.popular && (
             <span className="inline-flex items-center gap-0.5 text-amber-500 font-bold">
-              · <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" /> مميز
+              · <Star className="h-2.5 w-2.5 fill-amber-400 text-amber-400" /> {t('toolsStore.popular')}
             </span>
           )}
         </p>
@@ -232,20 +238,21 @@ function FeaturedCard({ tool, installing, hasPaidPlan, onActivate, onOpenDetail 
 function ActionPillLight({ tool, installing, hasPaidPlan, onActivate }: {
   tool: any; installing: string | null; hasPaidPlan: boolean; onActivate: (tool: any) => void;
 }) {
+  const { t } = useLanguage();
   const isBusy = installing === tool.id;
   const base = "h-8 px-4 rounded-full text-[11px] font-bold flex items-center justify-center gap-1.5 w-fit transition-colors";
 
   if (tool.installed) {
-    return <span className={cn(base, "bg-white/25 text-white")}><Check className="h-3 w-3" /> مُفعّلة</span>;
+    return <span className={cn(base, "bg-white/25 text-white")}><Check className="h-3 w-3" /> {t('toolsStore.installed')}</span>;
   }
   if (tool.type === 'paid' && (tool.billing_type || 'plan') === 'plan' && !hasPaidPlan) {
     return (
       <Link href="/owner/billing" className={cn(base, "bg-white/90 text-gray-800 hover:bg-white")}>
-        <Lock className="h-3 w-3" /> ترقية الباقة
+        <Lock className="h-3 w-3" /> {t('toolsStore.upgradePlan')}
       </Link>
     );
   }
-  const label = tool.type === 'paid' && tool.billing_type === 'addon' ? tool.price_label : 'تفعيل الآن';
+  const label = tool.type === 'paid' && tool.billing_type === 'addon' ? tool.price_label : t('toolsStore.activateNow');
   return (
     <button onClick={() => onActivate(tool)} disabled={!!installing} className={cn(base, "bg-white text-gray-900 hover:bg-white/90 disabled:opacity-60")}>
       {isBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : label}
@@ -255,6 +262,7 @@ function ActionPillLight({ tool, installing, hasPaidPlan, onActivate }: {
 
 export default function ToolsStorePage() {
   const { user, isLoading: isUserLoading } = useUser();
+  const { t, dir } = useLanguage();
   const [allTools, setAllTools] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -265,9 +273,10 @@ export default function ToolsStorePage() {
   const [selectedTool, setSelectedTool] = useState<any>(null);
   const { toast } = useToast();
 
+  const dateLocale = dir === 'rtl' ? 'ar-SA' : 'en-US';
   const platformExpiryDate = subscription
-    ? new Date(subscription.end_date).toLocaleDateString('ar-SA')
-    : "غير محدد";
+    ? new Date(subscription.end_date).toLocaleDateString(dateLocale)
+    : t('toolsStore.notSpecified');
   const unlimitedAccount = isUnlimitedAccount(user?.email);
   const hasPaidPlan = unlimitedAccount || (!!subscription && subscription.plan_id !== 'free');
 
@@ -277,12 +286,12 @@ export default function ToolsStorePage() {
     const result = params.get('tool_purchase');
     if (!result) return;
     if (result === 'success') {
-      toast({ title: 'تم الدفع بنجاح', description: 'جاري تفعيل الأداة...' });
+      toast({ title: t('toolsStore.paymentSuccessTitle'), description: t('toolsStore.paymentSuccessDesc') });
     } else if (result === 'failed') {
-      toast({ variant: 'destructive', title: 'فشل الدفع', description: 'لم تكتمل عملية الدفع. حاول مرة أخرى.' });
+      toast({ variant: 'destructive', title: t('toolsStore.paymentFailedTitle'), description: t('toolsStore.paymentFailedDesc') });
     }
     window.history.replaceState({}, '', window.location.pathname);
-  }, [toast]);
+  }, [toast, t]);
 
   const fetchAllData = async () => {
     if (!user || !user.id) return;
@@ -316,7 +325,7 @@ export default function ToolsStorePage() {
       setSelectedTool((prev: any) => prev ? processedTools.find(t => t.id === prev.id) ?? null : null);
     } catch (error) {
       console.error("Failed to fetch tools", error);
-      toast({ title: "فشل تحميل الأدوات", variant: "destructive" });
+      toast({ title: t('toolsStore.loadFailedTitle'), variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
@@ -342,8 +351,8 @@ export default function ToolsStorePage() {
     if (activeToolsCount >= maxTools) {
       toast({
         variant: 'destructive',
-        title: 'وصلت للحد الأقصى من الأدوات',
-        description: `باقتك الحالية (${user.entitlements?.planName || ''}) تسمح بحد أقصى ${maxTools} أدوات مفعّلة. رقّي باقتك لتفعيل المزيد.`,
+        title: t('toolsStore.maxToolsReachedTitle'),
+        description: `${t('toolsStore.maxToolsReachedDescPrefix')} (${user.entitlements?.planName || ''}) ${t('toolsStore.maxToolsReachedDescMiddle')} ${maxTools} ${t('toolsStore.maxToolsReachedDescSuffix')}`,
       });
       return;
     }
@@ -358,14 +367,14 @@ export default function ToolsStorePage() {
       if (billingType === 'plan') {
         expiresAt = subscription?.end_date || null;
         humanExpiry = expiresAt
-          ? new Date(expiresAt).toLocaleDateString('ar-SA')
+          ? new Date(expiresAt).toLocaleDateString(dateLocale)
           : platformExpiryDate;
       } else {
         const months = tool.period_months && tool.period_months > 0 ? tool.period_months : 1;
         const endDate = new Date(now);
         endDate.setMonth(endDate.getMonth() + months);
         expiresAt = endDate.toISOString();
-        humanExpiry = endDate.toLocaleDateString('ar-SA');
+        humanExpiry = endDate.toLocaleDateString(dateLocale);
       }
 
       const { error } = await supabase.from('activated_tools').upsert({
@@ -379,10 +388,10 @@ export default function ToolsStorePage() {
       }, { onConflict: 'profile_id,tool_id' });
 
       if (error) throw error;
-      toast({ title: "تم التفعيل", description: `صالح حتى ${humanExpiry}` });
+      toast({ title: t('toolsStore.activatedTitle'), description: `${t('toolsStore.activatedDescPrefix')} ${humanExpiry}` });
       await fetchAllData();
     } catch (error: any) {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: t('toolsStore.errorTitle'), description: error.message, variant: "destructive" });
     } finally {
       setInstalling(null);
     }
@@ -399,10 +408,10 @@ export default function ToolsStorePage() {
         .eq('profile_id', user.id)
         .eq('tool_id', tool.id);
       if (error) throw error;
-      toast({ title: 'تم إلغاء التفعيل', description: `"${tool.title}" ما عادت مفعّلة على حسابك.` });
+      toast({ title: t('toolsStore.deactivatedTitle'), description: `"${tool.title}" ${t('toolsStore.deactivatedDescSuffix')}` });
       await fetchAllData();
     } catch (error: any) {
-      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+      toast({ title: t('toolsStore.errorTitle'), description: error.message, variant: 'destructive' });
       throw error;
     }
   };
@@ -428,11 +437,11 @@ export default function ToolsStorePage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        toast({ variant: 'destructive', title: 'تعذّر بدء الدفع', description: data.error || 'فشل إنشاء رابط الدفع' });
+        toast({ variant: 'destructive', title: t('toolsStore.paymentStartFailedTitle'), description: data.error || t('toolsStore.paymentLinkFailedDesc') });
         setInstalling(null);
       }
     } catch (error: any) {
-      toast({ title: "خطأ", description: error.message, variant: "destructive" });
+      toast({ title: t('toolsStore.errorTitle'), description: error.message, variant: "destructive" });
       setInstalling(null);
     }
   };
@@ -462,8 +471,8 @@ export default function ToolsStorePage() {
     // subscription (not the free plan) — no separate charge otherwise.
     if (!hasPaidPlan) {
       toast({
-        title: 'تحتاج باقة مدفوعة',
-        description: 'هذي الأداة متاحة فقط مع اشتراك مدفوع بالمنصة. رقّي باقتك أولاً من صفحة الفوترة.',
+        title: t('toolsStore.needsPaidPlanTitle'),
+        description: t('toolsStore.needsPaidPlanDesc'),
       });
       return;
     }
@@ -492,16 +501,19 @@ export default function ToolsStorePage() {
     return 0;
   });
   const featured = !searchQuery ? allTools.filter(t => t.popular).slice(0, 6) : [];
-  const categoryLabelOf = (category: string) => TABS.find(t => t.value === category)?.label || category;
+  const categoryLabelOf = (category: string) => {
+    const tab = TABS.find(tb => tb.value === category);
+    return tab ? t(tab.labelKey) : category;
+  };
 
   return (
     <div className="space-y-8 pb-20">
-      <PageHeader title="متجر الأدوات" description="فعّل أدوات إضافية لتنمية مشروعك.">
+      <PageHeader title={t('toolsStore.pageTitle')} description={t('toolsStore.pageDescription')}>
         <div className="relative w-full max-w-sm">
             <Search className="absolute end-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
             <Input
-                placeholder="ابحث عن أداة..."
-                className="h-10 pe-10 text-xs rounded-full border-0 bg-gray-100/80 text-right focus-visible:ring-1 focus-visible:ring-gray-300 focus-visible:bg-white"
+                placeholder={t('toolsStore.searchPlaceholder')}
+                className={cn("h-10 pe-10 text-xs rounded-full border-0 bg-gray-100/80 focus-visible:ring-1 focus-visible:ring-gray-300 focus-visible:bg-white", dir === 'rtl' ? 'text-right' : 'text-left')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -512,8 +524,8 @@ export default function ToolsStorePage() {
       <div className="bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3 flex items-center gap-2.5">
         <Clock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
         <p className="text-[11px] text-amber-700">
-            أدوات <span className="font-bold">خطة مرشح</span> تنتهي مع اشتراكك —
-            الأدوات <span className="font-bold">المستقلة</span> تنتهي حسب مدة الأداة
+            {t('toolsStore.planToolsPrefix')} <span className="font-bold">{t('toolsStore.planToolsLabel')}</span> {t('toolsStore.planToolsSuffix')}
+            {' '}{t('toolsStore.standaloneToolsPrefix')} <span className="font-bold">{t('toolsStore.standaloneToolsLabel')}</span> {t('toolsStore.standaloneToolsSuffix')}
         </p>
       </div>
 
@@ -522,7 +534,7 @@ export default function ToolsStorePage() {
         <div>
           <div className="flex items-center gap-1.5 mb-3.5 px-0.5">
             <Sparkles className="h-4 w-4 text-amber-500" />
-            <h2 className="text-[15px] font-black text-gray-900">مميزة لك</h2>
+            <h2 className="text-[15px] font-black text-gray-900">{t('toolsStore.featuredForYou')}</h2>
           </div>
           <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory no-scrollbar">
             {featured.map((tool) => (
@@ -545,7 +557,7 @@ export default function ToolsStorePage() {
                 : "bg-gray-100/80 text-gray-600 hover:bg-gray-200/70"
             )}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>
@@ -554,11 +566,11 @@ export default function ToolsStorePage() {
       <div>
         <div className="flex items-center justify-between mb-3.5 px-0.5">
           <h2 className="text-[15px] font-black text-gray-900">
-            {activeTab === 'all' ? 'كل الأدوات' : categoryLabelOf(activeTab)}
+            {activeTab === 'all' ? t('toolsStore.allTools') : categoryLabelOf(activeTab)}
           </h2>
           <SortDropdown value={sortBy} onChange={setSortBy} />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" dir="rtl">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" dir={dir}>
           {tabFiltered.map((tool) => (
             <ToolCard
               key={tool.id}
@@ -575,8 +587,8 @@ export default function ToolsStorePage() {
         {tabFiltered.length === 0 && (
           <div className="bg-white border border-gray-100 rounded-[26px] p-10 text-center">
             <Box className="h-8 w-8 text-gray-200 mx-auto mb-3" />
-            <p className="text-sm font-bold text-gray-900 mb-1">لا توجد أدوات</p>
-            <p className="text-[11px] text-gray-600">جرّب تغيير كلمة البحث</p>
+            <p className="text-sm font-bold text-gray-900 mb-1">{t('toolsStore.noToolsFound')}</p>
+            <p className="text-[11px] text-gray-600">{t('toolsStore.tryDifferentSearch')}</p>
           </div>
         )}
       </div>

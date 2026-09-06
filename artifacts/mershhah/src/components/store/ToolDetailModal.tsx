@@ -15,6 +15,7 @@ import { Link } from 'wouter';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { toolGradient } from '@/lib/tool-gradient';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 export function ToolDetailModal({
   tool,
@@ -35,6 +36,7 @@ export function ToolDetailModal({
   onDeactivate: (tool: any) => Promise<void>;
   categoryLabel: string;
 }) {
+  const { t, dir } = useLanguage();
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
@@ -43,6 +45,8 @@ export function ToolDetailModal({
   const isBusy = installing === tool.id;
   const gallery: string[] = Array.isArray(tool.screenshots) ? tool.screenshots.filter(Boolean) : [];
   const isLocked = tool.type === 'paid' && (tool.billing_type || 'plan') === 'plan' && !hasPaidPlan && !tool.installed;
+  const alignEnd = dir === 'rtl' ? 'text-left' : 'text-right';
+  const dateLocale = dir === 'rtl' ? 'ar-SA' : 'en-US';
 
   const handleConfirmCancel = async () => {
     setIsCancelling(true);
@@ -57,7 +61,7 @@ export function ToolDetailModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0 rounded-[28px]" dir="rtl">
+        <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0 rounded-[28px]" dir={dir}>
           <DialogTitle className="sr-only">{tool.title}</DialogTitle>
           <DialogDescription className="sr-only">{tool.description}</DialogDescription>
 
@@ -122,14 +126,14 @@ export function ToolDetailModal({
             {/* Price */}
             <div className="mt-4 bg-gray-50 rounded-2xl p-4 flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-gray-600">السعر</p>
+                <p className="text-[10px] text-gray-600">{t('toolsStore.price')}</p>
                 <p className="text-sm font-black text-gray-900 mt-0.5">{tool.price_label}</p>
               </div>
               {tool.installed && tool.expires_at && (
-                <div className="text-left">
-                  <p className="text-[10px] text-gray-600">صالحة حتى</p>
+                <div className={alignEnd}>
+                  <p className="text-[10px] text-gray-600">{t('toolsStore.validUntil')}</p>
                   <p className="text-[11px] font-bold text-gray-700 mt-0.5">
-                    {new Date(tool.expires_at).toLocaleDateString('ar-SA')}
+                    {new Date(tool.expires_at).toLocaleDateString(dateLocale)}
                   </p>
                 </div>
               )}
@@ -140,13 +144,13 @@ export function ToolDetailModal({
               {tool.installed ? (
                 <div className="space-y-2">
                   <div className="h-11 rounded-xl bg-emerald-50 text-emerald-600 text-xs font-bold flex items-center justify-center gap-2">
-                    <Check className="h-4 w-4" /> الأداة مُفعّلة
+                    <Check className="h-4 w-4" /> {t('toolsStore.toolActivated')}
                   </div>
                   <button
                     onClick={() => setConfirmingCancel(true)}
                     className="w-full h-11 rounded-xl border border-red-100 text-red-500 text-xs font-bold hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
                   >
-                    <XCircle className="h-4 w-4" /> إلغاء التفعيل
+                    <XCircle className="h-4 w-4" /> {t('toolsStore.deactivate')}
                   </button>
                 </div>
               ) : isLocked ? (
@@ -154,7 +158,7 @@ export function ToolDetailModal({
                   href="/owner/billing"
                   className="w-full h-12 rounded-xl bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
                 >
-                  <Lock className="h-4 w-4" /> رقّي باقتك لتفعيل هذي الأداة
+                  <Lock className="h-4 w-4" /> {t('toolsStore.upgradeToActivate')}
                 </Link>
               ) : (
                 <button
@@ -164,8 +168,8 @@ export function ToolDetailModal({
                 >
                   {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   {isBusy
-                    ? (tool.type === 'paid' && tool.billing_type === 'addon' ? 'جاري تحويلك للدفع...' : 'جاري التفعيل...')
-                    : (tool.type === 'paid' && tool.billing_type === 'addon' ? `اشترك الآن — ${tool.price_label}` : 'تفعيل الأداة')}
+                    ? (tool.type === 'paid' && tool.billing_type === 'addon' ? t('toolsStore.redirectingToPayment') : t('toolsStore.activating'))
+                    : (tool.type === 'paid' && tool.billing_type === 'addon' ? `${t('toolsStore.subscribeNow')} ${tool.price_label}` : t('toolsStore.activateTool'))}
                 </button>
               )}
             </div>
@@ -174,23 +178,23 @@ export function ToolDetailModal({
       </Dialog>
 
       <AlertDialog open={confirmingCancel} onOpenChange={(o) => !isCancelling && setConfirmingCancel(o)}>
-        <AlertDialogContent className="sm:max-w-md p-0 gap-0" dir="rtl">
+        <AlertDialogContent className="sm:max-w-md p-0 gap-0" dir={dir}>
           <div className="px-5 pt-5 pb-3 border-b border-gray-100">
-            <AlertDialogTitle className="text-base font-bold text-gray-900">إلغاء تفعيل "{tool.title}"؟</AlertDialogTitle>
+            <AlertDialogTitle className="text-base font-bold text-gray-900">{t('toolsStore.deactivateConfirmTitle')} "{tool.title}"{dir === 'rtl' ? '؟' : '?'}</AlertDialogTitle>
             <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">
-              راح تفقد الوصول لها فوراً. تقدر تفعّلها مرة ثانية بأي وقت.
+              {t('toolsStore.deactivateConfirmDesc')}
             </AlertDialogDescription>
           </div>
           <div className="flex gap-2 px-5 pb-5 pt-3">
             <AlertDialogCancel disabled={isCancelling} className="flex-1 h-10 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50">
-              تراجع
+              {t('toolsStore.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => { e.preventDefault(); handleConfirmCancel(); }}
               disabled={isCancelling}
               className="flex-1 h-10 rounded-xl bg-red-600 text-white text-xs font-bold hover:bg-red-700 disabled:opacity-50"
             >
-              {isCancelling ? 'جاري الإلغاء...' : 'نعم، إلغاء التفعيل'}
+              {isCancelling ? t('toolsStore.deactivating') : t('toolsStore.confirmDeactivate')}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
