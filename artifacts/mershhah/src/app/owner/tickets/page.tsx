@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { Link } from 'wouter';
 import PageHeader from "@/components/dashboard/PageHeader";
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertTriangle, RefreshCw, MessageSquare, User, Clock, ArrowLeft, Filter, Bot } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MessageSquare, User, Clock, ArrowLeft, ArrowRight, Filter, Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/useUser';
 import { formatDistanceToNow } from 'date-fns';
@@ -12,6 +12,7 @@ import { ar } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
 import type { SupportTicket } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 const statusStyles: Record<string, string> = {
   open: 'bg-blue-50 text-blue-600 border-blue-100',
@@ -20,11 +21,11 @@ const statusStyles: Record<string, string> = {
   closed: 'bg-gray-50 text-gray-600 border-gray-100',
 };
 
-const statusText: Record<string, string> = {
-  open: 'جديدة',
-  contacted: 'تم التواصل',
-  resolved: 'تم الحل',
-  closed: 'مغلقة',
+const statusTextKeys: Record<string, string> = {
+  open: 'ownerTickets.statusOpen',
+  contacted: 'ownerTickets.statusContacted',
+  resolved: 'ownerTickets.statusResolved',
+  closed: 'ownerTickets.statusClosed',
 };
 
 const categoryStyles: Record<string, string> = {
@@ -35,16 +36,17 @@ const categoryStyles: Record<string, string> = {
   other: 'bg-gray-50 text-gray-600 border-gray-100',
 };
 
-const categoryText: Record<string, string> = {
-  complaint: 'شكوى',
-  inquiry: 'استفسار',
-  employment: 'توظيف',
-  suggestion: 'اقتراح',
-  other: 'أخرى',
+const categoryTextKeys: Record<string, string> = {
+  complaint: 'ownerTickets.categoryComplaint',
+  inquiry: 'ownerTickets.categoryInquiry',
+  employment: 'ownerTickets.categoryEmployment',
+  suggestion: 'ownerTickets.categorySuggestion',
+  other: 'ownerTickets.categoryOther',
 };
 
 export default function OwnerTicketsPage() {
   const { user, isLoading: isUserLoading } = useUser();
+  const { t, dir } = useLanguage();
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, startRefresh] = useTransition();
@@ -104,11 +106,11 @@ export default function OwnerTicketsPage() {
 
   return (
     <div className="space-y-5 pb-20">
-      <PageHeader title="تذاكر الدعم" description="استفسارات وشكاوى عملائك.">
+      <PageHeader title={t('ownerTickets.pageTitle')} description={t('ownerTickets.pageDescription')}>
         <button onClick={handleRefresh} disabled={isRefreshing || isLoadingData}
           className="h-9 px-4 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-2">
           <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing || isLoadingData ? 'animate-spin' : ''}`} />
-          تحديث
+          {t('ownerTickets.refresh')}
         </button>
       </PageHeader>
 
@@ -119,22 +121,22 @@ export default function OwnerTicketsPage() {
             <button onClick={() => setFilterCategory('all')}
               className={cn("shrink-0 h-8 px-3 rounded-lg text-[11px] font-bold border transition-all",
                 filterCategory === 'all' ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-100 hover:border-gray-200')}>
-              الكل ({tickets.length})
+              {t('ownerTickets.all')} ({tickets.length})
             </button>
-            {Object.entries(categoryText).map(([key, label]) => (
+            {Object.entries(categoryTextKeys).map(([key, labelKey]) => (
               <button key={key} onClick={() => setFilterCategory(key)}
                 className={cn("shrink-0 h-8 px-3 rounded-lg text-[11px] font-bold border transition-all",
                   filterCategory === key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-100 hover:border-gray-200')}>
-                {label} ({categoryCounts[key] || 0})
+                {t(labelKey)} ({categoryCounts[key] || 0})
               </button>
             ))}
           </div>
           <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1 [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%-16px),transparent)]">
-            {Object.entries(statusText).map(([key, label]) => (
+            {Object.entries(statusTextKeys).map(([key, labelKey]) => (
               <button key={key} onClick={() => setFilterStatus(filterStatus === key ? 'all' : key)}
                 className={cn("shrink-0 h-8 px-3 rounded-lg text-[11px] font-bold border transition-all",
                   filterStatus === key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-100 hover:border-gray-200')}>
-                {label}
+                {t(labelKey)}
               </button>
             ))}
           </div>
@@ -150,8 +152,8 @@ export default function OwnerTicketsPage() {
           <div className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <AlertTriangle className="h-5 w-5 text-gray-600" />
           </div>
-          <p className="text-sm font-bold text-gray-900 mb-1">{tickets.length === 0 ? 'لا توجد تذاكر' : 'لا توجد نتائج'}</p>
-          <p className="text-[11px] text-gray-600">{tickets.length === 0 ? 'ستظهر التذاكر هنا عندما يتواصل معك العملاء' : 'جرّب تغيير الفلتر'}</p>
+          <p className="text-sm font-bold text-gray-900 mb-1">{tickets.length === 0 ? t('ownerTickets.noTickets') : t('ownerTickets.noResults')}</p>
+          <p className="text-[11px] text-gray-600">{tickets.length === 0 ? t('ownerTickets.noTicketsDesc') : t('ownerTickets.tryDifferentFilter')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -161,15 +163,15 @@ export default function OwnerTicketsPage() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md border", categoryStyles[ticket.category] || categoryStyles.other)}>
-                    {categoryText[ticket.category] || ticket.category}
+                    {categoryTextKeys[ticket.category] ? t(categoryTextKeys[ticket.category]) : ticket.category}
                   </span>
                   <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md border", statusStyles[ticket.status] || statusStyles.open)}>
-                    {statusText[ticket.status] || ticket.status}
+                    {statusTextKeys[ticket.status] ? t(statusTextKeys[ticket.status]) : ticket.status}
                   </span>
                   {ticket.source === 'ai_assistant' && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-md border bg-violet-50 text-violet-600 border-violet-100 flex items-center gap-1">
                       <Bot className="h-2.5 w-2.5" />
-                      المساعد الذكي
+                      {t('ownerTickets.aiAssistant')}
                     </span>
                   )}
                 </div>
@@ -183,7 +185,7 @@ export default function OwnerTicketsPage() {
               <div className="flex items-center gap-3 mb-2 text-[10px] text-gray-600">
                 <span className="flex items-center gap-1"><User className="h-3 w-3" />{ticket.name}</span>
                 {ticket.phone && <span className="font-mono" dir="ltr">{ticket.phone}</span>}
-                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{ticket.created_at ? formatDistanceToNow(new Date(ticket.created_at as any), { addSuffix: true, locale: ar }) : ''}</span>
+                <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{ticket.created_at ? formatDistanceToNow(new Date(ticket.created_at as any), { addSuffix: true, locale: dir === 'rtl' ? ar : undefined }) : ''}</span>
               </div>
 
               {/* Message */}
@@ -192,8 +194,8 @@ export default function OwnerTicketsPage() {
               {/* Action */}
               <Link href={`/owner/tickets/${ticket.id}`}
                 className="w-full h-9 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
-                عرض التفاصيل
-                <ArrowLeft className="h-3.5 w-3.5" />
+                {t('ownerTickets.viewDetails')}
+                {dir === 'rtl' ? <ArrowLeft className="h-3.5 w-3.5" /> : <ArrowRight className="h-3.5 w-3.5" />}
               </Link>
             </div>
           ))}
