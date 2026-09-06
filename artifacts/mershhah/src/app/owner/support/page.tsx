@@ -1,7 +1,7 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
-import { SendHorizonal, Paperclip, Loader2, FileIcon, Download, MessageSquare, User, ArrowLeft } from 'lucide-react';
+import { SendHorizonal, Paperclip, Loader2, FileIcon, Download, MessageSquare, User, ArrowLeft, ArrowRight } from 'lucide-react';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/hooks/useUser';
@@ -10,10 +10,12 @@ import { supabase } from '@/lib/supabase';
 import type { ChatMessage, ChatSession } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 export default function OwnerSupportPage() {
   const { user, isLoading: isUserLoading } = useUser();
   const { toast } = useToast();
+  const { t, dir } = useLanguage();
 
   const [chats, setChats] = useState<ChatSession[]>([]);
   const [selectedChat, setSelectedChat] = useState<ChatSession | null>(null);
@@ -134,7 +136,7 @@ export default function OwnerSupportPage() {
       });
 
       await supabase.from('chats').update({
-        lastMessage: file ? `ملف: ${file.name}` : messageText,
+        lastMessage: file ? `${t('ownerSupport.filePrefix')} ${file.name}` : messageText,
         lastMessageTimestamp: now,
         adminHasUnread: true,
         ownerHasUnread: false,
@@ -145,7 +147,7 @@ export default function OwnerSupportPage() {
         : c
       ));
     } catch (error: any) {
-      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+      toast({ title: t('ownerSupport.errorTitle'), description: error.message, variant: 'destructive' });
     } finally {
       setIsUploading(false);
     }
@@ -155,7 +157,7 @@ export default function OwnerSupportPage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast({ title: 'حجم الملف كبير', description: 'أصغر من 5 ميجابايت.', variant: 'destructive' });
+        toast({ title: t('ownerSupport.fileTooLargeTitle'), description: t('ownerSupport.fileTooLargeDesc'), variant: 'destructive' });
         return;
       }
       handleSendMessage(e as any, file);
@@ -177,15 +179,15 @@ export default function OwnerSupportPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-lg font-black text-gray-900">محادثة مع الإدارة</h1>
-        <p className="text-xs text-gray-600 mt-0.5">{chats.length} محادثة {unreadCount > 0 && `• ${unreadCount} جديدة`}</p>
+        <h1 className="text-lg font-black text-gray-900">{t('ownerSupport.pageTitle')}</h1>
+        <p className="text-xs text-gray-600 mt-0.5">{chats.length} {t('ownerSupport.conversationCount')} {unreadCount > 0 && `• ${unreadCount} ${t('ownerSupport.newCount')}`}</p>
       </div>
 
       <div className="flex gap-0 bg-white border border-gray-100 rounded-2xl overflow-hidden h-[calc(100vh-180px)]">
         {/* Chat List */}
-        <div className={`w-full md:w-80 lg:w-96 border-l border-gray-100 flex flex-col shrink-0 ${showChat ? 'hidden md:flex' : 'flex'}`}>
+        <div className={`w-full md:w-80 lg:w-96 border-e border-gray-100 flex flex-col shrink-0 ${showChat ? 'hidden md:flex' : 'flex'}`}>
           <div className="p-3 border-b border-gray-100">
-            <Input placeholder="بحث..." className="h-10 text-xs rounded-xl bg-gray-50 border-gray-100" dir="rtl" />
+            <Input placeholder={t('ownerSupport.searchPlaceholder')} className="h-10 text-xs rounded-xl bg-gray-50 border-gray-100" dir={dir} />
           </div>
           <div className="flex-1 overflow-y-auto">
             {chats.length === 0 ? (
@@ -193,30 +195,30 @@ export default function OwnerSupportPage() {
                 <div className="w-12 h-12 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <MessageSquare className="h-5 w-5 text-gray-600" />
                 </div>
-                <p className="text-xs font-bold text-gray-900 mb-1">لا توجد محادثات</p>
-                <p className="text-[10px] text-gray-600">ستظهر محادثاتك مع الإدارة هنا</p>
+                <p className="text-xs font-bold text-gray-900 mb-1">{t('ownerSupport.noConversations')}</p>
+                <p className="text-[10px] text-gray-600">{t('ownerSupport.noConversationsDesc')}</p>
               </div>
             ) : chats.map(chat => (
               <button
                 key={chat.id}
                 onClick={() => { selectChat(chat); setShowChat(true); }}
-                className={`w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors border-b border-gray-50 text-right ${
+                className={`w-full flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors border-b border-gray-50 text-start ${
                   selectedChat?.id === chat.id ? 'bg-gray-50' : ''
                 }`}
               >
                 <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
-                  <span className="text-xs font-bold text-white">أد</span>
+                  <span className="text-xs font-bold text-white">{t('ownerSupport.adminInitials')}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-gray-900">الإدارة</span>
+                    <span className="text-xs font-bold text-gray-900">{t('ownerSupport.admin')}</span>
                     {chat.lastMessageTimestamp && (
                       <span className="text-[9px] text-gray-600 shrink-0">
-                        {formatDistanceToNow(new Date(chat.lastMessageTimestamp), { addSuffix: true, locale: ar })}
+                        {formatDistanceToNow(new Date(chat.lastMessageTimestamp), { addSuffix: true, locale: dir === 'rtl' ? ar : undefined })}
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] text-gray-600 truncate mt-0.5">{chat.lastMessage || 'محادثة جديدة'}</p>
+                  <p className="text-[10px] text-gray-600 truncate mt-0.5">{chat.lastMessage || t('ownerSupport.newConversation')}</p>
                 </div>
                 {chat.ownerHasUnread && (
                   <div className="w-2 h-2 rounded-full bg-gray-900 shrink-0" />
@@ -234,8 +236,8 @@ export default function OwnerSupportPage() {
                 <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
                   <MessageSquare className="h-7 w-7 text-gray-600" />
                 </div>
-                <p className="text-sm font-bold text-gray-900 mb-1">اختر محادثة</p>
-                <p className="text-[11px] text-gray-600">اختر محادثة من القائمة للبدء</p>
+                <p className="text-sm font-bold text-gray-900 mb-1">{t('ownerSupport.selectConversation')}</p>
+                <p className="text-[11px] text-gray-600">{t('ownerSupport.selectConversationDesc')}</p>
               </div>
             </div>
           ) : (
@@ -243,14 +245,14 @@ export default function OwnerSupportPage() {
               {/* Chat Header */}
               <div className="p-3 border-b border-gray-100 flex items-center gap-3 shrink-0">
                 <button onClick={() => setShowChat(false)} className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100">
-                  <ArrowLeft className="h-4 w-4" />
+                  {dir === 'rtl' ? <ArrowRight className="h-4 w-4" /> : <ArrowLeft className="h-4 w-4" />}
                 </button>
                 <div className="w-9 h-9 rounded-full bg-gray-900 flex items-center justify-center">
-                  <span className="text-xs font-bold text-white">أد</span>
+                  <span className="text-xs font-bold text-white">{t('ownerSupport.adminInitials')}</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-xs font-bold text-gray-900">الإدارة</p>
-                  <p className="text-[10px] text-gray-600">محادثة مباشرة</p>
+                  <p className="text-xs font-bold text-gray-900">{t('ownerSupport.admin')}</p>
+                  <p className="text-[10px] text-gray-600">{t('ownerSupport.liveChat')}</p>
                 </div>
               </div>
 
@@ -269,7 +271,7 @@ export default function OwnerSupportPage() {
                       <div key={msg.id} className={`flex items-end gap-2 ${isOwner ? 'justify-end' : 'justify-start'}`}>
                         {!isOwner && (
                           <div className="w-7 h-7 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
-                            <span className="text-[9px] font-bold text-white">أد</span>
+                            <span className="text-[9px] font-bold text-white">{t('ownerSupport.adminInitials')}</span>
                           </div>
                         )}
                         <div className={`p-3 text-[13px] rounded-2xl max-w-[70%] ${isOwner ? 'bg-gray-900 text-white rounded-br-md' : 'bg-gray-50 text-gray-700 border border-gray-100 rounded-bl-md'}`}>
@@ -283,7 +285,7 @@ export default function OwnerSupportPage() {
                               ) : (
                                 <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 p-2 rounded-lg ${isOwner ? 'bg-white/10' : 'bg-white border border-gray-100'} hover:opacity-80 transition-opacity`}>
                                   <FileIcon className="h-4 w-4 shrink-0" />
-                                  <span className="text-[11px] underline truncate">{msg.attachment_filename || 'ملف'}</span>
+                                  <span className="text-[11px] underline truncate">{msg.attachment_filename || t('ownerSupport.file')}</span>
                                   <Download className="h-3 w-3 shrink-0" />
                                 </a>
                               )}
@@ -295,7 +297,7 @@ export default function OwnerSupportPage() {
                   })}
                   {!isLoadingMessages && messages.length === 0 && (
                     <div className="text-center pt-16">
-                      <p className="text-xs text-gray-600">ابدأ المحادثة مع الإدارة</p>
+                      <p className="text-xs text-gray-600">{t('ownerSupport.startConversation')}</p>
                     </div>
                   )}
                   <div ref={messagesEndRef} />
@@ -312,10 +314,10 @@ export default function OwnerSupportPage() {
                 <Input
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="اكتب ردك..."
+                  placeholder={t('ownerSupport.typeYourReply')}
                   className="flex-1 h-10 rounded-xl border-gray-200 text-xs"
                   disabled={isLoadingMessages || isUploading}
-                  dir="rtl"
+                  dir={dir}
                 />
                 <button type="submit" disabled={isLoadingMessages || (!message.trim() && !isUploading) || isUploading}
                   className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center hover:bg-gray-800 transition-colors shrink-0 disabled:opacity-30">
