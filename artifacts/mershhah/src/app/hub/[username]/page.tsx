@@ -26,6 +26,8 @@ import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useToast } from '@/hooks/use-toast';
 import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 import { useGoogleFont } from '@/hooks/useGoogleFont';
+import { useLanguage } from '@/components/shared/LanguageContext';
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 
 const SOCIAL_ICONS: { [key: string]: React.ElementType } = {
     whatsapp: WhatsAppIcon,
@@ -54,6 +56,8 @@ export default function RestaurantHubPage() {
   const username = params.username as string;
   const router = useRouter();
   const { toast } = useToast();
+  const { t, dir } = useLanguage();
+  const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
 
   const [restaurant, setRestaurant] = useState<any>(null);
   const [offers, setOffers] = useState<any[]>([]);
@@ -65,9 +69,13 @@ export default function RestaurantHubPage() {
   const branchParam = searchParams.get('branch');
 
   useDocumentMeta(
-    restaurant?.name ? `منيو ${restaurant.name}` : undefined,
+    restaurant?.name
+      ? (dir === 'rtl' ? `${t('hubPage.menuWord')} ${restaurant.name}` : `${restaurant.name} ${t('hubPage.menuWord')}`)
+      : undefined,
     restaurant
-      ? (restaurant.description || `منيو ${restaurant.name} الرقمي — تصفّح الأطباق والعروض واسأل المساعد الذكي.`)
+      ? (restaurant.description || (dir === 'rtl'
+          ? `${t('hubPage.menuWord')} ${restaurant.name} ${t('hubPage.digitalMenuDescSuffix')}`
+          : `${restaurant.name}'s ${t('hubPage.digitalMenuDescSuffix')}`))
       : undefined
   );
   useGoogleFont(restaurant?.fontFamily);
@@ -198,14 +206,14 @@ export default function RestaurantHubPage() {
     }
     try {
       await navigator.clipboard.writeText(window.location.href);
-      toast({ title: 'تم نسخ الرابط' });
+      toast({ title: t('hubPage.linkCopied') });
     } catch {
-      toast({ variant: 'destructive', title: 'تعذّر نسخ الرابط' });
+      toast({ variant: 'destructive', title: t('hubPage.linkCopyFailed') });
     }
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center p-4" dir={dir}>
       <div className="w-full max-w-lg space-y-6">
         <div className="flex flex-col items-center space-y-4">
           <Skeleton className="h-28 w-28 rounded-3xl" />
@@ -224,14 +232,14 @@ export default function RestaurantHubPage() {
   );
 
   if (!restaurant) return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-b from-gray-50 to-white text-center p-4" dir="rtl">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-b from-gray-50 to-white text-center p-4" dir={dir}>
       <div className="space-y-6 max-w-sm bg-white p-10 rounded-3xl shadow-xl w-full">
         <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto text-red-500">
           <Info className="h-10 w-10" />
         </div>
-        <h1 className="text-xl font-black text-right text-gray-900">المطعم غير موجود!</h1>
+        <h1 className={`text-xl font-black ${alignStart} text-gray-900`}>{t('hubPage.restaurantNotFound')}</h1>
         <Button asChild className="w-full h-12 rounded-2xl font-bold">
-          <Link href="/">العودة للرئيسية</Link>
+          <Link href="/">{t('hubPage.backToHome')}</Link>
         </Button>
       </div>
     </div>
@@ -245,7 +253,7 @@ export default function RestaurantHubPage() {
     <div
       className="min-h-screen flex flex-col items-center relative overflow-x-hidden"
       style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 45%, white), white 55%)' }}
-      dir="rtl"
+      dir={dir}
     >
       <PublicPageBackdrop />
 
@@ -254,8 +262,13 @@ export default function RestaurantHubPage() {
 
         {/* Header - الشعار والاسم */}
         <div className="relative px-5 py-8 text-center">
+          {/* Language switcher */}
+          <div className="absolute top-4 start-4">
+            <LanguageSwitcher className="!bg-gray-100 hover:!bg-gray-200 rounded-full" />
+          </div>
+
           {/* زر المشاركة */}
-          <div className="absolute top-4 left-4">
+          <div className="absolute top-4 end-4">
             <Button
               onClick={handleShare}
               size="icon"
@@ -283,7 +296,7 @@ export default function RestaurantHubPage() {
               {restaurant.name}
             </h1>
             <p className="text-sm text-gray-600 font-medium max-w-xs mx-auto line-clamp-2">
-              {restaurant.description || "أهلاً بك في عالمنا الخاص."}
+              {restaurant.description || t('hubPage.welcomeDefault')}
             </p>
           </div>
         </div>
@@ -334,8 +347,8 @@ export default function RestaurantHubPage() {
                   <div className="w-11 h-11 flex items-center justify-center bg-white/20 backdrop-blur-md border border-white/30" style={{ borderRadius: 'var(--r-radius-sm)' }}>
                     <Bot className="h-6 w-6" />
                   </div>
-                  <div className="flex-1 text-right">
-                    <span className="font-black text-base block">المساعد الذكي</span>
+                  <div className={`flex-1 ${alignStart}`}>
+                    <span className="font-black text-base block">{t('hubPage.aiAssistant')}</span>
                   </div>
                 </div>
               </Link>
@@ -350,8 +363,8 @@ export default function RestaurantHubPage() {
                   >
                     <Utensils className="h-5 w-5" />
                   </div>
-                  <div className="flex-1 text-right min-w-0">
-                    <span className="font-black text-sm text-gray-900 block truncate">المنيو</span>
+                  <div className={`flex-1 ${alignStart} min-w-0`}>
+                    <span className="font-black text-sm text-gray-900 block truncate">{t('hubPage.menu')}</span>
                   </div>
                 </div>
               </Link>
@@ -364,8 +377,8 @@ export default function RestaurantHubPage() {
                   >
                     <Star className="h-5 w-5 fill-current" />
                   </div>
-                  <div className="flex-1 text-right min-w-0">
-                    <span className="font-black text-sm text-gray-900 block truncate">التقييمات</span>
+                  <div className={`flex-1 ${alignStart} min-w-0`}>
+                    <span className="font-black text-sm text-gray-900 block truncate">{t('hubPage.reviews')}</span>
                   </div>
                 </div>
               </Link>
@@ -378,8 +391,8 @@ export default function RestaurantHubPage() {
                   >
                     <MapPin className="h-5 w-5" />
                   </div>
-                  <div className="flex-1 text-right min-w-0">
-                    <span className="font-black text-sm text-gray-900 block truncate">الفروع</span>
+                  <div className={`flex-1 ${alignStart} min-w-0`}>
+                    <span className="font-black text-sm text-gray-900 block truncate">{t('hubPage.branches')}</span>
                   </div>
                 </div>
               </Link>
@@ -392,8 +405,8 @@ export default function RestaurantHubPage() {
                   >
                     <Ticket className="h-5 w-5" />
                   </div>
-                  <div className="flex-1 text-right min-w-0">
-                    <span className="font-black text-sm text-gray-900 block truncate">تذكرة دعم</span>
+                  <div className={`flex-1 ${alignStart} min-w-0`}>
+                    <span className="font-black text-sm text-gray-900 block truncate">{t('hubPage.supportTicket')}</span>
                   </div>
                 </div>
               </Link>
@@ -432,7 +445,7 @@ export default function RestaurantHubPage() {
             if (activeApps.length === 0) return null;
             return (
               <section className="space-y-3">
-                <h3 className="font-black text-sm text-gray-600 px-1 text-right">التطبيقات</h3>
+                <h3 className={`font-black text-sm text-gray-600 px-1 ${alignStart}`}>{t('hubPage.applications')}</h3>
                 <div className="grid grid-cols-4 gap-3">
                   {activeApps.map((app: any, idx: number) => (
                     <a key={app.id || idx} href={app.value || '#'} target="_blank" rel="noopener noreferrer"
@@ -452,7 +465,7 @@ export default function RestaurantHubPage() {
           {/* التواصل الاجتماعي */}
           {Array.isArray(socialLinks) && socialLinks.filter((link: any) => link?.value?.trim()).length > 0 && (
             <section className="space-y-3">
-              <h3 className="font-black text-sm text-gray-600 px-1 text-right">تواصل معنا</h3>
+              <h3 className={`font-black text-sm text-gray-600 px-1 ${alignStart}`}>{t('hubPage.contactUs')}</h3>
               <div className="flex flex-wrap justify-center gap-3 pb-8">
                 {socialLinks
                   .filter((link: any) => link?.platform && link?.value?.trim())
@@ -484,7 +497,7 @@ export default function RestaurantHubPage() {
                 rel="noopener noreferrer"
                 className="text-[10px] font-black text-gray-600 hover:text-gray-600 transition-colors"
               >
-                مدعوم بواسطة مرشح
+                {t('hubPage.poweredBy')}
               </Link>
             </div>
           )}
