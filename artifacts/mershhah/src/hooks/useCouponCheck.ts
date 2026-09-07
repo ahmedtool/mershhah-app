@@ -59,9 +59,14 @@ export function useCouponCheck() {
     }
   };
 
+  // Mirrors streampay-checkout's exact computation order (round the discount
+  // amount, then subtract) rather than rounding the final price directly -
+  // the two can differ by a unit on some price/percentage combinations, which
+  // would show a preview price here that doesn't match what actually gets
+  // charged at checkout.
   const applyDiscount = (price: number) => {
     if (!couponDiscount) return price;
-    if (couponDiscount.discount_type === 'percentage') return Math.round(price * (1 - couponDiscount.discount_value / 100));
+    if (couponDiscount.discount_type === 'percentage') return Math.max(0, price - Math.round((price * couponDiscount.discount_value) / 100));
     if (couponDiscount.discount_type === 'fixed') return Math.max(0, price - couponDiscount.discount_value);
     return 0; // free_trial
   };

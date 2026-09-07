@@ -29,18 +29,35 @@ export default function AdminDiscountsPage() {
   const [editingCode, setEditingCode] = useState<DiscountCode | null>(null);
   const { toast } = useToast();
 
-  const [form, setForm] = useState({
+  const [plans, setPlans] = useState<{ id: string; name: string }[]>([]);
+
+  const [form, setForm] = useState<{
+    code: string;
+    description: string;
+    discount_type: 'percentage' | 'fixed' | 'free_trial';
+    discount_value: number;
+    max_uses: number;
+    valid_until: string;
+    is_active: boolean;
+    applicable_plans: string[];
+    min_amount: number;
+    valid_from: string;
+  }>({
     code: '',
     description: '',
-    discount_type: 'percentage' as const,
+    discount_type: 'percentage',
     discount_value: 0,
     max_uses: 0,
     valid_until: '',
     is_active: true,
+    applicable_plans: [],
+    min_amount: 0,
+    valid_from: '',
   });
 
   useEffect(() => {
     fetchCodes();
+    supabase.from('plans').select('id, name').then(({ data }: { data: { id: string; name: string }[] | null }) => setPlans(data || []));
   }, []);
 
   const fetchCodes = async () => {
@@ -69,6 +86,9 @@ export default function AdminDiscountsPage() {
         max_uses: form.max_uses || null,
         valid_until: form.valid_until || null,
         is_active: form.is_active,
+        applicable_plans: form.applicable_plans,
+        min_amount: form.min_amount || 0,
+        valid_from: form.valid_from || new Date().toISOString(),
       };
 
       if (editingCode) {
@@ -82,7 +102,7 @@ export default function AdminDiscountsPage() {
       }
       setShowCreate(false);
       setEditingCode(null);
-      setForm({ code: '', description: '', discount_type: 'percentage', discount_value: 0, max_uses: 0, valid_until: '', is_active: true });
+      setForm({ code: '', description: '', discount_type: 'percentage', discount_value: 0, max_uses: 0, valid_until: '', is_active: true, applicable_plans: [], min_amount: 0, valid_from: '' });
       fetchCodes();
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'خطأ', description: error.message });
@@ -224,6 +244,49 @@ export default function AdminDiscountsPage() {
                 className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-gray-300"
               />
             </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-600 mb-1 block">يبدأ من</label>
+              <input
+                type="date"
+                value={form.valid_from}
+                onChange={(e) => setForm({ ...form, valid_from: e.target.value })}
+                className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs focus:outline-none focus:border-gray-300"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-gray-600 mb-1 block">الحد الأدنى للمبلغ (ر.س)</label>
+              <input
+                type="number"
+                value={form.min_amount || ''}
+                onChange={(e) => setForm({ ...form, min_amount: Number(e.target.value) })}
+                placeholder="0 = بدون حد أدنى"
+                className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
+                dir="ltr"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold text-gray-600 mb-1.5 block">الباقات المطبّق عليها (اتركها فاضية = كل الباقات)</label>
+            <div className="flex flex-wrap gap-2">
+              {plans.map((plan) => {
+                const isSelected = form.applicable_plans.includes(plan.id);
+                return (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => setForm({
+                      ...form,
+                      applicable_plans: isSelected
+                        ? form.applicable_plans.filter((id) => id !== plan.id)
+                        : [...form.applicable_plans, plan.id],
+                    })}
+                    className={`px-3 py-1.5 rounded-full text-[11px] font-medium border transition-colors ${isSelected ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'}`}
+                  >
+                    {plan.name}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="flex gap-2">
             <button onClick={handleSave} className="h-10 px-6 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors">
@@ -291,6 +354,9 @@ export default function AdminDiscountsPage() {
                           max_uses: code.max_uses || 0,
                           valid_until: code.valid_until ? code.valid_until.split('T')[0] : '',
                           is_active: code.is_active,
+                          applicable_plans: code.applicable_plans || [],
+                          min_amount: code.min_amount || 0,
+                          valid_from: code.valid_from ? code.valid_from.split('T')[0] : '',
                         });
                         setShowCreate(true);
                       }}
