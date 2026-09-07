@@ -1,12 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Pencil, Plus, CreditCard, Clock, Link as LinkIcon, Users, Zap, Utensils, Trash2, FlaskConical, Loader2 } from 'lucide-react';
+import { Pencil, Plus, CreditCard, Clock, Link as LinkIcon, Users, Zap, Utensils, Trash2, FlaskConical, Loader2, BarChart3, Package, ShoppingCart, Tag } from 'lucide-react';
+import { Link } from 'wouter';
+import { usePathname } from '@/lib/navigation';
 import { supabase } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { EditPlanDialog } from '@/components/admin/plans/EditPlanDialog';
 import { usePlanCheckout } from '@/hooks/usePlanCheckout';
+
+const tabs = [
+  { href: '/admin/financials', label: 'نظرة عامة', icon: BarChart3 },
+  { href: '/admin/financials/plans', label: 'الباقات', icon: Package },
+  { href: '/admin/financials/orders', label: 'الطلبات', icon: ShoppingCart },
+  { href: '/admin/financials/discounts', label: 'أكواد الخصم', icon: Tag },
+];
 
 interface Plan {
   id: string;
@@ -37,6 +46,7 @@ export default function PlansPage() {
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const { checkout, isCheckingOut } = usePlanCheckout();
+  const pathname = usePathname();
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -71,9 +81,34 @@ export default function PlansPage() {
     }
   };
 
+  const tabBar = (
+    <div className="flex items-center gap-1 bg-gray-50 rounded-xl p-1 w-fit">
+      {tabs.map((tab) => {
+        const isActive = tab.href === '/admin/financials'
+          ? pathname === '/admin/financials'
+          : pathname.startsWith(tab.href);
+        return (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            className={`flex items-center gap-1.5 h-9 px-4 rounded-lg text-[11px] font-bold transition-colors ${
+              isActive
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-600 hover:text-gray-600'
+            }`}
+          >
+            <tab.icon className="h-3.5 w-3.5" />
+            {tab.label}
+          </Link>
+        );
+      })}
+    </div>
+  );
+
   if (isLoading) {
     return (
-      <div className="p-4 lg:p-6 space-y-4">
+      <div className="p-4 lg:p-6 space-y-5">
+        {tabBar}
         <Skeleton className="h-7 w-48" />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-80 rounded-2xl" />)}
@@ -84,6 +119,7 @@ export default function PlansPage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-5">
+      {tabBar}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-gray-900">باقات الاشتراك</h1>

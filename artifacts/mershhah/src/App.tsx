@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -220,7 +220,8 @@ function Router() {
         <Route path="/owner/billing" component={() => <OW><OwnerBillingPage /></OW>} />
         <Route path="/admin/dashboard" component={() => <AdminLayout><AdminDashboardPage /></AdminLayout>} />
         <Route path="/admin/management" component={() => <AdminLayout><AdminManagementPage /></AdminLayout>} />
-        <Route path="/admin/plans" component={() => <AdminLayout><AdminPlansPage /></AdminLayout>} />
+        <Route path="/admin/financials/plans" component={() => <AdminLayout><AdminPlansPage /></AdminLayout>} />
+        <Route path="/admin/plans"><Redirect to="/admin/financials/plans" /></Route>
         <Route path="/admin/store" component={() => <AdminLayout><AdminStorePage /></AdminLayout>} />
         <Route path="/admin/store/developers" component={() => <AdminLayout><AdminStoreDevelopersPage /></AdminLayout>} />
         <Route path="/admin/store-management" component={() => <AdminLayout><AdminStoreManagementPage /></AdminLayout>} />

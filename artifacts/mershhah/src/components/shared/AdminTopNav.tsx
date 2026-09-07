@@ -84,7 +84,7 @@ export function AdminTopNav() {
   });
 
   const isActive = (href: string) => pathname.startsWith(href);
-  const isFinancialsActive = pathname.startsWith('/admin/financials') || pathname === '/admin/plans';
+  const isFinancialsActive = pathname.startsWith('/admin/financials');
 
   const navigatePage = (dir: 'next' | 'prev') => {
     const currentIndex = visibleNavItems.findIndex(item => isActive(item.href));

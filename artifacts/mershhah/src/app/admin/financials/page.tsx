@@ -172,7 +172,7 @@ export default function AdminFinancialsPage() {
 
   const tabs = [
     { href: '/admin/financials', label: 'نظرة عامة', icon: BarChart3 },
-    { href: '/admin/plans', label: 'الباقات', icon: Package },
+    { href: '/admin/financials/plans', label: 'الباقات', icon: Package },
     { href: '/admin/financials/orders', label: 'الطلبات', icon: ShoppingCart },
     { href: '/admin/financials/discounts', label: 'أكواد الخصم', icon: Tag },
   ];

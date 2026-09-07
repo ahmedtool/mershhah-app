@@ -38,7 +38,7 @@ export function AdminSidebar() {
     { href: '/admin/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard, permissionId: 'dashboard' },
     { href: '/admin/management', label: 'المشتركين', icon: Building, permissionId: 'management' },
     { href: '/admin/financials', label: 'نظرة عامة', icon: BarChart3, permissionId: 'financials', group: 'المالية' },
-    { href: '/admin/plans', label: 'الباقات', icon: Package, permissionId: 'financials', group: 'المالية' },
+    { href: '/admin/financials/plans', label: 'الباقات', icon: Package, permissionId: 'financials', group: 'المالية' },
     { href: '/admin/financials/orders', label: 'الطلبات', icon: ShoppingCart, permissionId: 'financials', group: 'المالية' },
     { href: '/admin/financials/discounts', label: 'أكواد الخصم', icon: Tag, permissionId: 'financials', group: 'المالية' },
     { href: '/admin/store-management', label: 'إدارة المتجر', icon: Store, permissionId: 'store-management' },
