@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { useParams } from 'wouter';
 import { useRouter, useSearchParams } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Search, Info, Star } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Search, Info, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage, syncPublicPage } from '@/lib/public-pages';
 import { trackPageView } from '@/lib/event-tracker';
@@ -20,6 +20,8 @@ import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useToast } from '@/hooks/use-toast';
 import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 import { useGoogleFont } from '@/hooks/useGoogleFont';
+import { useLanguage } from '@/components/shared/LanguageContext';
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 
 export default function PublicMenuPage() {
   const params = useParams();
@@ -27,12 +29,18 @@ export default function PublicMenuPage() {
   const username = params.username as string;
   const searchParams = useSearchParams();
   const visitRecorded = useRef(false);
+  const { t, dir } = useLanguage();
+  const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
 
   const [restaurant, setRestaurant] = useState<any>(null);
   useDocumentMeta(
-    restaurant?.name ? `منيو ${restaurant.name}` : undefined,
+    restaurant?.name
+      ? (dir === 'rtl' ? `${t('hubPage.menuWord')} ${restaurant.name}` : `${restaurant.name} ${t('hubPage.menuWord')}`)
+      : undefined,
     restaurant
-      ? (restaurant.description || `تصفّح منيو ${restaurant.name} الرقمي — الأطباق والأسعار والعروض.`)
+      ? (restaurant.description || (dir === 'rtl'
+          ? `${t('publicMenu.metaDescPrefixWord')} ${t('hubPage.menuWord')} ${restaurant.name} ${t('publicMenu.metaDescSuffix')}`
+          : `${t('publicMenu.metaDescPrefixWord')} ${restaurant.name}'s ${t('publicMenu.metaDescSuffix')}`))
       : undefined
   );
   useGoogleFont(restaurant?.fontFamily);
@@ -84,13 +92,13 @@ export default function PublicMenuPage() {
         created_at: new Date().toISOString(),
       });
       if (error) throw error;
-      toast({ title: 'شكراً لتقييمك!' });
+      toast({ title: t('publicShared.thankYouForRating') });
       setShowRatingForm(false);
       setItemRating(0);
       setItemComment('');
       syncPublicPage(restaurant.id).catch(() => {});
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+      toast({ variant: 'destructive', title: t('ownerSettings.errorTitle'), description: e.message });
     } finally {
       setIsSubmittingRating(false);
     }
@@ -205,9 +213,9 @@ export default function PublicMenuPage() {
 
   const getPriceDisplay = (item: any) => {
     const price = item.sizes?.[0]?.price;
-    if (price === 0) return 'مجاني';
-    if (price === undefined || price === null) return 'حسب الطلب';
-    return `${price} ر.س`;
+    if (price === 0) return t('planPricing.free');
+    if (price === undefined || price === null) return t('publicMenu.onRequest');
+    return `${price} ${t('ownerSettings.currency')}`;
   };
 
   const recordItemClick = async (item: MenuItem) => {
@@ -254,7 +262,7 @@ export default function PublicMenuPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-white" dir="rtl">
+    <div className="min-h-screen bg-white" dir={dir}>
       <div className="max-w-lg mx-auto px-5 space-y-8 pt-8">
         <div className="flex flex-col items-center space-y-4">
           <Skeleton className="h-20 w-20 rounded-2xl" />
@@ -286,8 +294,8 @@ export default function PublicMenuPage() {
       <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">
         <Info size={28} />
       </div>
-      <h1 className="text-lg font-bold text-gray-900">المطعم غير موجود</h1>
-      <Button onClick={() => router.push('/')} variant="outline" className="rounded-xl px-6">العودة للرئيسية</Button>
+      <h1 className="text-lg font-bold text-gray-900">{t('hubPage.restaurantNotFound')}</h1>
+      <Button onClick={() => router.push('/')} variant="outline" className="rounded-xl px-6">{t('hubPage.backToHome')}</Button>
     </div>
   );
 
@@ -295,7 +303,7 @@ export default function PublicMenuPage() {
   const themeStyle = getPublicThemeStyle(restaurant);
 
   return (
-    <div className="flex flex-col min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir="rtl">
+    <div className="flex flex-col min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
       <PublicPageBackdrop />
 
       {/* Header */}
@@ -306,12 +314,12 @@ export default function PublicMenuPage() {
           className="w-9 h-9 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100"
           onClick={() => router.back()}
         >
-          <ChevronRight className="h-5 w-5" />
+          {dir === 'rtl' ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
         </Button>
-        <div className="w-9" />
+        <LanguageSwitcher />
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-5 pb-6 text-center space-y-3 text-right">
+      <div className={`max-w-lg mx-auto w-full px-5 pb-6 text-center space-y-3 ${alignStart}`}>
         <div className="relative w-16 h-16 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
@@ -333,10 +341,10 @@ export default function PublicMenuPage() {
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
+          <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
           <Input
-            placeholder="ابحث في القائمة..."
-            className="w-full h-11 rounded-xl bg-gray-50 border border-gray-100 text-sm pr-10 pl-4 focus-visible:ring-1 focus-visible:ring-gray-200 focus-visible:border-gray-200"
+            placeholder={t('publicMenu.searchPlaceholder')}
+            className="w-full h-11 rounded-xl bg-gray-50 border border-gray-100 text-sm ps-10 pe-4 focus-visible:ring-1 focus-visible:ring-gray-200 focus-visible:border-gray-200"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -356,7 +364,7 @@ export default function PublicMenuPage() {
               )}
               style={activeCategory === cat ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : {}}
             >
-              {cat}
+              {cat === 'الكل' ? t('publicMenu.allCategory') : cat}
             </button>
           ))}
         </div>
@@ -380,7 +388,7 @@ export default function PublicMenuPage() {
                   <button
                     key={item.id}
                     onClick={() => { recordItemClick(item); openItem(item); }}
-                    className="w-full flex items-center gap-4 p-3 -mx-3 rounded-xl hover:bg-gray-50 transition-colors text-right"
+                    className={`w-full flex items-center gap-4 p-3 -mx-3 rounded-xl hover:bg-gray-50 transition-colors ${alignStart}`}
                   >
                     <div className="flex-1 min-w-0">
                       <h3 className="text-sm font-semibold text-gray-900 truncate">{item.name}</h3>
@@ -420,7 +428,7 @@ export default function PublicMenuPage() {
             <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto text-gray-600">
               <Search size={24} />
             </div>
-            <p className="text-sm text-gray-600">لا توجد نتائج</p>
+            <p className="text-sm text-gray-600">{t('ownerTickets.noResults')}</p>
           </div>
         )}
       </div>
@@ -446,8 +454,8 @@ export default function PublicMenuPage() {
               </div>
 
               {/* Title & Price */}
-              <div dir="rtl" className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0 text-right">
+              <div dir={dir} className="flex items-start justify-between gap-4">
+                <div className={`flex-1 min-w-0 ${alignStart}`}>
                   <h2 className="text-base font-bold text-gray-900">{activeItem.name}</h2>
                   {activeItem.description && (
                     <p className="text-sm text-gray-600 leading-relaxed mt-1">{activeItem.description}</p>
@@ -455,21 +463,21 @@ export default function PublicMenuPage() {
                 </div>
                 <span className="text-sm font-bold shrink-0 pt-0.5" style={{ color: primaryColor }}>
                   {selectedSize && typeof selectedSize.price === 'number'
-                    ? (selectedSize.price === 0 ? 'مجاني' : `${selectedSize.price} ر.س`)
+                    ? (selectedSize.price === 0 ? t('planPricing.free') : `${selectedSize.price} ${t('ownerSettings.currency')}`)
                     : getPriceDisplay(activeItem)}
                 </span>
               </div>
 
               {/* Rating */}
-              <div dir="rtl" className="flex items-center justify-between">
+              <div dir={dir} className="flex items-center justify-between">
                 {activeItem.review_count ? (
                   <div className="flex items-center gap-1.5">
                     <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
                     <span className="text-sm font-bold text-gray-900">{activeItem.rating?.toFixed(1)}</span>
-                    <span className="text-xs text-gray-600">({activeItem.review_count} تقييم)</span>
+                    <span className="text-xs text-gray-600">({activeItem.review_count} {t('publicShared.reviewCountSuffix')})</span>
                   </div>
                 ) : (
-                  <span className="text-xs text-gray-600">لا يوجد تقييم بعد</span>
+                  <span className="text-xs text-gray-600">{t('publicMenu.noRatingYet')}</span>
                 )}
                 {!showRatingForm && (
                   <button
@@ -478,13 +486,13 @@ export default function PublicMenuPage() {
                     className="text-xs font-bold"
                     style={{ color: primaryColor }}
                   >
-                    قيّم هذا الصنف
+                    {t('publicMenu.rateThisItem')}
                   </button>
                 )}
               </div>
 
               {showRatingForm && (
-                <div dir="rtl" className="rounded-xl border border-gray-100 p-4 space-y-3">
+                <div dir={dir} className="rounded-xl border border-gray-100 p-4 space-y-3">
                   <div className="flex justify-center gap-1 flex-row-reverse">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
@@ -504,7 +512,7 @@ export default function PublicMenuPage() {
                     ))}
                   </div>
                   <Textarea
-                    placeholder="اترك تعليقك (اختياري)"
+                    placeholder={t('publicShared.leaveComment')}
                     value={itemComment}
                     onChange={(e) => setItemComment(e.target.value)}
                     className="text-sm min-h-[70px] resize-none rounded-xl"
@@ -515,7 +523,7 @@ export default function PublicMenuPage() {
                       onClick={() => setShowRatingForm(false)}
                       className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600"
                     >
-                      إلغاء
+                      {t('publicShared.cancel')}
                     </button>
                     <button
                       type="button"
@@ -524,7 +532,7 @@ export default function PublicMenuPage() {
                       style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
                       className="flex-1 h-10 rounded-xl text-sm font-bold disabled:opacity-50"
                     >
-                      {isSubmittingRating ? 'جاري...' : 'إرسال'}
+                      {isSubmittingRating ? t('publicShared.sending') : t('publicShared.send')}
                     </button>
                   </div>
                 </div>
@@ -532,9 +540,9 @@ export default function PublicMenuPage() {
 
               {/* Sizes */}
               {Array.isArray(activeItem.sizes) && activeItem.sizes.length > 0 && (
-                <div dir="rtl" className="space-y-3">
+                <div dir={dir} className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-gray-600">الحجم</p>
+                    <p className="text-xs font-semibold text-gray-600">{t('publicMenu.sizeLabel')}</p>
                   </div>
                   <div className="flex gap-0 overflow-x-auto no-scrollbar pb-1 snap-x snap-mandatory">
                     {activeItem.sizes.map((size) => {
@@ -567,14 +575,14 @@ export default function PublicMenuPage() {
 
               {/* Suggestions */}
               {activeSuggestions.length > 0 && (
-                <div dir="rtl" className="space-y-3">
-                  <p className="text-xs font-semibold text-gray-600 text-right">يقترح معه</p>
+                <div dir={dir} className="space-y-3">
+                  <p className={`text-xs font-semibold text-gray-600 ${alignStart}`}>{t('publicMenu.suggestedWithIt')}</p>
                   <div className="grid grid-cols-3 gap-3">
                     {activeSuggestions.map((sug) => (
                       <button
                         key={sug.id}
                         onClick={() => { recordItemClick(sug); openItem(sug); }}
-                        className="text-right group"
+                        className={`${alignStart} group`}
                       >
                         <div className="relative w-full aspect-square rounded-xl overflow-hidden mb-2">
                           <StorageImage

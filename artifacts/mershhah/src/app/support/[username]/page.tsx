@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useParams } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage } from '@/lib/public-pages';
@@ -12,33 +12,37 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, ChevronRight, CheckCircle, Info } from 'lucide-react';
+import { Loader2, ChevronRight, ChevronLeft, CheckCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
+import { useLanguage } from '@/components/shared/LanguageContext';
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 
-const ticketSchema = z.object({
-  name: z.string().min(2, 'الاسم مطلوب'),
-  phone: z.string().min(10, 'رقم الجوال مطلوب'),
-  category: z.enum(['complaint', 'inquiry', 'employment', 'suggestion', 'other']),
-  subject: z.string().min(3, 'الموضوع مطلوب'),
-  message: z.string().min(5, 'الرسالة مطلوبة'),
-});
-
-const categoryOptions = [
-  { value: 'complaint', label: 'شكوى', icon: '⚠️' },
-  { value: 'inquiry', label: 'استفسار', icon: '❓' },
-  { value: 'employment', label: 'توظيف', icon: '💼' },
-  { value: 'suggestion', label: 'اقتراح', icon: '💡' },
-  { value: 'other', label: 'أخرى', icon: '📝' },
+const categoryOptionsBase = [
+  { value: 'complaint', labelKey: 'ownerTickets.categoryComplaint', icon: '⚠️' },
+  { value: 'inquiry', labelKey: 'ownerTickets.categoryInquiry', icon: '❓' },
+  { value: 'employment', labelKey: 'ownerTickets.categoryEmployment', icon: '💼' },
+  { value: 'suggestion', labelKey: 'ownerTickets.categorySuggestion', icon: '💡' },
+  { value: 'other', labelKey: 'ownerTickets.categoryOther', icon: '📝' },
 ] as const;
 
 export default function SupportPage() {
   const params = useParams();
   const username = params.username as string;
   const { toast } = useToast();
+  const { t, dir } = useLanguage();
+  const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
+
+  const ticketSchema = useMemo(() => z.object({
+    name: z.string().min(2, t('publicSupport.nameRequired')),
+    phone: z.string().min(10, t('publicSupport.phoneRequired')),
+    category: z.enum(['complaint', 'inquiry', 'employment', 'suggestion', 'other']),
+    subject: z.string().min(3, t('publicSupport.subjectRequired')),
+    message: z.string().min(5, t('publicSupport.messageRequired')),
+  }), [t]);
 
   const [restaurant, setRestaurant] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -97,8 +101,8 @@ export default function SupportPage() {
         setSubmitted(true);
       } catch (error: any) {
         toast({
-          title: 'خطأ',
-          description: 'فشل إرسال التذكرة. حاول مرة أخرى.',
+          title: t('ownerSettings.errorTitle'),
+          description: t('publicSupport.sendFailedDesc'),
           variant: 'destructive',
         });
       }
@@ -109,7 +113,7 @@ export default function SupportPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white" dir="rtl">
+      <div className="min-h-screen bg-white" dir={dir}>
         <div className="max-w-lg mx-auto px-5 space-y-8 pt-8">
           <div className="flex flex-col items-center space-y-4">
             <Skeleton className="h-20 w-20 rounded-2xl" />
@@ -128,7 +132,7 @@ export default function SupportPage() {
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">
           <Info size={28} />
         </div>
-        <h1 className="text-lg font-bold text-gray-900">المطعم غير موجود</h1>
+        <h1 className="text-lg font-bold text-gray-900">{t('hubPage.restaurantNotFound')}</h1>
       </div>
     );
   }
@@ -136,7 +140,7 @@ export default function SupportPage() {
   const themeStyle = getPublicThemeStyle(restaurant);
 
   return (
-    <div className="min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir="rtl">
+    <div className="min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
       <PublicPageBackdrop />
 
       {/* Header */}
@@ -145,12 +149,12 @@ export default function SupportPage() {
           onClick={() => window.history.back()}
           className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
         >
-          <ChevronRight className="h-5 w-5" />
+          {dir === 'rtl' ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
         </button>
-        <div className="w-9" />
+        <LanguageSwitcher />
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-5 pb-8 text-center space-y-3 text-right">
+      <div className={`max-w-lg mx-auto w-full px-5 pb-8 text-center space-y-3 ${alignStart}`}>
         <div className="relative w-16 h-16 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
@@ -162,7 +166,7 @@ export default function SupportPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
-          <p className="text-sm text-gray-600 mt-0.5">تذكرة دعم</p>
+          <p className="text-sm text-gray-600 mt-0.5">{t('hubPage.supportTicket')}</p>
         </div>
       </div>
 
@@ -173,9 +177,9 @@ export default function SupportPage() {
               <CheckCircle className="h-8 w-8 text-emerald-500" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">تم الإرسال!</h2>
+              <h2 className="text-lg font-bold text-gray-900">{t('publicSupport.submittedTitle')}</h2>
               <p className="text-sm text-gray-600 mt-1 max-w-xs mx-auto">
-                شكراً لتواصلك. تم استلام رسالتك وسنرد عليك قريباً.
+                {t('publicSupport.submittedDesc')}
               </p>
             </div>
             <button
@@ -183,23 +187,23 @@ export default function SupportPage() {
               className="text-xs font-semibold"
               style={{ color: primaryColor }}
             >
-              العودة
+              {t('publicSupport.back')}
             </button>
           </div>
         ) : (
           <div className="border border-gray-100 p-5" style={{ borderRadius: 'var(--r-radius)' }}>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 text-right">
+              <form onSubmit={form.handleSubmit(onSubmit)} className={`space-y-4 ${alignStart}`}>
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-gray-600">الاسم</FormLabel>
+                      <FormLabel className="text-xs text-gray-600">{t('publicSupport.nameLabel')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="اسمك"
+                          placeholder={t('publicSupport.namePlaceholder')}
                           className="h-10 text-sm rounded-lg border-gray-100"
                         />
                       </FormControl>
@@ -213,7 +217,7 @@ export default function SupportPage() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-gray-600">رقم الجوال</FormLabel>
+                      <FormLabel className="text-xs text-gray-600">{t('ownerSettings.phoneLabel')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
@@ -233,9 +237,9 @@ export default function SupportPage() {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-gray-600">نوع التذكرة</FormLabel>
+                      <FormLabel className="text-xs text-gray-600">{t('publicSupport.ticketTypeLabel')}</FormLabel>
                       <div className="grid grid-cols-3 gap-2">
-                        {categoryOptions.map((opt) => (
+                        {categoryOptionsBase.map((opt) => (
                           <button
                             key={opt.value}
                             type="button"
@@ -247,7 +251,7 @@ export default function SupportPage() {
                             }`}
                           >
                             <span className="text-base">{opt.icon}</span>
-                            <span>{opt.label}</span>
+                            <span>{t(opt.labelKey)}</span>
                           </button>
                         ))}
                       </div>
@@ -261,11 +265,11 @@ export default function SupportPage() {
                   name="subject"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-gray-600">الموضوع</FormLabel>
+                      <FormLabel className="text-xs text-gray-600">{t('publicSupport.subjectLabel')}</FormLabel>
                       <FormControl>
                         <Input
                           {...field}
-                          placeholder="موضوع الرسالة"
+                          placeholder={t('publicSupport.subjectPlaceholder')}
                           className="h-10 text-sm rounded-lg border-gray-100"
                         />
                       </FormControl>
@@ -279,11 +283,11 @@ export default function SupportPage() {
                   name="message"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-gray-600">الرسالة</FormLabel>
+                      <FormLabel className="text-xs text-gray-600">{t('publicSupport.messageLabel')}</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
-                          placeholder="اشرح مشكلتك..."
+                          placeholder={t('publicSupport.messagePlaceholder')}
                           rows={4}
                           className="text-sm rounded-lg border-gray-100 resize-none min-h-[100px]"
                         />
@@ -301,7 +305,7 @@ export default function SupportPage() {
                 >
                   {isSubmitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : 'إرسال'}
+                  ) : t('publicShared.send')}
                 </Button>
               </form>
             </Form>

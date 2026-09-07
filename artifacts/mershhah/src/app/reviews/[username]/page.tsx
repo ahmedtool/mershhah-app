@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition, useMemo } from 'react';
 import { useParams, useSearchParams } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, Star, Info } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Star, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage, syncPublicPage } from '@/lib/public-pages';
 import { formatDistanceToNow } from 'date-fns';
@@ -17,6 +17,8 @@ import { StorageImage } from '@/components/shared/StorageImage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPublicThemeStyle, getContrastTextColor } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
+import { useLanguage } from '@/components/shared/LanguageContext';
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 
 interface Review {
   id: string;
@@ -52,12 +54,14 @@ export default function PublicReviewsPage() {
   const [isSubmitting, startSubmission] = useTransition();
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [filterTag, setFilterTag] = useState<string | null>(null);
+  const { t, dir } = useLanguage();
+  const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
 
   const reviewTags = [
-    { id: 'quality', label: 'الجودة', icon: '✦', keywords: ['جودة', 'ممتاز', 'رائع', 'جميل', 'فخم', 'مميز', 'أفضل', 'نظيف', 'مرتب'] },
-    { id: 'taste', label: 'الطعم', icon: '◆', keywords: ['طعم', 'لذيذ', 'بنكه', 'مذاق', 'حلو', 'مر', 'مالح', 'حار', 'طازج'] },
-    { id: 'price', label: 'السعر', icon: '●', keywords: ['سعر', 'غالي', 'رخيص', 'مناسب', 'قيمة', 'فلوس', 'ميزانية', 'يبرد'] },
-    { id: 'speed', label: 'الخدمة', icon: '▲', keywords: ['سريع', 'بطيء', 'انتظار', 'خدمة', 'توصيل', 'استلام', 'زحمة', 'مهمل', 'ودود'] },
+    { id: 'quality', labelKey: 'ownerReviews.topicQuality', icon: '✦', keywords: ['جودة', 'ممتاز', 'رائع', 'جميل', 'فخم', 'مميز', 'أفضل', 'نظيف', 'مرتب'] },
+    { id: 'taste', labelKey: 'ownerReviews.topicTaste', icon: '◆', keywords: ['طعم', 'لذيذ', 'بنكه', 'مذاق', 'حلو', 'مر', 'مالح', 'حار', 'طازج'] },
+    { id: 'price', labelKey: 'ownerReviews.topicPrice', icon: '●', keywords: ['سعر', 'غالي', 'رخيص', 'مناسب', 'قيمة', 'فلوس', 'ميزانية', 'يبرد'] },
+    { id: 'speed', labelKey: 'ownerReviews.topicService', icon: '▲', keywords: ['سريع', 'بطيء', 'انتظار', 'خدمة', 'توصيل', 'استلام', 'زحمة', 'مهمل', 'ودود'] },
   ];
 
   const fetchReviews = async (restaurantId: string) => {
@@ -163,14 +167,14 @@ export default function PublicReviewsPage() {
           }).eq('id', restaurant.id);
         }
 
-        toast({ title: 'شكراً لتقييمك!' });
+        toast({ title: t('publicShared.thankYouForRating') });
         setRating(0);
         setComment('');
         setDialogOpen(false);
         syncPublicPage(restaurant.id).catch(() => {});
       } catch (error: any) {
         console.error('Failed to submit rating:', error);
-        toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+        toast({ title: t('ownerSettings.errorTitle'), description: error.message, variant: 'destructive' });
       }
     });
   };
@@ -192,7 +196,7 @@ export default function PublicReviewsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white" dir="rtl">
+      <div className="min-h-screen bg-white" dir={dir}>
         <div className="max-w-lg mx-auto px-5 space-y-8 pt-8">
           <div className="flex flex-col items-center space-y-4">
             <Skeleton className="h-20 w-20 rounded-2xl" />
@@ -214,8 +218,8 @@ export default function PublicReviewsPage() {
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">
           <Info size={28} />
         </div>
-        <h1 className="text-lg font-bold text-gray-900">المطعم غير موجود</h1>
-        <Button onClick={() => window.location.href = '/'} variant="outline" className="rounded-xl px-6">العودة للرئيسية</Button>
+        <h1 className="text-lg font-bold text-gray-900">{t('hubPage.restaurantNotFound')}</h1>
+        <Button onClick={() => window.location.href = '/'} variant="outline" className="rounded-xl px-6">{t('hubPage.backToHome')}</Button>
       </div>
     );
   }
@@ -232,7 +236,7 @@ export default function PublicReviewsPage() {
   const buttonTextColor = restaurant?.buttonTextColor || getContrastTextColor(primaryColor);
 
   return (
-    <div className="min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir="rtl">
+    <div className="min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
       <PublicPageBackdrop />
 
       {/* Header */}
@@ -243,12 +247,12 @@ export default function PublicReviewsPage() {
           className="w-9 h-9 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100"
           onClick={() => window.history.back()}
         >
-          <ChevronRight className="h-5 w-5" />
+          {dir === 'rtl' ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
         </Button>
-        <div className="w-9" />
+        <LanguageSwitcher />
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-5 pb-6 text-center space-y-3 text-right relative">
+      <div className={`max-w-lg mx-auto w-full px-5 pb-6 text-center space-y-3 ${alignStart} relative`}>
         <div className="relative w-16 h-16 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
@@ -260,7 +264,7 @@ export default function PublicReviewsPage() {
         </div>
         <div>
           <h1 className="text-xl font-black text-gray-900">{restaurant.name}</h1>
-          <p className="text-xs text-gray-600 mt-0.5">التقييمات وآراء العملاء</p>
+          <p className="text-xs text-gray-600 mt-0.5">{t('publicReviews.pageSubtitle')}</p>
         </div>
       </div>
 
@@ -275,7 +279,7 @@ export default function PublicReviewsPage() {
               <div className="mt-1" dir="ltr">
                 <StarRating rating={averageRating} />
               </div>
-              <p className="text-[11px] text-gray-600 mt-1">{reviews.length} تقييم</p>
+              <p className="text-[11px] text-gray-600 mt-1">{reviews.length} {t('publicShared.reviewCountSuffix')}</p>
             </div>
 
             {/* Bars */}
@@ -301,7 +305,7 @@ export default function PublicReviewsPage() {
             className="w-full h-11 rounded-xl text-sm font-bold mt-5 transition-opacity hover:opacity-90"
             style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
           >
-            أضف تقييمك
+            {t('publicReviews.addYourRating')}
           </button>
         </div>
 
@@ -311,7 +315,7 @@ export default function PublicReviewsPage() {
         {/* Reviews List */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold text-gray-900">أحدث التقييمات</h2>
+            <h2 className="text-sm font-bold text-gray-900">{t('publicReviews.latestReviews')}</h2>
           </div>
 
           {reviewsWithComments.length > 0 && (
@@ -332,7 +336,7 @@ export default function PublicReviewsPage() {
                     style={isActive ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : {}}
                   >
                     <span className="text-[10px]">{tag.icon}</span>
-                    {tag.label}
+                    {t(tag.labelKey)}
                     {count > 0 && (
                       <span className={cn(
                         "text-[9px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center",
@@ -350,13 +354,13 @@ export default function PublicReviewsPage() {
           {reviews.length === 0 ? (
             <div className="text-center py-16 space-y-3">
               <Star className="h-10 w-10 text-gray-200 mx-auto" />
-              <p className="text-sm text-gray-600">لا توجد تقييمات بعد</p>
+              <p className="text-sm text-gray-600">{t('publicReviews.noReviewsYet')}</p>
               <button
                 onClick={() => setDialogOpen(true)}
                 className="text-xs font-bold mt-2"
                 style={{ color: primaryColor }}
               >
-                كن أول من يقيّم
+                {t('publicReviews.beFirstToRate')}
               </button>
             </div>
           ) : (
@@ -368,11 +372,11 @@ export default function PublicReviewsPage() {
                   return tag?.keywords.some(kw => (r.comment || '').includes(kw));
                 })
                 .map((review) => (
-                <div key={review.id} className="border border-gray-100 p-4 text-right" style={{ borderRadius: 'var(--r-radius)' }}>
+                <div key={review.id} className={`border border-gray-100 p-4 ${alignStart}`} style={{ borderRadius: 'var(--r-radius)' }}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                        <span className="text-[11px] font-bold text-gray-600">م</span>
+                        <span className="text-[11px] font-bold text-gray-600">{t('publicReviews.anonymousInitial')}</span>
                       </div>
                       <div>
                         <StarRating rating={review.rating} size="sm" />
@@ -380,7 +384,7 @@ export default function PublicReviewsPage() {
                     </div>
                     <span className="text-[10px] text-gray-600">
                       {review.created_at
-                        ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: ar })
+                        ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: dir === 'rtl' ? ar : undefined })
                         : ''}
                     </span>
                   </div>
@@ -394,11 +398,11 @@ export default function PublicReviewsPage() {
 
       {/* Rating Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir="rtl">
-          <DialogHeader className="p-5 pb-0 text-right">
-            <DialogTitle className="text-base font-black text-gray-900">تقييم {restaurant.name}</DialogTitle>
+        <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir={dir}>
+          <DialogHeader className={`p-5 pb-0 ${alignStart}`}>
+            <DialogTitle className="text-base font-black text-gray-900">{t('publicReviews.dialogTitlePrefix')} {restaurant.name}</DialogTitle>
             <DialogDescription className="text-xs text-gray-600">
-              شاركنا رأيك لمساعدتنا على التحسن.
+              {t('publicReviews.dialogDesc')}
             </DialogDescription>
           </DialogHeader>
 
@@ -423,17 +427,17 @@ export default function PublicReviewsPage() {
               ))}
             </div>
             <p className="text-center text-xs text-gray-600 mb-4">
-              {rating === 0 && 'اضغط على النجمة'}
-              {rating === 1 && 'سيء'}
-              {rating === 2 && 'مقبول'}
-              {rating === 3 && 'جيد'}
-              {rating === 4 && 'جيد جداً'}
-              {rating === 5 && 'ممتاز'}
+              {rating === 0 && t('publicReviews.tapAStar')}
+              {rating === 1 && t('publicReviews.ratingWordBad')}
+              {rating === 2 && t('publicReviews.ratingWordFair')}
+              {rating === 3 && t('publicReviews.ratingWordGood')}
+              {rating === 4 && t('publicReviews.ratingWordVeryGood')}
+              {rating === 5 && t('publicReviews.ratingWordExcellent')}
             </p>
 
             <div className="rounded-xl border border-gray-200 overflow-hidden">
               <Textarea
-                placeholder="اترك تعليقك (اختياري)"
+                placeholder={t('publicShared.leaveComment')}
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 className="rounded-none border-0 text-sm min-h-[80px] resize-none focus-visible:ring-0"
@@ -447,7 +451,7 @@ export default function PublicReviewsPage() {
               onClick={() => setDialogOpen(false)}
               className="rounded-xl text-sm h-10 flex-1"
             >
-              إلغاء
+              {t('publicShared.cancel')}
             </Button>
             <Button
               onClick={handleSubmit}
@@ -455,7 +459,7 @@ export default function PublicReviewsPage() {
               style={{ backgroundColor: primaryColor, color: buttonTextColor }}
               className="rounded-xl text-sm h-10 flex-1 font-bold hover:opacity-90"
             >
-              {isSubmitting ? 'جاري...' : 'إرسال'}
+              {isSubmitting ? t('publicShared.sending') : t('publicShared.send')}
             </Button>
           </DialogFooter>
         </DialogContent>
