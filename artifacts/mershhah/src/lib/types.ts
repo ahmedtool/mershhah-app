@@ -304,7 +304,11 @@ export type ActivatedTool = {
 
 export type BusinessGatewayField = {
   id: string;
-  label: string;
+  // Exactly one of these is set: labelKey for built-in field defs (i18n,
+  // src/lib/gateway-service-types.ts), label for owner-authored custom
+  // fields (raw text the owner typed - not translated).
+  labelKey?: string;
+  label?: string;
   type: 'text' | 'textarea' | 'number' | 'select';
   options?: string[]; // for type: 'select'
 };

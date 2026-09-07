@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   AlertTriangle, RefreshCw, MessageSquare, User, Clock, ArrowLeft, ArrowRight, Bot,
-  Briefcase, Store, Package, Building2, Handshake, Lock, Plus, Trash2, FileText, Loader2,
+  Briefcase, Store, Package, Building2, Handshake, Lock, Plus, Trash2, FileText, Loader2, Inbox,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/useUser';
@@ -16,9 +16,12 @@ import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
-import type { SupportTicket, BusinessGatewayService, JobPosting, BusinessRequest } from '@/lib/types';
+import { GATEWAY_FIELD_DEFS } from '@/lib/gateway-service-types';
+import type { SupportTicket, BusinessGatewayService, JobPosting, BusinessRequest, BusinessGatewayField } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/shared/LanguageContext';
+
+type ActiveService = 'contact' | 'jobs' | 'franchise' | 'wholesale';
 
 const statusStyles: Record<string, string> = {
   open: 'bg-blue-50 text-blue-600 border-blue-100',
@@ -62,15 +65,97 @@ const requestStatusKeys: Record<string, string> = {
   closed: 'ownerTickets.statusClosed',
 };
 
-// Locked (plan-gated) service types built into the gateway. Each maps to an
-// entitlements flag (hooks/useUser.tsx) computed from plans.features — none
-// of these have a working intake form yet, they're shown as upgrade bait.
+// Gateway service types with a working toggle + intake flow. 'jobs' has no
+// entitlement flag (always available, gated by a numeric posting limit
+// instead); franchise/wholesale are plan-gated like the still-locked types.
+const TOGGLEABLE_SERVICES: Array<{ type: 'jobs' | 'franchise' | 'wholesale'; icon: any; titleKey: string; descKey: string; flag: 'canUseGatewayFranchise' | 'canUseGatewayWholesale' | null }> = [
+  { type: 'jobs', icon: Briefcase, titleKey: 'ownerGateway.jobsTitle', descKey: 'ownerGateway.jobsDescription', flag: null },
+  { type: 'franchise', icon: Store, titleKey: 'ownerGateway.franchiseTitle', descKey: 'ownerGateway.franchiseDescription', flag: 'canUseGatewayFranchise' },
+  { type: 'wholesale', icon: Package, titleKey: 'ownerGateway.wholesaleTitle', descKey: 'ownerGateway.wholesaleDescription', flag: 'canUseGatewayWholesale' },
+];
+
+// Locked (plan-gated) service types with no working intake form yet — shown
+// as upgrade bait. Franchise/wholesale moved out of here once built.
 const LOCKED_SERVICES = [
-  { type: 'franchise', icon: Store, titleKey: 'ownerGateway.franchiseTitle', descKey: 'ownerGateway.franchiseDescription', flag: 'canUseGatewayFranchise' as const },
-  { type: 'wholesale', icon: Package, titleKey: 'ownerGateway.wholesaleTitle', descKey: 'ownerGateway.wholesaleDescription', flag: 'canUseGatewayWholesale' as const },
   { type: 'corporate', icon: Building2, titleKey: 'ownerGateway.corporateTitle', descKey: 'ownerGateway.corporateDescription', flag: 'canUseGatewayCorporate' as const },
   { type: 'partnership', icon: Handshake, titleKey: 'ownerGateway.partnershipTitle', descKey: 'ownerGateway.partnershipDescription', flag: 'canUseGatewayPartnership' as const },
 ];
+
+function RequestsList({
+  requests,
+  fields,
+  isLoading,
+  onStatusChange,
+  dir,
+  t,
+}: {
+  requests: BusinessRequest[];
+  fields: BusinessGatewayField[];
+  isLoading: boolean;
+  onStatusChange: (request: BusinessRequest, status: 'new' | 'contacted' | 'closed') => void;
+  dir: 'rtl' | 'ltr';
+  t: (key: string) => string;
+}) {
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {[1, 2].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+      </div>
+    );
+  }
+  if (requests.length === 0) {
+    return (
+      <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center">
+        <div className="w-12 h-12 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+          <Inbox className="h-5 w-5 text-gray-600" />
+        </div>
+        <p className="text-sm font-bold text-gray-900">{t('ownerGateway.noRequestsYet')}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+      {requests.map((request) => (
+        <div key={request.id} className="bg-white border border-gray-100 rounded-2xl p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md border", requestStatusStyles[request.status])}>
+              {t(requestStatusKeys[request.status])}
+            </span>
+            <span className="text-[10px] text-gray-600">
+              {request.created_at ? formatDistanceToNow(new Date(request.created_at as any), { addSuffix: true, locale: dir === 'rtl' ? ar : undefined }) : ''}
+            </span>
+          </div>
+          <p className="text-sm font-bold text-gray-900">{request.name}</p>
+          <div className="flex items-center gap-3 text-[10px] text-gray-600">
+            {request.phone && <span dir="ltr">{request.phone}</span>}
+            {request.email && <span dir="ltr">{request.email}</span>}
+          </div>
+          {fields.map((field) => {
+            const value = request.fields?.[field.id];
+            if (!value) return null;
+            return (
+              <p key={field.id} className="text-[11px] text-gray-600">
+                <span className="font-bold text-gray-900">{field.labelKey ? t(field.labelKey) : field.label}:</span> {value}
+              </p>
+            );
+          })}
+          <div className="flex gap-1.5 pt-1">
+            {(['new', 'contacted', 'closed'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => onStatusChange(request, s)}
+                className={cn("flex-1 h-8 rounded-lg text-[10px] font-bold border transition-colors",
+                  request.status === s ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-100 hover:border-gray-200')}
+              >
+                {t(requestStatusKeys[s])}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function OwnerTicketsPage() {
   const { user, isLoading: isUserLoading } = useUser();
@@ -78,7 +163,7 @@ export default function OwnerTicketsPage() {
   const { toast } = useToast();
   const restaurantId = user?.restaurantId;
 
-  const [activeService, setActiveService] = useState<'contact' | 'jobs'>('contact');
+  const [activeService, setActiveService] = useState<ActiveService>('contact');
 
   // --- Contact tickets (existing, unchanged behavior) ---
   const [tickets, setTickets] = useState<SupportTicket[]>([]);
@@ -140,10 +225,11 @@ export default function OwnerTicketsPage() {
   // --- Gateway services (which channels are turned on) ---
   const [gatewayServices, setGatewayServices] = useState<BusinessGatewayService[]>([]);
   const [isLoadingGateway, setIsLoadingGateway] = useState(true);
-  const [isTogglingJobs, startTogglingJobs] = useTransition();
+  const [isTogglingService, startTogglingService] = useTransition();
 
-  const jobsService = gatewayServices.find(s => s.service_type === 'jobs');
-  const jobsEnabled = !!jobsService?.is_enabled;
+  const getService = (type: string) => gatewayServices.find(s => s.service_type === type);
+  const isServiceEnabled = (type: string) => !!getService(type)?.is_enabled;
+  const jobsEnabled = isServiceEnabled('jobs');
 
   const fetchGatewayServices = async () => {
     if (!restaurantId) return;
@@ -169,24 +255,24 @@ export default function OwnerTicketsPage() {
     return;
   }, [restaurantId, isUserLoading]);
 
-  const toggleJobs = () => {
+  const toggleService = (type: 'jobs' | 'franchise' | 'wholesale') => {
     if (!restaurantId) return;
-    startTogglingJobs(async () => {
+    startTogglingService(async () => {
       try {
-        if (jobsService) {
+        const existing = getService(type);
+        if (existing) {
           const { error } = await supabase
             .from('business_gateway_services')
-            .update({ is_enabled: !jobsEnabled, updated_at: new Date().toISOString() })
-            .eq('id', jobsService.id);
+            .update({ is_enabled: !existing.is_enabled, updated_at: new Date().toISOString() })
+            .eq('id', existing.id);
           if (error) throw error;
         } else {
           const { error } = await supabase
             .from('business_gateway_services')
-            .insert({ restaurant_id: restaurantId, service_type: 'jobs', is_enabled: true, config: {} });
+            .insert({ restaurant_id: restaurantId, service_type: type, is_enabled: true, config: {} });
           if (error) throw error;
         }
-        await syncPublicPage(restaurantId);
-        await fetchGatewayServices();
+        await Promise.all([syncPublicPage(restaurantId), fetchGatewayServices()]);
       } catch (error: any) {
         toast({ title: t('ownerSettings.errorTitle'), description: error.message, variant: 'destructive' });
       }
@@ -267,39 +353,47 @@ export default function OwnerTicketsPage() {
     await Promise.all([syncPublicPage(restaurantId), fetchJobPostings()]);
   };
 
-  // --- Job applicants (business_requests where service_type = 'jobs') ---
-  const [applicants, setApplicants] = useState<BusinessRequest[]>([]);
-  const [isLoadingApplicants, setIsLoadingApplicants] = useState(true);
+  // --- Business requests (jobs applicants + franchise/wholesale submissions) ---
+  const [businessRequests, setBusinessRequests] = useState<BusinessRequest[]>([]);
+  const [isLoadingRequests, setIsLoadingRequests] = useState(true);
 
-  const fetchApplicants = async () => {
+  const fetchBusinessRequests = async () => {
     if (!restaurantId) return;
     const { data } = await supabase
       .from('business_requests')
       .select('*')
       .eq('restaurant_id', restaurantId)
-      .eq('service_type', 'jobs')
       .order('created_at', { ascending: false });
-    setApplicants((data || []) as BusinessRequest[]);
+    setBusinessRequests((data || []) as BusinessRequest[]);
   };
 
   useEffect(() => {
     if (!isUserLoading && restaurantId) {
-      setIsLoadingApplicants(true);
-      fetchApplicants().finally(() => setIsLoadingApplicants(false));
+      setIsLoadingRequests(true);
+      fetchBusinessRequests().finally(() => setIsLoadingRequests(false));
       const channel = supabase
-        .channel(`job-applicants-${restaurantId}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'business_requests', filter: `restaurant_id=eq.${restaurantId}` }, fetchApplicants)
+        .channel(`business-requests-${restaurantId}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'business_requests', filter: `restaurant_id=eq.${restaurantId}` }, fetchBusinessRequests)
         .subscribe();
       return () => { supabase.removeChannel(channel); };
     } else if (!isUserLoading) {
-      setIsLoadingApplicants(false);
+      setIsLoadingRequests(false);
     }
     return;
   }, [restaurantId, isUserLoading]);
 
-  const setApplicantStatus = async (applicant: BusinessRequest, status: 'new' | 'contacted' | 'closed') => {
-    await supabase.from('business_requests').update({ status }).eq('id', applicant.id);
-    await fetchApplicants();
+  const applicants = businessRequests.filter(r => r.service_type === 'jobs');
+  const franchiseRequests = businessRequests.filter(r => r.service_type === 'franchise');
+  const wholesaleRequests = businessRequests.filter(r => r.service_type === 'wholesale');
+  const requestCountByType: Record<string, number> = {
+    jobs: applicants.length,
+    franchise: franchiseRequests.length,
+    wholesale: wholesaleRequests.length,
+  };
+
+  const setRequestStatus = async (request: BusinessRequest, status: 'new' | 'contacted' | 'closed') => {
+    await supabase.from('business_requests').update({ status }).eq('id', request.id);
+    await fetchBusinessRequests();
   };
 
   const postingTitleById = (id?: string | null) => jobPostings.find(p => p.id === id)?.title;
@@ -340,34 +434,42 @@ export default function OwnerTicketsPage() {
               </div>
             </button>
 
-            {/* Jobs - toggleable */}
-            <div className={cn(
-              "text-start p-4 rounded-2xl border transition-all",
-              activeService === 'jobs' ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-100 bg-white'
-            )}>
-              <button onClick={() => setActiveService('jobs')} className="w-full text-start">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 shrink-0 text-gray-600" />
-                  <h3 className="text-xs font-bold text-gray-900">{t('ownerGateway.jobsTitle')}</h3>
+            {/* Toggleable services: jobs, franchise, wholesale */}
+            {TOGGLEABLE_SERVICES.map((service) => {
+              const isUnlocked = !service.flag || !!user?.entitlements?.[service.flag];
+              if (!isUnlocked) return null; // rendered as a locked card below instead
+              const Icon = service.icon;
+              const enabled = isServiceEnabled(service.type);
+              return (
+                <div key={service.type} className={cn(
+                  "text-start p-4 rounded-2xl border transition-all",
+                  activeService === service.type ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-100 bg-white'
+                )}>
+                  <button onClick={() => setActiveService(service.type)} className="w-full text-start">
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 shrink-0 text-gray-600" />
+                      <h3 className="text-xs font-bold text-gray-900">{t(service.titleKey)}</h3>
+                    </div>
+                    <p className="text-[10px] text-gray-600 mt-1.5">{t(service.descKey)}</p>
+                  </button>
+                  <div className="flex items-center justify-between mt-3">
+                    <button
+                      onClick={() => toggleService(service.type)}
+                      disabled={isTogglingService}
+                      className={cn(
+                        "text-[9px] font-bold px-2 py-0.5 rounded-full transition-colors disabled:opacity-50",
+                        enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'
+                      )}
+                    >
+                      {enabled ? t('ownerGateway.enabled') : t('ownerGateway.disabled')}
+                    </button>
+                    <span className="text-[10px] font-bold text-gray-600">{requestCountByType[service.type] || 0} {t('ownerGateway.requestsCount')}</span>
+                  </div>
                 </div>
-                <p className="text-[10px] text-gray-600 mt-1.5">{t('ownerGateway.jobsDescription')}</p>
-              </button>
-              <div className="flex items-center justify-between mt-3">
-                <button
-                  onClick={toggleJobs}
-                  disabled={isTogglingJobs}
-                  className={cn(
-                    "text-[9px] font-bold px-2 py-0.5 rounded-full transition-colors disabled:opacity-50",
-                    jobsEnabled ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'
-                  )}
-                >
-                  {jobsEnabled ? t('ownerGateway.enabled') : t('ownerGateway.disabled')}
-                </button>
-                <span className="text-[10px] font-bold text-gray-600">{applicants.length} {t('ownerGateway.requestsCount')}</span>
-              </div>
-            </div>
+              );
+            })}
 
-            {/* Locked, plan-gated services */}
+            {/* Locked, plan-gated services (not built yet) */}
             {LOCKED_SERVICES.map((service) => {
               const Icon = service.icon;
               const isUnlocked = !!user?.entitlements?.[service.flag];
@@ -491,7 +593,7 @@ export default function OwnerTicketsPage() {
             </div>
           )}
         </div>
-      ) : (
+      ) : activeService === 'jobs' ? (
         <div className="space-y-5">
           {/* Postings management */}
           <div className="bg-white border border-gray-100 rounded-2xl p-4 space-y-4">
@@ -611,7 +713,7 @@ export default function OwnerTicketsPage() {
           {/* Applicants */}
           <div className="space-y-3">
             <h3 className="text-sm font-bold text-gray-900">{t('ownerGateway.applicantsTitle')}</h3>
-            {isLoadingApplicants ? (
+            {isLoadingRequests ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {[1, 2].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
               </div>
@@ -653,7 +755,7 @@ export default function OwnerTicketsPage() {
                       {(['new', 'contacted', 'closed'] as const).map((s) => (
                         <button
                           key={s}
-                          onClick={() => setApplicantStatus(applicant, s)}
+                          onClick={() => setRequestStatus(applicant, s)}
                           className={cn("flex-1 h-8 rounded-lg text-[10px] font-bold border transition-colors",
                             applicant.status === s ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-100 hover:border-gray-200')}
                         >
@@ -666,6 +768,18 @@ export default function OwnerTicketsPage() {
               </div>
             )}
           </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <h3 className="text-sm font-bold text-gray-900">{t('ownerGateway.requestsTitle')}</h3>
+          <RequestsList
+            requests={activeService === 'franchise' ? franchiseRequests : wholesaleRequests}
+            fields={GATEWAY_FIELD_DEFS[activeService] || []}
+            isLoading={isLoadingRequests}
+            onStatusChange={setRequestStatus}
+            dir={dir}
+            t={t}
+          />
         </div>
       )}
     </div>

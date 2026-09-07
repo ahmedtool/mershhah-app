@@ -5,7 +5,7 @@ import { useParams, Link } from 'wouter';
 import { useRouter } from '@/lib/navigation';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage } from '@/lib/public-pages';
-import { Info, MessageSquare, Briefcase, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Info, MessageSquare, Briefcase, Store, Package, ChevronRight, ChevronLeft } from 'lucide-react';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPublicThemeStyle } from '@/lib/public-theme';
@@ -16,7 +16,11 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 const SERVICE_CARDS = [
   { type: 'contact', icon: MessageSquare, titleKey: 'ownerGateway.contactTitle', descKey: 'publicGateway.contactCardDesc' },
   { type: 'jobs', icon: Briefcase, titleKey: 'ownerGateway.jobsTitle', descKey: 'publicGateway.jobsCardDesc' },
+  { type: 'franchise', icon: Store, titleKey: 'ownerGateway.franchiseTitle', descKey: 'publicGateway.franchiseCardDesc' },
+  { type: 'wholesale', icon: Package, titleKey: 'ownerGateway.wholesaleTitle', descKey: 'publicGateway.wholesaleCardDesc' },
 ] as const;
+
+const BUILDABLE_SERVICE_TYPES = ['jobs', 'franchise', 'wholesale'];
 
 export default function SupportGatewayPage() {
   const params = useParams();
@@ -36,8 +40,10 @@ export default function SupportGatewayPage() {
         const data = await getPublicPage(username);
         if (data?.restaurant) {
           setRestaurant(data.restaurant);
-          const hasJobs = (data.gatewayServices || []).some((s) => s.service_type === 'jobs');
-          setEnabledServices(hasJobs ? ['contact', 'jobs'] : ['contact']);
+          const enabledTypes = (data.gatewayServices || [])
+            .map((s) => s.service_type)
+            .filter((type) => BUILDABLE_SERVICE_TYPES.includes(type));
+          setEnabledServices(['contact', ...enabledTypes]);
           setLoading(false);
           return;
         }
@@ -54,8 +60,10 @@ export default function SupportGatewayPage() {
           .select('service_type')
           .eq('restaurant_id', rest.id)
           .eq('is_enabled', true);
-        const hasJobs = (gw || []).some((s: any) => s.service_type === 'jobs');
-        setEnabledServices(hasJobs ? ['contact', 'jobs'] : ['contact']);
+        const enabledTypes = (gw || [])
+          .map((s: any) => s.service_type)
+          .filter((type: string) => BUILDABLE_SERVICE_TYPES.includes(type));
+        setEnabledServices(['contact', ...enabledTypes]);
       } catch (e) {
         console.error(e);
       } finally {

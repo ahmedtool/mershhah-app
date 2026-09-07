@@ -770,6 +770,14 @@ export const translations = {
       statusNew: 'جديد',
       jobLimitReachedTitle: 'وصلت للحد الأقصى من الوظائف',
       jobLimitReachedDesc: 'باقتك الحالية تسمح بوظيفة واحدة منشورة. رقّي باقتك لنشر المزيد.',
+      requestsTitle: 'الطلبات',
+      noRequestsYet: 'لا يوجد طلبات بعد',
+      franchiseFieldCity: 'المدينة',
+      franchiseFieldBudget: 'الميزانية التقريبية',
+      franchiseFieldExperience: 'الخبرة السابقة في القطاع',
+      wholesaleFieldBusinessType: 'نوع النشاط (مطعم، مقهى، متجر...)',
+      wholesaleFieldProduct: 'المنتج المطلوب',
+      wholesaleFieldQuantity: 'الكمية التقريبية',
     },
     ownerSettings: {
       nameMinLength: 'الاسم يجب أن يكون 3 أحرف على الأقل.',
@@ -962,6 +970,11 @@ export const translations = {
       pageTitle: 'كيف نقدر نخدمك؟',
       contactCardDesc: 'تواصل معنا لأي استفسار أو شكوى أو اقتراح',
       jobsCardDesc: 'تصفح الوظائف المتاحة وقدّم طلبك',
+      franchiseCardDesc: 'أرسل بياناتك للحصول على امتياز تجاري',
+      wholesaleCardDesc: 'اطلب أسعار الجملة والكميات',
+    },
+    publicGatewayForm: {
+      submittedDesc: 'شكراً لتواصلك، تم استلام طلبك وسنتواصل معك قريباً.',
     },
     publicJobs: {
       pageTitle: 'الوظائف المتاحة',
@@ -1801,6 +1814,14 @@ export const translations = {
       statusNew: 'New',
       jobLimitReachedTitle: "You've reached your job posting limit",
       jobLimitReachedDesc: 'Your current plan allows one active job posting. Upgrade your plan to post more.',
+      requestsTitle: 'Requests',
+      noRequestsYet: 'No requests yet',
+      franchiseFieldCity: 'City',
+      franchiseFieldBudget: 'Approximate Budget',
+      franchiseFieldExperience: 'Previous experience in the industry',
+      wholesaleFieldBusinessType: 'Business type (restaurant, cafe, store...)',
+      wholesaleFieldProduct: 'Requested product',
+      wholesaleFieldQuantity: 'Approximate quantity',
     },
     ownerSettings: {
       nameMinLength: 'Name must be at least 3 characters.',
@@ -1993,6 +2014,11 @@ export const translations = {
       pageTitle: 'How can we help you?',
       contactCardDesc: 'Get in touch for any inquiry, complaint, or suggestion',
       jobsCardDesc: 'Browse open positions and apply',
+      franchiseCardDesc: 'Send your details to get a franchise',
+      wholesaleCardDesc: 'Request wholesale and bulk pricing',
+    },
+    publicGatewayForm: {
+      submittedDesc: "Thanks for reaching out. We've received your request and will contact you soon.",
     },
     publicJobs: {
       pageTitle: 'Open Positions',
