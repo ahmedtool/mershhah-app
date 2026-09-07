@@ -172,6 +172,18 @@ export type Subscription = {
     status: 'active' | 'inactive' | 'cancelled' | 'pending';
     start_date: any;
     end_date: any;
+    billing_cycle?: 'monthly' | 'yearly' | 'one_time';
+    amount?: number;
+    currency?: string;
+    payment_method?: string | null;
+    next_billing_date?: any;
+    cancel_at_period_end?: boolean;
+    discount_code_id?: string | null;
+    discount_amount?: number;
+    streampay_subscription_id?: string | null;
+    streampay_customer_id?: string | null;
+    created_at?: any;
+    updated_at?: any;
 };
 
 export type Json =

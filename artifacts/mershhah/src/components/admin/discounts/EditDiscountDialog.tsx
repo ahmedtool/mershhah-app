@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Loader2, Tag } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { DiscountCode } from '@/lib/types';
 
@@ -17,17 +18,23 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
+  const [plans, setPlans] = useState<{ id: string; name: string }[]>([]);
+
   const [form, setForm] = useState({
     code: code?.code || '',
     description: code?.description || '',
-    discount_type: code?.discount_type || 'percentage' as 'percentage' | 'fixed',
+    discount_type: code?.discount_type || 'percentage' as 'percentage' | 'fixed' | 'free_trial',
     discount_value: code?.discount_value || 10,
     max_uses: code?.max_uses || '',
     min_amount: code?.min_amount || '',
-    applicable_plans: code?.applicable_plans?.join(', ') || '',
+    applicable_plans: code?.applicable_plans || [] as string[],
     valid_from: code?.valid_from ? new Date(code.valid_from).toISOString().slice(0, 16) : '',
     valid_until: code?.valid_until ? new Date(code.valid_until).toISOString().slice(0, 16) : '',
   });
+
+  useEffect(() => {
+    supabase.from('plans').select('id, name').then(({ data }: { data: { id: string; name: string }[] | null }) => setPlans(data || []));
+  }, []);
 
   const handleSave = async () => {
     if (!form.code.trim()) {
@@ -52,7 +59,7 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
         discount_value: form.discount_value,
         max_uses: form.max_uses ? Number(form.max_uses) : null,
         min_amount: form.min_amount ? Number(form.min_amount) : 0,
-        applicable_plans: form.applicable_plans ? form.applicable_plans.split(',').map(s => s.trim()).filter(Boolean) : null,
+        applicable_plans: form.applicable_plans.length > 0 ? form.applicable_plans : null,
         valid_from: form.valid_from ? new Date(form.valid_from).toISOString() : new Date().toISOString(),
         valid_until: form.valid_until ? new Date(form.valid_until).toISOString() : null,
       };
@@ -127,11 +134,12 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
                   <label className="block text-[11px] font-bold text-gray-600 mb-1.5">نوع الخصم *</label>
                   <select
                     value={form.discount_type}
-                    onChange={(e) => setForm(prev => ({ ...prev, discount_type: e.target.value as 'percentage' | 'fixed' }))}
+                    onChange={(e) => setForm(prev => ({ ...prev, discount_type: e.target.value as 'percentage' | 'fixed' | 'free_trial' }))}
                     className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right focus:outline-none focus:border-gray-300 bg-white"
                   >
                     <option value="percentage">نسبة مئوية (%)</option>
                     <option value="fixed">مبلغ ثابت (ر.س)</option>
+                    <option value="free_trial">فترة مجانية</option>
                   </select>
                 </div>
                 <div>
@@ -175,14 +183,30 @@ export function EditDiscountDialog({ code, onSave, children }: Props) {
 
               {/* Applicable Plans */}
               <div>
-                <label className="block text-[11px] font-bold text-gray-600 mb-1.5">الباقات المطبّق عليها</label>
-                <input
-                  type="text"
-                  value={form.applicable_plans}
-                  onChange={(e) => setForm(prev => ({ ...prev, applicable_plans: e.target.value }))}
-                  placeholder="اترك فارغاً للتطبيق على الكل (مفصّلة بفاصلة)"
-                  className="w-full h-10 px-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
-                />
+                <label className="block text-[11px] font-bold text-gray-600 mb-1.5">الباقات المطبّق عليها (اتركها فاضية = كل الباقات)</label>
+                <div className="flex flex-wrap gap-2">
+                  {plans.map((plan) => {
+                    const isSelected = form.applicable_plans.includes(plan.id);
+                    return (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => setForm(prev => ({
+                          ...prev,
+                          applicable_plans: isSelected
+                            ? prev.applicable_plans.filter((id) => id !== plan.id)
+                            : [...prev.applicable_plans, plan.id],
+                        }))}
+                        className={cn(
+                          "px-3 py-1.5 rounded-full text-[11px] font-medium border transition-colors",
+                          isSelected ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                        )}
+                      >
+                        {plan.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Dates */}

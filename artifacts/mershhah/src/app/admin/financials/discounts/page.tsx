@@ -12,6 +12,7 @@ import { EditDiscountDialog } from '@/components/admin/discounts/EditDiscountDia
 
 export default function FinancialsDiscountsPage() {
   const [codes, setCodes] = useState<DiscountCode[]>([]);
+  const [planNameById, setPlanNameById] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
@@ -32,6 +33,11 @@ export default function FinancialsDiscountsPage() {
 
   useEffect(() => {
     fetchCodes();
+    supabase.from('plans').select('id, name').then(({ data }: { data: { id: string; name: string }[] | null }) => {
+      const map: Record<string, string> = {};
+      (data || []).forEach((p) => { map[p.id] = p.name; });
+      setPlanNameById(map);
+    });
   }, []);
 
   const tabs = [
@@ -221,7 +227,7 @@ export default function FinancialsDiscountsPage() {
                         {code.applicable_plans && code.applicable_plans.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
                             {code.applicable_plans.map(p => (
-                              <span key={p} className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-600">{p}</span>
+                              <span key={p} className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-50 text-blue-600">{planNameById[p] || p}</span>
                             ))}
                           </div>
                         ) : (

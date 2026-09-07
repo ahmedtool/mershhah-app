@@ -80,15 +80,34 @@ export default function FinancialsOrdersPage() {
 
   useEffect(() => { fetchOrders(); }, []);
 
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
   const toggleStatus = async (order: Order) => {
     const newStatus = order.status === 'active' ? 'cancelled' : 'active';
+    setTogglingId(order.id);
     try {
-      const { error } = await supabase.from('subscriptions').update({ status: newStatus }).eq('id', order.id);
-      if (error) throw error;
+      if (newStatus === 'cancelled') {
+        // A real paid subscription has a recurring charge running on
+        // StreamPay's side - flipping only our own status field here would
+        // "cancel" it locally while StreamPay keeps billing the customer.
+        const { data: { session } } = await supabase.auth.getSession();
+        const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/streampay-cancel-subscription`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+          body: JSON.stringify({ subscription_id: order.id }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'فشل الإلغاء');
+      } else {
+        const { error } = await supabase.from('subscriptions').update({ status: newStatus }).eq('id', order.id);
+        if (error) throw error;
+      }
       setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: newStatus as any } : o));
       toast({ title: newStatus === 'active' ? 'تم التفعيل' : 'تم الإلغاء', description: `تم ${newStatus === 'active' ? 'تفعيل' : 'إلغاء'} الاشتراك` });
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'خطأ', description: error.message });
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -283,8 +302,10 @@ export default function FinancialsOrdersPage() {
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => toggleStatus(order)} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors" title={order.status === 'active' ? 'إلغاء' : 'تفعيل'}>
-                            {order.status === 'active' ? <ToggleRight className="h-4 w-4 text-emerald-500" /> : <ToggleLeft className="h-4 w-4 text-gray-600" />}
+                          <button onClick={() => toggleStatus(order)} disabled={togglingId === order.id} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-50" title={order.status === 'active' ? 'إلغاء' : 'تفعيل'}>
+                            {togglingId === order.id
+                              ? <Loader2 className="h-3.5 w-3.5 text-gray-600 animate-spin" />
+                              : order.status === 'active' ? <ToggleRight className="h-4 w-4 text-emerald-500" /> : <ToggleLeft className="h-4 w-4 text-gray-600" />}
                           </button>
                           {order.hasRefundablePayment && (
                             <button

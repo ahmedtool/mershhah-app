@@ -64,8 +64,8 @@ export default function AdminFinancialsPage() {
       const profiles = profilesRes.data || [];
 
       const subMap = new Map(subs.map(s => [s.id, s]));
-      const restaurantByProfile = new Map(restaurants.map((r: any) => [r.owner_id, r]));
-      const profileMap = new Map(profiles.map((p: any) => [p.id, p]));
+      const restaurantByProfile = new Map<string, any>(restaurants.map((r: any) => [r.owner_id, r]));
+      const profileMap = new Map<string, any>(profiles.map((p: any) => [p.id, p]));
 
       const nameForProfile = (profileId: string) =>
         restaurantByProfile.get(profileId)?.name || profileMap.get(profileId)?.restaurant_name || profileId;
@@ -81,8 +81,12 @@ export default function AdminFinancialsPage() {
       const totalRefunded = completedRefunds.reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0);
       const totalRevenue = grossRevenue - totalRefunded;
 
+      // Only actual subscription charges belong in a "revenue by plan"
+      // breakdown - tool_purchase/credit_pack transactions have a tool or
+      // pack id in reference_id (never a plan), so they'd otherwise show up
+      // here as their own bogus "plan" entries.
       const revenueByPlanMap = new Map<string, { count: number; revenue: number }>();
-      completedCharges.forEach((t: any) => {
+      completedCharges.filter((t: any) => t.type === 'subscription').forEach((t: any) => {
         const planName = subMap.get(t.reference_id)?.plan_name || t.description || 'غير محدد';
         const existing = revenueByPlanMap.get(planName) || { count: 0, revenue: 0 };
         existing.count += 1;

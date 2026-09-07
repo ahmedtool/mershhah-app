@@ -532,6 +532,29 @@ export default function ManagementPage() {
       try {
         const restId = profileToDelete.restaurant_id;
 
+        // A live StreamPay recurring subscription has to be cancelled at the
+        // gateway before its local row disappears - once the subscription
+        // (and the profile that owns it) is gone, streampay_subscription_id
+        // is gone with it and there is no way left to ever stop the charge.
+        const { data: { session } } = await supabase.auth.getSession();
+        const { data: liveSubs } = await supabase
+          .from('subscriptions')
+          .select('id, streampay_subscription_id')
+          .eq('profile_id', profileToDelete.id)
+          .eq('status', 'active')
+          .not('streampay_subscription_id', 'is', null);
+        for (const sub of liveSubs || []) {
+          try {
+            await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/streampay-cancel-subscription`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+              body: JSON.stringify({ subscription_id: sub.id }),
+            });
+          } catch (cancelErr) {
+            console.error('Failed to cancel StreamPay subscription before delete:', cancelErr);
+          }
+        }
+
         // Delete related data first (some may not cascade)
         if (restId) {
           await supabase.from('menu_items').delete().eq('restaurant_id', restId);
@@ -543,7 +566,9 @@ export default function ManagementPage() {
         }
         await supabase.from('subscriptions').delete().eq('profile_id', profileToDelete.id);
         await supabase.from('activated_tools').delete().eq('profile_id', profileToDelete.id);
-        await supabase.from('chats').delete().eq('id', profileToDelete.id);
+        // chats.id is its own random id, not the owner - ownerId is the
+        // actual profile-linking column (see ChatList.tsx's createChat).
+        await supabase.from('chats').delete().eq('ownerId', profileToDelete.id);
         await supabase.from('activity').delete().eq('userId', profileToDelete.id);
 
         // Delete restaurant (cascades to menu_items, branches, offers, reviews)
