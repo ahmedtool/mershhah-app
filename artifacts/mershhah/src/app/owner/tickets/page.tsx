@@ -312,6 +312,15 @@ export default function OwnerTicketsPage() {
   const removeDraftField = (index: number) => {
     setCustomDraft(d => ({ ...d, fields: d.fields.filter((_, i) => i !== index) }));
   };
+  const addFieldOption = (fieldIndex: number) => {
+    setCustomDraft(d => ({ ...d, fields: d.fields.map((f, i) => i === fieldIndex ? { ...f, options: [...(f.options || []), ''] } : f) }));
+  };
+  const updateFieldOption = (fieldIndex: number, optionIndex: number, value: string) => {
+    setCustomDraft(d => ({ ...d, fields: d.fields.map((f, i) => i === fieldIndex ? { ...f, options: (f.options || []).map((o, oi) => oi === optionIndex ? value : o) } : f) }));
+  };
+  const removeFieldOption = (fieldIndex: number, optionIndex: number) => {
+    setCustomDraft(d => ({ ...d, fields: d.fields.map((f, i) => i === fieldIndex ? { ...f, options: (f.options || []).filter((_, oi) => oi !== optionIndex) } : f) }));
+  };
 
   const saveCustomType = () => {
     if (!restaurantId || !customDraft.title.trim()) return;
@@ -680,12 +689,25 @@ export default function OwnerTicketsPage() {
                         </SelectContent>
                       </Select>
                       {field.type === 'select' && (
-                        <Input
-                          value={(field.options || []).join(', ')}
-                          onChange={(e) => updateDraftField(index, { options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
-                          placeholder={t('ownerGateway.fieldOptionsPlaceholder')}
-                          className="h-9 rounded-lg border-gray-200 text-xs"
-                        />
+                        <div className="space-y-1.5">
+                          {(field.options || []).map((opt, optIndex) => (
+                            <div key={optIndex} className="flex items-center gap-2">
+                              <Input
+                                value={opt}
+                                onChange={(e) => updateFieldOption(index, optIndex, e.target.value)}
+                                placeholder={t('ownerGateway.optionPlaceholder')}
+                                className="h-9 rounded-lg border-gray-200 text-xs flex-1"
+                              />
+                              <button type="button" onClick={() => removeFieldOption(index, optIndex)} className="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-gray-600 hover:bg-red-50 hover:text-red-500 transition-colors">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                          <button type="button" onClick={() => addFieldOption(index)} className="text-[11px] font-bold text-gray-900 hover:underline flex items-center gap-1">
+                            <Plus className="h-3 w-3" />
+                            {t('ownerGateway.addOption')}
+                          </button>
+                        </div>
                       )}
                     </div>
                   ))}
