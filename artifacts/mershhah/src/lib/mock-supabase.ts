@@ -19,6 +19,9 @@ const LS_PUBLIC_PAGES = 'mershhah_mock_public_pages';
 const LS_APPLICATIONS = 'mershhah_mock_applications';
 const LS_MENU_INTERACTIONS = 'mershhah_mock_menu_interactions';
 const LS_HUB_VISITS = 'mershhah_mock_hub_visits';
+const LS_GATEWAY_SERVICES = 'mershhah_mock_gateway_services';
+const LS_JOB_POSTINGS = 'mershhah_mock_job_postings';
+const LS_BUSINESS_REQUESTS = 'mershhah_mock_business_requests';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function readStore<T>(key: string, fallback: T[]): T[] {
@@ -161,6 +164,9 @@ const TABLE_LS_KEY: Record<string, string> = {
   applications: LS_APPLICATIONS,
   menu_item_interactions: LS_MENU_INTERACTIONS,
   hub_visits: LS_HUB_VISITS,
+  business_gateway_services: LS_GATEWAY_SERVICES,
+  job_postings: LS_JOB_POSTINGS,
+  business_requests: LS_BUSINESS_REQUESTS,
 };
 
 // ── Query Builder ───────────────────────────────────────────────────────────

@@ -61,6 +61,17 @@ export type PublicPageData = {
     is_visible?: boolean;
   }>;
   categories: Array<{ id: string; name: string; position: number }>;
+  gatewayServices: Array<{
+    service_type: string;
+    config: { title?: string; icon?: string; fields?: Array<{ id: string; label: string; type: string; options?: string[] }> };
+  }>;
+  jobPostings: Array<{
+    id: string;
+    title: string;
+    location?: string | null;
+    employment_type?: string | null;
+    description?: string | null;
+  }>;
   updated_at: unknown;
 };
 
@@ -94,7 +105,7 @@ export async function syncPublicPage(restaurantId: string): Promise<void> {
 
     const now = new Date();
 
-    const [menuRes, branchesRes, offersRes, reviewsRes, itemReviewsRes, categoriesRes] = await Promise.all([
+    const [menuRes, branchesRes, offersRes, reviewsRes, itemReviewsRes, categoriesRes, gatewayServicesRes, jobPostingsRes] = await Promise.all([
       supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId),
       supabase.from('branches').select('*').eq('restaurant_id', restaurantId).eq('status', 'active'),
       supabase.from('offers').select('*').eq('restaurant_id', restaurantId).eq('status', 'active'),
@@ -110,6 +121,8 @@ export async function syncPublicPage(restaurantId: string): Promise<void> {
         .eq('restaurant_id', restaurantId)
         .neq('is_visible', false),
       supabase.from('menu_categories').select('id, name, position').eq('restaurant_id', restaurantId).order('position'),
+      supabase.from('business_gateway_services').select('service_type, config').eq('restaurant_id', restaurantId).eq('is_enabled', true),
+      supabase.from('job_postings').select('id, title, location, employment_type, description').eq('restaurant_id', restaurantId).eq('is_active', true),
     ]);
 
     // Embed each item's average rating/count so the public menu page needs
@@ -177,6 +190,8 @@ export async function syncPublicPage(restaurantId: string): Promise<void> {
       },
       reviews: reviewsList,
       categories: categoriesRes.data || [],
+      gatewayServices: gatewayServicesRes.data || [],
+      jobPostings: jobPostingsRes.data || [],
       updated_at: new Date().toISOString(),
     };
 

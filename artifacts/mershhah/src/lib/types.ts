@@ -302,6 +302,61 @@ export type ActivatedTool = {
     installed_by?: string;
 };
 
+export type BusinessGatewayField = {
+  id: string;
+  label: string;
+  type: 'text' | 'textarea' | 'number' | 'select';
+  options?: string[]; // for type: 'select'
+};
+
+export type BusinessGatewayServiceType =
+  | 'jobs'
+  | 'franchise'
+  | 'wholesale'
+  | 'corporate'
+  | 'partnership'
+  | `custom:${string}`;
+
+export type BusinessGatewayServiceConfig = {
+  title?: string; // custom types only
+  icon?: string; // custom types only
+  fields?: BusinessGatewayField[]; // franchise/wholesale/corporate/partnership/custom
+};
+
+export type BusinessGatewayService = {
+  id: string;
+  restaurant_id: string;
+  service_type: BusinessGatewayServiceType;
+  is_enabled: boolean;
+  config: BusinessGatewayServiceConfig;
+  created_at: any;
+  updated_at: any;
+};
+
+export type JobPosting = {
+  id: string;
+  restaurant_id: string;
+  title: string;
+  location?: string | null;
+  employment_type?: 'full_time' | 'part_time' | null;
+  description?: string | null;
+  is_active: boolean;
+  created_at: any;
+};
+
+export type BusinessRequest = {
+  id: string;
+  restaurant_id: string;
+  service_type: BusinessGatewayServiceType;
+  job_posting_id?: string | null;
+  name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  fields: Record<string, any>;
+  status: 'new' | 'contacted' | 'closed';
+  created_at: any;
+};
+
 export type ToolReview = {
     id: string;
     tool_id: string;
@@ -388,6 +443,8 @@ export type Plan = {
     max_menu_items?: number;
     /** 0 = غير محدود */
     max_tools?: number;
+    /** 0 = غير محدود */
+    max_job_postings?: number;
 };
 
 // Mirrors public.discount_codes (see streampay_financial.sql) — column

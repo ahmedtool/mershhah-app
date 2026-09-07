@@ -14,9 +14,15 @@ export type Entitlements = {
   canUseDashboardAgent: boolean;
   canUseWhiteLabel: boolean;
   canUsePrioritySupport: boolean;
+  canUseGatewayFranchise: boolean;
+  canUseGatewayWholesale: boolean;
+  canUseGatewayCorporate: boolean;
+  canUseGatewayPartnership: boolean;
+  canUseGatewayCustomTypes: boolean;
   maxBranches: number;
   maxMenuItems: number;
   maxTools: number;
+  maxJobPostings: number;
 };
 
 const UNLIMITED = Number.MAX_SAFE_INTEGER;
@@ -30,9 +36,15 @@ const defaultEntitlements: Entitlements = {
   canUseDashboardAgent: false,
   canUseWhiteLabel: false,
   canUsePrioritySupport: false,
+  canUseGatewayFranchise: false,
+  canUseGatewayWholesale: false,
+  canUseGatewayCorporate: false,
+  canUseGatewayPartnership: false,
+  canUseGatewayCustomTypes: false,
   maxBranches: 1,
   maxMenuItems: 30,
   maxTools: 2,
+  maxJobPostings: 1,
 };
 
 type PlanRow = {
@@ -40,6 +52,7 @@ type PlanRow = {
   max_branches?: number | null;
   max_menu_items?: number | null;
   max_tools?: number | null;
+  max_job_postings?: number | null;
   features?: Record<string, boolean | number> | null;
 };
 
@@ -81,9 +94,15 @@ const unlimitedEntitlements: Entitlements = {
   canUseDashboardAgent: true,
   canUseWhiteLabel: true,
   canUsePrioritySupport: true,
+  canUseGatewayFranchise: true,
+  canUseGatewayWholesale: true,
+  canUseGatewayCorporate: true,
+  canUseGatewayPartnership: true,
+  canUseGatewayCustomTypes: true,
   maxBranches: UNLIMITED,
   maxMenuItems: UNLIMITED,
   maxTools: UNLIMITED,
+  maxJobPostings: UNLIMITED,
 };
 
 // The DB columns (max_branches/max_menu_items/max_tools) are the source of
@@ -104,6 +123,7 @@ function computeEntitlements(activeSub: Subscription | null, profile: Profile, p
   const rawMaxBranches = plan?.max_branches ?? defaultEntitlements.maxBranches;
   const rawMaxMenuItems = plan?.max_menu_items ?? defaultEntitlements.maxMenuItems;
   const rawMaxTools = plan?.max_tools ?? defaultEntitlements.maxTools;
+  const rawMaxJobPostings = plan?.max_job_postings ?? defaultEntitlements.maxJobPostings;
 
   return {
     planId: activeSub.plan_id,
@@ -114,11 +134,17 @@ function computeEntitlements(activeSub: Subscription | null, profile: Profile, p
     canUseDashboardAgent: enableAi,
     canUseWhiteLabel: featureFlag(plan?.features, 'white_label'),
     canUsePrioritySupport: featureFlag(plan?.features, 'priority_support'),
+    canUseGatewayFranchise: featureFlag(plan?.features, 'gateway_franchise'),
+    canUseGatewayWholesale: featureFlag(plan?.features, 'gateway_wholesale'),
+    canUseGatewayCorporate: featureFlag(plan?.features, 'gateway_corporate'),
+    canUseGatewayPartnership: featureFlag(plan?.features, 'gateway_partnership'),
+    canUseGatewayCustomTypes: featureFlag(plan?.features, 'gateway_custom_types'),
     // 0 or unset historically meant "not customized" for these columns —
     // treat it as unlimited rather than silently blocking everyone.
     maxBranches: rawMaxBranches > 0 ? rawMaxBranches : UNLIMITED,
     maxMenuItems: rawMaxMenuItems > 0 ? rawMaxMenuItems : UNLIMITED,
     maxTools: rawMaxTools > 0 ? rawMaxTools : UNLIMITED,
+    maxJobPostings: rawMaxJobPostings > 0 ? rawMaxJobPostings : UNLIMITED,
   };
 }
 
@@ -184,7 +210,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (activeSub) {
         const { data: plan } = await supabase
           .from('plans')
-          .select('id, max_branches, max_menu_items, max_tools, features')
+          .select('id, max_branches, max_menu_items, max_tools, max_job_postings, features')
           .eq('id', activeSub.plan_id)
           .maybeSingle();
         planRow = plan;

@@ -18,7 +18,10 @@ import { FEATURE_LABELS } from '@/lib/plan-feature-labels';
 // with FEATURE_LABELS so this editor, the pricing page, and enforcement
 // all read the exact same keys — editing a plan here used to silently
 // overwrite these with free-text marketing bullets instead.
-const TOGGLE_FEATURE_KEYS = ['ai_analysis', 'ai_tools', 'white_label', 'priority_support'] as const;
+const TOGGLE_FEATURE_KEYS = [
+  'ai_analysis', 'ai_tools', 'white_label', 'priority_support',
+  'gateway_franchise', 'gateway_wholesale', 'gateway_corporate', 'gateway_partnership', 'gateway_custom_types',
+] as const;
 
 const formSchema = z.object({
   name: z.string().min(3, 'اسم الباقة يجب أن يكون 3 أحرف على الأقل.'),
@@ -34,10 +37,16 @@ const formSchema = z.object({
   max_branches: z.coerce.number().int().min(0, '0 = غير محدود'),
   max_menu_items: z.coerce.number().int().min(0, '0 = غير محدود'),
   max_tools: z.coerce.number().int().min(0, '0 = غير محدود'),
+  max_job_postings: z.coerce.number().int().min(0, '0 = غير محدود'),
   ai_analysis: z.boolean().default(false),
   ai_tools: z.boolean().default(false),
   white_label: z.boolean().default(false),
   priority_support: z.boolean().default(false),
+  gateway_franchise: z.boolean().default(false),
+  gateway_wholesale: z.boolean().default(false),
+  gateway_corporate: z.boolean().default(false),
+  gateway_partnership: z.boolean().default(false),
+  gateway_custom_types: z.boolean().default(false),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -51,8 +60,10 @@ interface EditPlanDialogProps {
 const defaultValues: FormValues = {
   name: '', description: '', price_yearly: 0,
   payment_link: '', is_active: true, is_featured: false,
-  max_branches: 1, max_menu_items: 30, max_tools: 2,
+  max_branches: 1, max_menu_items: 30, max_tools: 2, max_job_postings: 1,
   ai_analysis: false, ai_tools: false, white_label: false, priority_support: false,
+  gateway_franchise: false, gateway_wholesale: false, gateway_corporate: false,
+  gateway_partnership: false, gateway_custom_types: false,
 };
 
 export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) {
@@ -80,10 +91,16 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
           max_branches: plan.max_branches ?? 1,
           max_menu_items: plan.max_menu_items ?? 30,
           max_tools: plan.max_tools ?? 2,
+          max_job_postings: plan.max_job_postings ?? 1,
           ai_analysis: !!features.ai_analysis,
           ai_tools: !!features.ai_tools,
           white_label: !!features.white_label,
           priority_support: !!features.priority_support,
+          gateway_franchise: !!features.gateway_franchise,
+          gateway_wholesale: !!features.gateway_wholesale,
+          gateway_corporate: !!features.gateway_corporate,
+          gateway_partnership: !!features.gateway_partnership,
+          gateway_custom_types: !!features.gateway_custom_types,
         });
       } else {
         form.reset(defaultValues);
@@ -99,6 +116,7 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
 
         const {
           ai_analysis, ai_tools, white_label, priority_support,
+          gateway_franchise, gateway_wholesale, gateway_corporate, gateway_partnership, gateway_custom_types,
           price_yearly,
           ...rest
         } = values;
@@ -226,6 +244,15 @@ export function EditPlanDialog({ children, plan, onSave }: EditPlanDialogProps) 
                 <FormField control={form.control} name="max_tools" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-[10px] text-gray-600">الأدوات</FormLabel>
+                    <FormControl>
+                      <Input type="number" min={0} {...field} className="h-10 rounded-lg border-gray-200 text-xs" dir="ltr" disabled={isSaving} />
+                    </FormControl>
+                    <FormMessage className="text-[10px]" />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="max_job_postings" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] text-gray-600">الوظائف المنشورة</FormLabel>
                     <FormControl>
                       <Input type="number" min={0} {...field} className="h-10 rounded-lg border-gray-200 text-xs" dir="ltr" disabled={isSaving} />
                     </FormControl>

@@ -109,6 +109,8 @@ const ReferPage = lazyWithReload(() => import("@/app/refer/page"));
 const StatusPage = lazyWithReload(() => import("@/app/status/page"));
 const TicketPage = lazyWithReload(() => import("@/app/ticket/page"));
 const SupportPublicPage = lazyWithReload(() => import("@/app/support/[username]/page"));
+const SupportContactPage = lazyWithReload(() => import("@/app/support/[username]/contact/page"));
+const SupportJobsPage = lazyWithReload(() => import("@/app/support/[username]/jobs/page"));
 const OAuthConsentPage = lazyWithReload(() => import("@/app/oauth/consent/page"));
 
 const queryClient = new QueryClient();
@@ -170,6 +172,8 @@ function Router() {
         <Route path="/refer" component={ReferPage} />
         <Route path="/status" component={StatusPage} />
         <Route path="/ticket" component={TicketPage} />
+        <Route path="/support/:username/contact" component={SupportContactPage} />
+        <Route path="/support/:username/jobs" component={SupportJobsPage} />
         <Route path="/support/:username" component={SupportPublicPage} />
         <Route path="/oauth/consent" component={OAuthConsentPage} />
         <Route path="/blog" component={BlogListPage} />

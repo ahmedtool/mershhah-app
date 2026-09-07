@@ -13,6 +13,11 @@ export const FEATURE_LABELS: Record<string, string> = {
   custom_domain: 'دومين خاص باسم مطعمك',
   white_label: 'صفحة خاصة بمطعمك بدون أي شعار ثاني',
   priority_support: 'دعم فني سريع لما تحتاجنا',
+  gateway_franchise: 'استقبال طلبات الامتياز التجاري (فرنشايز)',
+  gateway_wholesale: 'استقبال طلبات مبيعات الجملة',
+  gateway_corporate: 'استقبال طلبات الشركات والفعاليات',
+  gateway_partnership: 'استقبال طلبات الشراكات والتوريد',
+  gateway_custom_types: 'إنشاء أنواع طلبات مخصصة',
 };
 
 // i18n key lookup for owner-facing surfaces (PlanPricingGrid).
@@ -25,6 +30,11 @@ export const FEATURE_LABEL_KEYS: Record<string, string> = {
   custom_domain: 'planFeatures.customDomain',
   white_label: 'planFeatures.whiteLabel',
   priority_support: 'planFeatures.prioritySupport',
+  gateway_franchise: 'planFeatures.gatewayFranchise',
+  gateway_wholesale: 'planFeatures.gatewayWholesale',
+  gateway_corporate: 'planFeatures.gatewayCorporate',
+  gateway_partnership: 'planFeatures.gatewayPartnership',
+  gateway_custom_types: 'planFeatures.gatewayCustomTypes',
 };
 
 export function describeFeature(
