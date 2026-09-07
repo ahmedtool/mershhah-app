@@ -69,15 +69,28 @@ function ProfileDetails({
       const { data } = await supabase.from('plans')
         .select('id, name, price, price_monthly, price_yearly, duration_months, is_featured')
         .eq('is_active', true);
-      const plans = (data || []) as ManagementPlan[];
-      setActivePlans(plans);
-      if (plans.length > 0) {
-        const featured = plans.find((p) => p.is_featured);
-        setSelectedPlanId((prev) => prev || (featured ? featured.id : plans[0].id));
-      }
+      setActivePlans((data || []) as ManagementPlan[]);
     };
     fetchPlans();
   }, []);
+
+  // Re-pick the renew dropdown's default every time a different subscriber
+  // is selected (or their data reloads) - without this, switching from one
+  // subscriber to another kept whichever plan was picked for the previous
+  // one, so clicking "Activate/Renew" without re-checking the dropdown
+  // could silently grant the wrong plan to the wrong customer. Defaults to
+  // the subscriber's own current/expired plan when it's still sellable, so
+  // "renew" naturally continues what they already have.
+  useEffect(() => {
+    if (activePlans.length === 0) return;
+    const currentPlanStillActive = currentSub && activePlans.some((p) => p.id === currentSub.plan_id);
+    if (currentPlanStillActive) {
+      setSelectedPlanId(currentSub!.plan_id);
+    } else {
+      const featured = activePlans.find((p) => p.is_featured);
+      setSelectedPlanId(featured ? featured.id : activePlans[0].id);
+    }
+  }, [profileId, currentSub, activePlans]);
 
   useEffect(() => {
     if (!profileId) {

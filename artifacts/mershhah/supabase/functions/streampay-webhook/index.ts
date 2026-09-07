@@ -589,6 +589,64 @@ serve(async (req) => {
         break;
       }
 
+      // Fires when a recurring subscription successfully renews for a new
+      // billing period (per StreamPay's docs: "the INVOICE_COMPLETED webhook
+      // indicates that the subscription cycle has been renewed
+      // successfully"). PAYMENT_SUCCEEDED above only ever matches a
+      // 'pending' row (the one streampay-checkout creates for the very
+      // first charge) - by the 2nd+ cycle the row is already 'active', so
+      // that handler silently does nothing to it. Without this case,
+      // end_date/next_billing_date never advance past the first period:
+      // the customer keeps getting charged successfully, but their local
+      // subscription still "expires" on schedule and they lose access
+      // until an admin manually reactivates them.
+      case "INVOICE_COMPLETED": {
+        const invoice = payload.data?.invoice;
+        const streampaySubId = invoice?.subscription_id || payload.data?.subscription?.id || payload.data?.subscription_id;
+
+        if (!streampaySubId) {
+          console.warn("[StreamPay Webhook] INVOICE_COMPLETED with no subscription id — skipping");
+          break;
+        }
+
+        const { data: sub } = await supabase
+          .from("subscriptions")
+          .select("*")
+          .eq("streampay_subscription_id", streampaySubId)
+          .maybeSingle();
+
+        if (!sub) {
+          console.warn("[StreamPay Webhook] INVOICE_COMPLETED: no local subscription for", streampaySubId);
+          break;
+        }
+
+        // Extend from the later of the subscription's own current end date
+        // (the normal on-time case) or right now (covers any gap/drift) -
+        // never from a point already in the past relative to both.
+        const currentEnd = sub.end_date ? new Date(sub.end_date) : new Date();
+        const now = new Date();
+        const base = currentEnd > now ? currentEnd : now;
+        const newEnd = new Date(base);
+        if (sub.billing_cycle === "yearly") {
+          newEnd.setFullYear(newEnd.getFullYear() + 1);
+        } else {
+          newEnd.setMonth(newEnd.getMonth() + 1);
+        }
+
+        await supabase
+          .from("subscriptions")
+          .update({
+            status: "active",
+            end_date: newEnd.toISOString(),
+            next_billing_date: newEnd.toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", sub.id);
+
+        console.log(`[StreamPay Webhook] Renewed subscription ${sub.id} through ${newEnd.toISOString()}`);
+        break;
+      }
+
       case "SUBSCRIPTION_CYCLE_RENEWAL_FAILED": {
         const subscription = payload.data?.subscription;
         if (subscription) {
