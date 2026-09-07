@@ -22,7 +22,7 @@ interface AddFromLibraryDialogProps {
 }
 
 export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCount = 0, onSave }: AddFromLibraryDialogProps) {
-  const { dir } = useLanguage();
+  const { t, dir, isRTL } = useLanguage();
   const [open, setOpen] = useState(false);
   const [products, setProducts] = useState<SharedMenuProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,7 +71,7 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 4 * 1024 * 1024) {
-      toast({ title: 'الصورة كبيرة جداً', description: 'اختر صورة أقل من 4 ميجابايت', variant: 'destructive' });
+      toast({ title: t('menu.imageTooLargeTitle'), description: t('menu.imageTooLargeDesc'), variant: 'destructive' });
       return;
     }
     setImageFile(file);
@@ -81,12 +81,12 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
   async function handleAdd() {
     if (!selected || !restaurantId) return;
     if (!category.trim()) {
-      toast({ title: 'اختر تصنيف للصنف', variant: 'destructive' });
+      toast({ title: t('menu.selectCategoryForItem'), variant: 'destructive' });
       return;
     }
     const priceNum = Number(price);
     if (!price || isNaN(priceNum) || priceNum < 0) {
-      toast({ title: 'أدخل سعر صحيح', variant: 'destructive' });
+      toast({ title: t('menu.enterValidPrice'), variant: 'destructive' });
       return;
     }
 
@@ -94,8 +94,10 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
     if (itemCount >= maxMenuItems) {
       toast({
         variant: 'destructive',
-        title: 'وصلت للحد الأقصى من الأصناف',
-        description: `باقتك الحالية (${user?.entitlements?.planName || ''}) تسمح بحد أقصى ${maxMenuItems} صنف. رقّي باقتك لإضافة المزيد.`,
+        title: t('menu.itemLimitReachedTitle'),
+        description: isRTL
+          ? `باقتك الحالية (${user?.entitlements?.planName || ''}) تسمح بحد أقصى ${maxMenuItems} صنف. رقّي باقتك لإضافة المزيد.`
+          : `Your current plan (${user?.entitlements?.planName || ''}) allows up to ${maxMenuItems} items. Upgrade your plan to add more.`,
       });
       return;
     }
@@ -130,16 +132,16 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
           allergens: [],
           position: itemCount,
           created_at: new Date().toISOString(),
-          sizes: [{ id: `s-${Date.now()}`, name: 'عادي', price: priceNum, cost: Number(cost) || 0, calories: selected.calories || 0 }],
+          sizes: [{ id: `s-${Date.now()}`, name: isRTL ? 'عادي' : 'Regular', price: priceNum, cost: Number(cost) || 0, calories: selected.calories || 0 }],
         });
         if (error) throw error;
 
-        toast({ title: 'تمت إضافة الصنف للمنيو' });
+        toast({ title: t('menu.itemAddedToMenu') });
         syncPublicPage(restaurantId).catch(() => {});
         onSave?.();
         setOpen(false);
       } catch (e: any) {
-        toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+        toast({ variant: 'destructive', title: t('common.errorTitle'), description: e.message });
       }
     });
   }
@@ -148,8 +150,8 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir={dir}>
-        <DialogTitle className="sr-only">إضافة من المكتبة المشتركة</DialogTitle>
-        <DialogDescription className="sr-only">تصفح منتجات جاهزة وأضفها لمنيوك</DialogDescription>
+        <DialogTitle className="sr-only">{t('menu.libraryTitle')}</DialogTitle>
+        <DialogDescription className="sr-only">{t('menu.libraryDialogDesc')}</DialogDescription>
 
         {!selected ? (
           <>
@@ -159,13 +161,13 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
                   <Library className="h-5 w-5 text-gray-600" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-gray-900">المكتبة المشتركة</h2>
-                  <p className="text-xs text-gray-600 mt-0.5">اختر منتجاً جاهزاً بصورته وسعراته الحرارية</p>
+                  <h2 className="text-base font-bold text-gray-900">{t('menu.libraryTitle')}</h2>
+                  <p className="text-xs text-gray-600 mt-0.5">{t('menu.libraryDesc')}</p>
                 </div>
               </div>
               <div className="relative">
                 <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
-                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="ابحث عن منتج..." className="h-10 rounded-xl border-gray-200 text-sm pe-9" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('menu.searchProductPlaceholder')} className="h-10 rounded-xl border-gray-200 text-sm pe-9" />
               </div>
             </div>
 
@@ -175,7 +177,7 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
                   <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
                 </div>
               ) : filteredProducts.length === 0 ? (
-                <p className="text-center text-sm text-gray-600 py-10">لا توجد منتجات مطابقة</p>
+                <p className="text-center text-sm text-gray-600 py-10">{t('menu.noMatchingProducts')}</p>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {filteredProducts.map((product) => (
@@ -183,14 +185,14 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
                       key={product.id}
                       type="button"
                       onClick={() => handleSelect(product)}
-                      className="text-right rounded-2xl border border-gray-100 hover:border-gray-300 hover:shadow-sm transition-all overflow-hidden"
+                      className="text-start rounded-2xl border border-gray-100 hover:border-gray-300 hover:shadow-sm transition-all overflow-hidden"
                     >
                       <div className="aspect-square bg-gray-50 relative">
                         <StorageImage imagePath={product.image_path} alt={product.name} fill className="w-full h-full object-cover" />
                       </div>
                       <div className="p-2">
                         <p className="text-xs font-bold text-gray-900 truncate">{product.name}</p>
-                        {!!product.calories && <p className="text-[10px] text-gray-600">{product.calories} سعرة</p>}
+                        {!!product.calories && <p className="text-[10px] text-gray-600">{product.calories} {t('menu.caloriesSuffix')}</p>}
                       </div>
                     </button>
                   ))}
@@ -205,7 +207,7 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
                 <>
                   <StorageImage imagePath={imagePreview} alt={selected.name} fill className="object-cover" sizes="600px" />
                   <button type="button" onClick={() => { setImagePreview(null); setImageFile(null); }}
-                    className="absolute top-3 left-3 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors">
+                    className="absolute top-3 start-3 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center text-white hover:bg-black/70 transition-colors">
                     <X className="h-4 w-4" />
                   </button>
                 </>
@@ -214,12 +216,12 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
                   <div className="w-14 h-14 rounded-2xl bg-gray-200 flex items-center justify-center">
                     <UploadCloud className="h-6 w-6 text-gray-600" />
                   </div>
-                  <p className="text-sm text-gray-600">اضغط لرفع صورة</p>
+                  <p className="text-sm text-gray-600">{t('menu.clickToUploadImage')}</p>
                 </div>
               )}
               <button type="button" onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-3 left-3 h-8 px-3 rounded-full bg-white/90 text-[11px] font-bold text-gray-700 hover:bg-white transition-colors">
-                تغيير الصورة
+                className="absolute bottom-3 start-3 h-8 px-3 rounded-full bg-white/90 text-[11px] font-bold text-gray-700 hover:bg-white transition-colors">
+                {t('menu.changeImageButton')}
               </button>
             </div>
             <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
@@ -227,17 +229,17 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
             <div className="p-5 space-y-4">
               <button type="button" onClick={() => setSelected(null)} className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-700 transition-colors">
                 <ArrowRight className="h-3.5 w-3.5" />
-                رجوع للمكتبة
+                {t('menu.backToLibrary')}
               </button>
 
               <div>
                 <h3 className="text-base font-bold text-gray-900">{selected.name}</h3>
-                {!!selected.calories && <p className="text-xs text-gray-600 mt-0.5">{selected.calories} سعرة حرارية</p>}
+                {!!selected.calories && <p className="text-xs text-gray-600 mt-0.5">{selected.calories} {t('menu.caloriesUnit')}</p>}
               </div>
 
               <div>
-                <label className="text-xs text-gray-600 block mb-1.5">التصنيف في منيوك</label>
-                <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="مثال: مشروبات" className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
+                <label className="text-xs text-gray-600 block mb-1.5">{t('menu.categoryInYourMenuLabel')}</label>
+                <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder={t('menu.categoryPlaceholderExample')} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                 {uniqueCategories.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1.5">
                     {uniqueCategories.map((cat) => (
@@ -252,23 +254,23 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-gray-600 block mb-1.5">السعر (ر.س)</label>
+                  <label className="text-xs text-gray-600 block mb-1.5">{t('menu.priceSarLabel')}</label>
                   <Input type="number" min={0} step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0" className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
                 </div>
                 <div>
-                  <label className="text-xs text-gray-600 block mb-1.5">التكلفة (اختياري)</label>
+                  <label className="text-xs text-gray-600 block mb-1.5">{t('menu.costOptionalLabel')}</label>
                   <Input type="number" min={0} step="0.01" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="0" className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2 pt-2">
                 <button type="button" onClick={() => setOpen(false)} className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                  إلغاء
+                  {t('common.cancel')}
                 </button>
                 <button type="button" onClick={handleAdd} disabled={isSaving}
                   className="flex-1 h-11 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                   {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  {isSaving ? 'جاري الإضافة...' : 'إضافة للمنيو'}
+                  {isSaving ? t('menu.addingToMenu') : t('menu.addToMenuButton')}
                 </button>
               </div>
             </div>

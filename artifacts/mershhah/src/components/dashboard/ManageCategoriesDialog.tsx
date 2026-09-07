@@ -20,7 +20,7 @@ interface ManageCategoriesDialogProps {
 }
 
 export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSave }: ManageCategoriesDialogProps) {
-  const { dir } = useLanguage();
+  const { t, dir, isRTL } = useLanguage();
   const [open, setOpen] = useState(false);
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -80,7 +80,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
       setNewName('');
       fetchCategories();
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+      toast({ variant: 'destructive', title: t('common.errorTitle'), description: e.message });
     } finally {
       setIsAdding(false);
     }
@@ -100,7 +100,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
       onSave?.();
       syncPublicPage(restaurantId).catch(() => {});
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+      toast({ variant: 'destructive', title: t('common.errorTitle'), description: e.message });
     } finally {
       setBusyId(null);
     }
@@ -108,7 +108,10 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
 
   const handleDelete = async (cat: MenuCategory) => {
     const count = countInCategory(cat.id);
-    if (!confirm(count > 0 ? `حذف "${cat.name}"؟ ${count} صنف بيصير بدون تصنيف.` : `حذف "${cat.name}"؟`)) return;
+    const confirmMsg = count > 0
+      ? (isRTL ? `حذف "${cat.name}"؟ ${count} صنف بيصير بدون تصنيف.` : `Delete "${cat.name}"? ${count} item(s) will become uncategorized.`)
+      : (isRTL ? `حذف "${cat.name}"؟` : `Delete "${cat.name}"?`);
+    if (!confirm(confirmMsg)) return;
     setBusyId(cat.id);
     try {
       await supabase.from('menu_items').update({ category_id: null, category: '' }).eq('category_id', cat.id);
@@ -118,7 +121,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
       onSave?.();
       syncPublicPage(restaurantId).catch(() => {});
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+      toast({ variant: 'destructive', title: t('common.errorTitle'), description: e.message });
     } finally {
       setBusyId(null);
     }
@@ -137,7 +140,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
       ]);
       fetchCategories();
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+      toast({ variant: 'destructive', title: t('common.errorTitle'), description: e.message });
     } finally {
       setBusyId(null);
     }
@@ -174,12 +177,12 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
           ).eq('id', item.id);
         });
       await Promise.all(updates);
-      toast({ title: 'تم حفظ الربط' });
+      toast({ title: t('menu.linkSaved') });
       setAssigning(null);
       onSave?.();
       syncPublicPage(restaurantId).catch(() => {});
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+      toast({ variant: 'destructive', title: t('common.errorTitle'), description: e.message });
     } finally {
       setIsSavingAssignment(false);
     }
@@ -189,8 +192,8 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir={dir}>
-        <DialogTitle className="sr-only">إدارة التصنيفات</DialogTitle>
-        <DialogDescription className="sr-only">أنشئ تصنيفات ورتّبها وحدد الأصناف اللي تنتمي لكل وحدة</DialogDescription>
+        <DialogTitle className="sr-only">{t('menu.manageCategoriesTitle')}</DialogTitle>
+        <DialogDescription className="sr-only">{t('menu.manageCategoriesDialogDesc')}</DialogDescription>
 
         {!assigning ? (
           <>
@@ -200,8 +203,8 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                   <Tag className="h-5 w-5 text-gray-600" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-gray-900">إدارة التصنيفات</h2>
-                  <p className="text-xs text-gray-600 mt-0.5">رتّبها بالسحب، وحدد أصناف كل تصنيف</p>
+                  <h2 className="text-base font-bold text-gray-900">{t('menu.manageCategoriesTitle')}</h2>
+                  <p className="text-xs text-gray-600 mt-0.5">{t('menu.manageCategoriesSubtitle')}</p>
                 </div>
               </div>
             </div>
@@ -212,7 +215,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                  placeholder="اسم تصنيف جديد..."
+                  placeholder={t('menu.newCategoryPlaceholder')}
                   className="h-10 rounded-xl border-gray-200 text-sm"
                   disabled={isAdding}
                 />
@@ -222,7 +225,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                   className="h-10 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 disabled:opacity-50 flex items-center gap-1.5 shrink-0"
                 >
                   {isAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-                  إضافة
+                  {t('common.add')}
                 </button>
               </div>
 
@@ -247,7 +250,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                   <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
                 </div>
               ) : categories.length === 0 ? (
-                <p className="text-center text-sm text-gray-600 py-10">لا توجد تصنيفات بعد — أضف أول واحد فوق</p>
+                <p className="text-center text-sm text-gray-600 py-10">{t('menu.noCategoriesYet')}</p>
               ) : (
                 <div className="space-y-2">
                   {categories.map((cat, index) => (
@@ -273,14 +276,14 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                           className="h-8 rounded-lg border-gray-200 text-xs flex-1"
                         />
                       ) : (
-                        <button onClick={() => openAssignment(cat)} className="flex-1 text-right min-w-0">
+                        <button onClick={() => openAssignment(cat)} className="flex-1 text-start min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{cat.name}</p>
-                          <p className="text-[10px] text-gray-600">{countInCategory(cat.id)} صنف</p>
+                          <p className="text-[10px] text-gray-600">{countInCategory(cat.id)} {t('menu.itemsSuffix')}</p>
                         </button>
                       )}
 
                       <button onClick={() => openAssignment(cat)}
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-700 hover:bg-gray-50 transition-colors shrink-0" title="ربط الأصناف">
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-700 hover:bg-gray-50 transition-colors shrink-0" title={t('menu.linkItemsTooltip')}>
                         <ListChecks className="h-3.5 w-3.5" />
                       </button>
                       <button onClick={() => { setRenamingId(cat.id); setRenameValue(cat.name); }}
@@ -302,29 +305,29 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
             <div className="px-5 pt-5 pb-3 border-b border-gray-100">
               <button onClick={() => setAssigning(null)} className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-700 transition-colors mb-3">
                 <ArrowRight className="h-3.5 w-3.5" />
-                رجوع للتصنيفات
+                {t('menu.backToCategories')}
               </button>
-              <h2 className="text-base font-bold text-gray-900">أصناف "{assigning.name}"</h2>
-              <p className="text-xs text-gray-600 mt-0.5">حدد الأصناف اللي تنتمي لهذا التصنيف</p>
+              <h2 className="text-base font-bold text-gray-900">{t('menu.itemsOfCategoryLabel')} "{assigning.name}"</h2>
+              <p className="text-xs text-gray-600 mt-0.5">{t('menu.selectItemsForCategoryDesc')}</p>
             </div>
 
             <div className="px-5 pt-3">
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
+                <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
                 <Input
                   value={itemSearch}
                   onChange={(e) => setItemSearch(e.target.value)}
-                  placeholder="ابحث عن صنف..."
-                  className="h-9 rounded-xl border-gray-200 text-sm pr-9"
+                  placeholder={t('menu.searchItemPlaceholder')}
+                  className="h-9 rounded-xl border-gray-200 text-sm pe-9"
                 />
               </div>
             </div>
 
             <div className="p-5 space-y-1.5 max-h-[50vh] overflow-y-auto">
               {menuItems.length === 0 ? (
-                <p className="text-center text-sm text-gray-600 py-10">لا توجد أصناف بالمنيو بعد</p>
+                <p className="text-center text-sm text-gray-600 py-10">{t('menu.noItemsInMenuYet')}</p>
               ) : visibleItems.length === 0 ? (
-                <p className="text-center text-sm text-gray-600 py-10">لا توجد نتائج لـ "{itemSearch}"</p>
+                <p className="text-center text-sm text-gray-600 py-10">{t('menu.noResultsForPrefix')} "{itemSearch}"</p>
               ) : (
                 visibleItems.map((item) => {
                   const isSelected = selectedItemIds.has(item.id);
@@ -334,7 +337,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                       type="button"
                       onClick={() => toggleItem(item.id)}
                       className={cn(
-                        "w-full flex items-center gap-3 p-2.5 rounded-xl border text-right transition-colors",
+                        "w-full flex items-center gap-3 p-2.5 rounded-xl border text-start transition-colors",
                         isSelected ? "bg-gray-900 border-gray-900" : "border-gray-100 hover:border-gray-200"
                       )}
                     >
@@ -347,7 +350,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                       <div className="flex-1 min-w-0">
                         <p className={cn("text-xs font-bold truncate", isSelected ? "text-white" : "text-gray-900")}>{item.name}</p>
                         {item.category && item.category_id !== assigning.id && (
-                          <p className={cn("text-[10px]", isSelected ? "text-gray-400" : "text-gray-600")}>حالياً: {item.category}</p>
+                          <p className={cn("text-[10px]", isSelected ? "text-gray-400" : "text-gray-600")}>{t('menu.currentlyLabel')}: {item.category}</p>
                         )}
                       </div>
                     </button>
@@ -358,12 +361,12 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
 
             <div className="px-5 pb-5 pt-2 flex gap-2">
               <button onClick={() => setAssigning(null)} className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                إلغاء
+                {t('common.cancel')}
               </button>
               <button onClick={saveAssignment} disabled={isSavingAssignment}
                 className="flex-1 h-11 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
                 {isSavingAssignment ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {isSavingAssignment ? 'جاري الحفظ...' : 'حفظ الربط'}
+                {isSavingAssignment ? t('common.saving') : t('menu.saveLinkButton')}
               </button>
             </div>
           </>

@@ -242,8 +242,10 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
         if (planSkippedCount > 0) {
           toast({
             variant: 'destructive',
-            title: 'وصلت للحد الأقصى من الأصناف',
-            description: `تم استيراد ${toInsertCapped.length} صنف فقط — باقتك تسمح بحد أقصى ${maxMenuItems} صنف، وتخطّينا ${planSkippedCount} صنف. رقّي باقتك لاستيراد الباقي.`,
+            title: t('menu.itemLimitReachedTitle'),
+            description: isRTL
+              ? `تم استيراد ${toInsertCapped.length} صنف فقط — باقتك تسمح بحد أقصى ${maxMenuItems} صنف، وتخطّينا ${planSkippedCount} صنف. رقّي باقتك لاستيراد الباقي.`
+              : `Only ${toInsertCapped.length} items were imported — your plan allows up to ${maxMenuItems} items, so ${planSkippedCount} were skipped. Upgrade your plan to import the rest.`,
           });
         }
 
@@ -293,13 +295,13 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
                 <Bot className="h-5 w-5 text-gray-600" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-gray-900">{'استيراد المنيو بالذكاء الاصطناعي'}</h2>
-                <p className="text-xs text-gray-600 mt-0.5">{'ارفع صورة أو PDF من قائمة طعامك ودع الذكاء الاصطناعي يستخرج الأصناف والأسعار.'}</p>
+                <h2 className="text-base font-bold text-gray-900">{t('menu.importMenuAiTitle')}</h2>
+                <p className="text-xs text-gray-600 mt-0.5">{t('menu.importMenuAiDesc')}</p>
               </div>
             </div>
             <div className="text-[10px] text-gray-600 bg-gray-50 border border-gray-100 rounded-lg px-2.5 py-1.5 shrink-0">
                 {isCheckingUsage ? <Loader2 className="h-3 w-3 animate-spin"/> : (
-                    <>{'المحاولات:'} {usageStats.count}/{usageStats.limit}</>
+                    <>{t('menu.attemptsLabel')}: {usageStats.count}/{usageStats.limit}</>
                 )}
             </div>
           </div>
