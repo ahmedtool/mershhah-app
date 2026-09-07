@@ -7,6 +7,7 @@ import { getPublicPage } from '@/lib/public-pages';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ChevronRight, ChevronLeft, CheckCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StorageImage } from '@/components/shared/StorageImage';
@@ -19,23 +20,29 @@ import type { BusinessGatewayField, BusinessGatewayServiceType } from '@/lib/typ
 
 interface GatewayRequestFormProps {
   serviceType: BusinessGatewayServiceType;
-  titleKey: string;
-  fields: BusinessGatewayField[];
+  titleKey?: string;
+  fields?: BusinessGatewayField[];
 }
 
 // Shared public-facing intake form for the "just a form" gateway service
-// types (franchise, wholesale, and later corporate/partnership/custom) -
-// each page file (support/[username]/franchise, .../wholesale) is a thin
-// wrapper that just supplies serviceType/titleKey/fields, so the actual
-// header/loading/theme/submit plumbing lives in exactly one place.
+// types (franchise, wholesale, corporate, partnership, and owner-authored
+// custom types) - each built-in page file (support/[username]/franchise,
+// .../wholesale, ...) is a thin wrapper that just supplies
+// serviceType/titleKey/fields, so the actual header/loading/theme/submit
+// plumbing lives in exactly one place. For a custom type (serviceType
+// "custom:<slug>"), titleKey/fields are omitted and resolved instead from
+// the restaurant's cached gatewayServices config, since that title/field
+// list is owner-authored raw text rather than a translation key.
 export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayRequestFormProps) {
   const params = useParams();
   const username = params.username as string;
   const { toast } = useToast();
   const { t, dir } = useLanguage();
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
+  const isCustom = serviceType.startsWith('custom:');
 
   const [restaurant, setRestaurant] = useState<any>(null);
+  const [customConfig, setCustomConfig] = useState<{ title?: string; fields?: BusinessGatewayField[] } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, startSubmitting] = useTransition();
   const [submitted, setSubmitted] = useState(false);
@@ -52,11 +59,25 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
         const data = await getPublicPage(username);
         if (data?.restaurant) {
           setRestaurant(data.restaurant);
+          if (isCustom) {
+            const svc = (data.gatewayServices || []).find((s) => s.service_type === serviceType);
+            setCustomConfig((svc?.config as typeof customConfig) || null);
+          }
           setLoading(false);
           return;
         }
         const { data: rest } = await supabase.from('restaurants').select('*').eq('username', username).limit(1).single();
         setRestaurant(rest || null);
+        if (rest && isCustom) {
+          const { data: svc } = await supabase
+            .from('business_gateway_services')
+            .select('config')
+            .eq('restaurant_id', rest.id)
+            .eq('service_type', serviceType)
+            .eq('is_enabled', true)
+            .single();
+          setCustomConfig(svc?.config || null);
+        }
       } catch (e) {
         console.error(e);
       } finally {
@@ -65,6 +86,9 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
     };
     fetchData();
   }, [username]);
+
+  const effectiveTitle = isCustom ? (customConfig?.title || '') : (titleKey ? t(titleKey) : '');
+  const effectiveFields = isCustom ? (customConfig?.fields || []) : (fields || []);
 
   const handleSubmit = () => {
     if (!restaurant) return;
@@ -143,7 +167,7 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
-          <p className="text-sm text-gray-600 mt-0.5">{t(titleKey)}</p>
+          <p className="text-sm text-gray-600 mt-0.5">{effectiveTitle}</p>
         </div>
       </div>
 
@@ -176,7 +200,7 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
               <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="h-10 text-sm rounded-lg border-gray-100" dir="ltr" />
             </div>
 
-            {fields.map((field) => (
+            {effectiveFields.map((field) => (
               <div key={field.id}>
                 <label className="text-xs text-gray-600 mb-1.5 block">{field.labelKey ? t(field.labelKey) : field.label}</label>
                 {field.type === 'textarea' ? (
@@ -186,6 +210,17 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
                     rows={3}
                     className="text-sm rounded-lg border-gray-100 resize-none min-h-[80px]"
                   />
+                ) : field.type === 'select' ? (
+                  <Select value={fieldValues[field.id] || ''} onValueChange={(v) => setFieldValues({ ...fieldValues, [field.id]: v })}>
+                    <SelectTrigger className="h-10 text-sm rounded-lg border-gray-100">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(field.options || []).map((opt) => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 ) : (
                   <Input
                     value={fieldValues[field.id] || ''}

@@ -115,6 +115,7 @@ const SupportFranchisePage = lazyWithReload(() => import("@/app/support/[usernam
 const SupportWholesalePage = lazyWithReload(() => import("@/app/support/[username]/wholesale/page"));
 const SupportCorporatePage = lazyWithReload(() => import("@/app/support/[username]/corporate/page"));
 const SupportPartnershipPage = lazyWithReload(() => import("@/app/support/[username]/partnership/page"));
+const SupportCustomPage = lazyWithReload(() => import("@/app/support/[username]/custom/[slug]/page"));
 const OAuthConsentPage = lazyWithReload(() => import("@/app/oauth/consent/page"));
 
 const queryClient = new QueryClient();
@@ -182,6 +183,7 @@ function Router() {
         <Route path="/support/:username/wholesale" component={SupportWholesalePage} />
         <Route path="/support/:username/corporate" component={SupportCorporatePage} />
         <Route path="/support/:username/partnership" component={SupportPartnershipPage} />
+        <Route path="/support/:username/custom/:slug" component={SupportCustomPage} />
         <Route path="/support/:username" component={SupportPublicPage} />
         <Route path="/oauth/consent" component={OAuthConsentPage} />
         <Route path="/blog" component={BlogListPage} />

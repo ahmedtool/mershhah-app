@@ -1,4 +1,18 @@
+import {
+  Building2, Package, Users, Star, Gift, Calendar, ShoppingBag, Truck, Wrench, Camera, Music2, Coffee, FileQuestion,
+} from 'lucide-react';
 import type { BusinessGatewayField } from '@/lib/types';
+
+// Fixed icon palette owners pick from when creating a custom gateway type -
+// stored as the icon's name (a key of this map) in config.icon, since raw
+// SVG/components can't be persisted to the DB.
+export const CUSTOM_TYPE_ICONS: Record<string, any> = {
+  Building2, Package, Users, Star, Gift, Calendar, ShoppingBag, Truck, Wrench, Camera, Music2, Coffee, FileQuestion,
+};
+export const DEFAULT_CUSTOM_TYPE_ICON = 'FileQuestion';
+export function getCustomTypeIcon(name?: string | null) {
+  return CUSTOM_TYPE_ICONS[name || ''] || CUSTOM_TYPE_ICONS[DEFAULT_CUSTOM_TYPE_ICON];
+}
 
 // Default field lists for the "just a form" gateway service types. Owner
 // customization of these (per-restaurant field editing) is a follow-up —

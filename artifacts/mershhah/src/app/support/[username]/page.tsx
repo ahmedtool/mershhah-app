@@ -12,6 +12,7 @@ import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { getCustomTypeIcon } from '@/lib/gateway-service-types';
 
 const SERVICE_CARDS = [
   { type: 'contact', icon: MessageSquare, titleKey: 'ownerGateway.contactTitle', descKey: 'publicGateway.contactCardDesc' },
@@ -24,6 +25,16 @@ const SERVICE_CARDS = [
 
 const BUILDABLE_SERVICE_TYPES = ['jobs', 'franchise', 'wholesale', 'corporate', 'partnership'];
 
+// A custom type's route is /support/:username/custom/:slug, not
+// /support/:username/custom:xyz - this turns a gatewayServices service_type
+// ("custom:xyz" or a built-in type) into the path segment(s) after the
+// username.
+function pathForServiceType(type: string) {
+  return type.startsWith('custom:') ? `custom/${type.slice('custom:'.length)}` : type;
+}
+
+type CustomCard = { type: string; title: string; icon: string };
+
 export default function SupportGatewayPage() {
   const params = useParams();
   const username = params.username as string;
@@ -33,6 +44,7 @@ export default function SupportGatewayPage() {
 
   const [restaurant, setRestaurant] = useState<any>(null);
   const [enabledServices, setEnabledServices] = useState<string[]>([]);
+  const [customCards, setCustomCards] = useState<CustomCard[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,10 +54,13 @@ export default function SupportGatewayPage() {
         const data = await getPublicPage(username);
         if (data?.restaurant) {
           setRestaurant(data.restaurant);
-          const enabledTypes = (data.gatewayServices || [])
+          const gatewayServices = data.gatewayServices || [];
+          const enabledTypes = gatewayServices
             .map((s) => s.service_type)
             .filter((type) => BUILDABLE_SERVICE_TYPES.includes(type));
-          setEnabledServices(['contact', ...enabledTypes]);
+          const customs = gatewayServices.filter((s) => s.service_type.startsWith('custom:'));
+          setCustomCards(customs.map((s) => ({ type: s.service_type, title: s.config?.title || '', icon: s.config?.icon || '' })));
+          setEnabledServices(['contact', ...enabledTypes, ...customs.map((s) => s.service_type)]);
           setLoading(false);
           return;
         }
@@ -59,13 +74,16 @@ export default function SupportGatewayPage() {
         setRestaurant(rest);
         const { data: gw } = await supabase
           .from('business_gateway_services')
-          .select('service_type')
+          .select('service_type, config')
           .eq('restaurant_id', rest.id)
           .eq('is_enabled', true);
-        const enabledTypes = (gw || [])
+        const gatewayServices = gw || [];
+        const enabledTypes = gatewayServices
           .map((s: any) => s.service_type)
           .filter((type: string) => BUILDABLE_SERVICE_TYPES.includes(type));
-        setEnabledServices(['contact', ...enabledTypes]);
+        const customs = gatewayServices.filter((s: any) => s.service_type.startsWith('custom:'));
+        setCustomCards(customs.map((s: any) => ({ type: s.service_type, title: s.config?.title || '', icon: s.config?.icon || '' })));
+        setEnabledServices(['contact', ...enabledTypes, ...customs.map((s: any) => s.service_type)]);
       } catch (e) {
         console.error(e);
       } finally {
@@ -77,7 +95,7 @@ export default function SupportGatewayPage() {
 
   useEffect(() => {
     if (!loading && restaurant && enabledServices.length === 1) {
-      router.replace(`/support/${username}/${enabledServices[0]}`);
+      router.replace(`/support/${username}/${pathForServiceType(enabledServices[0])}`);
     }
   }, [loading, restaurant, enabledServices, username]);
 
@@ -147,7 +165,7 @@ export default function SupportGatewayPage() {
           return (
             <Link
               key={card.type}
-              href={`/support/${username}/${card.type}`}
+              href={`/support/${username}/${pathForServiceType(card.type)}`}
               className={`flex items-center gap-4 p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all ${alignStart}`}
               style={{ borderRadius: 'var(--r-radius)' }}
             >
@@ -160,6 +178,28 @@ export default function SupportGatewayPage() {
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-bold text-gray-900">{t(card.titleKey)}</h3>
                 <p className="text-[11px] text-gray-600 mt-0.5">{t(card.descKey)}</p>
+              </div>
+              {dir === 'rtl' ? <ChevronLeft className="h-4 w-4 text-gray-600 shrink-0" /> : <ChevronRight className="h-4 w-4 text-gray-600 shrink-0" />}
+            </Link>
+          );
+        })}
+        {customCards.map((card) => {
+          const Icon = getCustomTypeIcon(card.icon);
+          return (
+            <Link
+              key={card.type}
+              href={`/support/${username}/${pathForServiceType(card.type)}`}
+              className={`flex items-center gap-4 p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all ${alignStart}`}
+              style={{ borderRadius: 'var(--r-radius)' }}
+            >
+              <div
+                className="w-11 h-11 flex items-center justify-center shrink-0"
+                style={{ backgroundColor: restaurant.primaryColor || '#111827', color: 'var(--r-button-text)', borderRadius: 'var(--r-radius-sm)' }}
+              >
+                <Icon className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-gray-900">{card.title}</h3>
               </div>
               {dir === 'rtl' ? <ChevronLeft className="h-4 w-4 text-gray-600 shrink-0" /> : <ChevronRight className="h-4 w-4 text-gray-600 shrink-0" />}
             </Link>

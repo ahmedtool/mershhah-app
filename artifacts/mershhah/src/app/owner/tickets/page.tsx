@@ -7,9 +7,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertTriangle, RefreshCw, MessageSquare, User, Clock, ArrowLeft, ArrowRight, Bot,
   Briefcase, Store, Package, Building2, Handshake, Lock, Plus, Trash2, FileText, Loader2, Inbox,
+  Sparkles, Pencil,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/useUser';
@@ -17,12 +19,12 @@ import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
-import { GATEWAY_FIELD_DEFS } from '@/lib/gateway-service-types';
+import { GATEWAY_FIELD_DEFS, CUSTOM_TYPE_ICONS, DEFAULT_CUSTOM_TYPE_ICON, getCustomTypeIcon } from '@/lib/gateway-service-types';
 import type { SupportTicket, BusinessGatewayService, JobPosting, BusinessRequest, BusinessGatewayField } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/shared/LanguageContext';
 
-type ActiveService = 'contact' | 'jobs' | 'franchise' | 'wholesale' | 'corporate' | 'partnership';
+type ActiveService = string;
 
 const statusStyles: Record<string, string> = {
   open: 'bg-blue-50 text-blue-600 border-blue-100',
@@ -276,6 +278,101 @@ export default function OwnerTicketsPage() {
     });
   };
 
+  // --- Custom gateway types (owner-authored: title + icon + field list) ---
+  const customTypes = gatewayServices.filter(s => s.service_type.startsWith('custom:'));
+  const canUseCustomTypes = !!user?.entitlements?.canUseGatewayCustomTypes;
+
+  const [isCustomEditorOpen, setIsCustomEditorOpen] = useState(false);
+  const [editingCustomType, setEditingCustomType] = useState<BusinessGatewayService | null>(null);
+  const [customDraft, setCustomDraft] = useState<{ title: string; icon: string; fields: BusinessGatewayField[] }>({ title: '', icon: DEFAULT_CUSTOM_TYPE_ICON, fields: [] });
+  const [isSavingCustomType, startSavingCustomType] = useTransition();
+
+  const openNewCustomType = () => {
+    setEditingCustomType(null);
+    setCustomDraft({ title: '', icon: DEFAULT_CUSTOM_TYPE_ICON, fields: [] });
+    setIsCustomEditorOpen(true);
+  };
+
+  const openEditCustomType = (service: BusinessGatewayService) => {
+    setEditingCustomType(service);
+    setCustomDraft({
+      title: service.config?.title || '',
+      icon: service.config?.icon || DEFAULT_CUSTOM_TYPE_ICON,
+      fields: service.config?.fields || [],
+    });
+    setIsCustomEditorOpen(true);
+  };
+
+  const addDraftField = () => {
+    setCustomDraft(d => ({ ...d, fields: [...d.fields, { id: `f${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`, label: '', type: 'text' }] }));
+  };
+  const updateDraftField = (index: number, patch: Partial<BusinessGatewayField>) => {
+    setCustomDraft(d => ({ ...d, fields: d.fields.map((f, i) => i === index ? { ...f, ...patch } : f) }));
+  };
+  const removeDraftField = (index: number) => {
+    setCustomDraft(d => ({ ...d, fields: d.fields.filter((_, i) => i !== index) }));
+  };
+
+  const saveCustomType = () => {
+    if (!restaurantId || !customDraft.title.trim()) return;
+    startSavingCustomType(async () => {
+      try {
+        const config = {
+          title: customDraft.title.trim(),
+          icon: customDraft.icon,
+          fields: customDraft.fields.filter(f => (f.label || '').trim()),
+        };
+        if (editingCustomType) {
+          const { error } = await supabase
+            .from('business_gateway_services')
+            .update({ config, updated_at: new Date().toISOString() })
+            .eq('id', editingCustomType.id);
+          if (error) throw error;
+        } else {
+          const slug = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4).toString(36)}`;
+          const { error } = await supabase
+            .from('business_gateway_services')
+            .insert({ restaurant_id: restaurantId, service_type: `custom:${slug}`, is_enabled: true, config });
+          if (error) throw error;
+        }
+        await Promise.all([syncPublicPage(restaurantId), fetchGatewayServices()]);
+        setIsCustomEditorOpen(false);
+      } catch (error: any) {
+        toast({ title: t('ownerSettings.errorTitle'), description: error.message, variant: 'destructive' });
+      }
+    });
+  };
+
+  const toggleCustomType = (service: BusinessGatewayService) => {
+    if (!restaurantId) return;
+    startTogglingService(async () => {
+      try {
+        const { error } = await supabase
+          .from('business_gateway_services')
+          .update({ is_enabled: !service.is_enabled, updated_at: new Date().toISOString() })
+          .eq('id', service.id);
+        if (error) throw error;
+        await Promise.all([syncPublicPage(restaurantId), fetchGatewayServices()]);
+      } catch (error: any) {
+        toast({ title: t('ownerSettings.errorTitle'), description: error.message, variant: 'destructive' });
+      }
+    });
+  };
+
+  const deleteCustomType = (service: BusinessGatewayService) => {
+    if (!restaurantId) return;
+    startTogglingService(async () => {
+      try {
+        const { error } = await supabase.from('business_gateway_services').delete().eq('id', service.id);
+        if (error) throw error;
+        if (activeService === service.service_type) setActiveService('contact');
+        await Promise.all([syncPublicPage(restaurantId), fetchGatewayServices()]);
+      } catch (error: any) {
+        toast({ title: t('ownerSettings.errorTitle'), description: error.message, variant: 'destructive' });
+      }
+    });
+  };
+
   // --- Job postings ---
   const [jobPostings, setJobPostings] = useState<JobPosting[]>([]);
   const [isLoadingPostings, setIsLoadingPostings] = useState(true);
@@ -381,14 +478,6 @@ export default function OwnerTicketsPage() {
 
   const applicants = businessRequests.filter(r => r.service_type === 'jobs');
   const requestsByType = (type: string) => businessRequests.filter(r => r.service_type === type);
-  const requestCountByType: Record<string, number> = {
-    jobs: applicants.length,
-    franchise: requestsByType('franchise').length,
-    wholesale: requestsByType('wholesale').length,
-    corporate: requestsByType('corporate').length,
-    partnership: requestsByType('partnership').length,
-  };
-
   const setRequestStatus = async (request: BusinessRequest, status: 'new' | 'contacted' | 'closed') => {
     await supabase.from('business_requests').update({ status }).eq('id', request.id);
     await fetchBusinessRequests();
@@ -481,12 +570,195 @@ export default function OwnerTicketsPage() {
                     </div>
                   </div>
                   <button onClick={() => setActiveService(service.type)} className="flex items-center justify-between mt-3 w-full text-start">
-                    <span className="text-[10px] font-bold text-gray-600">{requestCountByType[service.type] || 0} {t('ownerGateway.requestsCount')}</span>
+                    <span className="text-[10px] font-bold text-gray-600">{requestsByType(service.type).length} {t('ownerGateway.requestsCount')}</span>
                   </button>
                 </div>
               );
             })}
           </div>
+        )}
+      </div>
+
+      {/* Custom gateway types */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-black text-gray-900">{t('ownerGateway.customTypesTitle')}</h2>
+            <p className="text-[11px] text-gray-600 mt-0.5">{t('ownerGateway.customTypesDescription')}</p>
+          </div>
+          {canUseCustomTypes && !isCustomEditorOpen && (
+            <button
+              onClick={openNewCustomType}
+              className="h-9 px-3 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors flex items-center gap-1.5 shrink-0"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t('ownerGateway.addCustomType')}
+            </button>
+          )}
+        </div>
+
+        {!canUseCustomTypes ? (
+          <div className="p-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50/50">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 shrink-0 text-gray-600" />
+              <h3 className="text-xs font-bold text-gray-600">{t('ownerGateway.customTypesUpgradeTitle')}</h3>
+            </div>
+            <p className="text-[10px] text-gray-600 mt-1.5">{t('ownerGateway.customTypesUpgradeDescription')}</p>
+            <Link
+              href="/owner/billing"
+              className="mt-3 flex items-center gap-1.5 text-[10px] font-bold text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <Lock className="h-3 w-3" />
+              {t('ownerGateway.upgradeToActivateService')}
+            </Link>
+          </div>
+        ) : (
+          <>
+            {isCustomEditorOpen && (
+              <div className="border border-gray-100 rounded-xl p-4 space-y-3 bg-white">
+                <div>
+                  <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">{t('ownerGateway.customTypeTitleLabel')}</label>
+                  <Input
+                    value={customDraft.title}
+                    onChange={(e) => setCustomDraft({ ...customDraft, title: e.target.value })}
+                    placeholder={t('ownerGateway.customTypeTitlePlaceholder')}
+                    className="h-10 rounded-xl border-gray-200 text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">{t('ownerGateway.customTypeIconLabel')}</label>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.keys(CUSTOM_TYPE_ICONS).map((name) => {
+                      const IconOption = CUSTOM_TYPE_ICONS[name];
+                      return (
+                        <button
+                          key={name}
+                          type="button"
+                          onClick={() => setCustomDraft({ ...customDraft, icon: name })}
+                          className={cn(
+                            "w-9 h-9 rounded-xl border flex items-center justify-center transition-colors",
+                            customDraft.icon === name ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                          )}
+                        >
+                          <IconOption className="h-4 w-4" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-gray-600">{t('ownerGateway.customTypeFieldsLabel')}</label>
+                    <button type="button" onClick={addDraftField} className="text-[11px] font-bold text-gray-900 hover:underline flex items-center gap-1">
+                      <Plus className="h-3 w-3" />
+                      {t('ownerGateway.addField')}
+                    </button>
+                  </div>
+                  {customDraft.fields.length === 0 && (
+                    <p className="text-[11px] text-gray-400">{t('ownerGateway.noFieldsYet')}</p>
+                  )}
+                  {customDraft.fields.map((field, index) => (
+                    <div key={field.id} className="border border-gray-100 rounded-lg p-3 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={field.label || ''}
+                          onChange={(e) => updateDraftField(index, { label: e.target.value })}
+                          placeholder={t('ownerGateway.fieldLabelPlaceholder')}
+                          className="h-9 rounded-lg border-gray-200 text-xs flex-1"
+                        />
+                        <button type="button" onClick={() => removeDraftField(index)} className="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-gray-600 hover:bg-red-50 hover:text-red-500 transition-colors">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <Select value={field.type} onValueChange={(v) => updateDraftField(index, { type: v as BusinessGatewayField['type'] })}>
+                        <SelectTrigger className="h-9 rounded-lg border-gray-200 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="text">{t('ownerGateway.fieldTypeText')}</SelectItem>
+                          <SelectItem value="textarea">{t('ownerGateway.fieldTypeTextarea')}</SelectItem>
+                          <SelectItem value="number">{t('ownerGateway.fieldTypeNumber')}</SelectItem>
+                          <SelectItem value="select">{t('ownerGateway.fieldTypeSelect')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {field.type === 'select' && (
+                        <Input
+                          value={(field.options || []).join(', ')}
+                          onChange={(e) => updateDraftField(index, { options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                          placeholder={t('ownerGateway.fieldOptionsPlaceholder')}
+                          className="h-9 rounded-lg border-gray-200 text-xs"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsCustomEditorOpen(false)}
+                    className="flex-1 h-10 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50"
+                  >
+                    {t('publicShared.cancel')}
+                  </button>
+                  <button
+                    onClick={saveCustomType}
+                    disabled={isSavingCustomType || !customDraft.title.trim()}
+                    className="flex-1 h-10 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isSavingCustomType && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    {t('common.save')}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {customTypes.length === 0 ? (
+              <p className="text-xs text-gray-600 text-center py-6 bg-white border border-gray-100 rounded-2xl">{t('ownerGateway.noCustomTypesYet')}</p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {customTypes.map((service) => {
+                  const Icon = getCustomTypeIcon(service.config?.icon);
+                  const enabled = service.is_enabled;
+                  return (
+                    <div key={service.id} className={cn(
+                      "text-start p-4 rounded-2xl border transition-all",
+                      activeService === service.service_type ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-100 bg-white'
+                    )}>
+                      <div className="flex items-start justify-between gap-2">
+                        <button onClick={() => setActiveService(service.service_type)} className="flex-1 min-w-0 text-start">
+                          <div className="flex items-center gap-2">
+                            <Icon className="h-4 w-4 shrink-0 text-gray-600" />
+                            <h3 className="text-xs font-bold text-gray-900 truncate">{service.config?.title || t('ownerGateway.untitledCustomType')}</h3>
+                          </div>
+                        </button>
+                        <div className="flex flex-col items-center gap-1 shrink-0">
+                          <Switch
+                            checked={enabled}
+                            onCheckedChange={() => toggleCustomType(service)}
+                            disabled={isTogglingService}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <span className={cn("text-[9px] font-bold", enabled ? 'text-emerald-600' : 'text-gray-400')}>
+                            {enabled ? t('ownerGateway.enabled') : t('ownerGateway.disabled')}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-3">
+                        <button onClick={() => setActiveService(service.service_type)} className="text-[10px] font-bold text-gray-600">
+                          {requestsByType(service.service_type).length} {t('ownerGateway.requestsCount')}
+                        </button>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => openEditCustomType(service)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
+                          <button onClick={() => deleteCustomType(service)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:bg-red-50 hover:text-red-500 transition-colors">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -769,7 +1041,7 @@ export default function OwnerTicketsPage() {
           <h3 className="text-sm font-bold text-gray-900">{t('ownerGateway.requestsTitle')}</h3>
           <RequestsList
             requests={requestsByType(activeService)}
-            fields={GATEWAY_FIELD_DEFS[activeService] || []}
+            fields={activeService.startsWith('custom:') ? (customTypes.find(s => s.service_type === activeService)?.config?.fields || []) : (GATEWAY_FIELD_DEFS[activeService] || [])}
             isLoading={isLoadingRequests}
             onStatusChange={setRequestStatus}
             dir={dir}
