@@ -17,7 +17,22 @@ export const WHOLESALE_FIELDS: BusinessGatewayField[] = [
   { id: 'quantity', labelKey: 'ownerGateway.wholesaleFieldQuantity', type: 'text' },
 ];
 
+export const CORPORATE_FIELDS: BusinessGatewayField[] = [
+  { id: 'eventType', labelKey: 'ownerGateway.corporateFieldEventType', type: 'text' },
+  { id: 'guestCount', labelKey: 'ownerGateway.corporateFieldGuestCount', type: 'number' },
+  { id: 'eventDate', labelKey: 'ownerGateway.corporateFieldEventDate', type: 'text' },
+  { id: 'notes', labelKey: 'ownerGateway.corporateFieldNotes', type: 'textarea' },
+];
+
+export const PARTNERSHIP_FIELDS: BusinessGatewayField[] = [
+  { id: 'companyName', labelKey: 'ownerGateway.partnershipFieldCompanyName', type: 'text' },
+  { id: 'partnershipType', labelKey: 'ownerGateway.partnershipFieldType', type: 'text' },
+  { id: 'details', labelKey: 'ownerGateway.partnershipFieldDetails', type: 'textarea' },
+];
+
 export const GATEWAY_FIELD_DEFS: Record<string, BusinessGatewayField[]> = {
   franchise: FRANCHISE_FIELDS,
   wholesale: WHOLESALE_FIELDS,
+  corporate: CORPORATE_FIELDS,
+  partnership: PARTNERSHIP_FIELDS,
 };

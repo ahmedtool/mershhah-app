@@ -5,7 +5,7 @@ import { useParams, Link } from 'wouter';
 import { useRouter } from '@/lib/navigation';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage } from '@/lib/public-pages';
-import { Info, MessageSquare, Briefcase, Store, Package, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Info, MessageSquare, Briefcase, Store, Package, Building2, Handshake, ChevronRight, ChevronLeft } from 'lucide-react';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getPublicThemeStyle } from '@/lib/public-theme';
@@ -18,9 +18,11 @@ const SERVICE_CARDS = [
   { type: 'jobs', icon: Briefcase, titleKey: 'ownerGateway.jobsTitle', descKey: 'publicGateway.jobsCardDesc' },
   { type: 'franchise', icon: Store, titleKey: 'ownerGateway.franchiseTitle', descKey: 'publicGateway.franchiseCardDesc' },
   { type: 'wholesale', icon: Package, titleKey: 'ownerGateway.wholesaleTitle', descKey: 'publicGateway.wholesaleCardDesc' },
+  { type: 'corporate', icon: Building2, titleKey: 'ownerGateway.corporateTitle', descKey: 'publicGateway.corporateCardDesc' },
+  { type: 'partnership', icon: Handshake, titleKey: 'ownerGateway.partnershipTitle', descKey: 'publicGateway.partnershipCardDesc' },
 ] as const;
 
-const BUILDABLE_SERVICE_TYPES = ['jobs', 'franchise', 'wholesale'];
+const BUILDABLE_SERVICE_TYPES = ['jobs', 'franchise', 'wholesale', 'corporate', 'partnership'];
 
 export default function SupportGatewayPage() {
   const params = useParams();

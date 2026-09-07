@@ -6,6 +6,7 @@ import PageHeader from "@/components/dashboard/PageHeader";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
   AlertTriangle, RefreshCw, MessageSquare, User, Clock, ArrowLeft, ArrowRight, Bot,
   Briefcase, Store, Package, Building2, Handshake, Lock, Plus, Trash2, FileText, Loader2, Inbox,
@@ -21,7 +22,7 @@ import type { SupportTicket, BusinessGatewayService, JobPosting, BusinessRequest
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/shared/LanguageContext';
 
-type ActiveService = 'contact' | 'jobs' | 'franchise' | 'wholesale';
+type ActiveService = 'contact' | 'jobs' | 'franchise' | 'wholesale' | 'corporate' | 'partnership';
 
 const statusStyles: Record<string, string> = {
   open: 'bg-blue-50 text-blue-600 border-blue-100',
@@ -67,18 +68,14 @@ const requestStatusKeys: Record<string, string> = {
 
 // Gateway service types with a working toggle + intake flow. 'jobs' has no
 // entitlement flag (always available, gated by a numeric posting limit
-// instead); franchise/wholesale are plan-gated like the still-locked types.
-const TOGGLEABLE_SERVICES: Array<{ type: 'jobs' | 'franchise' | 'wholesale'; icon: any; titleKey: string; descKey: string; flag: 'canUseGatewayFranchise' | 'canUseGatewayWholesale' | null }> = [
+// instead); the rest are plan-gated — rendered as a locked upgrade-bait card
+// when the flag is off, a real toggle + request list once it's on.
+const GATEWAY_TYPES: Array<{ type: 'jobs' | 'franchise' | 'wholesale' | 'corporate' | 'partnership'; icon: any; titleKey: string; descKey: string; flag: 'canUseGatewayFranchise' | 'canUseGatewayWholesale' | 'canUseGatewayCorporate' | 'canUseGatewayPartnership' | null }> = [
   { type: 'jobs', icon: Briefcase, titleKey: 'ownerGateway.jobsTitle', descKey: 'ownerGateway.jobsDescription', flag: null },
   { type: 'franchise', icon: Store, titleKey: 'ownerGateway.franchiseTitle', descKey: 'ownerGateway.franchiseDescription', flag: 'canUseGatewayFranchise' },
   { type: 'wholesale', icon: Package, titleKey: 'ownerGateway.wholesaleTitle', descKey: 'ownerGateway.wholesaleDescription', flag: 'canUseGatewayWholesale' },
-];
-
-// Locked (plan-gated) service types with no working intake form yet — shown
-// as upgrade bait. Franchise/wholesale moved out of here once built.
-const LOCKED_SERVICES = [
-  { type: 'corporate', icon: Building2, titleKey: 'ownerGateway.corporateTitle', descKey: 'ownerGateway.corporateDescription', flag: 'canUseGatewayCorporate' as const },
-  { type: 'partnership', icon: Handshake, titleKey: 'ownerGateway.partnershipTitle', descKey: 'ownerGateway.partnershipDescription', flag: 'canUseGatewayPartnership' as const },
+  { type: 'corporate', icon: Building2, titleKey: 'ownerGateway.corporateTitle', descKey: 'ownerGateway.corporateDescription', flag: 'canUseGatewayCorporate' },
+  { type: 'partnership', icon: Handshake, titleKey: 'ownerGateway.partnershipTitle', descKey: 'ownerGateway.partnershipDescription', flag: 'canUseGatewayPartnership' },
 ];
 
 function RequestsList({
@@ -255,7 +252,7 @@ export default function OwnerTicketsPage() {
     return;
   }, [restaurantId, isUserLoading]);
 
-  const toggleService = (type: 'jobs' | 'franchise' | 'wholesale') => {
+  const toggleService = (type: 'jobs' | 'franchise' | 'wholesale' | 'corporate' | 'partnership') => {
     if (!restaurantId) return;
     startTogglingService(async () => {
       try {
@@ -383,12 +380,13 @@ export default function OwnerTicketsPage() {
   }, [restaurantId, isUserLoading]);
 
   const applicants = businessRequests.filter(r => r.service_type === 'jobs');
-  const franchiseRequests = businessRequests.filter(r => r.service_type === 'franchise');
-  const wholesaleRequests = businessRequests.filter(r => r.service_type === 'wholesale');
+  const requestsByType = (type: string) => businessRequests.filter(r => r.service_type === type);
   const requestCountByType: Record<string, number> = {
     jobs: applicants.length,
-    franchise: franchiseRequests.length,
-    wholesale: wholesaleRequests.length,
+    franchise: requestsByType('franchise').length,
+    wholesale: requestsByType('wholesale').length,
+    corporate: requestsByType('corporate').length,
+    partnership: requestsByType('partnership').length,
   };
 
   const setRequestStatus = async (request: BusinessRequest, status: 'new' | 'contacted' | 'closed') => {
@@ -434,60 +432,57 @@ export default function OwnerTicketsPage() {
               </div>
             </button>
 
-            {/* Toggleable services: jobs, franchise, wholesale */}
-            {TOGGLEABLE_SERVICES.map((service) => {
+            {/* Toggleable services: jobs, franchise, wholesale, corporate, partnership */}
+            {GATEWAY_TYPES.map((service) => {
               const isUnlocked = !service.flag || !!user?.entitlements?.[service.flag];
-              if (!isUnlocked) return null; // rendered as a locked card below instead
               const Icon = service.icon;
+              if (!isUnlocked) {
+                return (
+                  <div key={service.type} className="p-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50/50">
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 shrink-0 text-gray-600" />
+                      <h3 className="text-xs font-bold text-gray-600">{t(service.titleKey)}</h3>
+                    </div>
+                    <p className="text-[10px] text-gray-600 mt-1.5">{t(service.descKey)}</p>
+                    <Link
+                      href="/owner/billing"
+                      className="mt-3 flex items-center gap-1.5 text-[10px] font-bold text-gray-600 hover:text-gray-900 transition-colors"
+                    >
+                      <Lock className="h-3 w-3" />
+                      {t('ownerGateway.upgradeToActivateService')}
+                    </Link>
+                  </div>
+                );
+              }
               const enabled = isServiceEnabled(service.type);
               return (
                 <div key={service.type} className={cn(
                   "text-start p-4 rounded-2xl border transition-all",
                   activeService === service.type ? 'border-gray-900 ring-1 ring-gray-900' : 'border-gray-100 bg-white'
                 )}>
-                  <button onClick={() => setActiveService(service.type)} className="w-full text-start">
-                    <div className="flex items-center gap-2">
-                      <Icon className="h-4 w-4 shrink-0 text-gray-600" />
-                      <h3 className="text-xs font-bold text-gray-900">{t(service.titleKey)}</h3>
-                    </div>
-                    <p className="text-[10px] text-gray-600 mt-1.5">{t(service.descKey)}</p>
-                  </button>
-                  <div className="flex items-center justify-between mt-3">
-                    <button
-                      onClick={() => toggleService(service.type)}
-                      disabled={isTogglingService}
-                      className={cn(
-                        "text-[9px] font-bold px-2 py-0.5 rounded-full transition-colors disabled:opacity-50",
-                        enabled ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'
-                      )}
-                    >
-                      {enabled ? t('ownerGateway.enabled') : t('ownerGateway.disabled')}
+                  <div className="flex items-start justify-between gap-2">
+                    <button onClick={() => setActiveService(service.type)} className="flex-1 min-w-0 text-start">
+                      <div className="flex items-center gap-2">
+                        <Icon className="h-4 w-4 shrink-0 text-gray-600" />
+                        <h3 className="text-xs font-bold text-gray-900">{t(service.titleKey)}</h3>
+                      </div>
+                      <p className="text-[10px] text-gray-600 mt-1.5">{t(service.descKey)}</p>
                     </button>
+                    <div className="flex flex-col items-center gap-1 shrink-0">
+                      <Switch
+                        checked={enabled}
+                        onCheckedChange={() => toggleService(service.type)}
+                        disabled={isTogglingService}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <span className={cn("text-[9px] font-bold", enabled ? 'text-emerald-600' : 'text-gray-400')}>
+                        {enabled ? t('ownerGateway.enabled') : t('ownerGateway.disabled')}
+                      </span>
+                    </div>
+                  </div>
+                  <button onClick={() => setActiveService(service.type)} className="flex items-center justify-between mt-3 w-full text-start">
                     <span className="text-[10px] font-bold text-gray-600">{requestCountByType[service.type] || 0} {t('ownerGateway.requestsCount')}</span>
-                  </div>
-                </div>
-              );
-            })}
-
-            {/* Locked, plan-gated services (not built yet) */}
-            {LOCKED_SERVICES.map((service) => {
-              const Icon = service.icon;
-              const isUnlocked = !!user?.entitlements?.[service.flag];
-              if (isUnlocked) return null; // not built yet even when unlocked - out of scope for this phase
-              return (
-                <div key={service.type} className="p-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50/50">
-                  <div className="flex items-center gap-2">
-                    <Icon className="h-4 w-4 shrink-0 text-gray-600" />
-                    <h3 className="text-xs font-bold text-gray-600">{t(service.titleKey)}</h3>
-                  </div>
-                  <p className="text-[10px] text-gray-600 mt-1.5">{t(service.descKey)}</p>
-                  <Link
-                    href="/owner/billing"
-                    className="mt-3 flex items-center gap-1.5 text-[10px] font-bold text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    <Lock className="h-3 w-3" />
-                    {t('ownerGateway.upgradeToActivateService')}
-                  </Link>
+                  </button>
                 </div>
               );
             })}
@@ -773,7 +768,7 @@ export default function OwnerTicketsPage() {
         <div className="space-y-3">
           <h3 className="text-sm font-bold text-gray-900">{t('ownerGateway.requestsTitle')}</h3>
           <RequestsList
-            requests={activeService === 'franchise' ? franchiseRequests : wholesaleRequests}
+            requests={requestsByType(activeService)}
             fields={GATEWAY_FIELD_DEFS[activeService] || []}
             isLoading={isLoadingRequests}
             onStatusChange={setRequestStatus}
