@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { FREE_PLAN_ID, freeSubscriptionEndDate } from '@/lib/free-plan';
 import { PlanPricingGrid } from '@/components/dashboard/PlanPricingGrid';
 import { FullScreenLoader } from '@/components/shared/FullScreenLoader';
+import { isUnlimitedAccount } from '@/lib/unlimited-account';
 
 const CenteredMessage = ({ icon: Icon, title, children }: { icon: React.ElementType, title: string, children: React.ReactNode }) => (
     <div className="flex flex-col items-center justify-center h-full min-h-[50vh] text-center p-6 bg-background rounded-lg">
@@ -92,7 +93,8 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
         return <CenteredMessage icon={ShieldAlert} title="غير مصرح به">ليس لديك صلاحية الوصول لهذه الصفحة.</CenteredMessage>;
     }
 
-    const needsToPay = user.account_status === 'pending' || (user.account_status === 'active' && !hasActiveSubscription);
+    const isUnlimited = isUnlimitedAccount(user.email);
+    const needsToPay = !isUnlimited && (user.account_status === 'pending' || (user.account_status === 'active' && !hasActiveSubscription));
 
     if (user.account_status === 'suspended') {
         return (
@@ -117,7 +119,7 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
         );
     }
 
-    if (user.account_status === 'active' && hasActiveSubscription) {
+    if (isUnlimited || (user.account_status === 'active' && hasActiveSubscription)) {
         return <>{children}</>;
     }
 
