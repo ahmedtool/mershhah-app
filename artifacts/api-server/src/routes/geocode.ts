@@ -120,10 +120,35 @@ function findComponent(components: AddressComponent[], ...types: string[]): stri
   return undefined;
 }
 
+type OpeningHoursPeriod = { open: { day: number; time: string }; close?: { day: number; time: string } };
+type DayHours = { open: string; close: string };
+
+function formatGoogleTime(time: string): string {
+  return `${time.slice(0, 2)}:${time.slice(2, 4)}`;
+}
+
+// Google gives a list of open/close periods keyed by day-of-week (0=Sunday..
+// 6=Saturday), which can include multiple periods per day (split hours) or
+// a 24-hour day (no `close`). We only need one open/close pair per day to
+// match the branch form's own simplified "same every day, optionally
+// different on Friday" model, so the last period seen per day wins.
+function extractWeeklyHours(periods?: OpeningHoursPeriod[]): (DayHours | null)[] | undefined {
+  if (!periods?.length) return undefined;
+  const weekly: (DayHours | null)[] = [null, null, null, null, null, null, null];
+  for (const period of periods) {
+    if (!period.close) continue;
+    weekly[period.open.day] = {
+      open: formatGoogleTime(period.open.time),
+      close: formatGoogleTime(period.close.time),
+    };
+  }
+  return weekly.some((d) => d) ? weekly : undefined;
+}
+
 // GET /api/geocode/place-details?placeId=..&sessiontoken=.. — resolves a
 // chosen autocomplete suggestion to a full branch profile: coordinates, a
-// display name, and best-effort city/district so picking one suggestion
-// can fill the whole branch form in one step.
+// display name, best-effort city/district, phone, and weekly opening hours,
+// so picking one suggestion can fill the whole branch form in one step.
 router.get("/place-details", async (req: Request, res: Response) => {
   try {
     const placeId = (req.query.placeId as string || "").trim();
@@ -137,7 +162,7 @@ router.get("/place-details", async (req: Request, res: Response) => {
       place_id: placeId,
       key,
       language: "ar",
-      fields: "geometry,formatted_address,name,address_components",
+      fields: "geometry,formatted_address,name,address_components,international_phone_number,formatted_phone_number,opening_hours",
     });
     if (sessiontoken) params.set("sessiontoken", sessiontoken);
     const url = `https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`;
@@ -149,6 +174,9 @@ router.get("/place-details", async (req: Request, res: Response) => {
         formatted_address: string;
         name?: string;
         address_components?: AddressComponent[];
+        international_phone_number?: string;
+        formatted_phone_number?: string;
+        opening_hours?: { periods?: OpeningHoursPeriod[] };
       };
     };
     if (data.status !== "OK" || !data.result) {
@@ -168,6 +196,8 @@ router.get("/place-details", async (req: Request, res: Response) => {
         name: data.result.name,
         city,
         district,
+        phone: data.result.international_phone_number || data.result.formatted_phone_number,
+        weeklyHours: extractWeeklyHours(data.result.opening_hours?.periods),
       },
     });
   } catch (error: any) {

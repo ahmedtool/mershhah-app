@@ -1,3 +1,8 @@
+export interface DayHours {
+  open: string;
+  close: string;
+}
+
 interface GeocodingResult {
   latitude: number;
   longitude: number;
@@ -5,6 +10,8 @@ interface GeocodingResult {
   name?: string;
   city?: string;
   district?: string;
+  phone?: string;
+  weeklyHours?: (DayHours | null)[];
 }
 
 // ── Extract coordinates from any Google Maps URL ────────────────────────────

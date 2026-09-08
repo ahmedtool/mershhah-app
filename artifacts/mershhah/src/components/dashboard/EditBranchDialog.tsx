@@ -12,7 +12,7 @@ import { Loader2, MapPin, X } from 'lucide-react';
 import { TimePicker } from '@/components/ui/time-picker';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
-import { createPlacesSessionToken, autocompletePlaces, getPlaceDetails, type PlaceSuggestion } from '@/lib/geocoding';
+import { createPlacesSessionToken, autocompletePlaces, getPlaceDetails, type PlaceSuggestion, type DayHours } from '@/lib/geocoding';
 import saGeodata from '@/data/sa-geodata.json';
 import type { Branch } from '@/lib/types';
 import { useUser } from '@/hooks/useUser';
@@ -48,6 +48,32 @@ function generateHoursText(open: string, close: string, friOpen: string, friClos
     text += ` (الجمعة ${to12(friOpen)} - ${to12(friClose)})`;
   }
   return text;
+}
+
+// Google returns one open/close pair per day of week (0=Sunday..6=Saturday).
+// The branch form only models "same hours every day, optionally different
+// on Friday" - so the most common pair across the week becomes "all days",
+// and Friday (index 5) becomes the override only if it actually differs.
+function deriveHoursFromWeekly(weekly: (DayHours | null)[]): { allOpen: string; allClose: string; friOpen: string; friClose: string; showFriday: boolean } | null {
+  const counts = new Map<string, number>();
+  for (const day of weekly) {
+    if (!day) continue;
+    const key = `${day.open}|${day.close}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  if (counts.size === 0) return null;
+  let modeKey = '';
+  let modeCount = -1;
+  counts.forEach((count, key) => { if (count > modeCount) { modeCount = count; modeKey = key; } });
+  const [allOpen, allClose] = modeKey.split('|');
+  const friday = weekly[5];
+  const fridayDiffers = Boolean(friday && (friday.open !== allOpen || friday.close !== allClose));
+  return {
+    allOpen, allClose,
+    friOpen: fridayDiffers && friday ? friday.open : '',
+    friClose: fridayDiffers && friday ? friday.close : '',
+    showFriday: fridayDiffers,
+  };
 }
 
 const cities = Object.keys(saGeodata) as string[];
@@ -170,6 +196,20 @@ export function EditBranchDialog({
       if (result.district) {
         form.setValue('district', result.district, { shouldDirty: true });
         setDistrictSearch(result.district);
+      }
+      if (result.phone) {
+        form.setValue('phone', result.phone, { shouldDirty: true });
+      }
+      if (result.weeklyHours) {
+        const derived = deriveHoursFromWeekly(result.weeklyHours);
+        if (derived) {
+          setAllDaysOpen(derived.allOpen);
+          setAllDaysClose(derived.allClose);
+          setFridayOpen(derived.friOpen);
+          setFridayClose(derived.friClose);
+          setShowFriday(derived.showFriday);
+          form.setValue('opening_hours', generateHoursText(derived.allOpen, derived.allClose, derived.friOpen, derived.friClose), { shouldDirty: true });
+        }
       }
       form.setValue('latitude', result.latitude, { shouldDirty: true });
       form.setValue('longitude', result.longitude, { shouldDirty: true });
