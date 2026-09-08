@@ -110,8 +110,20 @@ router.get("/autocomplete", async (req: Request, res: Response) => {
   }
 });
 
+type AddressComponent = { long_name: string; short_name: string; types: string[] };
+
+function findComponent(components: AddressComponent[], ...types: string[]): string | undefined {
+  for (const type of types) {
+    const match = components.find((c) => c.types.includes(type));
+    if (match) return match.long_name;
+  }
+  return undefined;
+}
+
 // GET /api/geocode/place-details?placeId=..&sessiontoken=.. — resolves a
-// chosen autocomplete suggestion to coordinates + a display name.
+// chosen autocomplete suggestion to a full branch profile: coordinates, a
+// display name, and best-effort city/district so picking one suggestion
+// can fill the whole branch form in one step.
 router.get("/place-details", async (req: Request, res: Response) => {
   try {
     const placeId = (req.query.placeId as string || "").trim();
@@ -125,7 +137,7 @@ router.get("/place-details", async (req: Request, res: Response) => {
       place_id: placeId,
       key,
       language: "ar",
-      fields: "geometry,formatted_address,name",
+      fields: "geometry,formatted_address,name,address_components",
     });
     if (sessiontoken) params.set("sessiontoken", sessiontoken);
     const url = `https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`;
@@ -136,12 +148,16 @@ router.get("/place-details", async (req: Request, res: Response) => {
         geometry: { location: { lat: number; lng: number } };
         formatted_address: string;
         name?: string;
+        address_components?: AddressComponent[];
       };
     };
     if (data.status !== "OK" || !data.result) {
       res.json({ result: null });
       return;
     }
+    const components = data.result.address_components || [];
+    const city = findComponent(components, "locality", "administrative_area_level_2", "administrative_area_level_1");
+    const district = findComponent(components, "sublocality_level_1", "sublocality", "neighborhood");
     res.json({
       result: {
         latitude: data.result.geometry.location.lat,
@@ -149,6 +165,9 @@ router.get("/place-details", async (req: Request, res: Response) => {
         displayName: data.result.name
           ? `${data.result.name} - ${data.result.formatted_address}`
           : data.result.formatted_address,
+        name: data.result.name,
+        city,
+        district,
       },
     });
   } catch (error: any) {

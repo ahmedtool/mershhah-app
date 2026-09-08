@@ -2,6 +2,9 @@ interface GeocodingResult {
   latitude: number;
   longitude: number;
   displayName: string;
+  name?: string;
+  city?: string;
+  district?: string;
 }
 
 // ── Extract coordinates from any Google Maps URL ────────────────────────────

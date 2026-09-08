@@ -70,7 +70,6 @@ export function EditBranchDialog({
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
   const schema = useMemo(() => buildSchema(t), [t]);
   const [saving, setSaving] = useState(false);
-  const [locationSearch, setLocationSearch] = useState('');
   const [locationOpen, setLocationOpen] = useState(false);
   const [locationSuggestions, setLocationSuggestions] = useState<PlaceSuggestion[]>([]);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
@@ -119,16 +118,15 @@ export function EditBranchDialog({
       setCitySearch(branch.city || '');
       setDistrictSearch(branch.district || '');
       setBranchApps(Array.isArray(branch.applications) ? branch.applications : []);
-      setLocationSearch('');
       setLocationSuggestions([]);
     } else {
       form.reset({ name: '', city: '', district: '', phone: '', opening_hours: '', status: 'active', latitude: null, longitude: null });
       setCitySearch('');
       setDistrictSearch('');
       setBranchApps([]);
-      setLocationSearch('');
       setLocationSuggestions([]);
     }
+    sessionTokenRef.current = createPlacesSessionToken();
     setAllDaysOpen(''); setAllDaysClose(''); setFridayOpen(''); setFridayClose(''); setShowFriday(false);
   }, [open, branch, form]);
 
@@ -140,8 +138,7 @@ export function EditBranchDialog({
 
   useEffect(() => { if (!city) form.setValue('district', ''); }, [city, form]);
 
-  function handleLocationSearchChange(value: string) {
-    setLocationSearch(value);
+  function handleNameSearchChange(value: string) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!value.trim()) {
       setLocationSuggestions([]);
@@ -158,13 +155,22 @@ export function EditBranchDialog({
     }, 300);
   }
 
-  async function handleSelectLocation(suggestion: PlaceSuggestion) {
-    setLocationSearch(suggestion.description);
+  async function handleSelectBranchSuggestion(suggestion: PlaceSuggestion) {
     setLocationOpen(false);
     setLocationSuggestions([]);
     const result = await getPlaceDetails(suggestion.placeId, sessionTokenRef.current);
     sessionTokenRef.current = createPlacesSessionToken();
     if (result) {
+      const resolvedName = result.name || suggestion.description.split(/[،,]/)[0].trim();
+      form.setValue('name', resolvedName, { shouldDirty: true });
+      if (result.city) {
+        form.setValue('city', result.city, { shouldDirty: true });
+        setCitySearch(result.city);
+      }
+      if (result.district) {
+        form.setValue('district', result.district, { shouldDirty: true });
+        setDistrictSearch(result.district);
+      }
       form.setValue('latitude', result.latitude, { shouldDirty: true });
       form.setValue('longitude', result.longitude, { shouldDirty: true });
       toast({ title: t('branches.locationExtracted') });
@@ -242,14 +248,44 @@ export function EditBranchDialog({
         {/* Form */}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="p-5 space-y-4">
-            {/* Name */}
+            {/* Name - search by branch name/location, or type manually */}
             <FormField control={form.control} name="name" render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-xs text-gray-600">{t('branches.branchName')}</FormLabel>
-                <FormControl>
-                  <Input placeholder={t('branches.branchNamePlaceholder')} {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={saving} />
-                </FormControl>
+                <div className="relative">
+                  <FormControl>
+                    <Input
+                      placeholder={t('branches.branchNamePlaceholder')}
+                      value={field.value}
+                      onChange={(e) => { field.onChange(e); handleNameSearchChange(e.target.value); }}
+                      onBlur={() => { field.onBlur(); setTimeout(() => setLocationOpen(false), 200); }}
+                      onFocus={() => setLocationOpen(true)}
+                      className="h-11 rounded-xl border-gray-200 text-sm"
+                      disabled={saving}
+                    />
+                  </FormControl>
+                  {isSearchingLocation && (
+                    <Loader2 className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                  )}
+                  {locationOpen && locationSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                      {locationSuggestions.map((s) => (
+                        <button key={s.placeId} type="button"
+                          onClick={() => handleSelectBranchSuggestion(s)}
+                          className={`w-full ${alignStart} px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors`}>
+                          {s.description}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <FormMessage className="text-[10px]" />
+                {form.watch('latitude') && form.watch('longitude') && (
+                  <a href={`https://www.google.com/maps/dir/?api=1&destination=${form.watch('latitude')},${form.watch('longitude')}`} target="_blank" rel="noopener noreferrer"
+                    className="text-[11px] text-blue-500 hover:underline inline-flex items-center gap-1">
+                    <MapPin className="h-3 w-3" /> {t('branches.locationSet')} ✓
+                  </a>
+                )}
               </FormItem>
             )} />
 
@@ -365,42 +401,6 @@ export function EditBranchDialog({
                 <div className="bg-gray-50 rounded-lg px-3 py-2">
                   <p className="text-xs text-gray-600">{generateHoursText(allDaysOpen, allDaysClose, fridayOpen, fridayClose)}</p>
                 </div>
-              )}
-            </div>
-
-            {/* Location - search by branch name */}
-            <div className="space-y-2">
-              <FormLabel className="text-xs text-gray-600">{t('branches.branchLocation')}</FormLabel>
-              <div className="relative">
-                <Input
-                  placeholder={t('branches.searchLocation')}
-                  value={locationSearch}
-                  onChange={(e) => handleLocationSearchChange(e.target.value)}
-                  onFocus={() => setLocationOpen(true)}
-                  onBlur={() => setTimeout(() => setLocationOpen(false), 200)}
-                  className="h-10 text-sm rounded-xl border-gray-200"
-                  disabled={saving}
-                />
-                {isSearchingLocation && (
-                  <Loader2 className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
-                )}
-                {locationOpen && locationSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
-                    {locationSuggestions.map((s) => (
-                      <button key={s.placeId} type="button"
-                        onClick={() => handleSelectLocation(s)}
-                        className={`w-full ${alignStart} px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors`}>
-                        {s.description}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              {form.watch('latitude') && form.watch('longitude') && (
-                <a href={`https://www.google.com/maps/dir/?api=1&destination=${form.watch('latitude')},${form.watch('longitude')}`} target="_blank" rel="noopener noreferrer"
-                  className="text-[11px] text-blue-500 hover:underline inline-flex items-center gap-1">
-                  <MapPin className="h-3 w-3" /> {t('branches.locationSet')} ✓
-                </a>
               )}
             </div>
 
