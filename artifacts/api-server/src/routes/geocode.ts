@@ -68,6 +68,95 @@ router.get("/forward", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/geocode/autocomplete?input=..&sessiontoken=.. — branch-name/address
+// search suggestions, restricted to Saudi Arabia. sessiontoken groups the
+// keystroke-by-keystroke calls plus the following place-details call into
+// one billed Google Places session instead of N separate requests.
+router.get("/autocomplete", async (req: Request, res: Response) => {
+  try {
+    const input = (req.query.input as string || "").trim();
+    const sessiontoken = (req.query.sessiontoken as string || "").trim();
+    if (!input) {
+      res.json({ suggestions: [] });
+      return;
+    }
+    const key = getApiKey();
+    const params = new URLSearchParams({
+      input,
+      key,
+      language: "ar",
+      components: "country:sa",
+    });
+    if (sessiontoken) params.set("sessiontoken", sessiontoken);
+    const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?${params.toString()}`;
+    const r = await fetch(url);
+    const data = (await r.json()) as {
+      status: string;
+      predictions?: Array<{ place_id: string; description: string }>;
+    };
+    if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
+      res.json({ suggestions: [] });
+      return;
+    }
+    res.json({
+      suggestions: (data.predictions || []).map((p) => ({
+        placeId: p.place_id,
+        description: p.description,
+      })),
+    });
+  } catch (error: any) {
+    console.error("[geocode-route] autocomplete error:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
+// GET /api/geocode/place-details?placeId=..&sessiontoken=.. — resolves a
+// chosen autocomplete suggestion to coordinates + a display name.
+router.get("/place-details", async (req: Request, res: Response) => {
+  try {
+    const placeId = (req.query.placeId as string || "").trim();
+    const sessiontoken = (req.query.sessiontoken as string || "").trim();
+    if (!placeId) {
+      res.status(400).json({ error: "placeId query param is required" });
+      return;
+    }
+    const key = getApiKey();
+    const params = new URLSearchParams({
+      place_id: placeId,
+      key,
+      language: "ar",
+      fields: "geometry,formatted_address,name",
+    });
+    if (sessiontoken) params.set("sessiontoken", sessiontoken);
+    const url = `https://maps.googleapis.com/maps/api/place/details/json?${params.toString()}`;
+    const r = await fetch(url);
+    const data = (await r.json()) as {
+      status: string;
+      result?: {
+        geometry: { location: { lat: number; lng: number } };
+        formatted_address: string;
+        name?: string;
+      };
+    };
+    if (data.status !== "OK" || !data.result) {
+      res.json({ result: null });
+      return;
+    }
+    res.json({
+      result: {
+        latitude: data.result.geometry.location.lat,
+        longitude: data.result.geometry.location.lng,
+        displayName: data.result.name
+          ? `${data.result.name} - ${data.result.formatted_address}`
+          : data.result.formatted_address,
+      },
+    });
+  } catch (error: any) {
+    console.error("[geocode-route] place-details error:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
 // POST /api/geocode/resolve-url { url } — follows a short Google Maps link
 // (maps.app.goo.gl / goo.gl/maps) to its final destination. This has
 // nothing to do with the Google Maps API - it's a plain HTTP redirect,

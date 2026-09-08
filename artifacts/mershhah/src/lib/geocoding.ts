@@ -108,3 +108,44 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
     return null;
   }
 }
+
+// ── Places Autocomplete (search-by-name, Saudi Arabia only) ────────────────
+
+export interface PlaceSuggestion {
+  placeId: string;
+  description: string;
+}
+
+export function createPlacesSessionToken(): string {
+  return crypto.randomUUID();
+}
+
+export async function autocompletePlaces(input: string, sessionToken: string): Promise<PlaceSuggestion[]> {
+  if (!input || input.trim().length < 2) return [];
+
+  try {
+    const res = await fetch(
+      `/api/geocode/autocomplete?input=${encodeURIComponent(input.trim())}&sessiontoken=${sessionToken}`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.suggestions || [];
+  } catch (error) {
+    console.error('Places autocomplete error:', error);
+    return [];
+  }
+}
+
+export async function getPlaceDetails(placeId: string, sessionToken: string): Promise<GeocodingResult | null> {
+  try {
+    const res = await fetch(
+      `/api/geocode/place-details?placeId=${encodeURIComponent(placeId)}&sessiontoken=${sessionToken}`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.result || null;
+  } catch (error) {
+    console.error('Place details error:', error);
+    return null;
+  }
+}

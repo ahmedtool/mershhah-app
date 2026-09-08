@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,11 +8,11 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MapPin, Link as LinkIcon, X } from 'lucide-react';
+import { Loader2, MapPin, X } from 'lucide-react';
 import { TimePicker } from '@/components/ui/time-picker';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
-import { extractFromGoogleMapsUrl } from '@/lib/geocoding';
+import { createPlacesSessionToken, autocompletePlaces, getPlaceDetails, type PlaceSuggestion } from '@/lib/geocoding';
 import saGeodata from '@/data/sa-geodata.json';
 import type { Branch } from '@/lib/types';
 import { useUser } from '@/hooks/useUser';
@@ -70,8 +70,12 @@ export function EditBranchDialog({
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
   const schema = useMemo(() => buildSchema(t), [t]);
   const [saving, setSaving] = useState(false);
-  const [mapsUrl, setMapsUrl] = useState('');
-  const [parsingMaps, setParsingMaps] = useState(false);
+  const [locationSearch, setLocationSearch] = useState('');
+  const [locationOpen, setLocationOpen] = useState(false);
+  const [locationSuggestions, setLocationSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const sessionTokenRef = useRef(createPlacesSessionToken());
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showFriday, setShowFriday] = useState(false);
   const isEdit = Boolean(branch?.id);
   const [allDaysOpen, setAllDaysOpen] = useState('');
@@ -115,13 +119,15 @@ export function EditBranchDialog({
       setCitySearch(branch.city || '');
       setDistrictSearch(branch.district || '');
       setBranchApps(Array.isArray(branch.applications) ? branch.applications : []);
-      setMapsUrl('');
+      setLocationSearch('');
+      setLocationSuggestions([]);
     } else {
       form.reset({ name: '', city: '', district: '', phone: '', opening_hours: '', status: 'active', latitude: null, longitude: null });
       setCitySearch('');
       setDistrictSearch('');
       setBranchApps([]);
-      setMapsUrl('');
+      setLocationSearch('');
+      setLocationSuggestions([]);
     }
     setAllDaysOpen(''); setAllDaysClose(''); setFridayOpen(''); setFridayClose(''); setShowFriday(false);
   }, [open, branch, form]);
@@ -134,23 +140,36 @@ export function EditBranchDialog({
 
   useEffect(() => { if (!city) form.setValue('district', ''); }, [city, form]);
 
-  async function handleParseMapsUrl() {
-    if (!mapsUrl.trim()) { toast({ variant: 'destructive', title: t('branches.pasteLinkFirst') }); return; }
-    setParsingMaps(true);
-    try {
-      const r = await extractFromGoogleMapsUrl(mapsUrl.trim());
-      if (r) {
-        form.setValue('latitude', r.latitude, { shouldDirty: true });
-        form.setValue('longitude', r.longitude, { shouldDirty: true });
-        toast({ title: t('branches.locationExtracted') });
-        setMapsUrl('');
-      } else {
-        toast({ variant: 'destructive', title: t('branches.coordinatesNotFound') });
+  function handleLocationSearchChange(value: string) {
+    setLocationSearch(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!value.trim()) {
+      setLocationSuggestions([]);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      setIsSearchingLocation(true);
+      try {
+        const suggestions = await autocompletePlaces(value, sessionTokenRef.current);
+        setLocationSuggestions(suggestions);
+      } finally {
+        setIsSearchingLocation(false);
       }
-    } catch {
-      toast({ variant: 'destructive', title: t('branches.failedToReadLink') });
-    } finally {
-      setParsingMaps(false);
+    }, 300);
+  }
+
+  async function handleSelectLocation(suggestion: PlaceSuggestion) {
+    setLocationSearch(suggestion.description);
+    setLocationOpen(false);
+    setLocationSuggestions([]);
+    const result = await getPlaceDetails(suggestion.placeId, sessionTokenRef.current);
+    sessionTokenRef.current = createPlacesSessionToken();
+    if (result) {
+      form.setValue('latitude', result.latitude, { shouldDirty: true });
+      form.setValue('longitude', result.longitude, { shouldDirty: true });
+      toast({ title: t('branches.locationExtracted') });
+    } else {
+      toast({ variant: 'destructive', title: t('branches.coordinatesNotFound') });
     }
   }
 
@@ -349,22 +368,33 @@ export function EditBranchDialog({
               )}
             </div>
 
-            {/* Location - URL only */}
+            {/* Location - search by branch name */}
             <div className="space-y-2">
               <FormLabel className="text-xs text-gray-600">{t('branches.branchLocation')}</FormLabel>
-              <div className="flex gap-2">
+              <div className="relative">
                 <Input
-                  placeholder={t('branches.pasteGoogleMapsUrl')}
-                  value={mapsUrl}
-                  onChange={(e) => setMapsUrl(e.target.value)}
-                  className="h-10 text-xs rounded-xl border-gray-200 flex-1"
-                  dir="ltr"
+                  placeholder={t('branches.searchLocation')}
+                  value={locationSearch}
+                  onChange={(e) => handleLocationSearchChange(e.target.value)}
+                  onFocus={() => setLocationOpen(true)}
+                  onBlur={() => setTimeout(() => setLocationOpen(false), 200)}
+                  className="h-10 text-sm rounded-xl border-gray-200"
+                  disabled={saving}
                 />
-                <button type="button" onClick={handleParseMapsUrl} disabled={parsingMaps || !mapsUrl.trim()}
-                  className="h-10 px-3 rounded-xl border border-gray-200 text-[11px] font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center gap-1.5 disabled:opacity-50">
-                  {parsingMaps ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LinkIcon className="h-3.5 w-3.5 text-blue-500" />}
-                  {t('branches.extract')}
-                </button>
+                {isSearchingLocation && (
+                  <Loader2 className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+                )}
+                {locationOpen && locationSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                    {locationSuggestions.map((s) => (
+                      <button key={s.placeId} type="button"
+                        onClick={() => handleSelectLocation(s)}
+                        className={`w-full ${alignStart} px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors`}>
+                        {s.description}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               {form.watch('latitude') && form.watch('longitude') && (
                 <a href={`https://www.google.com/maps/dir/?api=1&destination=${form.watch('latitude')},${form.watch('longitude')}`} target="_blank" rel="noopener noreferrer"
