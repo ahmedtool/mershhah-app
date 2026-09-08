@@ -1,5 +1,3 @@
-const NOMINATIM_URL = 'https://nominatim.openstreetmap.org';
-
 interface GeocodingResult {
   latitude: number;
   longitude: number;
@@ -35,18 +33,20 @@ function extractCoordsFromUrl(url: string): { latitude: number; longitude: numbe
   return null;
 }
 
+// Short links (maps.app.goo.gl, goo.gl/maps) only ever expose their real
+// destination after a redirect, which the browser can't follow across
+// origins and read back (CORS) - resolved server-side instead, where a
+// plain redirect-following fetch needs no special handling at all.
 async function resolveShortUrl(url: string): Promise<string> {
   try {
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-    const res = await fetch(proxyUrl, { redirect: 'follow' });
-    if (res.ok) {
-      const text = await res.text();
-      // allorigins returns the final page HTML, look for coordinates in it
-      const coords = extractCoordsFromUrl(text);
-      if (coords) return `resolved://${coords.latitude},${coords.longitude}`;
-      return text;
-    }
-    return url;
+    const res = await fetch('/api/geocode/resolve-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+    if (!res.ok) return url;
+    const data = await res.json();
+    return data.resolvedUrl || url;
   } catch {
     return url;
   }
@@ -62,14 +62,6 @@ export async function extractFromGoogleMapsUrl(url: string): Promise<GeocodingRe
     let resolvedUrl = url;
     if (url.includes('maps.app.goo.gl') || url.includes('goo.gl/maps')) {
       resolvedUrl = await resolveShortUrl(url);
-      // If resolved to our marker format
-      if (resolvedUrl.startsWith('resolved://')) {
-        const [lat, lng] = resolvedUrl.replace('resolved://', '').split(',');
-        const latNum = parseFloat(lat);
-        const lngNum = parseFloat(lng);
-        const address = await reverseGeocode(latNum, lngNum);
-        return { latitude: latNum, longitude: lngNum, displayName: address || `${latNum}, ${lngNum}` };
-      }
     }
 
     const coords = extractCoordsFromUrl(resolvedUrl);
@@ -93,25 +85,10 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult |
   if (!address || address.trim().length < 3) return null;
 
   try {
-    const params = new URLSearchParams({
-      q: address,
-      format: 'json',
-      limit: '1',
-      'accept-language': 'ar,en',
-    });
-
-    const res = await fetch(`${NOMINATIM_URL}/search?${params}`, {
-      headers: { 'User-Agent': 'MershhahApp/1.0' },
-    });
-
+    const res = await fetch(`/api/geocode/forward?address=${encodeURIComponent(address.trim())}`);
+    if (!res.ok) return null;
     const data = await res.json();
-    if (!data || data.length === 0) return null;
-
-    return {
-      latitude: parseFloat(data[0].lat),
-      longitude: parseFloat(data[0].lon),
-      displayName: data[0].display_name,
-    };
+    return data.result || null;
   } catch (error) {
     console.error('Geocoding error:', error);
     return null;
@@ -122,19 +99,10 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult |
 
 export async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
   try {
-    const params = new URLSearchParams({
-      lat: String(lat),
-      lon: String(lng),
-      format: 'json',
-      'accept-language': 'ar,en',
-    });
-
-    const res = await fetch(`${NOMINATIM_URL}/reverse?${params}`, {
-      headers: { 'User-Agent': 'MershhahApp/1.0' },
-    });
-
+    const res = await fetch(`/api/geocode/reverse?lat=${lat}&lng=${lng}`);
+    if (!res.ok) return null;
     const data = await res.json();
-    return data?.display_name || null;
+    return data.address || null;
   } catch (error) {
     console.error('Reverse geocoding error:', error);
     return null;
