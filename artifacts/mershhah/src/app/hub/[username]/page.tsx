@@ -28,6 +28,7 @@ import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 import { useGoogleFont } from '@/hooks/useGoogleFont';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { NearestBranchSection } from '@/components/public/NearestBranchSection';
 
 const SOCIAL_ICONS: { [key: string]: React.ElementType } = {
     whatsapp: WhatsAppIcon,
@@ -413,30 +414,9 @@ export default function RestaurantHubPage() {
             </div>
           </section>
 
-          {/* التطبيقات حسب الفرع - قائمة موحدة، كل فرع له عنوانه وتطبيقاته بدون أي اختيار أو صلاحية موقع */}
-          {branches.length > 0 && branches.some((b: any) => b.applications?.length > 0) && (
-            <section className="space-y-5">
-              {branches.filter((b: any) => b.applications?.length > 0).map((branch: any) => (
-                <div key={branch.id} className="space-y-3">
-                  <div className="flex items-center gap-2 px-1">
-                    <MapPin className="h-3.5 w-3.5 text-gray-600" />
-                    <h3 className="font-black text-sm text-gray-600">{branch.name}</h3>
-                  </div>
-                  <div className="grid grid-cols-4 gap-3">
-                    {branch.applications.map((app: any, idx: number) => (
-                      <a key={app.id || idx} href={app.value || '#'} target="_blank" rel="noopener noreferrer"
-                        onClick={() => restaurant.id && trackAppClick(restaurant.id, app.name || 'unknown')}
-                        className="aspect-square bg-white border border-gray-100 p-3 flex items-center justify-center hover:shadow-md transition-all"
-                        style={{ borderRadius: 'var(--r-radius-sm)' }}>
-                        <div className="relative w-full h-full">
-                          <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain" sizes="64px" />
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </section>
+          {/* الفروع - بطاقة أقرب فرع (حسب موقع الزائر) مع كل بيانات الفرع وتطبيقات التوصيل الخاصة به */}
+          {branches.length > 0 && (
+            <NearestBranchSection branches={branches} restaurantId={restaurant.id} primaryColor={primaryColor} />
           )}
 
           {/* التطبيقات - للمطعم بدون فروع */}
