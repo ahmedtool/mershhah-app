@@ -9,10 +9,19 @@ interface TimeRange {
   closeMinutes: number;
 }
 
-function to24Minutes(hour: number, minute: number, period: 'ص' | 'م'): number {
+function hour12To24(hour: number, period: 'ص' | 'م'): number {
   let h = hour % 12;
   if (period === 'م') h += 12;
-  return h * 60 + minute;
+  return h;
+}
+
+function to24Minutes(hour: number, minute: number, period: 'ص' | 'م'): number {
+  return hour12To24(hour, period) * 60 + minute;
+}
+
+function to24String(hour: number, minute: number, period: 'ص' | 'م'): string {
+  const h = hour12To24(hour, period);
+  return `${String(h).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
 function isWithinRange(nowMinutes: number, range: TimeRange): boolean {
@@ -42,4 +51,31 @@ export function isBranchOpenNow(openingHours?: string | null): boolean | null {
 
   const now = new Date();
   return isWithinRange(now.getHours() * 60 + now.getMinutes(), activeRange);
+}
+
+export interface ParsedOpeningHours {
+  allOpen: string;
+  allClose: string;
+  friOpen: string;
+  friClose: string;
+  showFriday: boolean;
+}
+
+// Inverse of generateHoursText() (EditBranchDialog): turns a saved
+// "يوميًا H:MM ص/م - H:MM ص/م (الجمعة H:MM ص/م - H:MM ص/م)" string back
+// into the 24-hour "HH:MM" values the branch form's time pickers expect,
+// so editing an existing branch shows its actual saved hours instead of
+// blank pickers.
+export function parseOpeningHoursText(openingHours?: string | null): ParsedOpeningHours | null {
+  if (!openingHours) return null;
+  const matches = [...openingHours.matchAll(/(\d{1,2}):(\d{2})\s*(ص|م)/g)];
+  if (matches.length < 2) return null;
+
+  const allOpen = to24String(Number(matches[0][1]), Number(matches[0][2]), matches[0][3] as 'ص' | 'م');
+  const allClose = to24String(Number(matches[1][1]), Number(matches[1][2]), matches[1][3] as 'ص' | 'م');
+  const hasFriday = matches.length >= 4;
+  const friOpen = hasFriday ? to24String(Number(matches[2][1]), Number(matches[2][2]), matches[2][3] as 'ص' | 'م') : '';
+  const friClose = hasFriday ? to24String(Number(matches[3][1]), Number(matches[3][2]), matches[3][3] as 'ص' | 'م') : '';
+
+  return { allOpen, allClose, friOpen, friClose, showFriday: hasFriday };
 }

@@ -13,6 +13,7 @@ import { TimePicker } from '@/components/ui/time-picker';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
 import { createPlacesSessionToken, autocompletePlaces, getPlaceDetails, type PlaceSuggestion, type DayHours } from '@/lib/geocoding';
+import { parseOpeningHoursText } from '@/lib/branch-hours';
 import saGeodata from '@/data/sa-geodata.json';
 import type { Branch } from '@/lib/types';
 import { useUser } from '@/hooks/useUser';
@@ -145,15 +146,21 @@ export function EditBranchDialog({
       setDistrictSearch(branch.district || '');
       setBranchApps(Array.isArray(branch.applications) ? branch.applications : []);
       setLocationSuggestions([]);
+      const parsedHours = parseOpeningHoursText(branch.opening_hours);
+      setAllDaysOpen(parsedHours?.allOpen ?? '');
+      setAllDaysClose(parsedHours?.allClose ?? '');
+      setFridayOpen(parsedHours?.friOpen ?? '');
+      setFridayClose(parsedHours?.friClose ?? '');
+      setShowFriday(parsedHours?.showFriday ?? false);
     } else {
       form.reset({ name: '', city: '', district: '', phone: '', opening_hours: '', status: 'active', latitude: null, longitude: null });
       setCitySearch('');
       setDistrictSearch('');
       setBranchApps([]);
       setLocationSuggestions([]);
+      setAllDaysOpen(''); setAllDaysClose(''); setFridayOpen(''); setFridayClose(''); setShowFriday(false);
     }
     sessionTokenRef.current = createPlacesSessionToken();
-    setAllDaysOpen(''); setAllDaysClose(''); setFridayOpen(''); setFridayClose(''); setShowFriday(false);
   }, [open, branch, form]);
 
   useEffect(() => {
