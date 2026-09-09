@@ -134,6 +134,7 @@ export type MenuItem = {
   classification?: 'Star' | 'Plow-Horse' | 'Puzzle' | 'Dog';
   rating?: number; // average rating from menu_item_reviews, embedded at sync-time
   review_count?: number;
+  channel_prices?: Record<string, number>; // per delivery-app price override, keyed by applications.id (or a custom app's id)
 };
 
 export type MenuItemReview = {

@@ -1,12 +1,12 @@
 "use client";
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useParams } from 'wouter';
 import { useRouter, useSearchParams } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, ChevronLeft, Search, Info, Star } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Search, Info, Star, Navigation, ShoppingBag, Phone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage, syncPublicPage } from '@/lib/public-pages';
-import { trackPageView } from '@/lib/event-tracker';
+import { trackPageView, trackAppClick, trackPhoneClick } from '@/lib/event-tracker';
 import { detectTrafficSource } from '@/lib/traffic-source';
 import { StorageImage } from '@/components/shared/StorageImage';
 import type { MenuItem } from '@/lib/types';
@@ -22,6 +22,35 @@ import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 import { useGoogleFont } from '@/hooks/useGoogleFont';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { useNearestBranch } from '@/hooks/useNearestBranch';
+
+// One order channel shown on an item's card - either the branch's own
+// custom app (the featured "direct" tile) or one of its enabled global
+// delivery apps. `price` already resolves the item's per-channel override
+// (channel_prices) falling back to the base menu price.
+type OrderChannel = {
+  id: string;
+  name: string;
+  logo?: string;
+  value: string;
+  price: number;
+  isDirect: boolean;
+};
+
+function buildOrderChannels(item: MenuItem, branch: any, basePrice: number): OrderChannel[] {
+  const apps: any[] = Array.isArray(branch?.applications) ? branch.applications : [];
+  const withPrice = (app: any): OrderChannel => ({
+    id: app.platformId,
+    name: app.name,
+    logo: app.logo,
+    value: app.value,
+    price: item.channel_prices?.[app.platformId] ?? basePrice,
+    isDirect: app.type === 'custom',
+  });
+  const direct = apps.filter((a) => a.type === 'custom' && a.value).map(withPrice);
+  const global = apps.filter((a) => a.type === 'global' && a.value).map(withPrice);
+  return [...direct, ...global];
+}
 
 export default function PublicMenuPage() {
   const params = useParams();
@@ -33,14 +62,15 @@ export default function PublicMenuPage() {
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
 
   const [restaurant, setRestaurant] = useState<any>(null);
+  const displayName = dir === 'ltr' && restaurant?.name_en ? restaurant.name_en : restaurant?.name;
   useDocumentMeta(
-    restaurant?.name
-      ? (dir === 'rtl' ? `${t('hubPage.menuWord')} ${restaurant.name}` : `${restaurant.name} ${t('hubPage.menuWord')}`)
+    displayName
+      ? (dir === 'rtl' ? `${t('hubPage.menuWord')} ${displayName}` : `${displayName} ${t('hubPage.menuWord')}`)
       : undefined,
     restaurant
-      ? (restaurant.description || (dir === 'rtl'
-          ? `${t('publicMenu.metaDescPrefixWord')} ${t('hubPage.menuWord')} ${restaurant.name} ${t('publicMenu.metaDescSuffix')}`
-          : `${t('publicMenu.metaDescPrefixWord')} ${restaurant.name}'s ${t('publicMenu.metaDescSuffix')}`))
+      ? ((dir === 'ltr' && restaurant.description_en ? restaurant.description_en : restaurant.description) || (dir === 'rtl'
+          ? `${t('publicMenu.metaDescPrefixWord')} ${t('hubPage.menuWord')} ${displayName} ${t('publicMenu.metaDescSuffix')}`
+          : `${t('publicMenu.metaDescPrefixWord')} ${displayName}'s ${t('publicMenu.metaDescSuffix')}`))
       : undefined
   );
   useGoogleFont(restaurant?.fontFamily);
@@ -59,7 +89,8 @@ export default function PublicMenuPage() {
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string>('الكل');
+  const [branches, setBranches] = useState<any[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
@@ -70,6 +101,8 @@ export default function PublicMenuPage() {
   const [itemComment, setItemComment] = useState('');
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const { toast } = useToast();
+
+  const { phase: branchPhase, nearestBranch, requestLocation } = useNearestBranch(branches);
 
   const openItem = (item: MenuItem) => {
     setActiveItem(item);
@@ -133,14 +166,10 @@ export default function PublicMenuPage() {
     }) as MenuItem[];
   };
 
-  // Real categories (with a deliberate order) come first, in that order;
-  // any stray category text on an item with no matching real category row
-  // (legacy items, or the cache just hasn't resynced yet) is appended after,
-  // so nothing silently disappears from the tab bar.
   const buildCategoryTabs = (items: MenuItem[], orderedNames: string[]): string[] => {
     const extra = Array.from(new Set(items.map(i => i.category).filter(Boolean)))
       .filter((name) => !orderedNames.includes(name));
-    return ['الكل', ...orderedNames, ...extra];
+    return [...orderedNames, ...extra];
   };
 
   useEffect(() => {
@@ -155,7 +184,10 @@ export default function PublicMenuPage() {
           const items = data.menu as MenuItem[];
           setMenuItems(applySort(items));
           const orderedNames = (data.categories || []).map((c) => c.name);
-          setCategories(buildCategoryTabs(items, orderedNames));
+          const tabs = buildCategoryTabs(items, orderedNames);
+          setCategories(tabs);
+          setActiveCategory((prev) => prev || tabs[0] || '');
+          setBranches(((data.branches || []) as any[]).filter((b) => b.status === 'active'));
           setLoading(false);
           return;
         }
@@ -175,14 +207,18 @@ export default function PublicMenuPage() {
 
         setRestaurant(rest);
 
-        const [{ data: items }, { data: categoryRows }] = await Promise.all([
+        const [{ data: items }, { data: categoryRows }, { data: branchRows }] = await Promise.all([
           supabase.from('menu_items').select('*').eq('restaurant_id', rest.id),
           supabase.from('menu_categories').select('name').eq('restaurant_id', rest.id).order('position'),
+          supabase.from('branches').select('*').eq('restaurant_id', rest.id).eq('status', 'active'),
         ]);
 
         const sorted = applySort((items || []) as MenuItem[]);
         setMenuItems(sorted);
-        setCategories(buildCategoryTabs(sorted, (categoryRows || []).map((c: any) => c.name)));
+        const tabs = buildCategoryTabs(sorted, (categoryRows || []).map((c: any) => c.name));
+        setCategories(tabs);
+        setActiveCategory((prev) => prev || tabs[0] || '');
+        setBranches((branchRows || []) as any[]);
       } catch (e) {
         console.error(e);
       } finally {
@@ -200,12 +236,13 @@ export default function PublicMenuPage() {
     return () => { supabase.removeChannel(channel); };
   }, [username]);
 
-  const filteredItems = useMemo(() => {
+  const currentItems = useMemo(() => {
     return menuItems.filter(item => {
-      const matchesCategory = activeCategory === 'الكل' || item.category === activeCategory;
-      const matchesSearch = (item.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+      const matchesCategory = item.category === activeCategory;
+      const matchesSearch = !searchQuery ||
+        (item.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch && item.status === 'available';
     });
   }, [menuItems, activeCategory, searchQuery]);
 
@@ -269,22 +306,10 @@ export default function PublicMenuPage() {
           <Skeleton className="h-6 w-40" />
           <Skeleton className="h-4 w-56" />
         </div>
-        <Skeleton className="h-12 w-full rounded-xl" />
         <div className="flex gap-2">
           {[1,2,3,4].map(i => <Skeleton key={i} className="h-9 w-20 rounded-full" />)}
         </div>
-        <div className="space-y-6">
-          {[1,2,3].map(i => (
-            <div key={i} className="flex gap-4">
-              <Skeleton className="h-28 w-28 rounded-xl shrink-0" />
-              <div className="flex-1 space-y-3 py-1">
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-4 w-16" />
-              </div>
-            </div>
-          ))}
-        </div>
+        <Skeleton className="h-96 w-full rounded-3xl" />
       </div>
     </div>
   );
@@ -319,26 +344,22 @@ export default function PublicMenuPage() {
         <LanguageSwitcher />
       </div>
 
-      <div className={`max-w-lg mx-auto w-full px-5 pb-6 text-center space-y-3 ${alignStart}`}>
+      <div className={`max-w-lg mx-auto w-full px-5 pb-4 text-center space-y-3 ${alignStart}`}>
         <div className="relative w-16 h-16 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
-            alt={restaurant.name}
+            alt={displayName}
             fill
             sizes="64px"
             className="object-cover"
           />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
-          {restaurant.description && (
-            <p className="text-sm text-gray-600 mt-0.5 line-clamp-1">{restaurant.description}</p>
-          )}
+          <h1 className="text-xl font-bold text-gray-900">{displayName}</h1>
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-5 space-y-4">
-
+      <div className="max-w-lg mx-auto w-full px-5 space-y-3">
         {/* Search */}
         <div className="relative">
           <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
@@ -364,72 +385,63 @@ export default function PublicMenuPage() {
               )}
               style={activeCategory === cat ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : {}}
             >
-              {cat === 'الكل' ? t('publicMenu.allCategory') : cat}
+              {cat}
             </button>
           ))}
         </div>
+
+        {/* Nearest-branch indicator - only worth surfacing with more than one
+            branch, since a single branch's channels are shown regardless. */}
+        {branches.length > 1 && (
+          <div className="text-center">
+            {branchPhase === 'located' ? (
+              <p className="text-[10px] text-gray-600 flex items-center justify-center gap-1">
+                <Navigation className="h-2.5 w-2.5" />
+                {t('publicMenu.nearestBranchPrefix')} {nearestBranch?.name} {t('publicMenu.nearestBranchSuffix')}
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={requestLocation}
+                disabled={branchPhase === 'locating'}
+                className="text-[10px] font-bold flex items-center justify-center gap-1 mx-auto disabled:opacity-50"
+                style={{ color: primaryColor }}
+              >
+                <Navigation className="h-2.5 w-2.5" />
+                {branchPhase === 'locating' ? t('publicBranches.locating') : t('publicMenu.showNearestBranchCta')}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Divider */}
-      <div className="max-w-lg mx-auto w-full border-b border-gray-100 mt-3" />
-
-      {/* Menu Items */}
-      <div className="max-w-lg mx-auto w-full px-5 pt-5 space-y-8">
-        {categories.filter(c => c !== 'الكل').map(category => {
-          const itemsInCategory = filteredItems.filter(item => item.category === category);
-          if (itemsInCategory.length === 0) return null;
-
-          return (
-            <section key={category}>
-              <h2 className="text-sm font-semibold text-gray-900 mb-4 px-0.5">{category}</h2>
-
-              <div className="space-y-1">
-                {itemsInCategory.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => { recordItemClick(item); openItem(item); }}
-                    className={`w-full flex items-center gap-4 p-3 -mx-3 rounded-xl hover:bg-gray-50 transition-colors ${alignStart}`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-900 truncate">{item.name}</h3>
-                      {item.description && (
-                        <p className="text-xs text-gray-600 mt-0.5 line-clamp-1">{item.description}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-1.5">
-                        <p className="text-xs font-medium" style={{ color: primaryColor }}>
-                          {getPriceDisplay(item)}
-                        </p>
-                        {!!item.review_count && (
-                          <span className="flex items-center gap-0.5 text-[10px] text-gray-600">
-                            <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-                            {item.rating?.toFixed(1)} ({item.review_count})
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0">
-                      <StorageImage
-                        imagePath={item.image_url}
-                        alt={item.name}
-                        fill
-                        className="object-cover"
-                        sizes="64px"
-                      />
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </section>
-          );
-        })}
-
-        {filteredItems.length === 0 && (
+      {/* Swipeable item rail for the active category */}
+      <div className="max-w-lg mx-auto w-full mt-2">
+        {currentItems.length === 0 ? (
           <div className="text-center py-20 space-y-3">
             <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto text-gray-600">
               <Search size={24} />
             </div>
-            <p className="text-sm text-gray-600">{t('ownerTickets.noResults')}</p>
+            <p className="text-sm text-gray-600">{t('publicMenu.noItemsInCategory')}</p>
           </div>
+        ) : (
+          <ItemRail
+            key={activeCategory}
+            items={currentItems}
+            nearestBranch={nearestBranch}
+            primaryColor={primaryColor}
+            dir={dir}
+            t={t}
+            alignStart={alignStart}
+            onOpenDetails={(item) => { recordItemClick(item); openItem(item); }}
+            onChannelClick={(item, channel) => {
+              if (restaurant?.id) {
+                if (channel.isDirect) trackAppClick(restaurant.id, channel.name);
+                else trackAppClick(restaurant.id, channel.name);
+              }
+              window.open(channel.value, '_blank', 'noopener,noreferrer');
+            }}
+          />
         )}
       </div>
 
@@ -606,6 +618,173 @@ export default function PublicMenuPage() {
           )}
         </SheetContent>
       </Sheet>
+    </div>
+  );
+}
+
+interface ItemRailProps {
+  items: MenuItem[];
+  nearestBranch: any;
+  primaryColor: string;
+  dir: 'rtl' | 'ltr';
+  t: (key: string) => string;
+  alignStart: string;
+  onOpenDetails: (item: MenuItem) => void;
+  onChannelClick: (item: MenuItem, channel: OrderChannel) => void;
+}
+
+function ItemRail({ items, nearestBranch, primaryColor, dir, t, alignStart, onOpenDetails, onChannelClick }: ItemRailProps) {
+  const railRef = useRef<HTMLDivElement>(null);
+  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
+            const idx = slideRefs.current.findIndex((el) => el === entry.target);
+            if (idx !== -1) setActiveIndex(idx);
+          }
+        });
+      },
+      { root: rail, threshold: [0.6] }
+    );
+    slideRefs.current.forEach((el) => el && observer.observe(el));
+    return () => observer.disconnect();
+  }, [items]);
+
+  return (
+    <div className="space-y-2">
+      <div ref={railRef} className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory">
+        {items.map((item, i) => {
+          const basePrice = item.sizes?.[0]?.price ?? 0;
+          const channels = buildOrderChannels(item, nearestBranch, basePrice);
+          const highestPrice = channels.length ? Math.max(...channels.map((c) => c.price)) : basePrice;
+          const cheapestPrice = channels.length ? Math.min(...channels.map((c) => c.price)) : basePrice;
+          const savings = highestPrice - cheapestPrice;
+
+          return (
+            <div
+              key={item.id}
+              ref={(el) => { slideRefs.current[i] = el; }}
+              className="shrink-0 w-full snap-center px-5"
+            >
+              <div className="flex items-center justify-between pt-1">
+                <span className="inline-flex items-center gap-1.5 bg-white border border-gray-100 rounded-full px-2.5 py-1.5 text-[10px] font-bold text-gray-700 shadow-sm">
+                  {item.display_tags === 'best_seller' ? '⭐' : item.display_tags === 'daily_offer' ? '🔥' : '🍽️'}
+                </span>
+                <span className="text-[10px] text-gray-600">{i + 1} / {items.length}</span>
+              </div>
+
+              <div className="relative flex items-center justify-center" style={{ height: 280 }}>
+                <div
+                  className="absolute rounded-full blur-sm"
+                  style={{
+                    inset: 'auto auto 40px 50%', transform: 'translateX(-50%)',
+                    width: '82%', height: '82%',
+                    background: `radial-gradient(circle, color-mix(in srgb, ${primaryColor} 8%, transparent) 0%, transparent 70%)`,
+                  }}
+                />
+                <div className="relative w-full h-full max-w-[240px]">
+                  <StorageImage imagePath={item.image_url} alt={item.name} fill className="object-contain drop-shadow-xl" sizes="240px" />
+                </div>
+              </div>
+
+              <div className={`text-center ${alignStart === 'text-right' ? 'text-center' : 'text-center'}`}>
+                <h2 className="text-2xl font-black text-gray-900 mt-1">{item.name}</h2>
+                <div className="flex items-center justify-center gap-2 mt-1">
+                  <span className="text-lg font-bold" style={{ color: primaryColor }}>
+                    {basePrice === 0 ? t('planPricing.free') : `${basePrice} ${t('ownerSettings.currency')}`}
+                  </span>
+                  <button type="button" onClick={() => onOpenDetails(item)} className="text-[11px] font-bold underline underline-offset-2 text-gray-600">
+                    {t('publicMenu.viewDetails')}
+                  </button>
+                </div>
+                {item.description && <p className="text-xs text-gray-600 mt-1 line-clamp-1">{item.description}</p>}
+              </div>
+
+              {channels.length > 0 && (
+                <div className="mt-4 max-w-sm mx-auto">
+                  <div className="flex items-center gap-2 justify-center mb-2.5">
+                    <span className="h-px flex-1 bg-gradient-to-l from-transparent via-gray-200 to-transparent" />
+                    <span className="text-[10px] font-bold text-gray-600">{t('publicMenu.chooseOrderMethod')}</span>
+                    <span className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+                  </div>
+                  <div className={cn("grid gap-2", channels.length >= 4 ? "grid-cols-4" : `grid-cols-${channels.length}`)}>
+                    {channels.map((channel) => (
+                      <button
+                        key={channel.id}
+                        type="button"
+                        onClick={() => onChannelClick(item, channel)}
+                        className={cn(
+                          "relative flex flex-col items-center rounded-2xl border p-2 text-center transition-transform active:scale-95",
+                          channel.isDirect ? "bg-white shadow-sm" : "bg-white border-gray-100"
+                        )}
+                        style={channel.isDirect ? { borderColor: `${primaryColor}50`, background: `linear-gradient(180deg, color-mix(in srgb, ${primaryColor} 5%, white), white)` } : {}}
+                      >
+                        {channel.isDirect && (
+                          <span
+                            className="absolute -top-2 inset-x-0 mx-auto w-fit text-[8px] font-bold text-white rounded-full px-1.5 py-0.5 whitespace-nowrap"
+                            style={{ backgroundColor: primaryColor }}
+                          >
+                            {t('publicMenu.bestForYou')}
+                          </span>
+                        )}
+                        <div className="relative w-8 h-8 rounded-xl bg-gray-50 overflow-hidden mb-1 mt-1">
+                          {channel.logo ? (
+                            <StorageImage imagePath={channel.logo} alt={channel.name} fill className="object-contain p-1" sizes="32px" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-gray-600">
+                              {channel.name.slice(0, 2)}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[9px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[22px]">{channel.name}</span>
+                        <span className="text-[10px] font-bold mt-0.5" style={{ color: channel.isDirect ? primaryColor : undefined }}>
+                          {channel.price} {t('ownerSettings.currency')}
+                        </span>
+                        <span
+                          className="w-full mt-1.5 rounded-lg py-1 text-[9px] font-bold"
+                          style={channel.isDirect ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : { backgroundColor: '#f2f5f3', color: '#2e3e36' }}
+                        >
+                          {channel.isDirect ? t('publicMenu.orderNow') : t('publicMenu.openInApp')}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  {savings > 0 && (
+                    <p className="text-center text-[10px] font-bold mt-2" style={{ color: primaryColor }}>
+                      {t('publicMenu.savePrefix')} {savings} {t('ownerSettings.currency')} {t('publicMenu.saveSuffix')}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {items.length > 1 && (
+        <>
+          <div className="flex items-center justify-center gap-1.5">
+            {items.map((_, i) => (
+              <span
+                key={i}
+                className="block rounded-full transition-all"
+                style={{
+                  height: 6,
+                  width: i === activeIndex ? 20 : 6,
+                  backgroundColor: i === activeIndex ? primaryColor : '#d6deda',
+                }}
+              />
+            ))}
+          </div>
+          <p className="text-center text-[10px] text-gray-600">{t('publicMenu.swipeHint')}</p>
+        </>
+      )}
     </div>
   );
 }
