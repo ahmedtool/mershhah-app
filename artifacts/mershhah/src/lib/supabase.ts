@@ -50,6 +50,18 @@ if (useMock) {
       auth: {
         persistSession: !skipAuthPersistence,
         autoRefreshToken: !skipAuthPersistence,
+        // supabase-js still briefly acquires a Navigator LockManager lock
+        // around session reads even with persistSession/autoRefreshToken
+        // off, and that lock is named after storageKey - which defaults to
+        // the same value for every client on this origin. Without a
+        // distinct storageKey here, the iframe's client keeps contending
+        // for the exact same lock as the parent tab's client, so a save
+        // that happens to call getSession() (or an upload that attaches
+        // the current token) right as the iframe grabs the lock can fail
+        // with "immediately failed" and go out unauthenticated - which is
+        // what produced the "new row violates row-level security policy"
+        // error saving a custom app logo while the preview iframe was open.
+        ...(skipAuthPersistence ? { storageKey: 'sb-preview-iframe-auth-token' } : {}),
       },
     }
   );
