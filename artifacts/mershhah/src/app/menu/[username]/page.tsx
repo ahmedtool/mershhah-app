@@ -597,9 +597,10 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
             <button
               type="button"
               onClick={() => { setShowRatingForm(true); onEngageItem(item); }}
-              className="text-xs font-bold"
-              style={{ color: primaryColor }}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-transform active:scale-95"
+              style={{ backgroundColor: `${primaryColor}14`, color: primaryColor, border: `1px solid ${primaryColor}35` }}
             >
+              <Star className="h-3.5 w-3.5" fill={primaryColor} />
               {t('publicMenu.rateThisItem')}
             </button>
           )}
