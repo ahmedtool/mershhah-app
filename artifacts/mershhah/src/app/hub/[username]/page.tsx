@@ -266,7 +266,7 @@ export default function RestaurantHubPage() {
       <div className="w-full max-w-lg mx-auto relative">
 
         {/* Header - الشعار والاسم */}
-        <div className="relative px-5 py-8 text-center">
+        <div className="relative px-5 pt-5 pb-4 text-center">
           {/* Language switcher */}
           <div className="absolute top-4 start-4">
             <LanguageSwitcher className="!bg-gray-100 hover:!bg-gray-200 rounded-full" />
@@ -285,19 +285,19 @@ export default function RestaurantHubPage() {
           </div>
 
           {/* الشعار */}
-          <div className="relative w-24 h-24 overflow-hidden mx-auto mb-4" style={{ borderRadius: 'var(--r-radius)' }}>
+          <div className="relative w-20 h-20 overflow-hidden mx-auto mb-3" style={{ borderRadius: 'var(--r-radius)' }}>
             <StorageImage
               imagePath={restaurant.logo}
               alt={displayName}
               fill
               className="object-contain"
-              sizes="96px"
+              sizes="80px"
             />
           </div>
 
           {/* الاسم والوصف */}
-          <div className="space-y-1.5">
-            <h1 className="text-2xl font-black tracking-tight text-gray-900">
+          <div className="space-y-1">
+            <h1 className="text-xl font-black tracking-tight text-gray-900">
               {displayName}
             </h1>
             <p className="text-sm text-gray-600 font-medium max-w-xs mx-auto line-clamp-2">
@@ -307,7 +307,7 @@ export default function RestaurantHubPage() {
         </div>
 
         {/* المحتوى */}
-        <div className="px-4 py-6 space-y-6">
+        <div className="px-4 py-4 space-y-4">
 
           {/* العروض */}
           {visibleOffers.length > 0 && (
@@ -320,7 +320,7 @@ export default function RestaurantHubPage() {
                     onClick={() => handleOfferClick(offer)}
                     className="shrink-0 flex-[0_0_100%] snap-center text-right"
                   >
-                    <div className="relative shadow-md overflow-hidden group" style={{ aspectRatio: '16/10', borderRadius: 'var(--r-radius)' }}>
+                    <div className="relative shadow-md overflow-hidden group" style={{ aspectRatio: '16/8', borderRadius: 'var(--r-radius)' }}>
                       <StorageImage
                         imagePath={offer.image_url}
                         alt={offer.title}
@@ -346,7 +346,7 @@ export default function RestaurantHubPage() {
             {restaurant.is_paid_plan && (
               <Link href={`/ai/${username}`} className="block">
                 <div
-                  className="flex items-center gap-4 p-4 shadow-md transition-all h-16"
+                  className="flex items-center gap-4 p-3.5 shadow-md transition-all h-14"
                   style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)', borderRadius: 'var(--r-radius)' }}
                 >
                   <div className="w-11 h-11 flex items-center justify-center bg-white/20 backdrop-blur-md border border-white/30" style={{ borderRadius: 'var(--r-radius-sm)' }}>
@@ -361,7 +361,7 @@ export default function RestaurantHubPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <Link href={`/menu/${username}`} className="block">
-                <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all h-16" style={{ borderRadius: 'var(--r-radius)' }}>
+                <div className="flex items-center gap-3 p-3.5 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all h-14" style={{ borderRadius: 'var(--r-radius)' }}>
                   <div
                     className="w-11 h-11 flex items-center justify-center shrink-0"
                     style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)', borderRadius: 'var(--r-radius-sm)' }}
@@ -375,7 +375,7 @@ export default function RestaurantHubPage() {
               </Link>
 
               <Link href={`/reviews/${username}`} className="block">
-                <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all h-16" style={{ borderRadius: 'var(--r-radius)' }}>
+                <div className="flex items-center gap-3 p-3.5 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all h-14" style={{ borderRadius: 'var(--r-radius)' }}>
                   <div
                     className="w-11 h-11 flex items-center justify-center shrink-0"
                     style={{ backgroundColor: 'color-mix(in srgb, var(--r-primary) 14%, white)', color: 'var(--r-primary)', borderRadius: 'var(--r-radius-sm)' }}
@@ -389,7 +389,7 @@ export default function RestaurantHubPage() {
               </Link>
 
               <Link href={`/branches/${username}`} className="block">
-                <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all h-16" style={{ borderRadius: 'var(--r-radius)' }}>
+                <div className="flex items-center gap-3 p-3.5 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all h-14" style={{ borderRadius: 'var(--r-radius)' }}>
                   <div
                     className="w-11 h-11 flex items-center justify-center shrink-0"
                     style={{ backgroundColor: 'color-mix(in srgb, var(--r-primary) 14%, white)', color: 'var(--r-primary)', borderRadius: 'var(--r-radius-sm)' }}
@@ -403,7 +403,7 @@ export default function RestaurantHubPage() {
               </Link>
 
               <Link href={`/support/${username}`} className="block">
-                <div className="flex items-center gap-3 p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all h-16" style={{ borderRadius: 'var(--r-radius)' }}>
+                <div className="flex items-center gap-3 p-3.5 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all h-14" style={{ borderRadius: 'var(--r-radius)' }}>
                   <div
                     className="w-11 h-11 flex items-center justify-center shrink-0"
                     style={{ backgroundColor: 'color-mix(in srgb, var(--r-primary) 14%, white)', color: 'var(--r-primary)', borderRadius: 'var(--r-radius-sm)' }}
@@ -474,7 +474,7 @@ export default function RestaurantHubPage() {
 
           {/* الفوتر */}
           {!restaurant.is_paid_plan && (
-            <div className="pt-6 border-t border-gray-200 text-center pb-6">
+            <div className="pt-3 border-t border-gray-200 text-center pb-2">
               <Link
                 href="/"
                 target="_blank"

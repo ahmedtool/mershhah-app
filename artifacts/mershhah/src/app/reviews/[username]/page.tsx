@@ -236,11 +236,11 @@ export default function PublicReviewsPage() {
   const buttonTextColor = restaurant?.buttonTextColor || getContrastTextColor(primaryColor);
 
   return (
-    <div className="min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
+    <div className="min-h-screen pb-6 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
       <PublicPageBackdrop />
 
       {/* Header */}
-      <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-4 flex items-center justify-between relative">
+      <div className="max-w-lg mx-auto w-full px-5 pt-3 pb-2 flex items-center justify-between relative">
         <Button
           variant="ghost"
           size="icon"
@@ -252,13 +252,13 @@ export default function PublicReviewsPage() {
         <LanguageSwitcher />
       </div>
 
-      <div className={`max-w-lg mx-auto w-full px-5 pb-6 text-center space-y-3 ${alignStart} relative`}>
-        <div className="relative w-16 h-16 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
+      <div className={`max-w-lg mx-auto w-full px-5 pb-4 text-center space-y-2 ${alignStart} relative`}>
+        <div className="relative w-14 h-14 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
             alt={restaurant.name}
             fill
-            sizes="64px"
+            sizes="56px"
             className="object-cover"
           />
         </div>
@@ -268,10 +268,10 @@ export default function PublicReviewsPage() {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-5 space-y-6 relative">
+      <div className="max-w-lg mx-auto w-full px-5 space-y-4 relative">
 
         {/* Rating Summary */}
-        <div className="border border-gray-100 p-5" style={{ borderRadius: 'var(--r-radius)' }}>
+        <div className="border border-gray-100 p-4" style={{ borderRadius: 'var(--r-radius)' }}>
           <div className="flex items-start gap-6">
             {/* Big number */}
             <div className="text-center shrink-0">
@@ -302,7 +302,7 @@ export default function PublicReviewsPage() {
 
           <button
             onClick={() => setDialogOpen(true)}
-            className="w-full h-11 rounded-xl text-sm font-bold mt-5 transition-opacity hover:opacity-90"
+            className="w-full h-10 rounded-xl text-sm font-bold mt-3 transition-opacity hover:opacity-90"
             style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
           >
             {t('publicReviews.addYourRating')}

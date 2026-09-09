@@ -174,11 +174,11 @@ export default function PublicBranchesPage() {
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
 
   return (
-    <div className="min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
+    <div className="min-h-screen pb-6 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
       <PublicPageBackdrop />
 
       {/* Header */}
-      <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-4 flex items-center justify-between">
+      <div className="max-w-lg mx-auto w-full px-5 pt-3 pb-2 flex items-center justify-between">
         <button
           onClick={() => window.history.back()}
           className="w-9 h-9 rounded-xl flex items-center justify-center text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
@@ -188,13 +188,13 @@ export default function PublicBranchesPage() {
         <LanguageSwitcher />
       </div>
 
-      <div className={`max-w-lg mx-auto w-full px-5 pb-6 text-center space-y-3 ${alignStart}`}>
-        <div className="relative w-16 h-16 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
+      <div className={`max-w-lg mx-auto w-full px-5 pb-4 text-center space-y-2 ${alignStart}`}>
+        <div className="relative w-14 h-14 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
             alt={restaurant.name}
             fill
-            sizes="64px"
+            sizes="56px"
             className="object-cover"
           />
         </div>
