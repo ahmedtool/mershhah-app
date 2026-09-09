@@ -229,12 +229,8 @@ export default function CustomizePage() {
         const updatedApplications = await Promise.all((settings.applications || []).map(async (app: any) => {
             if (app.type === 'custom' && customAppFiles[app.id]) {
                 const file = customAppFiles[app.id];
-                const path = `restaurants/${user.restaurantId}/custom_apps/${app.id}`;
-                const { data: uploadData, error: uploadError } = await supabase.storage
-                    .from('restaurant-assets')
-                    .upload(path, file, { upsert: true });
-                if (uploadError) throw uploadError;
-                return { ...app, logo: uploadData.path };
+                const logoUrl = await uploadToImageKit(file, `restaurants/${user.restaurantId}/custom_apps`, app.id);
+                return { ...app, logo: logoUrl };
             }
             return app;
         }));
