@@ -1017,7 +1017,6 @@ export const translations = {
     },
     publicMenu: {
       allCategory: 'الكل',
-      onRequest: 'حسب الطلب',
       searchPlaceholder: 'ابحث في القائمة...',
       noRatingYet: 'لا يوجد تقييم بعد',
       rateThisItem: 'قيّم هذا الصنف',
@@ -1025,7 +1024,6 @@ export const translations = {
       metaDescPrefixWord: 'تصفّح',
       metaDescSuffix: 'الرقمي — الأطباق والأسعار والعروض.',
       swipeHint: 'اسحب للاستعراض',
-      viewDetails: 'التفاصيل والتقييم',
       chooseOrderMethod: 'اختر طريقة الطلب',
       bestForYou: 'الأفضل لك',
       orderNow: 'اطلب الآن',
@@ -2162,7 +2160,6 @@ export const translations = {
     },
     publicMenu: {
       allCategory: 'All',
-      onRequest: 'On request',
       searchPlaceholder: 'Search the menu...',
       noRatingYet: 'No rating yet',
       rateThisItem: 'Rate this item',
@@ -2170,7 +2167,6 @@ export const translations = {
       metaDescPrefixWord: 'Browse',
       metaDescSuffix: 'digital menu — dishes, prices, and offers.',
       swipeHint: 'Swipe to browse',
-      viewDetails: 'Details & Reviews',
       chooseOrderMethod: 'Choose how to order',
       bestForYou: 'Best for you',
       orderNow: 'Order Now',

@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useToast } from '@/hooks/use-toast';
@@ -102,48 +101,26 @@ export default function PublicMenuPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
-  const [selectedSize, setSelectedSize] = useState<any>(null);
-  const [showRatingForm, setShowRatingForm] = useState(false);
-  const [itemRating, setItemRating] = useState(0);
-  const [itemHoverRating, setItemHoverRating] = useState(0);
-  const [itemComment, setItemComment] = useState('');
-  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
   const { toast } = useToast();
 
   const { phase: branchPhase, nearestBranch, requestLocation } = useNearestBranch(branches);
 
-  const openItem = (item: MenuItem) => {
-    setActiveItem(item);
-    setSelectedSize(item.sizes?.[0] || null);
-    setShowRatingForm(false);
-    setItemRating(0);
-    setItemComment('');
-  };
-
-  const handleSubmitItemRating = async () => {
-    if (!activeItem || !restaurant?.id || itemRating === 0) return;
-    setIsSubmittingRating(true);
-    try {
-      const { error } = await supabase.from('menu_item_reviews').insert({
-        menu_item_id: activeItem.id,
-        restaurant_id: restaurant.id,
-        rating: itemRating,
-        comment: itemComment || null,
-        is_visible: true,
-        created_at: new Date().toISOString(),
-      });
-      if (error) throw error;
-      toast({ title: t('publicShared.thankYouForRating') });
-      setShowRatingForm(false);
-      setItemRating(0);
-      setItemComment('');
-      syncPublicPage(restaurant.id).catch(() => {});
-    } catch (e: any) {
-      toast({ variant: 'destructive', title: t('ownerSettings.errorTitle'), description: e.message });
-    } finally {
-      setIsSubmittingRating(false);
+  const submitItemRating = async (item: MenuItem, rating: number, comment: string) => {
+    if (!restaurant?.id || rating === 0) return;
+    const { error } = await supabase.from('menu_item_reviews').insert({
+      menu_item_id: item.id,
+      restaurant_id: restaurant.id,
+      rating,
+      comment: comment || null,
+      is_visible: true,
+      created_at: new Date().toISOString(),
+    });
+    if (error) {
+      toast({ variant: 'destructive', title: t('ownerSettings.errorTitle'), description: error.message });
+      throw error;
     }
+    toast({ title: t('publicShared.thankYouForRating') });
+    syncPublicPage(restaurant.id).catch(() => {});
   };
 
   const applySort = (items: MenuItem[]): MenuItem[] => {
@@ -256,13 +233,6 @@ export default function PublicMenuPage() {
   }, [menuItems, activeCategory, searchQuery]);
 
   const primaryColor = restaurant?.primaryColor || '#111827';
-
-  const getPriceDisplay = (item: any) => {
-    const price = item.sizes?.[0]?.price;
-    if (price === 0) return t('planPricing.free');
-    if (price === undefined || price === null) return t('publicMenu.onRequest');
-    return `${price} ${t('ownerSettings.currency')}`;
-  };
 
   const recordItemClick = async (item: MenuItem) => {
     if (!restaurant?.id) return;
@@ -434,8 +404,8 @@ export default function PublicMenuPage() {
             primaryColor={primaryColor}
             dir={dir}
             t={t}
-            alignStart={alignStart}
-            onOpenDetails={(item) => { recordItemClick(item); openItem(item); }}
+            onEngageItem={(item) => recordItemClick(item)}
+            onSubmitRating={submitItemRating}
             onChannelClick={(item, channel) => {
               if (restaurant?.id) {
                 if (channel.isDirect) trackAppClick(restaurant.id, channel.name);
@@ -447,149 +417,6 @@ export default function PublicMenuPage() {
         )}
       </div>
 
-      {/* Detail Sheet */}
-      <Sheet open={!!activeItem} onOpenChange={(open) => !open && setActiveItem(null)}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-0 pt-3 pb-6 max-h-[85vh] overflow-y-auto">
-          {activeItem && (
-            <div className="max-w-md mx-auto px-5 space-y-5">
-
-              {/* Handle */}
-              <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto" />
-
-              {/* Image */}
-              <div className="relative w-full rounded-xl overflow-hidden" style={{ aspectRatio: '4/3' }}>
-                <StorageImage
-                  imagePath={activeItem.image_url}
-                  alt={activeItem.name}
-                  fill
-                  className="object-cover"
-                  sizes="400px"
-                />
-              </div>
-
-              {/* Title & Price */}
-              <div dir={dir} className="flex items-start justify-between gap-4">
-                <div className={`flex-1 min-w-0 ${alignStart}`}>
-                  <h2 className="text-base font-bold text-gray-900">{activeItem.name}</h2>
-                  {activeItem.description && (
-                    <p className="text-sm text-gray-600 leading-relaxed mt-1">{activeItem.description}</p>
-                  )}
-                </div>
-                <span className="text-sm font-bold shrink-0 pt-0.5" style={{ color: primaryColor }}>
-                  {selectedSize && typeof selectedSize.price === 'number'
-                    ? (selectedSize.price === 0 ? t('planPricing.free') : `${selectedSize.price} ${t('ownerSettings.currency')}`)
-                    : getPriceDisplay(activeItem)}
-                </span>
-              </div>
-
-              {/* Rating */}
-              <div dir={dir} className="flex items-center justify-between">
-                {activeItem.review_count ? (
-                  <div className="flex items-center gap-1.5">
-                    <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                    <span className="text-sm font-bold text-gray-900">{activeItem.rating?.toFixed(1)}</span>
-                    <span className="text-xs text-gray-600">({activeItem.review_count} {t('publicShared.reviewCountSuffix')})</span>
-                  </div>
-                ) : (
-                  <span className="text-xs text-gray-600">{t('publicMenu.noRatingYet')}</span>
-                )}
-                {!showRatingForm && (
-                  <button
-                    type="button"
-                    onClick={() => setShowRatingForm(true)}
-                    className="text-xs font-bold"
-                    style={{ color: primaryColor }}
-                  >
-                    {t('publicMenu.rateThisItem')}
-                  </button>
-                )}
-              </div>
-
-              {showRatingForm && (
-                <div dir={dir} className="rounded-xl border border-gray-100 p-4 space-y-3">
-                  <div className="flex justify-center gap-1 flex-row-reverse">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onMouseEnter={() => setItemHoverRating(star)}
-                        onMouseLeave={() => setItemHoverRating(0)}
-                        onClick={() => setItemRating(star)}
-                        className="p-0.5 transition-transform hover:scale-110"
-                      >
-                        <Star
-                          className="h-7 w-7 transition-colors"
-                          fill={star <= (itemHoverRating || itemRating) ? '#f59e0b' : 'none'}
-                          stroke={star <= (itemHoverRating || itemRating) ? '#f59e0b' : '#d1d5db'}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                  <Textarea
-                    placeholder={t('publicShared.leaveComment')}
-                    value={itemComment}
-                    onChange={(e) => setItemComment(e.target.value)}
-                    className="text-sm min-h-[70px] resize-none rounded-xl"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowRatingForm(false)}
-                      className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600"
-                    >
-                      {t('publicShared.cancel')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSubmitItemRating}
-                      disabled={itemRating === 0 || isSubmittingRating}
-                      style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
-                      className="flex-1 h-10 rounded-xl text-sm font-bold disabled:opacity-50"
-                    >
-                      {isSubmittingRating ? t('publicShared.sending') : t('publicShared.send')}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Sizes */}
-              {Array.isArray(activeItem.sizes) && activeItem.sizes.length > 0 && (
-                <div dir={dir} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold text-gray-600">{t('publicMenu.sizeLabel')}</p>
-                  </div>
-                  <div className="flex gap-0 overflow-x-auto no-scrollbar pb-1 snap-x snap-mandatory">
-                    {activeItem.sizes.map((size) => {
-                      const isActive = selectedSize?.id === size.id;
-                      return (
-                        <button
-                          key={size.id || size.name}
-                          type="button"
-                          onClick={() => setSelectedSize(size)}
-                          className={cn(
-                            "shrink-0 px-6 py-3 snap-center transition-all duration-200 border-b-2",
-                            isActive
-                              ? "border-current"
-                              : "border-transparent text-gray-600"
-                          )}
-                          style={isActive ? { borderColor: primaryColor, color: primaryColor } : {}}
-                        >
-                          <span className={cn(
-                            "text-sm transition-all duration-200",
-                            isActive ? "font-bold" : "font-medium"
-                          )}>
-                            {size.name}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
@@ -600,12 +427,12 @@ interface ItemRailProps {
   primaryColor: string;
   dir: 'rtl' | 'ltr';
   t: (key: string) => string;
-  alignStart: string;
-  onOpenDetails: (item: MenuItem) => void;
+  onEngageItem: (item: MenuItem) => void;
+  onSubmitRating: (item: MenuItem, rating: number, comment: string) => Promise<void>;
   onChannelClick: (item: MenuItem, channel: OrderChannel) => void;
 }
 
-function ItemRail({ items, nearestBranch, primaryColor, dir, t, alignStart, onOpenDetails, onChannelClick }: ItemRailProps) {
+function ItemRail({ items, nearestBranch, primaryColor, dir, t, onEngageItem, onSubmitRating, onChannelClick }: ItemRailProps) {
   const railRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -634,112 +461,26 @@ function ItemRail({ items, nearestBranch, primaryColor, dir, t, alignStart, onOp
         ref={railRef}
         className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth [-webkit-overflow-scrolling:touch]"
       >
-        {items.map((item, i) => {
-          const basePrice = item.sizes?.[0]?.price ?? 0;
-          const channels = buildOrderChannels(item, nearestBranch, basePrice);
-          const highestPrice = channels.length ? Math.max(...channels.map((c) => c.price)) : basePrice;
-          const cheapestPrice = channels.length ? Math.min(...channels.map((c) => c.price)) : basePrice;
-          const savings = highestPrice - cheapestPrice;
-
-          return (
-            <div
-              key={item.id}
-              ref={(el) => { slideRefs.current[i] = el; }}
-              className="shrink-0 w-full snap-center [scroll-snap-stop:always] px-5"
-            >
-              <div className="flex items-center justify-between pt-1">
-                {item.display_tags && item.display_tags !== 'none' ? (
-                  <span className="inline-flex items-center bg-white border border-gray-100 rounded-full px-2.5 py-1.5 text-[10px] font-bold text-gray-700 shadow-sm">
-                    {item.display_tags === 'best_seller' ? t('publicMenu.tagBestSeller') : item.display_tags === 'daily_offer' ? t('publicMenu.tagDailyOffer') : t('publicMenu.tagNew')}
-                  </span>
-                ) : <span />}
-                <span className="text-[10px] text-gray-600">{i + 1} / {items.length}</span>
-              </div>
-
-              <div className="relative flex items-center justify-center" style={{ height: 280 }}>
-                <div
-                  className="absolute rounded-full blur-sm"
-                  style={{
-                    inset: 'auto auto 40px 50%', transform: 'translateX(-50%)',
-                    width: '82%', height: '82%',
-                    background: `radial-gradient(circle, color-mix(in srgb, ${primaryColor} 8%, transparent) 0%, transparent 70%)`,
-                  }}
-                />
-                <div className="relative w-full h-full max-w-[240px]">
-                  <StorageImage imagePath={item.image_url} alt={item.name} fill className="object-contain drop-shadow-xl" sizes="240px" />
-                </div>
-              </div>
-
-              <div className="text-center">
-                <h2 className="text-2xl font-black text-gray-900 mt-1">{item.name}</h2>
-                <span className="text-lg font-bold" style={{ color: primaryColor }}>
-                  {basePrice === 0 ? t('planPricing.free') : `${basePrice} ${t('ownerSettings.currency')}`}
-                </span>
-                {item.description && <p className="text-xs text-gray-600 mt-1.5 line-clamp-1">{item.description}</p>}
-                <button type="button" onClick={() => onOpenDetails(item)} className="text-[11px] font-bold underline underline-offset-2 text-gray-600 mt-1">
-                  {t('publicMenu.viewDetails')}
-                </button>
-              </div>
-
-              {channels.length > 0 && (
-                <div className="mt-4 max-w-sm mx-auto">
-                  <div className="flex items-center gap-2 justify-center mb-2.5">
-                    <span className="h-px flex-1 bg-gradient-to-l from-transparent via-gray-200 to-transparent" />
-                    <span className="text-[10px] font-bold text-gray-600">{t('publicMenu.chooseOrderMethod')}</span>
-                    <span className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
-                  </div>
-                  <div className={cn("grid gap-2", channels.length >= 4 ? "grid-cols-4" : `grid-cols-${channels.length}`)}>
-                    {channels.map((channel) => (
-                      <button
-                        key={channel.id}
-                        type="button"
-                        onClick={() => onChannelClick(item, channel)}
-                        className={cn(
-                          "relative flex flex-col items-center rounded-2xl border p-2 text-center transition-transform active:scale-95",
-                          channel.isDirect ? "bg-white shadow-sm" : "bg-white border-gray-100"
-                        )}
-                        style={channel.isDirect ? { borderColor: `${primaryColor}50`, background: `linear-gradient(180deg, color-mix(in srgb, ${primaryColor} 5%, white), white)` } : {}}
-                      >
-                        {channel.isDirect && (
-                          <span
-                            className="absolute -top-2 inset-x-0 mx-auto w-fit text-[8px] font-bold text-white rounded-full px-1.5 py-0.5 whitespace-nowrap"
-                            style={{ backgroundColor: primaryColor }}
-                          >
-                            {t('publicMenu.bestForYou')}
-                          </span>
-                        )}
-                        <div className="relative w-8 h-8 rounded-xl bg-gray-50 overflow-hidden mb-1 mt-1">
-                          {channel.logo ? (
-                            <StorageImage imagePath={channel.logo} alt={channel.name} fill className="object-contain p-1" sizes="32px" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-gray-600">
-                              {channel.name.slice(0, 2)}
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-[9px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[22px]">{channel.name}</span>
-                        <span className="text-[10px] font-bold mt-0.5" style={{ color: channel.isDirect ? primaryColor : undefined }}>
-                          {channel.price} {t('ownerSettings.currency')}
-                        </span>
-                        <span
-                          className="w-full mt-1.5 rounded-lg py-1 text-[9px] font-bold"
-                          style={channel.isDirect ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : { backgroundColor: '#f2f5f3', color: '#2e3e36' }}
-                        >
-                          {channel.isDirect ? t('publicMenu.orderNow') : t('publicMenu.openInApp')}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                  {savings > 0 && (
-                    <p className="text-center text-[10px] font-bold mt-2" style={{ color: primaryColor }}>
-                      {t('publicMenu.savePrefix')} {savings} {t('ownerSettings.currency')} {t('publicMenu.saveSuffix')}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {items.map((item, i) => (
+          <div
+            key={item.id}
+            ref={(el) => { slideRefs.current[i] = el; }}
+            className="shrink-0 w-full snap-center [scroll-snap-stop:always] px-5"
+          >
+            <ItemCard
+              item={item}
+              index={i}
+              total={items.length}
+              nearestBranch={nearestBranch}
+              primaryColor={primaryColor}
+              dir={dir}
+              t={t}
+              onEngageItem={onEngageItem}
+              onSubmitRating={onSubmitRating}
+              onChannelClick={onChannelClick}
+            />
+          </div>
+        ))}
       </div>
 
       {items.length > 1 && (
@@ -761,5 +502,246 @@ function ItemRail({ items, nearestBranch, primaryColor, dir, t, alignStart, onOp
         </>
       )}
     </div>
+  );
+}
+
+interface ItemCardProps {
+  item: MenuItem;
+  index: number;
+  total: number;
+  nearestBranch: any;
+  primaryColor: string;
+  dir: 'rtl' | 'ltr';
+  t: (key: string) => string;
+  onEngageItem: (item: MenuItem) => void;
+  onSubmitRating: (item: MenuItem, rating: number, comment: string) => Promise<void>;
+  onChannelClick: (item: MenuItem, channel: OrderChannel) => void;
+}
+
+function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onEngageItem, onSubmitRating, onChannelClick }: ItemCardProps) {
+  const [selectedSize, setSelectedSize] = useState<any>(item.sizes?.[0] || null);
+  const [showRatingForm, setShowRatingForm] = useState(false);
+  const [itemRating, setItemRating] = useState(0);
+  const [itemHoverRating, setItemHoverRating] = useState(0);
+  const [itemComment, setItemComment] = useState('');
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+
+  const basePrice = item.sizes?.[0]?.price ?? 0;
+  const displayPrice = selectedSize && typeof selectedSize.price === 'number' ? selectedSize.price : basePrice;
+  const channels = buildOrderChannels(item, nearestBranch, basePrice);
+  const highestPrice = channels.length ? Math.max(...channels.map((c) => c.price)) : basePrice;
+  const cheapestPrice = channels.length ? Math.min(...channels.map((c) => c.price)) : basePrice;
+  const savings = highestPrice - cheapestPrice;
+
+  const handleSubmitRating = async () => {
+    if (itemRating === 0) return;
+    setIsSubmittingRating(true);
+    try {
+      await onSubmitRating(item, itemRating, itemComment);
+      setShowRatingForm(false);
+      setItemRating(0);
+      setItemComment('');
+    } catch {
+      // onSubmitRating already surfaces the error toast
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between pt-1">
+        {item.display_tags && item.display_tags !== 'none' ? (
+          <span className="inline-flex items-center bg-white border border-gray-100 rounded-full px-2.5 py-1.5 text-[10px] font-bold text-gray-700 shadow-sm">
+            {item.display_tags === 'best_seller' ? t('publicMenu.tagBestSeller') : item.display_tags === 'daily_offer' ? t('publicMenu.tagDailyOffer') : t('publicMenu.tagNew')}
+          </span>
+        ) : <span />}
+        <span className="text-[10px] text-gray-600">{index + 1} / {total}</span>
+      </div>
+
+      <div className="relative flex items-center justify-center" style={{ height: 280 }}>
+        <div
+          className="absolute rounded-full blur-sm"
+          style={{
+            inset: 'auto auto 40px 50%', transform: 'translateX(-50%)',
+            width: '82%', height: '82%',
+            background: `radial-gradient(circle, color-mix(in srgb, ${primaryColor} 8%, transparent) 0%, transparent 70%)`,
+          }}
+        />
+        <div className="relative w-full h-full max-w-[240px]">
+          <StorageImage imagePath={item.image_url} alt={item.name} fill className="object-contain drop-shadow-xl" sizes="240px" />
+        </div>
+      </div>
+
+      <div className="text-center">
+        <h2 className="text-2xl font-black text-gray-900 mt-1">{item.name}</h2>
+        <span className="text-lg font-bold" style={{ color: primaryColor }}>
+          {displayPrice === 0 ? t('planPricing.free') : `${displayPrice} ${t('ownerSettings.currency')}`}
+        </span>
+        {item.description && <p className="text-xs text-gray-600 mt-1.5 line-clamp-1">{item.description}</p>}
+      </div>
+
+      <div className="mt-3 max-w-sm mx-auto space-y-3">
+        {/* Rating */}
+        <div dir={dir} className="flex items-center justify-between">
+          {item.review_count ? (
+            <div className="flex items-center gap-1.5">
+              <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+              <span className="text-sm font-bold text-gray-900">{item.rating?.toFixed(1)}</span>
+              <span className="text-xs text-gray-600">({item.review_count} {t('publicShared.reviewCountSuffix')})</span>
+            </div>
+          ) : (
+            <span className="text-xs text-gray-600">{t('publicMenu.noRatingYet')}</span>
+          )}
+          {!showRatingForm && (
+            <button
+              type="button"
+              onClick={() => { setShowRatingForm(true); onEngageItem(item); }}
+              className="text-xs font-bold"
+              style={{ color: primaryColor }}
+            >
+              {t('publicMenu.rateThisItem')}
+            </button>
+          )}
+        </div>
+
+        {showRatingForm && (
+          <div dir={dir} className="rounded-xl border border-gray-100 p-4 space-y-3">
+            <div className="flex justify-center gap-1 flex-row-reverse">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onMouseEnter={() => setItemHoverRating(star)}
+                  onMouseLeave={() => setItemHoverRating(0)}
+                  onClick={() => setItemRating(star)}
+                  className="p-0.5 transition-transform hover:scale-110"
+                >
+                  <Star
+                    className="h-7 w-7 transition-colors"
+                    fill={star <= (itemHoverRating || itemRating) ? '#f59e0b' : 'none'}
+                    stroke={star <= (itemHoverRating || itemRating) ? '#f59e0b' : '#d1d5db'}
+                  />
+                </button>
+              ))}
+            </div>
+            <Textarea
+              placeholder={t('publicShared.leaveComment')}
+              value={itemComment}
+              onChange={(e) => setItemComment(e.target.value)}
+              className="text-sm min-h-[70px] resize-none rounded-xl"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowRatingForm(false)}
+                className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600"
+              >
+                {t('publicShared.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitRating}
+                disabled={itemRating === 0 || isSubmittingRating}
+                style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
+                className="flex-1 h-10 rounded-xl text-sm font-bold disabled:opacity-50"
+              >
+                {isSubmittingRating ? t('publicShared.sending') : t('publicShared.send')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Sizes */}
+        {Array.isArray(item.sizes) && item.sizes.length > 0 && (
+          <div dir={dir} className="space-y-2">
+            <p className="text-xs font-semibold text-gray-600">{t('publicMenu.sizeLabel')}</p>
+            <div className="flex gap-0 overflow-x-auto no-scrollbar pb-1 snap-x snap-mandatory">
+              {item.sizes.map((size) => {
+                const isActive = selectedSize?.id === size.id;
+                return (
+                  <button
+                    key={size.id || size.name}
+                    type="button"
+                    onClick={() => setSelectedSize(size)}
+                    className={cn(
+                      "shrink-0 px-6 py-3 snap-center transition-all duration-200 border-b-2",
+                      isActive
+                        ? "border-current"
+                        : "border-transparent text-gray-600"
+                    )}
+                    style={isActive ? { borderColor: primaryColor, color: primaryColor } : {}}
+                  >
+                    <span className={cn(
+                      "text-sm transition-all duration-200",
+                      isActive ? "font-bold" : "font-medium"
+                    )}>
+                      {size.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {channels.length > 0 && (
+        <div className="mt-4 max-w-sm mx-auto">
+          <div className="flex items-center gap-2 justify-center mb-2.5">
+            <span className="h-px flex-1 bg-gradient-to-l from-transparent via-gray-200 to-transparent" />
+            <span className="text-[10px] font-bold text-gray-600">{t('publicMenu.chooseOrderMethod')}</span>
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
+          </div>
+          <div className={cn("grid gap-2", channels.length >= 4 ? "grid-cols-4" : `grid-cols-${channels.length}`)}>
+            {channels.map((channel) => (
+              <button
+                key={channel.id}
+                type="button"
+                onClick={() => onChannelClick(item, channel)}
+                className={cn(
+                  "relative flex flex-col items-center rounded-2xl border p-2 text-center transition-transform active:scale-95",
+                  channel.isDirect ? "bg-white shadow-sm" : "bg-white border-gray-100"
+                )}
+                style={channel.isDirect ? { borderColor: `${primaryColor}50`, background: `linear-gradient(180deg, color-mix(in srgb, ${primaryColor} 5%, white), white)` } : {}}
+              >
+                {channel.isDirect && (
+                  <span
+                    className="absolute -top-2 inset-x-0 mx-auto w-fit text-[8px] font-bold text-white rounded-full px-1.5 py-0.5 whitespace-nowrap"
+                    style={{ backgroundColor: primaryColor }}
+                  >
+                    {t('publicMenu.bestForYou')}
+                  </span>
+                )}
+                <div className="relative w-8 h-8 rounded-xl bg-gray-50 overflow-hidden mb-1 mt-1">
+                  {channel.logo ? (
+                    <StorageImage imagePath={channel.logo} alt={channel.name} fill className="object-contain p-1" sizes="32px" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-gray-600">
+                      {channel.name.slice(0, 2)}
+                    </div>
+                  )}
+                </div>
+                <span className="text-[9px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[22px]">{channel.name}</span>
+                <span className="text-[10px] font-bold mt-0.5" style={{ color: channel.isDirect ? primaryColor : undefined }}>
+                  {channel.price} {t('ownerSettings.currency')}
+                </span>
+                <span
+                  className="w-full mt-1.5 rounded-lg py-1 text-[9px] font-bold"
+                  style={channel.isDirect ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : { backgroundColor: '#f2f5f3', color: '#2e3e36' }}
+                >
+                  {channel.isDirect ? t('publicMenu.orderNow') : t('publicMenu.openInApp')}
+                </span>
+              </button>
+            ))}
+          </div>
+          {savings > 0 && (
+            <p className="text-center text-[10px] font-bold mt-2" style={{ color: primaryColor }}>
+              {t('publicMenu.savePrefix')} {savings} {t('ownerSettings.currency')} {t('publicMenu.saveSuffix')}
+            </p>
+          )}
+        </div>
+      )}
+    </>
   );
 }
