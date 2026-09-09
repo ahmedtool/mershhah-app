@@ -346,7 +346,26 @@ export default function PublicMenuPage() {
           variant="ghost"
           size="icon"
           className="w-9 h-9 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100 shrink-0"
-          onClick={() => router.back()}
+          onClick={() => {
+            // A visitor usually lands here fresh (QR code / shared link,
+            // often inside a messaging app's own in-app browser), with no
+            // in-app page to go back to. history.back()/history.length
+            // aren't reliable signals for that in every browser/webview,
+            // so only go back when we can see we were actually navigated
+            // here from within the app itself; otherwise land on the
+            // restaurant's hub page instead of a dead or blank back button.
+            let cameFromApp = false;
+            try {
+              cameFromApp = !!document.referrer && new URL(document.referrer).origin === window.location.origin;
+            } catch {
+              cameFromApp = false;
+            }
+            if (cameFromApp) {
+              router.back();
+            } else {
+              router.push(`/${username}`);
+            }
+          }}
         >
           {dir === 'rtl' ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
         </Button>
