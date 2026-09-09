@@ -289,11 +289,31 @@ export default function CustomizePage() {
         }
 
         if (branches.length > 0) {
+          // Each branch keeps its own denormalized copy of every app it has
+          // toggled on (name/logo + that branch's own delivery link), set
+          // once at toggle-on time. Editing an app's name/logo afterwards
+          // (e.g. renaming the custom app, or a new logo) only updated the
+          // definition above - every branch's own copy stayed stale, which
+          // is why the change never showed up on the public menu page.
+          // Refresh name/logo here from the latest definitions, keyed by
+          // platformId, leaving each branch's own value (link) untouched.
+          const latestByPlatformId = new Map<string, { name: string; logo: string }>();
+          globalApps.forEach((a: any) => latestByPlatformId.set(a.id, { name: a.name, logo: a.logo_url }));
+          updatedApplications.forEach((a: any) => latestByPlatformId.set(a.id, { name: a.name, logo: a.logo }));
+          const refreshedBranches = branches.map((b: any) => ({
+            ...b,
+            applications: (b.applications || []).map((a: any) => {
+              const latest = latestByPlatformId.get(a.platformId);
+              return latest ? { ...a, name: latest.name, logo: latest.logo } : a;
+            }),
+          }));
+
           const branchErrors = await Promise.all(
-            branches.map(b => supabase.from('branches').update({ applications: b.applications }).eq('id', b.id))
+            refreshedBranches.map(b => supabase.from('branches').update({ applications: b.applications }).eq('id', b.id))
           );
           const failed = branchErrors.find(r => r.error);
           if (failed?.error) throw failed.error;
+          setBranches(refreshedBranches);
         }
 
         await syncPublicPage(user.restaurantId!).catch((e) => {
