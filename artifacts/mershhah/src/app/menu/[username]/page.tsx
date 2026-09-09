@@ -279,11 +279,11 @@ export default function PublicMenuPage() {
   const themeStyle = getPublicThemeStyle(restaurant);
 
   return (
-    <div className="flex flex-col min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
+    <div className="flex flex-col min-h-screen pb-6 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
       <PublicPageBackdrop />
 
       {/* Header - compact single row: back, logo, name + subtitle, search, language */}
-      <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-3 flex items-center gap-2.5">
+      <div className="max-w-lg mx-auto w-full px-5 pt-3 pb-2 flex items-center gap-2.5">
         <Button
           variant="ghost"
           size="icon"
@@ -328,7 +328,7 @@ export default function PublicMenuPage() {
         <LanguageSwitcher />
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-5 space-y-3">
+      <div className="max-w-lg mx-auto w-full px-5 space-y-2">
         {/* Search - collapsed by default, matching the header's icon-only affordance */}
         {searchOpen && (
           <div className="relative">
@@ -350,7 +350,7 @@ export default function PublicMenuPage() {
               key={cat}
               onClick={() => setActiveCategory(cat)}
               className={cn(
-                "shrink-0 px-3 py-3 text-xs transition-colors relative",
+                "shrink-0 px-3 py-2 text-xs transition-colors relative",
                 activeCategory === cat ? "text-gray-900 font-bold" : "text-gray-600 font-medium hover:text-gray-900"
               )}
             >
@@ -559,29 +559,29 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
         <span className="text-[10px] text-gray-600">{index + 1} / {total}</span>
       </div>
 
-      <div className="relative flex items-center justify-center" style={{ height: 280 }}>
+      <div className="relative flex items-center justify-center" style={{ height: 170 }}>
         <div
           className="absolute rounded-full blur-sm"
           style={{
-            inset: 'auto auto 40px 50%', transform: 'translateX(-50%)',
+            inset: 'auto auto 24px 50%', transform: 'translateX(-50%)',
             width: '82%', height: '82%',
             background: `radial-gradient(circle, color-mix(in srgb, ${primaryColor} 8%, transparent) 0%, transparent 70%)`,
           }}
         />
-        <div className="relative w-full h-full max-w-[240px]">
-          <StorageImage imagePath={item.image_url} alt={item.name} fill className="object-contain drop-shadow-xl" sizes="240px" />
+        <div className="relative w-full h-full max-w-[150px]">
+          <StorageImage imagePath={item.image_url} alt={item.name} fill className="object-contain drop-shadow-xl" sizes="150px" />
         </div>
       </div>
 
       <div className="text-center">
-        <h2 className="text-2xl font-black text-gray-900 mt-1">{item.name}</h2>
+        <h2 className="text-xl font-black text-gray-900">{item.name}</h2>
         <span className="text-lg font-bold" style={{ color: primaryColor }}>
           {displayPrice === 0 ? t('planPricing.free') : `${displayPrice} ${t('ownerSettings.currency')}`}
         </span>
-        {item.description && <p className="text-xs text-gray-600 mt-1.5 line-clamp-1">{item.description}</p>}
+        {item.description && <p className="text-xs text-gray-600 mt-1 line-clamp-1">{item.description}</p>}
       </div>
 
-      <div className="mt-3 max-w-sm mx-auto space-y-3">
+      <div className="mt-2 max-w-sm mx-auto space-y-2">
         {/* Rating */}
         <div dir={dir} className="flex items-center justify-between">
           {item.review_count ? (
@@ -597,7 +597,7 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
             <button
               type="button"
               onClick={() => { setShowRatingForm(true); onEngageItem(item); }}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-transform active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-transform active:scale-95"
               style={{ backgroundColor: `${primaryColor}14`, color: primaryColor, border: `1px solid ${primaryColor}35` }}
             >
               <Star className="h-3.5 w-3.5" fill={primaryColor} />
@@ -607,7 +607,7 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
         </div>
 
         {showRatingForm && (
-          <div dir={dir} className="rounded-xl border border-gray-100 p-4 space-y-3">
+          <div dir={dir} className="rounded-xl border border-gray-100 p-3 space-y-2">
             <div className="flex justify-center gap-1 flex-row-reverse">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -619,7 +619,7 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
                   className="p-0.5 transition-transform hover:scale-110"
                 >
                   <Star
-                    className="h-7 w-7 transition-colors"
+                    className="h-6 w-6 transition-colors"
                     fill={star <= (itemHoverRating || itemRating) ? '#f59e0b' : 'none'}
                     stroke={star <= (itemHoverRating || itemRating) ? '#f59e0b' : '#d1d5db'}
                   />
@@ -630,13 +630,13 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
               placeholder={t('publicShared.leaveComment')}
               value={itemComment}
               onChange={(e) => setItemComment(e.target.value)}
-              className="text-sm min-h-[70px] resize-none rounded-xl"
+              className="text-sm min-h-[50px] resize-none rounded-xl"
             />
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => setShowRatingForm(false)}
-                className="flex-1 h-10 rounded-xl border border-gray-200 text-sm font-medium text-gray-600"
+                className="flex-1 h-9 rounded-xl border border-gray-200 text-sm font-medium text-gray-600"
               >
                 {t('publicShared.cancel')}
               </button>
@@ -645,7 +645,7 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
                 onClick={handleSubmitRating}
                 disabled={itemRating === 0 || isSubmittingRating}
                 style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
-                className="flex-1 h-10 rounded-xl text-sm font-bold disabled:opacity-50"
+                className="flex-1 h-9 rounded-xl text-sm font-bold disabled:opacity-50"
               >
                 {isSubmittingRating ? t('publicShared.sending') : t('publicShared.send')}
               </button>
@@ -666,7 +666,7 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
                     type="button"
                     onClick={() => setSelectedSize(size)}
                     className={cn(
-                      "shrink-0 px-6 py-3 snap-center transition-all duration-200 border-b-2",
+                      "shrink-0 px-4 py-2 snap-center transition-all duration-200 border-b-2",
                       isActive
                         ? "border-current"
                         : "border-transparent text-gray-600"
@@ -688,8 +688,8 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
       </div>
 
       {channels.length > 0 && (
-        <div className="mt-4 max-w-sm mx-auto">
-          <div className="flex items-center gap-2 justify-center mb-2.5">
+        <div className="mt-2 max-w-sm mx-auto">
+          <div className="flex items-center gap-2 justify-center mb-1.5">
             <span className="h-px flex-1 bg-gradient-to-l from-transparent via-gray-200 to-transparent" />
             <span className="text-[10px] font-bold text-gray-600">{t('publicMenu.chooseOrderMethod')}</span>
             <span className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
@@ -701,7 +701,7 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
                 type="button"
                 onClick={() => onChannelClick(item, channel)}
                 className={cn(
-                  "relative flex flex-col items-center rounded-2xl border p-2 text-center transition-transform active:scale-95",
+                  "relative flex flex-col items-center rounded-2xl border p-1.5 text-center transition-transform active:scale-95",
                   channel.isDirect ? "bg-white shadow-sm" : "bg-white border-gray-100"
                 )}
                 style={channel.isDirect ? { borderColor: `${primaryColor}50`, background: `linear-gradient(180deg, color-mix(in srgb, ${primaryColor} 5%, white), white)` } : {}}
@@ -714,21 +714,21 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
                     {t('publicMenu.bestForYou')}
                   </span>
                 )}
-                <div className="relative w-8 h-8 rounded-xl bg-gray-50 overflow-hidden mb-1 mt-1">
+                <div className="relative w-7 h-7 rounded-xl bg-gray-50 overflow-hidden mb-0.5 mt-0.5">
                   {channel.logo ? (
-                    <StorageImage imagePath={channel.logo} alt={channel.name} fill className="object-contain p-1" sizes="32px" />
+                    <StorageImage imagePath={channel.logo} alt={channel.name} fill className="object-contain p-1" sizes="28px" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-gray-600">
                       {channel.name.slice(0, 2)}
                     </div>
                   )}
                 </div>
-                <span className="text-[9px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[22px]">{channel.name}</span>
+                <span className="text-[9px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[18px]">{channel.name}</span>
                 <span className="text-[10px] font-bold mt-0.5" style={{ color: channel.isDirect ? primaryColor : undefined }}>
                   {channel.price} {t('ownerSettings.currency')}
                 </span>
                 <span
-                  className="w-full mt-1.5 rounded-lg py-1 text-[9px] font-bold"
+                  className="w-full mt-1 rounded-lg py-1 text-[9px] font-bold"
                   style={channel.isDirect ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : { backgroundColor: '#f2f5f3', color: '#2e3e36' }}
                 >
                   {channel.isDirect ? t('publicMenu.orderNow') : t('publicMenu.openInApp')}
@@ -737,7 +737,7 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
             ))}
           </div>
           {savings > 0 && (
-            <p className="text-center text-[10px] font-bold mt-2" style={{ color: primaryColor }}>
+            <p className="text-center text-[10px] font-bold mt-1.5" style={{ color: primaryColor }}>
               {t('publicMenu.savePrefix')} {savings} {t('ownerSettings.currency')} {t('publicMenu.saveSuffix')}
             </p>
           )}
