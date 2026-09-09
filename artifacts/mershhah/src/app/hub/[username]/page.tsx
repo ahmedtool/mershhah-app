@@ -333,6 +333,11 @@ export default function RestaurantHubPage() {
                         <h4 className="text-base font-black text-white text-center drop-shadow-lg">
                           {offer.title}
                         </h4>
+                        {offer.description && (
+                          <p className="text-xs text-white/90 text-center drop-shadow-lg mt-0.5 line-clamp-1">
+                            {offer.description}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </button>
