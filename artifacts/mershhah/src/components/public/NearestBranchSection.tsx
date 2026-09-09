@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Link } from 'wouter';
 import { MapPin, Navigation, Phone, ShoppingBag, Locate } from 'lucide-react';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -13,16 +14,16 @@ interface NearestBranchSectionProps {
   branches: any[];
   restaurantId?: string;
   primaryColor: string;
+  username?: string;
 }
 
 type LocationPhase = 'idle' | 'locating' | 'located' | 'denied';
 
-export function NearestBranchSection({ branches, restaurantId, primaryColor }: NearestBranchSectionProps) {
+export function NearestBranchSection({ branches, restaurantId, primaryColor, username }: NearestBranchSectionProps) {
   const { t, dir } = useLanguage();
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
   const [phase, setPhase] = useState<LocationPhase>('idle');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [showAll, setShowAll] = useState(false);
   const [sheetBranch, setSheetBranch] = useState<any | null>(null);
 
   const sortedBranches = useMemo(() => {
@@ -58,6 +59,9 @@ export function NearestBranchSection({ branches, restaurantId, primaryColor }: N
       ? `${Math.round(distanceKm * 1000)} ${t('publicBranches.meterSuffix')}`
       : `${distanceKm.toFixed(1)} ${t('publicBranches.kmSuffix')}`;
   };
+
+  const sortedApps = (apps: any[]) =>
+    [...(apps || [])].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
 
   const renderActions = (branch: any) => (
     <div className="flex gap-2">
@@ -134,11 +138,16 @@ export function NearestBranchSection({ branches, restaurantId, primaryColor }: N
     );
   };
 
+  const nearestTwo = sortedBranches.slice(0, 2);
+  const hasMoreBranches = sortedBranches.length > 2;
+
   return (
     <section className={`space-y-3 ${alignStart}`}>
       <div className="flex items-center gap-2 px-1">
         <MapPin className="h-3.5 w-3.5 text-gray-600" />
-        <h3 className="font-black text-sm text-gray-600">{t('hubPage.branches')}</h3>
+        <h3 className="font-black text-sm text-gray-600">
+          {phase === 'located' ? t('publicBranches.nearestBranchTitle') : t('hubPage.branches')}
+        </h3>
       </div>
 
       {branches.length === 1 ? (
@@ -160,21 +169,15 @@ export function NearestBranchSection({ branches, restaurantId, primaryColor }: N
         </div>
       ) : phase === 'located' ? (
         <div className="space-y-3">
-          {renderBranchCard(sortedBranches[0], true)}
-          {sortedBranches.length > 1 && (
-            <button
-              type="button"
-              onClick={() => setShowAll((v) => !v)}
-              className="text-xs font-bold underline underline-offset-2 mx-auto block"
+          {nearestTwo.map((b, index) => renderBranchCard(b, index === 0))}
+          {hasMoreBranches && username && (
+            <Link
+              href={`/branches/${username}`}
+              className="text-xs font-bold underline underline-offset-2 mx-auto block w-fit"
               style={{ color: primaryColor }}
             >
               {t('publicBranches.viewAllBranches')}
-            </button>
-          )}
-          {showAll && (
-            <div className="space-y-3 pt-1">
-              {sortedBranches.slice(1).map((b) => renderBranchCard(b, false))}
-            </div>
+            </Link>
           )}
         </div>
       ) : (
@@ -203,7 +206,7 @@ export function NearestBranchSection({ branches, restaurantId, primaryColor }: N
             <SheetTitle className="text-base font-black">{t('publicBranches.deliveryApps')}</SheetTitle>
           </SheetHeader>
           <div className="grid grid-cols-4 gap-3 pt-4">
-            {(sheetBranch?.applications || []).map((app: any, idx: number) => (
+            {sortedApps(sheetBranch?.applications).map((app: any, idx: number) => (
               <a
                 key={app.id || idx}
                 href={app.value || '#'}

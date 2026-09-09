@@ -416,7 +416,7 @@ export default function RestaurantHubPage() {
 
           {/* الفروع - بطاقة أقرب فرع (حسب موقع الزائر) مع كل بيانات الفرع وتطبيقات التوصيل الخاصة به */}
           {branches.length > 0 && (
-            <NearestBranchSection branches={branches} restaurantId={restaurant.id} primaryColor={primaryColor} />
+            <NearestBranchSection branches={branches} restaurantId={restaurant.id} primaryColor={primaryColor} username={username} />
           )}
 
           {/* التطبيقات - للمطعم بدون فروع */}
