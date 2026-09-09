@@ -20,13 +20,36 @@ if (useMock) {
     );
   }
 
+  // The owner Customize page renders a live preview of the public site in
+  // an <iframe src="/:username">, which loads this same bundle again on
+  // the same origin. That second app instance never needs an authenticated
+  // session (it only ever renders public, anon-readable pages), but with
+  // session persistence on it would still try to read/refresh/hold the
+  // exact same localStorage-backed auth token as the parent tab's client -
+  // both competing for the same browser-wide Navigator LockManager lock
+  // and throwing "immediately failed" lock errors, especially right after
+  // a save remounts the iframe and the old instance's lock hasn't been
+  // released yet.
+  //
+  // Only skip persistence for THAT specific case, not every iframe: the
+  // owner Tools page also embeds dedicated /owner/tools/... pages in an
+  // iframe, and those genuinely need a real authenticated session to work.
+  let isInIframe = false;
+  try {
+    isInIframe = window.self !== window.top;
+  } catch {
+    isInIframe = true;
+  }
+  const isOwnerOrAdminPath = /^\/(owner|admin)(\/|$)/.test(window.location.pathname);
+  const skipAuthPersistence = isInIframe && !isOwnerOrAdminPath;
+
   supabase = createClient(
     supabaseUrl || 'https://placeholder.supabase.co',
     supabaseAnonKey || 'placeholder',
     {
       auth: {
-        persistSession: true,
-        autoRefreshToken: true,
+        persistSession: !skipAuthPersistence,
+        autoRefreshToken: !skipAuthPersistence,
       },
     }
   );
