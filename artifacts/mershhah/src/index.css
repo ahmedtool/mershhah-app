@@ -283,6 +283,17 @@
 
   .no-default-active-elevate {}
 
+  /* Hides the native scroll affordance on horizontally-swiped carousels
+   * (item rail, category tabs, size picker) - scrolling still works, only
+   * the OS-drawn scrollbar/track is suppressed. */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
 
   /**
    * Toggleable backgrounds go behind the content. Hoverable/active goes on top.
