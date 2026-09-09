@@ -669,7 +669,10 @@ function ItemRail({ items, nearestBranch, primaryColor, dir, t, alignStart, onOp
 
   return (
     <div className="space-y-2">
-      <div ref={railRef} className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory">
+      <div
+        ref={railRef}
+        className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth [-webkit-overflow-scrolling:touch]"
+      >
         {items.map((item, i) => {
           const basePrice = item.sizes?.[0]?.price ?? 0;
           const channels = buildOrderChannels(item, nearestBranch, basePrice);
@@ -681,7 +684,7 @@ function ItemRail({ items, nearestBranch, primaryColor, dir, t, alignStart, onOp
             <div
               key={item.id}
               ref={(el) => { slideRefs.current[i] = el; }}
-              className="shrink-0 w-full snap-center px-5"
+              className="shrink-0 w-full snap-center [scroll-snap-stop:always] px-5"
             >
               <div className="flex items-center justify-between pt-1">
                 {item.display_tags && item.display_tags !== 'none' ? (
