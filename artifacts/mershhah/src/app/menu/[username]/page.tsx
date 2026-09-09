@@ -92,6 +92,7 @@ export default function PublicMenuPage() {
   const [branches, setBranches] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeItem, setActiveItem] = useState<MenuItem | null>(null);
   const [selectedSize, setSelectedSize] = useState<any>(null);
@@ -331,61 +332,63 @@ export default function PublicMenuPage() {
     <div className="flex flex-col min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
       <PublicPageBackdrop />
 
-      {/* Header */}
-      <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-4 flex items-center justify-between relative">
+      {/* Header - compact single row: back, logo, name + subtitle, search, language */}
+      <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-3 flex items-center gap-2.5">
         <Button
           variant="ghost"
           size="icon"
-          className="w-9 h-9 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          className="w-9 h-9 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100 shrink-0"
           onClick={() => router.back()}
         >
           {dir === 'rtl' ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
         </Button>
+        <div className="relative w-9 h-9 rounded-xl overflow-hidden shrink-0" style={{ borderRadius: 'var(--r-radius-sm)' }}>
+          <StorageImage imagePath={restaurant.logo} alt={displayName} fill sizes="36px" className="object-cover" />
+        </div>
+        <div className={`flex-1 min-w-0 ${alignStart}`}>
+          <h1 className="text-sm font-bold text-gray-900 truncate">{displayName}</h1>
+          <p className="text-[10px] text-gray-600 truncate">{restaurant.description || t('publicMenu.menuSubtitle')}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setSearchOpen((v) => !v)}
+          className="w-9 h-9 rounded-xl bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors flex items-center justify-center shrink-0"
+        >
+          <Search className="h-4 w-4" />
+        </button>
         <LanguageSwitcher />
       </div>
 
-      <div className={`max-w-lg mx-auto w-full px-5 pb-4 text-center space-y-3 ${alignStart}`}>
-        <div className="relative w-16 h-16 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
-          <StorageImage
-            imagePath={restaurant.logo}
-            alt={displayName}
-            fill
-            sizes="64px"
-            className="object-cover"
-          />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{displayName}</h1>
-        </div>
-      </div>
-
       <div className="max-w-lg mx-auto w-full px-5 space-y-3">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
-          <Input
-            placeholder={t('publicMenu.searchPlaceholder')}
-            className="w-full h-11 rounded-xl bg-gray-50 border border-gray-100 text-sm ps-10 pe-4 focus-visible:ring-1 focus-visible:ring-gray-200 focus-visible:border-gray-200"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        {/* Search - collapsed by default, matching the header's icon-only affordance */}
+        {searchOpen && (
+          <div className="relative">
+            <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
+            <Input
+              autoFocus
+              placeholder={t('publicMenu.searchPlaceholder')}
+              className="w-full h-11 rounded-xl bg-gray-50 border border-gray-100 text-sm ps-10 pe-4 focus-visible:ring-1 focus-visible:ring-gray-200 focus-visible:border-gray-200"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        )}
 
-        {/* Categories */}
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 -mx-5 px-5">
+        {/* Categories - underline style */}
+        <div className="flex gap-1 overflow-x-auto no-scrollbar -mx-5 px-5 border-b border-gray-100">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
               className={cn(
-                "shrink-0 px-4 h-8 rounded-full text-xs font-medium transition-colors",
-                activeCategory === cat
-                  ? "text-white"
-                  : "bg-gray-50 text-gray-600 hover:bg-gray-100"
+                "shrink-0 px-3 py-3 text-xs transition-colors relative",
+                activeCategory === cat ? "text-gray-900 font-bold" : "text-gray-600 font-medium hover:text-gray-900"
               )}
-              style={activeCategory === cat ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : {}}
             >
               {cat}
+              {activeCategory === cat && (
+                <span className="absolute inset-x-2.5 bottom-0 h-[3px] rounded-full" style={{ backgroundColor: primaryColor }} />
+              )}
             </button>
           ))}
         </div>
@@ -673,9 +676,11 @@ function ItemRail({ items, nearestBranch, primaryColor, dir, t, alignStart, onOp
               className="shrink-0 w-full snap-center px-5"
             >
               <div className="flex items-center justify-between pt-1">
-                <span className="inline-flex items-center gap-1.5 bg-white border border-gray-100 rounded-full px-2.5 py-1.5 text-[10px] font-bold text-gray-700 shadow-sm">
-                  {item.display_tags === 'best_seller' ? '⭐' : item.display_tags === 'daily_offer' ? '🔥' : '🍽️'}
-                </span>
+                {item.display_tags && item.display_tags !== 'none' ? (
+                  <span className="inline-flex items-center bg-white border border-gray-100 rounded-full px-2.5 py-1.5 text-[10px] font-bold text-gray-700 shadow-sm">
+                    {item.display_tags === 'best_seller' ? t('publicMenu.tagBestSeller') : item.display_tags === 'daily_offer' ? t('publicMenu.tagDailyOffer') : t('publicMenu.tagNew')}
+                  </span>
+                ) : <span />}
                 <span className="text-[10px] text-gray-600">{i + 1} / {items.length}</span>
               </div>
 
@@ -693,17 +698,15 @@ function ItemRail({ items, nearestBranch, primaryColor, dir, t, alignStart, onOp
                 </div>
               </div>
 
-              <div className={`text-center ${alignStart === 'text-right' ? 'text-center' : 'text-center'}`}>
+              <div className="text-center">
                 <h2 className="text-2xl font-black text-gray-900 mt-1">{item.name}</h2>
-                <div className="flex items-center justify-center gap-2 mt-1">
-                  <span className="text-lg font-bold" style={{ color: primaryColor }}>
-                    {basePrice === 0 ? t('planPricing.free') : `${basePrice} ${t('ownerSettings.currency')}`}
-                  </span>
-                  <button type="button" onClick={() => onOpenDetails(item)} className="text-[11px] font-bold underline underline-offset-2 text-gray-600">
-                    {t('publicMenu.viewDetails')}
-                  </button>
-                </div>
-                {item.description && <p className="text-xs text-gray-600 mt-1 line-clamp-1">{item.description}</p>}
+                <span className="text-lg font-bold" style={{ color: primaryColor }}>
+                  {basePrice === 0 ? t('planPricing.free') : `${basePrice} ${t('ownerSettings.currency')}`}
+                </span>
+                {item.description && <p className="text-xs text-gray-600 mt-1.5 line-clamp-1">{item.description}</p>}
+                <button type="button" onClick={() => onOpenDetails(item)} className="text-[11px] font-bold underline underline-offset-2 text-gray-600 mt-1">
+                  {t('publicMenu.viewDetails')}
+                </button>
               </div>
 
               {channels.length > 0 && (

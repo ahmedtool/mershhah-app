@@ -1037,6 +1037,10 @@ export const translations = {
       nearestBranchPrefix: 'يعرض فرع',
       nearestBranchSuffix: 'الأقرب لك',
       noItemsInCategory: 'لا توجد أصناف بهذا القسم',
+      tagBestSeller: 'الأكثر طلبًا',
+      tagDailyOffer: 'عرض اليوم',
+      tagNew: 'جديد',
+      menuSubtitle: 'تصفح قائمتنا الرقمية',
     },
     publicReviews: {
       pageSubtitle: 'التقييمات وآراء العملاء',
@@ -2179,6 +2183,10 @@ export const translations = {
       nearestBranchPrefix: 'Showing branch',
       nearestBranchSuffix: 'nearest to you',
       noItemsInCategory: 'No items in this category',
+      tagBestSeller: 'Best Seller',
+      tagDailyOffer: "Today's Offer",
+      tagNew: 'New',
+      menuSubtitle: 'Browse our digital menu',
     },
     publicReviews: {
       pageSubtitle: 'Reviews and customer feedback',
