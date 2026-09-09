@@ -47,8 +47,16 @@ function buildOrderChannels(item: MenuItem, branch: any, basePrice: number): Ord
     price: item.channel_prices?.[app.platformId] ?? basePrice,
     isDirect: app.type === 'custom',
   });
+  // The direct/custom app is the restaurant's own full menu, so it always
+  // lists every item at the base price. A third-party delivery app only
+  // ever carries whatever subset of the menu the owner has actually priced
+  // for it - so unlike the direct tile, a global app's tile only shows for
+  // an item once the owner has explicitly set that item's price for it;
+  // otherwise this item just isn't listed there and the tile stays hidden.
   const direct = apps.filter((a) => a.type === 'custom' && a.value).map(withPrice);
-  const global = apps.filter((a) => a.type === 'global' && a.value).map(withPrice);
+  const global = apps
+    .filter((a) => a.type === 'global' && a.value && item.channel_prices?.[a.platformId] != null)
+    .map(withPrice);
   return [...direct, ...global];
 }
 
