@@ -280,33 +280,6 @@ export default function PublicMenuPage() {
     }).then(() => {});
   };
 
-  const getSuggestionsForItem = (item: MenuItem, allItems: MenuItem[]) => {
-    const candidates = allItems.filter(i => i.id !== item.id && i.status === 'available');
-    if (candidates.length === 0) return [];
-    const sidePriority = ['appetizer', 'dessert', 'drink', 'offer'];
-    const scored = candidates.map((c) => {
-      let score = 0;
-      if (c.display_tags === 'best_seller') score += 3;
-      if (c.display_tags === 'daily_offer') score += 2;
-      if (sidePriority.includes(c.category)) score += 2;
-      if (item.category === 'main' && sidePriority.includes(c.category)) score += 2;
-      if (c.category === 'offer') score += 2;
-      const clicks = c.clicks_count ?? 0;
-      score += Math.min(clicks, 10) * 0.3;
-      const baseSize = Array.isArray(c.sizes) && c.sizes[0] ? c.sizes[0] : { price: 0, cost: 0 };
-      const price = typeof baseSize.price === 'number' ? baseSize.price : 0;
-      const cost = typeof baseSize.cost === 'number' ? baseSize.cost : 0;
-      const margin = price > 0 ? (price - cost) / price : 0;
-      score += margin * 2;
-      return { item: c, score, price };
-    });
-    scored.sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return a.price - b.price;
-    });
-    return scored.slice(0, 3).map(s => s.item);
-  };
-
   if (loading) return (
     <div className="min-h-screen bg-white" dir={dir}>
       <div className="max-w-lg mx-auto px-5 space-y-8 pt-8">
@@ -333,7 +306,6 @@ export default function PublicMenuPage() {
     </div>
   );
 
-  const activeSuggestions = activeItem ? getSuggestionsForItem(activeItem, menuItems) : [];
   const themeStyle = getPublicThemeStyle(restaurant);
 
   return (
@@ -611,36 +583,6 @@ export default function PublicMenuPage() {
                         </button>
                       );
                     })}
-                  </div>
-                </div>
-              )}
-
-              {/* Suggestions */}
-              {activeSuggestions.length > 0 && (
-                <div dir={dir} className="space-y-3">
-                  <p className={`text-xs font-semibold text-gray-600 ${alignStart}`}>{t('publicMenu.suggestedWithIt')}</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    {activeSuggestions.map((sug) => (
-                      <button
-                        key={sug.id}
-                        onClick={() => { recordItemClick(sug); openItem(sug); }}
-                        className={`${alignStart} group`}
-                      >
-                        <div className="relative w-full aspect-square rounded-xl overflow-hidden mb-2">
-                          <StorageImage
-                            imagePath={sug.image_url}
-                            alt={sug.name}
-                            fill
-                            className="object-cover"
-                            sizes="150px"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-900 font-semibold truncate">{sug.name}</p>
-                        <p className="text-[11px] font-bold mt-0.5" style={{ color: primaryColor }}>
-                          {getPriceDisplay(sug)}
-                        </p>
-                      </button>
-                    ))}
                   </div>
                 </div>
               )}
