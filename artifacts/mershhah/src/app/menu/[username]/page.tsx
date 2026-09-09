@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useParams } from 'wouter';
 import { useRouter, useSearchParams } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
-import { ChevronRight, ChevronLeft, Search, Info, Star, Navigation, ShoppingBag, Phone } from 'lucide-react';
+import { Search, Info, Star, Navigation } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage, syncPublicPage } from '@/lib/public-pages';
 import { trackPageView, trackAppClick, trackPhoneClick } from '@/lib/event-tracker';
@@ -332,16 +332,10 @@ export default function PublicMenuPage() {
     <div className="flex flex-col min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
       <PublicPageBackdrop />
 
-      {/* Header - compact single row: back, logo, name + subtitle, search, language */}
+      {/* Header - compact single row: logo, name + subtitle, search, language.
+          No back button - this is a public page (QR code / shared link),
+          not a screen the visitor navigated into from elsewhere in the app. */}
       <div className="max-w-lg mx-auto w-full px-5 pt-6 pb-3 flex items-center gap-2.5">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-9 h-9 rounded-xl text-gray-600 hover:text-gray-900 hover:bg-gray-100 shrink-0"
-          onClick={() => router.back()}
-        >
-          {dir === 'rtl' ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
-        </Button>
         <div className="relative w-9 h-9 rounded-xl overflow-hidden shrink-0" style={{ borderRadius: 'var(--r-radius-sm)' }}>
           <StorageImage imagePath={restaurant.logo} alt={displayName} fill sizes="36px" className="object-cover" />
         </div>
