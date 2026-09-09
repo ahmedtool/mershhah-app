@@ -560,7 +560,11 @@ export const mockSupabase = {
       insert: (data: any) => new MockInsertBuilder(table, data),
       update: (data: any) => new MockUpdateBuilder(table, data),
       delete: () => new MockDeleteBuilder(table),
-      upsert: (data: any) => {
+      // Real supabase-js returns a thenable (PostgrestFilterBuilder) here,
+      // so callers routinely chain .then(...) straight off upsert() without
+      // awaiting it first - matching that by returning a real Promise,
+      // not a plain object, is what makes that chaining work in mock mode.
+      upsert: async (data: any) => {
         const rows = Array.isArray(data) ? data : [data];
         const lsKey = TABLE_LS_KEY[table];
         if (!lsKey) return { data: null, error: { message: `Unknown table: ${table}` } };

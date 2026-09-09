@@ -23,6 +23,7 @@ import {
   ImageIcon,
   AlertCircle,
   RefreshCw,
+  Sparkles,
 } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { supabase } from '@/lib/supabase';
@@ -38,6 +39,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FONT_OPTIONS, RADIUS_PRESETS } from '@/lib/public-theme';
 import { Copy } from 'lucide-react';
 import { useLanguage } from '@/components/shared/LanguageContext';
+import { translateText } from '@/lib/translate-text';
 
 const SOCIAL_PLATFORMS = [
   { labelKey: 'customize.whatsapp', value: 'whatsapp', icon: WhatsAppIcon, color: '#25D366' },
@@ -68,6 +70,7 @@ export default function CustomizePage() {
   const [previewKey, setPreviewKey] = useState(0);
   const [isSaving, startSaving] = useTransition();
   const [isSuggestingColors, setIsSuggestingColors] = useState(false);
+  const [isTranslatingProfile, startTranslatingProfile] = useTransition();
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -190,6 +193,24 @@ export default function CustomizePage() {
     } finally {
         setIsSuggestingColors(false);
     }
+  };
+
+  const handleTranslateProfile = () => {
+    const name = settings.name?.trim();
+    if (!name) {
+      toast({ title: t('customize.enterNameFirst'), variant: 'destructive' });
+      return;
+    }
+    startTranslatingProfile(async () => {
+      try {
+        const name_en = await translateText(name);
+        const description_en = settings.description?.trim() ? await translateText(settings.description) : '';
+        setSettings((prev: any) => ({ ...prev, name_en, description_en }));
+        toast({ title: t('menuItem.translated') });
+      } catch (e: any) {
+        toast({ title: t('menuItem.translationFailed'), description: e.message, variant: 'destructive' });
+      }
+    });
   };
 
   const handleSave = async () => {
@@ -513,7 +534,18 @@ export default function CustomizePage() {
                               className={`h-10 rounded-xl border-gray-200 text-xs ${alignStart}`} />
                         </div>
                         <div className="space-y-1.5">
-                            <Label className="text-[11px] text-gray-600">{t('customize.restaurantNameEn')}</Label>
+                            <div className={`flex items-center justify-between ${rowReverse}`}>
+                                <Label className="text-[11px] text-gray-600">{t('customize.restaurantNameEn')}</Label>
+                                <button
+                                    type="button"
+                                    onClick={handleTranslateProfile}
+                                    disabled={isTranslatingProfile}
+                                    className="flex items-center gap-1 text-[11px] font-medium text-gray-600 hover:text-gray-700 transition-colors disabled:opacity-50"
+                                >
+                                    {isTranslatingProfile ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                                    {t('menuItem.translateAuto')}
+                                </button>
+                            </div>
                             <Input dir="ltr" value={settings.name_en || ''} onChange={e => setSettings({...settings, name_en: e.target.value})}
                               className="h-10 rounded-xl border-gray-200 text-xs text-left" />
                         </div>
