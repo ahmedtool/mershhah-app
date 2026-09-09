@@ -217,7 +217,9 @@ export default function CustomizePage() {
 
         const updateData: Record<string, unknown> = {
             name: settings.name || null,
+            name_en: settings.name_en || null,
             description: settings.description || null,
+            description_en: settings.description_en || null,
             username: newUsername || cleanSettings.username,
             logo: logoUrl || null,
             primaryColor: settings.primaryColor || null,
@@ -347,10 +349,20 @@ export default function CustomizePage() {
   // Branch-aware app links: once a restaurant has branches, each branch
   // can have its own link per platform (a single restaurant-wide link
   // doesn't work — e.g. each branch has a different Careem storefront).
+  // Available apps combine the admin's global registry with this
+  // restaurant's own custom app definitions (name + logo, defined below),
+  // so an owner's own app can be enabled per branch exactly like a global
+  // one — only its link differs per branch.
+  const customAppDefs = (settings?.applications || []).filter((a: any) => a.type === 'custom');
+  const availableApps = [
+    ...globalApps.map((a: any) => ({ id: a.id, name: a.name, logo_url: a.logo_url, type: 'global' as const })),
+    ...customAppDefs.map((a: any) => ({ id: a.id, name: a.name, logo_url: a.logo, type: 'custom' as const })),
+  ];
+
   const isBranchAppActive = (platformId: string) =>
     branches.some(b => b.applications?.some((a: any) => a.platformId === platformId));
 
-  const toggleBranchApp = (app: any) => {
+  const toggleBranchApp = (app: { id: string; name: string; logo_url: string; type: 'global' | 'custom' }) => {
     const isActive = isBranchAppActive(app.id);
     setBranches(branches.map(b => {
       if (isActive) {
@@ -359,7 +371,7 @@ export default function CustomizePage() {
       if (b.applications.some((a: any) => a.platformId === app.id)) return b;
       return {
         ...b,
-        applications: [...b.applications, { id: `branch-app-${app.id}`, type: 'global', platformId: app.id, name: app.name, logo: app.logo_url, value: '' }],
+        applications: [...b.applications, { id: `branch-app-${app.id}`, type: app.type, platformId: app.id, name: app.name, logo: app.logo_url, value: '' }],
       };
     }));
   };
@@ -460,6 +472,11 @@ export default function CustomizePage() {
                               className={`h-10 rounded-xl border-gray-200 text-xs ${alignStart}`} />
                         </div>
                         <div className="space-y-1.5">
+                            <Label className="text-[11px] text-gray-600">{t('customize.restaurantNameEn')}</Label>
+                            <Input dir="ltr" value={settings.name_en || ''} onChange={e => setSettings({...settings, name_en: e.target.value})}
+                              className="h-10 rounded-xl border-gray-200 text-xs text-left" />
+                        </div>
+                        <div className="space-y-1.5">
                             <Label className="text-[11px] text-gray-600">{t('customize.usernameForLink')}</Label>
                             <Input
                                 dir="ltr"
@@ -487,6 +504,11 @@ export default function CustomizePage() {
                             <Label className="text-[11px] text-gray-600">{t('customize.description')}</Label>
                             <Textarea value={settings.description || ''} onChange={e => setSettings({...settings, description: e.target.value})}
                               rows={2} className={`rounded-xl border-gray-200 text-xs ${alignStart} resize-none`} />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label className="text-[11px] text-gray-600">{t('customize.descriptionEn')}</Label>
+                            <Textarea dir="ltr" value={settings.description_en || ''} onChange={e => setSettings({...settings, description_en: e.target.value})}
+                              rows={2} className="rounded-xl border-gray-200 text-xs text-left resize-none" />
                         </div>
                     </AccordionContent>
                 </AccordionItem>
@@ -583,7 +605,7 @@ export default function CustomizePage() {
                               </p>
                           </div>
                           <div className="flex flex-wrap gap-2 justify-end">
-                              {globalApps.map(app => {
+                              {availableApps.map(app => {
                                   const isActive = isBranchAppActive(app.id);
                                   return (
                                       <button key={app.id} type="button"
@@ -602,7 +624,35 @@ export default function CustomizePage() {
                               })}
                           </div>
 
-                          {globalApps.filter(app => isBranchAppActive(app.id)).map(app => (
+                          {/* Custom apps this restaurant defines itself - just name + logo here;
+                              enabling one from the buttons above adds a per-branch link field below,
+                              exactly like a global app. */}
+                          <div className="space-y-3 border-t border-gray-100 pt-3">
+                              <div className={`flex justify-between items-center ${rowReverse}`}>
+                                  <h4 className="text-xs font-bold text-gray-900">{t('customize.customApps')}</h4>
+                                  <button onClick={addCustomApp} className="text-[10px] font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1 transition-colors">
+                                      <PlusCircle className="h-3 w-3" /> {t('customize.add')}
+                                  </button>
+                              </div>
+                              {customAppDefs.length > 0 && (
+                                  <p className="text-[10px] text-gray-600">{t('customize.customAppsBranchNote')}</p>
+                              )}
+                              {customAppDefs.map((app: any) => (
+                                  <div key={app.id} className={`flex items-center gap-2 p-3 bg-gray-50 border border-gray-100 rounded-xl ${rowReverse}`}>
+                                      <div
+                                          className="relative w-9 h-9 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden cursor-pointer"
+                                          onClick={() => appLogoInputRefs.current[app.id]?.click()}
+                                      >
+                                          {app.logo ? <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain p-1" sizes="36px" /> : <ImageIcon size={16} className="text-gray-200" />}
+                                      </div>
+                                      <Input value={app.name} onChange={e => updateAppField(app.id, 'name', e.target.value)} className={`h-8 text-[11px] font-bold flex-1 ${alignStart} rounded-lg border-gray-200`} />
+                                      <button onClick={() => removeApp(app.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1"><X size={12} /></button>
+                                      <input type="file" ref={el => { appLogoInputRefs.current[app.id] = el; }} onChange={e => e.target.files?.[0] && handleAppLogoChange(app.id, e.target.files[0])} className="hidden" accept="image/*" />
+                                  </div>
+                              ))}
+                          </div>
+
+                          {availableApps.filter(app => isBranchAppActive(app.id)).map(app => (
                               <div key={app.id} className="space-y-2 border-t border-gray-100 pt-3">
                                   <div className="flex items-center justify-between">
                                       <button type="button" onClick={() => copyAppLinkToAllBranches(app.id)}
@@ -614,6 +664,7 @@ export default function CustomizePage() {
                                           <div className="relative w-4 h-4 shrink-0"><StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="16px" /></div>
                                       </h4>
                                   </div>
+                                  <p className="text-[9px] text-gray-600">{t('customize.copyToAllBranchesHint')}</p>
                                   <div className="space-y-1.5">
                                       {branches.map(branch => {
                                           const entry = branch.applications.find((a: any) => a.platformId === app.id);

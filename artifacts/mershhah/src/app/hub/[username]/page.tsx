@@ -69,14 +69,16 @@ export default function RestaurantHubPage() {
   const hubVisitRecorded = useRef(false);
   const branchParam = searchParams.get('branch');
 
+  const metaName = dir === 'ltr' && restaurant?.name_en ? restaurant.name_en : restaurant?.name;
+  const metaDescription = dir === 'ltr' && restaurant?.description_en ? restaurant.description_en : restaurant?.description;
   useDocumentMeta(
-    restaurant?.name
-      ? (dir === 'rtl' ? `${t('hubPage.menuWord')} ${restaurant.name}` : `${restaurant.name} ${t('hubPage.menuWord')}`)
+    metaName
+      ? (dir === 'rtl' ? `${t('hubPage.menuWord')} ${metaName}` : `${metaName} ${t('hubPage.menuWord')}`)
       : undefined,
     restaurant
-      ? (restaurant.description || (dir === 'rtl'
-          ? `${t('hubPage.menuWord')} ${restaurant.name} ${t('hubPage.digitalMenuDescSuffix')}`
-          : `${restaurant.name}'s ${t('hubPage.digitalMenuDescSuffix')}`))
+      ? (metaDescription || (dir === 'rtl'
+          ? `${t('hubPage.menuWord')} ${metaName} ${t('hubPage.digitalMenuDescSuffix')}`
+          : `${metaName}'s ${t('hubPage.digitalMenuDescSuffix')}`))
       : undefined
   );
   useGoogleFont(restaurant?.fontFamily);
@@ -196,8 +198,8 @@ export default function RestaurantHubPage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: restaurant?.name,
-          text: restaurant?.description,
+          title: dir === 'ltr' && restaurant?.name_en ? restaurant.name_en : restaurant?.name,
+          text: dir === 'ltr' && restaurant?.description_en ? restaurant.description_en : restaurant?.description,
           url: window.location.href,
         });
       } catch (error: any) {
@@ -249,6 +251,8 @@ export default function RestaurantHubPage() {
   const primaryColor = restaurant.primaryColor || '#714dfa';
   const socialLinks = restaurant.social_links || restaurant.socialLinks || [];
   const themeStyle = getPublicThemeStyle(restaurant);
+  const displayName = dir === 'ltr' && restaurant.name_en ? restaurant.name_en : restaurant.name;
+  const displayDescription = dir === 'ltr' && restaurant.description_en ? restaurant.description_en : restaurant.description;
 
   return (
     <div
@@ -284,7 +288,7 @@ export default function RestaurantHubPage() {
           <div className="relative w-24 h-24 overflow-hidden mx-auto mb-4" style={{ borderRadius: 'var(--r-radius)' }}>
             <StorageImage
               imagePath={restaurant.logo}
-              alt={restaurant.name}
+              alt={displayName}
               fill
               className="object-contain"
               sizes="96px"
@@ -294,10 +298,10 @@ export default function RestaurantHubPage() {
           {/* الاسم والوصف */}
           <div className="space-y-1.5">
             <h1 className="text-2xl font-black tracking-tight text-gray-900">
-              {restaurant.name}
+              {displayName}
             </h1>
             <p className="text-sm text-gray-600 font-medium max-w-xs mx-auto line-clamp-2">
-              {restaurant.description || t('hubPage.welcomeDefault')}
+              {displayDescription || t('hubPage.welcomeDefault')}
             </p>
           </div>
         </div>
