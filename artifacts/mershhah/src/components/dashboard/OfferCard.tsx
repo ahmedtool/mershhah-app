@@ -18,7 +18,7 @@ interface OfferCardProps {
 
 export function OfferCard({ offer, onDelete, restaurantId, branches = [], onActionCompletion }: OfferCardProps) {
     const { t, locale } = useLanguage();
-    const validUntilDate = offer.valid_until?.toDate ? offer.valid_until.toDate() : new Date();
+    const validUntilDate = offer.valid_until ? new Date(offer.valid_until) : new Date();
     const timeRemaining = Math.round((validUntilDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24));
     const isExpired = timeRemaining < 0;
     const targetBranch = offer.branch_id ? branches.find(b => b.id === offer.branch_id) : null;
