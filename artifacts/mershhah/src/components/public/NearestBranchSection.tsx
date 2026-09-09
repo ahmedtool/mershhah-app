@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import { MapPin, Navigation, Phone, ShoppingBag, Locate } from 'lucide-react';
 import { StorageImage } from '@/components/shared/StorageImage';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { trackAppClick, trackMapsClick, trackPhoneClick } from '@/lib/event-tracker';
 import { haversineDistanceKm } from '@/lib/geo-distance';
@@ -24,7 +23,7 @@ export function NearestBranchSection({ branches, restaurantId, primaryColor, use
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
   const [phase, setPhase] = useState<LocationPhase>('idle');
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [sheetBranch, setSheetBranch] = useState<any | null>(null);
+  const [expandedAppsId, setExpandedAppsId] = useState<string | null>(null);
 
   const sortedBranches = useMemo(() => {
     if (!userLocation) return branches;
@@ -68,7 +67,7 @@ export function NearestBranchSection({ branches, restaurantId, primaryColor, use
       {branch.applications?.length > 0 && (
         <button
           type="button"
-          onClick={() => setSheetBranch(branch)}
+          onClick={() => setExpandedAppsId((current) => (current === branch.id ? null : branch.id))}
           className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl text-xs font-bold transition-opacity hover:opacity-90"
           style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
         >
@@ -134,6 +133,26 @@ export function NearestBranchSection({ branches, restaurantId, primaryColor, use
           {addressLine && <p className="text-xs text-gray-600 mt-1.5 line-clamp-1">{addressLine}</p>}
         </div>
         {renderActions(branch)}
+        {expandedAppsId === branch.id && (
+          <div className="grid grid-cols-4 gap-2 pt-1">
+            {sortedApps(branch.applications).map((app: any, idx: number) => (
+              <a
+                key={app.id || idx}
+                href={app.value || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => restaurantId && trackAppClick(restaurantId, app.name || 'unknown')}
+                className="aspect-square bg-gray-50 border border-gray-100 p-2 flex flex-col items-center justify-center gap-1 hover:bg-gray-100 transition-colors"
+                style={{ borderRadius: 'var(--r-radius-sm)' }}
+              >
+                <div className="relative w-full flex-1">
+                  <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain" sizes="56px" />
+                </div>
+                <span className="text-[8px] font-semibold text-gray-600 text-center line-clamp-1">{app.name}</span>
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
@@ -199,32 +218,6 @@ export function NearestBranchSection({ branches, restaurantId, primaryColor, use
           </div>
         </div>
       )}
-
-      <Sheet open={!!sheetBranch} onOpenChange={(open) => !open && setSheetBranch(null)}>
-        <SheetContent side="bottom" className="rounded-t-2xl px-4 pt-4 pb-6 max-h-[70vh] overflow-y-auto">
-          <SheetHeader className={alignStart}>
-            <SheetTitle className="text-base font-black">{t('publicBranches.deliveryApps')}</SheetTitle>
-          </SheetHeader>
-          <div className="grid grid-cols-4 gap-3 pt-4">
-            {sortedApps(sheetBranch?.applications).map((app: any, idx: number) => (
-              <a
-                key={app.id || idx}
-                href={app.value || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => restaurantId && trackAppClick(restaurantId, app.name || 'unknown')}
-                className="aspect-square bg-white border border-gray-100 p-3 flex flex-col items-center justify-center gap-1.5 hover:shadow-md transition-all"
-                style={{ borderRadius: 'var(--r-radius-sm)' }}
-              >
-                <div className="relative w-full flex-1">
-                  <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain" sizes="64px" />
-                </div>
-                <span className="text-[9px] font-semibold text-gray-600 text-center line-clamp-1">{app.name}</span>
-              </a>
-            ))}
-          </div>
-        </SheetContent>
-      </Sheet>
     </section>
   );
 }
