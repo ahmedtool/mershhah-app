@@ -104,7 +104,15 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
       setImageFile(null);
       setImagePreview(offer?.image_url || null);
     }
-  }, [open, offer, isEditing, form, restaurantId]);
+    // Deliberately re-initializes the form only when the dialog opens (or
+    // the restaurant/edit-vs-create mode changes), not on every `offer`
+    // reference change - the parent list refetches on ANY realtime change to
+    // the "offers" table (e.g. a visitor's view incrementing views_count on
+    // a DIFFERENT field), which produces a new `offer` object for the same
+    // row. Resetting on that would silently discard whatever the owner is
+    // still typing/picking in this dialog before they hit save.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, isEditing, form, restaurantId]);
 
   const handleImageSelect = (imagePath: string) => {
     form.setValue('image_url', imagePath, { shouldValidate: true });
