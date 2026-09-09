@@ -50,17 +50,23 @@ if (useMock) {
       auth: {
         persistSession: !skipAuthPersistence,
         autoRefreshToken: !skipAuthPersistence,
-        // supabase-js still briefly acquires a Navigator LockManager lock
-        // around session reads even with persistSession/autoRefreshToken
-        // off, and that lock is named after storageKey - which defaults to
-        // the same value for every client on this origin. Without a
-        // distinct storageKey here, the iframe's client keeps contending
-        // for the exact same lock as the parent tab's client, so a save
-        // that happens to call getSession() (or an upload that attaches
-        // the current token) right as the iframe grabs the lock can fail
-        // with "immediately failed" and go out unauthenticated - which is
-        // what produced the "new row violates row-level security policy"
-        // error saving a custom app logo while the preview iframe was open.
+        // Namespacing the iframe's storage/lock name away from the parent
+        // tab's own name is defense in depth, but it doesn't fix the core
+        // problem: supabase-js's default lock uses navigator.locks with
+        // { ifAvailable: true } around session reads/refreshes and just
+        // throws "immediately failed" instead of waiting whenever another
+        // caller in the SAME tab (or a genuinely different open tab on the
+        // same origin - this app is routinely used with several tabs open
+        // at once) happens to hold that lock at that instant. A user hit
+        // exactly that: a Customize page save's storage upload attached no
+        // valid token because of this, and got rejected with "new row
+        // violates row-level security policy" instead of just working.
+        // Replacing the lock with a plain passthrough (no real mutual
+        // exclusion, just run the critical section) trades away perfectly
+        // race-free cross-tab session refresh for never throwing here -
+        // the right tradeoff for an app that isn't relying on that
+        // cross-tab guarantee anywhere.
+        lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => fn(),
         ...(skipAuthPersistence ? { storageKey: 'sb-preview-iframe-auth-token' } : {}),
       },
     }
