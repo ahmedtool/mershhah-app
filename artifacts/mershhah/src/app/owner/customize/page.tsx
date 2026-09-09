@@ -21,6 +21,8 @@ import {
   Link as LinkIcon,
   AppWindow,
   ImageIcon,
+  AlertCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { supabase } from '@/lib/supabase';
@@ -49,7 +51,7 @@ const SOCIAL_PLATFORMS = [
 ];
 
 export default function CustomizePage() {
-  const { user } = useUser();
+  const { user, isLoading: userLoading } = useUser();
   const { toast } = useToast();
   const { t, dir } = useLanguage();
   // text-align/flex-direction Tailwind utilities are literal values, not
@@ -77,53 +79,73 @@ export default function CustomizePage() {
   const initialUsernameRef = useRef<string | null>(null);
 
   useEffect(() => {
+    // Wait for auth to actually resolve (useUser has its own timeout for a
+    // hung/failed session) before deciding there's no restaurant to load -
+    // otherwise a slow or failed getSession() left this page's own loading
+    // flag stuck true forever, showing the skeleton with no way out.
+    if (userLoading) return;
+
+    // Same idea as useUser's own getSession() timeout: if a Supabase call
+    // below hangs (e.g. an auth token lock conflict blocking the request),
+    // stop showing the skeleton after 10s instead of forever - the render
+    // guard below then shows a "couldn't load" state with a reload button.
+    let cancelled = false;
+    const timeoutId = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 10000);
+
     const fetchData = async () => {
-      if (user?.restaurantId) {
-        try {
-            const { data: restData } = await supabase
-                .from('restaurants')
-                .select('*')
-                .eq('id', user.restaurantId)
-                .single();
-
-            if (restData) {
-              initialUsernameRef.current = restData.username ?? null;
-              setSettings({
-                ...restData,
-                socialLinks: Array.isArray(restData.socialLinks) ? restData.socialLinks : [],
-                applications: Array.isArray(restData.applications) ? restData.applications : [],
-                borderRadius: restData.borderRadius ?? 16,
-                fontFamily: restData.fontFamily ?? 'Cairo',
-              });
-              setLogoPreview(restData.logo);
-            }
-        } catch (serverError: any) {
-            console.error("Error fetching restaurant data:", serverError);
-        }
-
-        try {
-            const { data: appsData } = await supabase.from('applications').select('*');
-            setGlobalApps(appsData || []);
-        } catch (serverError: any) {
-            console.error("Error fetching applications:", serverError);
-        }
-
-        try {
-            const { data: branchesData } = await supabase
-                .from('branches')
-                .select('id, name, applications')
-                .eq('restaurant_id', user.restaurantId)
-                .order('name');
-            setBranches((branchesData || []).map((b: any) => ({ ...b, applications: Array.isArray(b.applications) ? b.applications : [] })));
-        } catch (serverError: any) {
-            console.error("Error fetching branches:", serverError);
-        }
-
+      if (!user?.restaurantId) {
         setLoading(false);
+        return;
       }
+
+      try {
+          const { data: restData } = await supabase
+              .from('restaurants')
+              .select('*')
+              .eq('id', user.restaurantId)
+              .single();
+
+          if (restData) {
+            initialUsernameRef.current = restData.username ?? null;
+            setSettings({
+              ...restData,
+              socialLinks: Array.isArray(restData.socialLinks) ? restData.socialLinks : [],
+              applications: Array.isArray(restData.applications) ? restData.applications : [],
+              borderRadius: restData.borderRadius ?? 16,
+              fontFamily: restData.fontFamily ?? 'Cairo',
+            });
+            setLogoPreview(restData.logo);
+          }
+      } catch (serverError: any) {
+          console.error("Error fetching restaurant data:", serverError);
+      }
+
+      try {
+          const { data: appsData } = await supabase.from('applications').select('*');
+          setGlobalApps(appsData || []);
+      } catch (serverError: any) {
+          console.error("Error fetching applications:", serverError);
+      }
+
+      try {
+          const { data: branchesData } = await supabase
+              .from('branches')
+              .select('id, name, applications')
+              .eq('restaurant_id', user.restaurantId)
+              .order('name');
+          setBranches((branchesData || []).map((b: any) => ({ ...b, applications: Array.isArray(b.applications) ? b.applications : [] })));
+      } catch (serverError: any) {
+          console.error("Error fetching branches:", serverError);
+      }
+
+      setLoading(false);
     };
-    fetchData();
-  }, [user]);
+    fetchData().finally(() => clearTimeout(timeoutId));
+
+    return () => { cancelled = true; clearTimeout(timeoutId); };
+  }, [user, userLoading]);
 
   const handleSuggestColors = async () => {
     let dataUri = '';
@@ -413,7 +435,7 @@ export default function CustomizePage() {
     });
   };
 
-  if (loading || !settings) {
+  if (loading || userLoading) {
     return (
       <div className="space-y-5">
         <Skeleton className="h-10 w-1/3" />
@@ -427,6 +449,25 @@ export default function CustomizePage() {
             <Skeleton className="w-[300px] h-[600px] rounded-[3rem]" />
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (!settings) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center gap-3 px-4">
+        <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center text-red-500">
+          <AlertCircle className="h-6 w-6" />
+        </div>
+        <h2 className="text-sm font-bold text-gray-900">{t('customize.couldNotLoadTitle')}</h2>
+        <p className="text-xs text-gray-600 max-w-xs">{t('customize.couldNotLoadDesc')}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-2 h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors flex items-center gap-2"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          {t('customize.reloadPage')}
+        </button>
       </div>
     );
   }
