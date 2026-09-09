@@ -1,9 +1,26 @@
+import { useEffect } from 'react';
+
 // On wide screens the centered content column leaves flat empty space on
 // both sides. These two blurred brand-color glows turn that into
 // intentional negative space instead of looking unfinished. Hidden below
 // `lg` since this is mostly viewed on a phone via QR code, where there's
 // no gutter to fill in the first place.
 export function PublicPageBackdrop() {
+  // Every page's <body> carries the dashboard's own subtle off-white
+  // background (--background), which is fine behind the owner/admin
+  // dashboard's white cards but flashes as a visible gray on public pages
+  // during pull-to-refresh/overscroll bounce, since these pages paint
+  // their own white-ish gradient over it that doesn't extend past the
+  // viewport. Overriding it to plain white here (restored on unmount)
+  // fixes that without touching the dashboard's own background at all.
+  useEffect(() => {
+    const previous = document.body.style.backgroundColor;
+    document.body.style.backgroundColor = '#fff';
+    return () => {
+      document.body.style.backgroundColor = previous;
+    };
+  }, []);
+
   return (
     <>
       <div
