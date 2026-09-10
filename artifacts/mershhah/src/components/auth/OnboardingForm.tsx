@@ -32,6 +32,9 @@ export function OnboardingForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{ projectName?: string; businessType?: string; phoneNumber?: string }>({});
 
+  // Runs once on mount only. useRouter() returns a brand-new object every
+  // render (no memoization), so depending on it here would re-run this
+  // effect - and its setUser() call - on every render, looping forever.
   useEffect(() => {
     supabase.auth.getSession().then(({ data }: any) => {
       if (!data.session?.user) {
@@ -40,7 +43,8 @@ export function OnboardingForm() {
       }
       setUser(data.session.user);
     });
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const firstName = (user?.user_metadata?.full_name as string | undefined)?.split(' ')[0]
     || user?.email?.split('@')[0]

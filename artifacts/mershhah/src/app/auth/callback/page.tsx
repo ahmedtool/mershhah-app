@@ -14,6 +14,10 @@ import { resolvePostAuthRoute } from '@/lib/post-auth-redirect';
 export default function AuthCallbackPage() {
   const router = useRouter();
 
+  // Runs once on mount only. useRouter() returns a brand-new object every
+  // render (no memoization), so depending on it here would re-run this
+  // effect on every render - resolvePostAuthRoute() and its inserts could
+  // fire repeatedly and the page would never settle.
   useEffect(() => {
     let cancelled = false;
 
@@ -32,7 +36,8 @@ export default function AuthCallbackPage() {
     });
 
     return () => { cancelled = true; };
-  }, [router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white" dir="rtl">
