@@ -1,10 +1,11 @@
 'use client';
 
-import { RegisterForm } from "@/components/auth/RegisterForm";
-import { Link } from "wouter";
+import { UnifiedAuthForm } from "@/components/auth/UnifiedAuthForm";
 import { Smartphone } from "lucide-react";
+import { useLanguage } from "@/components/shared/LanguageContext";
 
 export default function RegisterPage() {
+  const { t } = useLanguage();
   return (
     <div className="min-h-screen flex" dir="rtl">
       {/* Left: Form */}
@@ -12,15 +13,10 @@ export default function RegisterPage() {
         <div className="w-full max-w-sm">
           <div className="mb-8">
             <h1 className="text-2xl font-black text-gray-900 mb-1">مرشح</h1>
-            <p className="text-sm text-gray-600">أنشئ حسابك وابدأ إدارة مطعمك</p>
+            <p className="text-sm text-gray-600">{t('auth.headline')}</p>
           </div>
 
-          <RegisterForm />
-
-          <Link href="/login"
-            className="mt-5 w-full h-11 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center justify-center">
-            عندك حساب؟ سجّل دخول
-          </Link>
+          <UnifiedAuthForm />
         </div>
       </div>
 

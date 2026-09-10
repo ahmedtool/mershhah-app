@@ -1,22 +1,15 @@
 'use client';
 
-import { UnifiedAuthForm } from "@/components/auth/UnifiedAuthForm";
+import { OnboardingForm } from "@/components/auth/OnboardingForm";
 import { Smartphone } from "lucide-react";
-import { useLanguage } from "@/components/shared/LanguageContext";
 
-export default function LoginPage() {
-  const { t } = useLanguage();
+export default function OnboardingPage() {
   return (
     <div className="min-h-screen flex" dir="rtl">
       {/* Left: Form */}
       <div className="flex-1 flex items-center justify-center px-6 bg-white">
         <div className="w-full max-w-sm">
-          <div className="mb-8">
-            <h1 className="text-2xl font-black text-gray-900 mb-1">مرشح</h1>
-            <p className="text-sm text-gray-600">{t('auth.headline')}</p>
-          </div>
-
-          <UnifiedAuthForm />
+          <OnboardingForm />
         </div>
       </div>
 
