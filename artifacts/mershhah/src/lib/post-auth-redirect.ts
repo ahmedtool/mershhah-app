@@ -20,6 +20,25 @@ const adminPages = [
   { href: '/admin/sales', permissionId: 'sales' },
 ];
 
+async function hasExistingAccountUnderDifferentIdentity(): Promise<boolean> {
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    if (!token) return false;
+    const res = await fetch('/api/auth/check-existing-account', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return !!data.existingAccountFound;
+  } catch {
+    // If the check itself fails (network blip, endpoint not deployed yet),
+    // fail open to onboarding rather than blocking every new sign-up on it.
+    return false;
+  }
+}
+
 /**
  * Called right after any successful sign-in (Google OAuth callback or email
  * OTP verification). Figures out where this user belongs: a brand-new
@@ -52,6 +71,18 @@ export async function resolvePostAuthRoute(user: User): Promise<string> {
         admin_permissions: allAdminPermissions,
       });
       return '/admin/dashboard';
+    }
+
+    // profiles RLS only lets a session read its OWN row, so it's
+    // impossible to tell client-side whether this email already has an
+    // account under a DIFFERENT auth identity (e.g. this person originally
+    // registered with a password, and is now trying Google for the first
+    // time - a different provider that, without account linking
+    // configured, gets its own separate auth.users id). Ask the
+    // service-role-backed check before assuming "brand new" and creating a
+    // second, empty restaurant for someone who already has one.
+    if (await hasExistingAccountUnderDifferentIdentity()) {
+      return '/auth/account-exists';
     }
     return '/onboarding';
   }

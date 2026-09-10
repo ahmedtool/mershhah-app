@@ -37,6 +37,7 @@ const RegisterAffiliatePage = lazyWithReload(() => import("@/app/register-affili
 const ForgotPasswordPage = lazyWithReload(() => import("@/app/forgot-password/page"));
 const OnboardingPage = lazyWithReload(() => import("@/app/onboarding/page"));
 const AuthCallbackPage = lazyWithReload(() => import("@/app/auth/callback/page"));
+const AccountExistsPage = lazyWithReload(() => import("@/app/auth/account-exists/page"));
 const ResetPasswordPage = lazyWithReload(() => import("@/app/reset-password/page"));
 const PricingPage = lazyWithReload(() => import("@/app/pricing/page"));
 const NotFoundPage = lazyWithReload(() => import("@/app/not-found"));
@@ -167,6 +168,7 @@ function Router() {
         <Route path="/forgot-password" component={ForgotPasswordPage} />
         <Route path="/onboarding" component={OnboardingPage} />
         <Route path="/auth/callback" component={AuthCallbackPage} />
+        <Route path="/auth/account-exists" component={AccountExistsPage} />
         <Route path="/reset-password" component={ResetPasswordPage} />
         <Route path="/pricing" component={PricingPage} />
         <Route path="/about" component={AboutPage} />
