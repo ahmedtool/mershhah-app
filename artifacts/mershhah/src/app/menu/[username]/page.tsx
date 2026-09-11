@@ -486,7 +486,7 @@ interface MenuExperienceProps {
 // three components independently re-deriving it.
 function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir, t, nearestBranch, onEngageItem, onSubmitRating, onChannelClick }: MenuExperienceProps) {
   const tabs = useMemo(() => [ALL_CATEGORY_ID, ...categories], [categories]);
-  const catCarousel = useDragCarousel(tabs.length, 92);
+  const catCarousel = useDragCarousel(tabs.length, 100);
   const activeCatIndex = resolveIndex(catCarousel.pos, tabs.length);
   const activeCategory = tabs[activeCatIndex] ?? ALL_CATEGORY_ID;
 
@@ -594,9 +594,9 @@ function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir,
                   onClick={() => catCarousel.jumpTo(i)}
                   style={{
                     position: 'absolute', left: 0, top: 0, marginLeft: -42, marginTop: -18,
-                    width: 84, height: 36, padding: '0 8px', borderRadius: 999, border: 'none',
+                    width: 82, height: 36, padding: '0 8px', borderRadius: 999, border: 'none',
                     cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap',
-                    transform: `translate3d(${-d * 76}px, ${a * 1.5}px, 0) scale(${Math.max(0.9, 1 - a * 0.05)})`,
+                    transform: `translate3d(${-d * 100}px, ${a * 1.5}px, 0) scale(${Math.max(0.9, 1 - a * 0.05)})`,
                     opacity: Math.max(0.55, 1 - a * 0.16),
                     zIndex: Math.round(20 - a * 4),
                     background: on ? '#fff' : 'rgba(255,255,255,.3)',
