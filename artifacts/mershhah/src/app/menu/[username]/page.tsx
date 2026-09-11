@@ -68,19 +68,21 @@ const ALL_CATEGORY_ID = '__all__';
 // the render below (places each pill that many px from center), or dragging
 // visibly desyncs from the pointer.
 const CATEGORY_SPACING = 128;
+const ITEM_SPACING = 195;
 
 // Signed shortest-path distance from position `pos` to slot `i` among `n`
-// slots. Below 3 slots there's nothing meaningful to wrap around, so the
-// distance is just linear - matching a 1-2 item category not doing anything
-// strange when dragged.
-function signedDelta(i: number, pos: number, n: number) {
-  if (n < 3) return i - pos;
+// slots. With wrap off (the item carousel - dragging past the last item
+// shouldn't loop back to the first, so a customer always sees a hard stop
+// instead of an unexplained jump) or below 3 slots (nothing meaningful to
+// wrap around anyway) the distance is just linear.
+function signedDelta(i: number, pos: number, n: number, wrap: boolean) {
+  if (!wrap || n < 3) return i - pos;
   return ((i - pos + n / 2 + n * 20) % n) - n / 2;
 }
 
-function resolveIndex(pos: number, n: number) {
+function resolveIndex(pos: number, n: number, wrap: boolean) {
   if (n <= 0) return 0;
-  if (n < 3) return Math.max(0, Math.min(n - 1, Math.round(pos)));
+  if (!wrap || n < 3) return Math.max(0, Math.min(n - 1, Math.round(pos)));
   const r = Math.round(pos);
   return ((r % n) + n) % n;
 }
@@ -94,7 +96,7 @@ function resolveIndex(pos: number, n: number) {
 // requestAnimationFrame (some in-app browsers a QR code opens into do this;
 // a CSS transition still runs since it's driven by the compositor, not by
 // this page's own script scheduling).
-function useDragCarousel(count: number, spacing: number) {
+function useDragCarousel(count: number, spacing: number, wrap: boolean = true) {
   const [pos, setPos] = useState(0);
   const [dragging, setDragging] = useState(false);
   const posRef = useRef(0);
@@ -104,18 +106,18 @@ function useDragCarousel(count: number, spacing: number) {
 
   const settle = useCallback((v: number) => {
     const n = countRef.current;
-    const snapped = n > 0 && n < 3 ? Math.max(0, Math.min(n - 1, Math.round(v))) : Math.round(v);
+    const snapped = n > 0 && (!wrap || n < 3) ? Math.max(0, Math.min(n - 1, Math.round(v))) : Math.round(v);
     posRef.current = snapped;
     setPos(snapped);
-  }, []);
+  }, [wrap]);
 
   const jumpTo = useCallback((i: number) => {
     const n = countRef.current;
     if (n <= 0) return;
-    const cur = resolveIndex(posRef.current, n);
-    const d = signedDelta(i, cur, n);
+    const cur = resolveIndex(posRef.current, n, wrap);
+    const d = signedDelta(i, cur, n, wrap);
     settle(posRef.current + d);
-  }, [settle]);
+  }, [settle, wrap]);
 
   const reset = useCallback(() => { posRef.current = 0; setPos(0); }, []);
 
@@ -493,7 +495,7 @@ interface MenuExperienceProps {
 function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir, t, nearestBranch, onEngageItem, onSubmitRating, onChannelClick }: MenuExperienceProps) {
   const tabs = useMemo(() => [ALL_CATEGORY_ID, ...categories], [categories]);
   const catCarousel = useDragCarousel(tabs.length, CATEGORY_SPACING);
-  const activeCatIndex = resolveIndex(catCarousel.pos, tabs.length);
+  const activeCatIndex = resolveIndex(catCarousel.pos, tabs.length, true);
   const activeCategory = tabs[activeCatIndex] ?? ALL_CATEGORY_ID;
 
   const items = useMemo(() => {
@@ -506,14 +508,17 @@ function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir,
     });
   }, [menuItems, activeCategory, searchQuery]);
 
-  const itemCarousel = useDragCarousel(items.length, 195);
+  // wrap=false: browsing items is meant to stop at the last one, not loop
+  // back to the first - an unexplained jump there would read as a glitch
+  // and distract from actually deciding what to order.
+  const itemCarousel = useDragCarousel(items.length, ITEM_SPACING, false);
   // Browsing to a different category (or narrowing via search) swaps the
   // whole item list out from under the carousel - start it fresh rather
   // than landing on whatever index happened to line up in the new list.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { itemCarousel.reset(); }, [activeCategory, searchQuery]);
 
-  const activeItemIndex = resolveIndex(itemCarousel.pos, items.length);
+  const activeItemIndex = resolveIndex(itemCarousel.pos, items.length, false);
   const activeItem = items[activeItemIndex];
 
   const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
@@ -589,7 +594,7 @@ function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir,
           <div style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0 }}>
             {tabs.map((cat, i) => {
               const n = tabs.length;
-              const d = signedDelta(i, catCarousel.pos, n);
+              const d = signedDelta(i, catCarousel.pos, n, true);
               const a = Math.abs(d);
               const on = a < 0.5;
               const label = cat === ALL_CATEGORY_ID ? t('publicMenu.allCategory') : cat;
@@ -637,7 +642,7 @@ function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir,
               <div style={{ position: 'absolute', top: '50%', left: '50%', height: 0, width: 0 }}>
                 {items.map((item, i) => {
                   const n = items.length;
-                  const d = signedDelta(i, itemCarousel.pos, n);
+                  const d = signedDelta(i, itemCarousel.pos, n, false);
                   const a = Math.abs(d);
                   const sc = Math.max(0.5, 1 - a * 0.22);
                   return (
@@ -646,7 +651,7 @@ function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir,
                       style={{
                         position: 'absolute', left: 0, top: 0, width: 220, height: 220,
                         marginLeft: -110, marginTop: -110,
-                        transform: `translate3d(${-d * 195}px, ${a * 8}px, 0) scale(${sc}) rotate(${-d * 4}deg)`,
+                        transform: `translate3d(${-d * ITEM_SPACING}px, ${a * 8}px, 0) scale(${sc}) rotate(${-d * 4}deg)`,
                         opacity: Math.max(0, 1 - a * 0.5),
                         zIndex: Math.round(50 - a * 10),
                         filter: a > 0.6 ? 'brightness(.85)' : 'none',
