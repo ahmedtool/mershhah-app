@@ -6,11 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Search, Info, Star, Navigation, ChevronRight, ChevronLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage, syncPublicPage } from '@/lib/public-pages';
-import { trackPageView, trackAppClick, trackPhoneClick } from '@/lib/event-tracker';
+import { trackPageView, trackAppClick } from '@/lib/event-tracker';
 import { detectTrafficSource } from '@/lib/traffic-source';
 import { StorageImage } from '@/components/shared/StorageImage';
 import type { MenuItem } from '@/lib/types';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -59,6 +58,97 @@ function buildOrderChannels(item: MenuItem, branch: any, basePrice: number): Ord
   return [...direct, ...global];
 }
 
+// Synthetic tab id prepended to the real, owner-defined category list so a
+// visitor can browse everything at once. Kept distinct from any real
+// category name (and stable across language toggles, unlike a label string).
+const ALL_CATEGORY_ID = '__all__';
+
+// Signed shortest-path distance from position `pos` to slot `i` among `n`
+// slots. Below 3 slots there's nothing meaningful to wrap around, so the
+// distance is just linear - matching a 1-2 item category not doing anything
+// strange when dragged.
+function signedDelta(i: number, pos: number, n: number) {
+  if (n < 3) return i - pos;
+  return ((i - pos + n / 2 + n * 20) % n) - n / 2;
+}
+
+function resolveIndex(pos: number, n: number) {
+  if (n <= 0) return 0;
+  if (n < 3) return Math.max(0, Math.min(n - 1, Math.round(pos)));
+  const r = Math.round(pos);
+  return ((r % n) + n) % n;
+}
+
+// Drag physics for both the category pill row and the item image carousel.
+// `pos` tracks the pointer directly while dragging (plain arithmetic, no
+// animation loop involved), and a release or a tab click snaps it straight
+// to the resolved integer slot - the visual glide from one slot to the next
+// is left entirely to each caller's own CSS `transition: transform`, so it
+// keeps working even somewhere that throttles or never services
+// requestAnimationFrame (some in-app browsers a QR code opens into do this;
+// a CSS transition still runs since it's driven by the compositor, not by
+// this page's own script scheduling).
+function useDragCarousel(count: number, spacing: number) {
+  const [pos, setPos] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const posRef = useRef(0);
+  const dragRef = useRef<{ x: number; start: number; last: number; t: number; v: number; captured: boolean; pointerId: number; el: Element } | null>(null);
+  const countRef = useRef(count);
+  countRef.current = count;
+
+  const settle = useCallback((v: number) => {
+    const n = countRef.current;
+    const snapped = n > 0 && n < 3 ? Math.max(0, Math.min(n - 1, Math.round(v))) : Math.round(v);
+    posRef.current = snapped;
+    setPos(snapped);
+  }, []);
+
+  const jumpTo = useCallback((i: number) => {
+    const n = countRef.current;
+    if (n <= 0) return;
+    const cur = resolveIndex(posRef.current, n);
+    const d = signedDelta(i, cur, n);
+    settle(posRef.current + d);
+  }, [settle]);
+
+  const reset = useCallback(() => { posRef.current = 0; setPos(0); }, []);
+
+  // Capture is deferred until real movement is seen, not engaged on every
+  // pointerdown - grabbing it immediately would swallow the native click a
+  // plain tap on a pill/bead fires afterward (Chromium retargets a click
+  // that follows a captured pointerup to whatever holds the capture), which
+  // would make every button under this row silently stop responding to taps.
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    dragRef.current = { x: e.clientX, start: posRef.current, last: e.clientX, t: performance.now(), v: 0, captured: false, pointerId: e.pointerId, el: e.currentTarget };
+  }, []);
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    const d = dragRef.current;
+    if (!d) return;
+    const now = performance.now();
+    d.v = (e.clientX - d.last) / Math.max(1, now - d.t);
+    d.last = e.clientX; d.t = now;
+    if (!d.captured) {
+      if (Math.abs(e.clientX - d.x) < 4) return;
+      d.captured = true;
+      (d.el as any).setPointerCapture?.(d.pointerId);
+      setDragging(true);
+    }
+    posRef.current = d.start + (e.clientX - d.x) / spacing;
+    setPos(posRef.current);
+  }, [spacing]);
+  const onPointerUp = useCallback(() => {
+    const d = dragRef.current;
+    if (!d) return;
+    dragRef.current = null;
+    if (!d.captured) return; // plain tap - the tapped element's own onClick handles it
+    const flick = d.v * 1.8;
+    setDragging(false);
+    settle(posRef.current + Math.max(-1, Math.min(1, flick)));
+  }, [settle]);
+
+  return { pos, dragging, jumpTo, reset, bind: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp } };
+}
+
 export default function PublicMenuPage() {
   const params = useParams();
   const router = useRouter();
@@ -97,7 +187,6 @@ export default function PublicMenuPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
-  const [activeCategory, setActiveCategory] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -172,7 +261,6 @@ export default function PublicMenuPage() {
           const orderedNames = (data.categories || []).map((c) => c.name);
           const tabs = buildCategoryTabs(items, orderedNames);
           setCategories(tabs);
-          setActiveCategory((prev) => prev || tabs[0] || '');
           setBranches(((data.branches || []) as any[]).filter((b) => b.status === 'active'));
           setLoading(false);
           return;
@@ -203,7 +291,6 @@ export default function PublicMenuPage() {
         setMenuItems(sorted);
         const tabs = buildCategoryTabs(sorted, (categoryRows || []).map((c: any) => c.name));
         setCategories(tabs);
-        setActiveCategory((prev) => prev || tabs[0] || '');
         setBranches((branchRows || []) as any[]);
       } catch (e) {
         console.error(e);
@@ -221,16 +308,6 @@ export default function PublicMenuPage() {
 
     return () => { supabase.removeChannel(channel); };
   }, [username]);
-
-  const currentItems = useMemo(() => {
-    return menuItems.filter(item => {
-      const matchesCategory = item.category === activeCategory;
-      const matchesSearch = !searchQuery ||
-        (item.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch && item.status === 'available';
-    });
-  }, [menuItems, activeCategory, searchQuery]);
 
   const primaryColor = restaurant?.primaryColor || '#111827';
 
@@ -333,34 +410,15 @@ export default function PublicMenuPage() {
         {searchOpen && (
           <div className="relative">
             <Search className="absolute start-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600 pointer-events-none" />
-            <Input
+            <input
               autoFocus
               placeholder={t('publicMenu.searchPlaceholder')}
-              className="w-full h-11 rounded-xl bg-gray-50 border border-gray-100 text-sm ps-10 pe-4 focus-visible:ring-1 focus-visible:ring-gray-200 focus-visible:border-gray-200"
+              className="w-full h-11 rounded-xl bg-gray-50 border border-gray-100 text-sm ps-10 pe-4 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-200 focus-visible:border-gray-200"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         )}
-
-        {/* Categories - underline style */}
-        <div className="flex gap-1 overflow-x-auto no-scrollbar -mx-5 px-5 border-b border-gray-100">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={cn(
-                "shrink-0 px-3 py-2 text-xs transition-colors relative",
-                activeCategory === cat ? "text-gray-900 font-bold" : "text-gray-600 font-medium hover:text-gray-900"
-              )}
-            >
-              {cat}
-              {activeCategory === cat && (
-                <span className="absolute inset-x-2.5 bottom-0 h-[3px] rounded-full" style={{ backgroundColor: primaryColor }} />
-              )}
-            </button>
-          ))}
-        </div>
 
         {/* Nearest-branch indicator - only worth surfacing with more than one
             branch, since a single branch's channels are shown regardless. */}
@@ -387,160 +445,92 @@ export default function PublicMenuPage() {
         )}
       </div>
 
-      {/* Swipeable item rail for the active category */}
-      <div className="max-w-lg mx-auto w-full mt-2">
-        {currentItems.length === 0 ? (
-          <div className="text-center py-20 space-y-3">
-            <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto text-gray-600">
-              <Search size={24} />
-            </div>
-            <p className="text-sm text-gray-600">{t('publicMenu.noItemsInCategory')}</p>
-          </div>
-        ) : (
-          <ItemRail
-            key={activeCategory}
-            items={currentItems}
-            nearestBranch={nearestBranch}
-            primaryColor={primaryColor}
-            dir={dir}
-            t={t}
-            onEngageItem={(item) => recordItemClick(item)}
-            onSubmitRating={submitItemRating}
-            onChannelClick={(item, channel) => {
-              if (restaurant?.id) {
-                if (channel.isDirect) trackAppClick(restaurant.id, channel.name);
-                else trackAppClick(restaurant.id, channel.name);
-              }
-              window.open(channel.value, '_blank', 'noopener,noreferrer');
-            }}
-          />
-        )}
+      <div className="max-w-lg mx-auto w-full mt-2 px-5">
+        <MenuExperience
+          categories={categories}
+          menuItems={menuItems}
+          searchQuery={searchQuery}
+          primaryColor={primaryColor}
+          dir={dir}
+          t={t}
+          nearestBranch={nearestBranch}
+          onEngageItem={(item) => recordItemClick(item)}
+          onSubmitRating={submitItemRating}
+          onChannelClick={(item, channel) => {
+            if (restaurant?.id) trackAppClick(restaurant.id, channel.name);
+            window.open(channel.value, '_blank', 'noopener,noreferrer');
+          }}
+        />
       </div>
 
     </div>
   );
 }
 
-interface ItemRailProps {
-  items: MenuItem[];
-  nearestBranch: any;
+interface MenuExperienceProps {
+  categories: string[];
+  menuItems: MenuItem[];
+  searchQuery: string;
   primaryColor: string;
   dir: 'rtl' | 'ltr';
   t: (key: string) => string;
+  nearestBranch: any;
   onEngageItem: (item: MenuItem) => void;
   onSubmitRating: (item: MenuItem, rating: number, comment: string) => Promise<void>;
   onChannelClick: (item: MenuItem, channel: OrderChannel) => void;
 }
 
-function ItemRail({ items, nearestBranch, primaryColor, dir, t, onEngageItem, onSubmitRating, onChannelClick }: ItemRailProps) {
-  const railRef = useRef<HTMLDivElement>(null);
-  const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [activeIndex, setActiveIndex] = useState(0);
+// Owns both drag carousels (categories, items) and everything that depends
+// on "which item is active right now" - the rating chip, the size picker
+// and the order-channel picker all read the same live position instead of
+// three components independently re-deriving it.
+function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir, t, nearestBranch, onEngageItem, onSubmitRating, onChannelClick }: MenuExperienceProps) {
+  const tabs = useMemo(() => [ALL_CATEGORY_ID, ...categories], [categories]);
+  const catCarousel = useDragCarousel(tabs.length, 92);
+  const activeCatIndex = resolveIndex(catCarousel.pos, tabs.length);
+  const activeCategory = tabs[activeCatIndex] ?? ALL_CATEGORY_ID;
 
-  useEffect(() => {
-    const rail = railRef.current;
-    if (!rail) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting && entry.intersectionRatio > 0.6) {
-            const idx = slideRefs.current.findIndex((el) => el === entry.target);
-            if (idx !== -1) setActiveIndex(idx);
-          }
-        });
-      },
-      { root: rail, threshold: [0.6] }
-    );
-    slideRefs.current.forEach((el) => el && observer.observe(el));
-    return () => observer.disconnect();
-  }, [items]);
+  const items = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return menuItems.filter((item) => {
+      if (item.status !== 'available') return false;
+      const matchesCategory = activeCategory === ALL_CATEGORY_ID || item.category === activeCategory;
+      const matchesSearch = !q || (item.name || '').toLowerCase().includes(q) || (item.description || '').toLowerCase().includes(q);
+      return matchesCategory && matchesSearch;
+    });
+  }, [menuItems, activeCategory, searchQuery]);
 
-  return (
-    <div className="space-y-2">
-      <div
-        ref={railRef}
-        className="flex overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth [-webkit-overflow-scrolling:touch]"
-      >
-        {items.map((item, i) => (
-          <div
-            key={item.id}
-            ref={(el) => { slideRefs.current[i] = el; }}
-            className="shrink-0 w-full snap-center [scroll-snap-stop:always] px-5"
-          >
-            <ItemCard
-              item={item}
-              index={i}
-              total={items.length}
-              nearestBranch={nearestBranch}
-              primaryColor={primaryColor}
-              dir={dir}
-              t={t}
-              onEngageItem={onEngageItem}
-              onSubmitRating={onSubmitRating}
-              onChannelClick={onChannelClick}
-            />
-          </div>
-        ))}
-      </div>
+  const itemCarousel = useDragCarousel(items.length, 195);
+  // Browsing to a different category (or narrowing via search) swaps the
+  // whole item list out from under the carousel - start it fresh rather
+  // than landing on whatever index happened to line up in the new list.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { itemCarousel.reset(); }, [activeCategory, searchQuery]);
 
-      {items.length > 1 && (
-        <>
-          <div className="flex items-center justify-center gap-2">
-            {items.map((_, i) => (
-              <span
-                key={i}
-                className="block rounded-full transition-all"
-                style={{
-                  height: i === activeIndex ? 7 : 6,
-                  width: i === activeIndex ? 7 : 6,
-                  backgroundColor: i === activeIndex ? primaryColor : '#d6deda',
-                }}
-              />
-            ))}
-          </div>
-          <p className="text-center text-[10px] text-gray-600">{t('publicMenu.swipeHint')}</p>
-        </>
-      )}
-    </div>
-  );
-}
+  const activeItemIndex = resolveIndex(itemCarousel.pos, items.length);
+  const activeItem = items[activeItemIndex];
 
-interface ItemCardProps {
-  item: MenuItem;
-  index: number;
-  total: number;
-  nearestBranch: any;
-  primaryColor: string;
-  dir: 'rtl' | 'ltr';
-  t: (key: string) => string;
-  onEngageItem: (item: MenuItem) => void;
-  onSubmitRating: (item: MenuItem, rating: number, comment: string) => Promise<void>;
-  onChannelClick: (item: MenuItem, channel: OrderChannel) => void;
-}
+  const [selectedSizeIndex, setSelectedSizeIndex] = useState(0);
+  const [selectedChannelIndex, setSelectedChannelIndex] = useState(0);
+  useEffect(() => { setSelectedSizeIndex(0); setSelectedChannelIndex(0); }, [activeItem?.id]);
 
-function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onEngageItem, onSubmitRating, onChannelClick }: ItemCardProps) {
-  const [selectedSize, setSelectedSize] = useState<any>(item.sizes?.[0] || null);
-  const [showRatingForm, setShowRatingForm] = useState(false);
-  const [itemRating, setItemRating] = useState(0);
-  const [itemHoverRating, setItemHoverRating] = useState(0);
-  const [itemComment, setItemComment] = useState('');
+  const [rateOpen, setRateOpen] = useState(false);
+  const [hoverStar, setHoverStar] = useState(0);
+  const [pendingRating, setPendingRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
-
-  const basePrice = item.sizes?.[0]?.price ?? 0;
-  const displayPrice = selectedSize && typeof selectedSize.price === 'number' ? selectedSize.price : basePrice;
-  const channels = buildOrderChannels(item, nearestBranch, basePrice);
-  const highestPrice = channels.length ? Math.max(...channels.map((c) => c.price)) : basePrice;
-  const cheapestPrice = channels.length ? Math.min(...channels.map((c) => c.price)) : basePrice;
-  const savings = highestPrice - cheapestPrice;
+  // Rating a new active item shouldn't carry over the previous item's
+  // half-filled form.
+  useEffect(() => { setRateOpen(false); setPendingRating(0); setRatingComment(''); }, [activeItem?.id]);
 
   const handleSubmitRating = async () => {
-    if (itemRating === 0) return;
+    if (!activeItem || pendingRating === 0) return;
     setIsSubmittingRating(true);
     try {
-      await onSubmitRating(item, itemRating, itemComment);
-      setShowRatingForm(false);
-      setItemRating(0);
-      setItemComment('');
+      await onSubmitRating(activeItem, pendingRating, ratingComment);
+      setRateOpen(false);
+      setPendingRating(0);
+      setRatingComment('');
     } catch {
       // onSubmitRating already surfaces the error toast
     } finally {
@@ -548,201 +538,309 @@ function ItemCard({ item, index, total, nearestBranch, primaryColor, dir, t, onE
     }
   };
 
+  const ar = dir !== 'ltr';
+  const nameOf = (item: MenuItem) => (ar ? item.name : (item.name_en || item.name));
+  const descOf = (item: MenuItem) => (ar ? item.description : (item.description_en || item.description));
+
+  const sizes = activeItem?.sizes || [];
+  const basePrice = sizes[0]?.price ?? 0;
+  const displayPrice = sizes[selectedSizeIndex]?.price ?? basePrice;
+
+  const channels = activeItem ? buildOrderChannels(activeItem, nearestBranch, basePrice) : [];
+  const selectedChannel = channels[Math.min(selectedChannelIndex, Math.max(0, channels.length - 1))];
+  const ctaPrice = selectedChannel?.price ?? displayPrice;
+
+  if (menuItems.length === 0) {
+    return (
+      <div className="text-center py-20 space-y-3">
+        <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center mx-auto text-gray-600">
+          <Search size={24} />
+        </div>
+        <p className="text-sm text-gray-600">{t('publicMenu.noItemsInCategory')}</p>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <div className="flex items-center justify-between pt-1">
-        {item.display_tags && item.display_tags !== 'none' ? (
-          <span className="inline-flex items-center bg-white border border-gray-100 rounded-full px-2.5 py-1.5 text-[10px] font-bold text-gray-700 shadow-sm">
-            {item.display_tags === 'best_seller' ? t('publicMenu.tagBestSeller') : item.display_tags === 'daily_offer' ? t('publicMenu.tagDailyOffer') : t('publicMenu.tagNew')}
-          </span>
-        ) : <span />}
-        <span className="text-[10px] text-gray-600">{index + 1} / {total}</span>
-      </div>
-
-      <div className="relative flex items-center justify-center" style={{ height: 170 }}>
-        <div
-          className="absolute rounded-full blur-sm"
-          style={{
-            inset: 'auto auto 24px 50%', transform: 'translateX(-50%)',
-            width: '82%', height: '82%',
-            background: `radial-gradient(circle, color-mix(in srgb, ${primaryColor} 8%, transparent) 0%, transparent 70%)`,
-          }}
-        />
-        <div className="relative w-full h-full max-w-[150px]">
-          <StorageImage imagePath={item.image_url} alt={item.name} fill className="object-contain drop-shadow-xl" sizes="150px" />
+    <div className="space-y-2">
+      {/* Category pills - draggable, curved arrangement */}
+      <div
+        {...catCarousel.bind}
+        style={{ position: 'relative', height: 44, touchAction: 'pan-y', cursor: 'grab', userSelect: 'none' }}
+      >
+        <div style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0 }}>
+          {tabs.map((cat, i) => {
+            const n = tabs.length;
+            const d = signedDelta(i, catCarousel.pos, n);
+            const a = Math.abs(d);
+            const on = a < 0.5;
+            const label = cat === ALL_CATEGORY_ID ? t('publicMenu.allCategory') : cat;
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => catCarousel.jumpTo(i)}
+                style={{
+                  position: 'absolute', left: 0, top: 0, marginLeft: -39, marginTop: -17,
+                  width: 78, height: 34, padding: 0, borderRadius: 999, border: 'none',
+                  cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap',
+                  transform: `translate3d(${-d * 86}px, ${a * 2}px, 0) scale(${Math.max(0.82, 1 - a * 0.09)})`,
+                  opacity: a > 2.2 ? 0 : 1,
+                  zIndex: Math.round(20 - a * 4),
+                  background: on ? '#fff' : 'rgba(255,255,255,.22)',
+                  color: on ? primaryColor : 'var(--r-button-text)',
+                  boxShadow: on ? '0 10px 20px -12px rgba(0,0,0,.35)' : 'none',
+                  transition: catCarousel.dragging ? 'background .25s, color .25s, box-shadow .25s' : 'transform .3s ease, background .25s, color .25s, box-shadow .25s',
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <div className="text-center">
-        <h2 className="text-xl font-black text-gray-900">{item.name}</h2>
-        <span className="text-lg font-bold" style={{ color: primaryColor }}>
-          {displayPrice === 0 ? t('planPricing.free') : `${displayPrice} ${t('ownerSettings.currency')}`}
-        </span>
-        {item.description && <p className="text-xs text-gray-600 mt-1 line-clamp-1">{item.description}</p>}
-      </div>
+      {/* Themed hero: item image carousel + active item name/description */}
+      <div
+        style={{
+          position: 'relative', borderRadius: '48px 48px 0 0', overflow: 'hidden',
+          backgroundColor: primaryColor, display: 'flex', flexDirection: 'column',
+        }}
+      >
+        <div style={{ position: 'absolute', top: -50, insetInlineEnd: -40, width: 170, height: 170, borderRadius: '50%', background: 'rgba(255,255,255,.06)' }} />
+        <div style={{ position: 'absolute', bottom: 90, insetInlineStart: -60, width: 210, height: 210, borderRadius: '50%', background: 'rgba(255,255,255,.05)' }} />
 
-      <div className="mt-2 max-w-sm mx-auto space-y-2">
-        {/* Rating */}
-        <div dir={dir} className="flex items-center justify-between">
-          {item.review_count ? (
-            <div className="flex items-center gap-1.5">
-              <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-              <span className="text-sm font-bold text-gray-900">{item.rating?.toFixed(1)}</span>
-              <span className="text-xs text-gray-600">({item.review_count} {t('publicShared.reviewCountSuffix')})</span>
-            </div>
-          ) : (
-            <span className="text-xs text-gray-600">{t('publicMenu.noRatingYet')}</span>
-          )}
-          {!showRatingForm && (
-            <button
-              type="button"
-              onClick={() => { setShowRatingForm(true); onEngageItem(item); }}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold transition-transform active:scale-95"
-              style={{ backgroundColor: `${primaryColor}14`, color: primaryColor, border: `1px solid ${primaryColor}35` }}
+        {items.length === 0 ? (
+          <div className="relative flex flex-col items-center justify-center gap-2 py-16 text-center" style={{ color: 'var(--r-button-text)' }}>
+            <Search className="h-6 w-6 opacity-70" />
+            <p className="text-xs opacity-80">{t('publicMenu.noItemsInCategory')}</p>
+          </div>
+        ) : (
+          <>
+            <div
+              {...itemCarousel.bind}
+              style={{ position: 'relative', height: 220, touchAction: 'pan-y', cursor: 'grab', userSelect: 'none', marginTop: 8 }}
             >
-              <Star className="h-3.5 w-3.5" fill={primaryColor} />
-              {t('publicMenu.rateThisItem')}
-            </button>
-          )}
-        </div>
-
-        {showRatingForm && (
-          <div dir={dir} className="rounded-xl border border-gray-100 p-3 space-y-2">
-            <div className="flex justify-center gap-1 flex-row-reverse">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onMouseEnter={() => setItemHoverRating(star)}
-                  onMouseLeave={() => setItemHoverRating(0)}
-                  onClick={() => setItemRating(star)}
-                  className="p-0.5 transition-transform hover:scale-110"
-                >
-                  <Star
-                    className="h-6 w-6 transition-colors"
-                    fill={star <= (itemHoverRating || itemRating) ? '#f59e0b' : 'none'}
-                    stroke={star <= (itemHoverRating || itemRating) ? '#f59e0b' : '#d1d5db'}
-                  />
-                </button>
-              ))}
+              <div style={{ position: 'absolute', top: 16, left: '50%', transform: 'translateX(-50%)', width: 170, height: 170, borderRadius: '50%', background: 'rgba(255,255,255,.12)' }} />
+              <div style={{ position: 'absolute', top: '50%', left: '50%', height: 0, width: 0 }}>
+                {items.map((item, i) => {
+                  const n = items.length;
+                  const d = signedDelta(i, itemCarousel.pos, n);
+                  const a = Math.abs(d);
+                  const sc = Math.max(0.5, 1 - a * 0.22);
+                  return (
+                    <div
+                      key={item.id}
+                      style={{
+                        position: 'absolute', left: 0, top: 0, width: 220, height: 220,
+                        marginLeft: -110, marginTop: -110,
+                        transform: `translate3d(${-d * 195}px, ${a * 8}px, 0) scale(${sc}) rotate(${-d * 4}deg)`,
+                        opacity: Math.max(0, 1 - a * 0.5),
+                        zIndex: Math.round(50 - a * 10),
+                        filter: a > 0.6 ? 'brightness(.85)' : 'none',
+                        transition: itemCarousel.dragging ? 'none' : 'transform .3s ease, opacity .3s ease, filter .3s ease',
+                      }}
+                    >
+                      <StorageImage
+                        imagePath={item.image_url}
+                        alt={item.name}
+                        fill
+                        sizes="220px"
+                        className="object-contain pointer-events-none drop-shadow-xl"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <Textarea
-              placeholder={t('publicShared.leaveComment')}
-              value={itemComment}
-              onChange={(e) => setItemComment(e.target.value)}
-              className="text-sm min-h-[50px] resize-none rounded-xl"
-            />
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowRatingForm(false)}
-                className="flex-1 h-9 rounded-xl border border-gray-200 text-sm font-medium text-gray-600"
-              >
-                {t('publicShared.cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={handleSubmitRating}
-                disabled={itemRating === 0 || isSubmittingRating}
-                style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
-                className="flex-1 h-9 rounded-xl text-sm font-bold disabled:opacity-50"
-              >
-                {isSubmittingRating ? t('publicShared.sending') : t('publicShared.send')}
-              </button>
-            </div>
-          </div>
-        )}
 
-        {/* Sizes */}
-        {Array.isArray(item.sizes) && item.sizes.length > 0 && (
-          <div dir={dir} className="space-y-2">
-            <p className="text-xs font-semibold text-gray-600">{t('publicMenu.sizeLabel')}</p>
-            <div className="flex gap-0 overflow-x-auto no-scrollbar pb-1 snap-x snap-mandatory">
-              {item.sizes.map((size) => {
-                const isActive = selectedSize?.id === size.id;
-                return (
+            {activeItem && (
+              <div className="relative flex flex-col items-center gap-1 text-center px-6" style={{ color: 'var(--r-button-text)' }}>
+                <span className="text-lg font-bold">{nameOf(activeItem)}</span>
+                {descOf(activeItem) && <span className="text-xs opacity-90 max-w-[30ch] leading-relaxed">{descOf(activeItem)}</span>}
+              </div>
+            )}
+
+            {items.length > 1 && (
+              <div className="relative flex items-center justify-center gap-1.5 py-3">
+                {items.map((_, i) => (
                   <button
-                    key={size.id || size.name}
+                    key={i}
                     type="button"
-                    onClick={() => setSelectedSize(size)}
-                    className={cn(
-                      "shrink-0 px-4 py-2 snap-center transition-all duration-200 border-b-2",
-                      isActive
-                        ? "border-current"
-                        : "border-transparent text-gray-600"
+                    onClick={() => itemCarousel.jumpTo(i)}
+                    style={{
+                      width: i === activeItemIndex ? 18 : 6, height: 6, borderRadius: 3, border: 'none',
+                      cursor: 'pointer', padding: 0, transition: 'all .25s',
+                      background: i === activeItemIndex ? 'var(--r-button-text)' : 'rgba(255,255,255,.4)',
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {/* Bottom sheet: rating, sizes, order channels, CTA */}
+            {activeItem && (
+              <div className="relative mt-1 bg-white rounded-t-[26px] px-4 pt-4 pb-4 space-y-3" style={{ boxShadow: '0 -18px 40px -22px rgba(0,0,0,.35)' }}>
+                <div dir={dir} className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    {activeItem.display_tags && activeItem.display_tags !== 'none' && (
+                      <span className="inline-flex items-center bg-gray-50 border border-gray-100 rounded-full px-2.5 py-1 text-[10px] font-bold text-gray-700">
+                        {activeItem.display_tags === 'best_seller' ? t('publicMenu.tagBestSeller') : activeItem.display_tags === 'daily_offer' ? t('publicMenu.tagDailyOffer') : t('publicMenu.tagNew')}
+                      </span>
                     )}
-                    style={isActive ? { borderColor: primaryColor, color: primaryColor } : {}}
-                  >
-                    <span className={cn(
-                      "text-sm transition-all duration-200",
-                      isActive ? "font-bold" : "font-medium"
-                    )}>
-                      {size.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+                  </div>
+                  <div className="relative shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => { setRateOpen((v) => !v); if (!rateOpen) onEngageItem(activeItem); }}
+                      className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-colors"
+                      style={{ backgroundColor: rateOpen ? `${primaryColor}14` : '#F1EDE3', border: `1px solid ${rateOpen ? primaryColor : 'transparent'}` }}
+                    >
+                      <Star className="h-3.5 w-3.5" style={{ color: '#F2B705' }} fill="#F2B705" />
+                      {activeItem.review_count ? (
+                        <>
+                          <span className="text-gray-900">{activeItem.rating?.toFixed(1)}</span>
+                          <span className="text-gray-600">({activeItem.review_count})</span>
+                        </>
+                      ) : (
+                        <span className="text-gray-600">{t('publicMenu.noRatingYet')}</span>
+                      )}
+                    </button>
+
+                    {rateOpen && (
+                      <div
+                        dir={dir}
+                        className="absolute z-20 rounded-2xl bg-white border border-gray-100 p-3 space-y-2 w-56"
+                        style={{ top: 'calc(100% + 8px)', insetInlineEnd: 0, boxShadow: '0 18px 36px -18px rgba(0,0,0,.35)' }}
+                      >
+                        <p className="text-xs text-gray-600">{t('publicMenu.rateThisItem')}</p>
+                        <div className="flex justify-center gap-1 flex-row-reverse">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onMouseEnter={() => setHoverStar(star)}
+                              onMouseLeave={() => setHoverStar(0)}
+                              onClick={() => setPendingRating(star)}
+                              className="p-0.5 transition-transform hover:scale-110"
+                            >
+                              <Star
+                                className="h-5 w-5 transition-colors"
+                                fill={star <= (hoverStar || pendingRating) ? '#f59e0b' : 'none'}
+                                stroke={star <= (hoverStar || pendingRating) ? '#f59e0b' : '#d1d5db'}
+                              />
+                            </button>
+                          ))}
+                        </div>
+                        <Textarea
+                          placeholder={t('publicShared.leaveComment')}
+                          value={ratingComment}
+                          onChange={(e) => setRatingComment(e.target.value)}
+                          className="text-sm min-h-[50px] resize-none rounded-xl"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setRateOpen(false)}
+                            className="flex-1 h-9 rounded-xl border border-gray-200 text-sm font-medium text-gray-600"
+                          >
+                            {t('publicShared.cancel')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSubmitRating}
+                            disabled={pendingRating === 0 || isSubmittingRating}
+                            style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
+                            className="flex-1 h-9 rounded-xl text-sm font-bold disabled:opacity-50"
+                          >
+                            {isSubmittingRating ? t('publicShared.sending') : t('publicShared.send')}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {sizes.length > 1 && (
+                  <div dir={dir} className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${sizes.length}, 1fr)` }}>
+                    {sizes.map((size, i) => {
+                      const on = selectedSizeIndex === i;
+                      return (
+                        <button
+                          key={size.id || size.name}
+                          type="button"
+                          onClick={() => setSelectedSizeIndex(i)}
+                          className="flex flex-col items-center gap-0.5 rounded-xl py-1.5 px-1 transition-colors"
+                          style={{
+                            backgroundColor: on ? primaryColor : '#F7F5EE',
+                            color: on ? 'var(--r-button-text)' : '#1A1A1A',
+                            border: `1px solid ${on ? primaryColor : '#EFEBE0'}`,
+                          }}
+                        >
+                          <span className="text-[11px] font-semibold">{size.name}</span>
+                          <span className="text-[10px] font-bold" style={{ opacity: on ? 0.9 : 0.7 }}>{size.price} {t('ownerSettings.currency')}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {channels.length > 0 && (
+                  <>
+                    <p className="text-center text-xs text-gray-600">{t('publicMenu.chooseOrderMethod')}</p>
+                    <div className={cn('grid gap-2', channels.length >= 4 ? 'grid-cols-4' : `grid-cols-${channels.length}`)}>
+                      {channels.map((channel, i) => {
+                        const on = selectedChannelIndex === i;
+                        return (
+                          <button
+                            key={channel.id}
+                            type="button"
+                            onClick={() => setSelectedChannelIndex(i)}
+                            className="relative flex flex-col items-center gap-1 rounded-2xl border p-2 text-center transition-colors"
+                            style={{ backgroundColor: on ? `${primaryColor}14` : '#fff', borderColor: on ? primaryColor : '#E7E2D6' }}
+                          >
+                            {channel.isDirect && (
+                              <span
+                                className="absolute -top-2 inset-x-0 mx-auto w-fit text-[8px] font-bold rounded-full px-1.5 py-0.5 whitespace-nowrap"
+                                style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
+                              >
+                                {t('publicMenu.bestForYou')}
+                              </span>
+                            )}
+                            <div className="relative w-7 h-7 rounded-xl bg-gray-50 overflow-hidden">
+                              {channel.logo ? (
+                                <StorageImage imagePath={channel.logo} alt={channel.name} fill className="object-contain p-1" sizes="28px" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-gray-600">
+                                  {channel.name.slice(0, 2)}
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-[9px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[18px]">{channel.name}</span>
+                            <span className="text-[10px] font-bold" style={{ color: channel.isDirect ? primaryColor : undefined }}>
+                              {channel.price} {t('ownerSettings.currency')}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => { onEngageItem(activeItem); if (selectedChannel) onChannelClick(activeItem, selectedChannel); }}
+                  disabled={!selectedChannel}
+                  className="w-full h-12 rounded-full text-sm font-bold transition-transform active:scale-[0.98] disabled:opacity-50"
+                  style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)', boxShadow: `0 16px 30px -18px color-mix(in srgb, ${primaryColor} 90%, transparent)` }}
+                >
+                  {selectedChannel ? `${t('publicMenu.orderNow')} · ${ctaPrice} ${t('ownerSettings.currency')}` : `${displayPrice} ${t('ownerSettings.currency')}`}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
-
-      {channels.length > 0 && (
-        <div className="mt-2 max-w-sm mx-auto">
-          <div className="flex items-center gap-2 justify-center mb-1.5">
-            <span className="h-px flex-1 bg-gradient-to-l from-transparent via-gray-200 to-transparent" />
-            <span className="text-[10px] font-bold text-gray-600">{t('publicMenu.chooseOrderMethod')}</span>
-            <span className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent" />
-          </div>
-          <div className={cn("grid gap-2", channels.length >= 4 ? "grid-cols-4" : `grid-cols-${channels.length}`)}>
-            {channels.map((channel) => (
-              <button
-                key={channel.id}
-                type="button"
-                onClick={() => onChannelClick(item, channel)}
-                className={cn(
-                  "relative flex flex-col items-center rounded-2xl border p-1.5 text-center transition-transform active:scale-95",
-                  channel.isDirect ? "bg-white shadow-sm" : "bg-white border-gray-100"
-                )}
-                style={channel.isDirect ? { borderColor: `${primaryColor}50`, background: `linear-gradient(180deg, color-mix(in srgb, ${primaryColor} 5%, white), white)` } : {}}
-              >
-                {channel.isDirect && (
-                  <span
-                    className="absolute -top-2 inset-x-0 mx-auto w-fit text-[8px] font-bold text-white rounded-full px-1.5 py-0.5 whitespace-nowrap"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    {t('publicMenu.bestForYou')}
-                  </span>
-                )}
-                <div className="relative w-7 h-7 rounded-xl bg-gray-50 overflow-hidden mb-0.5 mt-0.5">
-                  {channel.logo ? (
-                    <StorageImage imagePath={channel.logo} alt={channel.name} fill className="object-contain p-1" sizes="28px" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-gray-600">
-                      {channel.name.slice(0, 2)}
-                    </div>
-                  )}
-                </div>
-                <span className="text-[9px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[18px]">{channel.name}</span>
-                <span className="text-[10px] font-bold mt-0.5" style={{ color: channel.isDirect ? primaryColor : undefined }}>
-                  {channel.price} {t('ownerSettings.currency')}
-                </span>
-                <span
-                  className="w-full mt-1 rounded-lg py-1 text-[9px] font-bold"
-                  style={channel.isDirect ? { backgroundColor: primaryColor, color: 'var(--r-button-text)' } : { backgroundColor: '#f2f5f3', color: '#2e3e36' }}
-                >
-                  {channel.isDirect ? t('publicMenu.orderNow') : t('publicMenu.openInApp')}
-                </span>
-              </button>
-            ))}
-          </div>
-          {savings > 0 && (
-            <p className="text-center text-[10px] font-bold mt-1.5" style={{ color: primaryColor }}>
-              {t('publicMenu.savePrefix')} {savings} {t('ownerSettings.currency')} {t('publicMenu.saveSuffix')}
-            </p>
-          )}
-        </div>
-      )}
-    </>
+    </div>
   );
 }
