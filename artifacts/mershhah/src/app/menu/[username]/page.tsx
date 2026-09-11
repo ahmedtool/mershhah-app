@@ -141,21 +141,9 @@ function useDragCarousel(count: number, spacing: number, wrap: boolean = true) {
       (d.el as any).setPointerCapture?.(d.pointerId);
       setDragging(true);
     }
-    const raw = d.start + (e.clientX - d.x) / spacing;
-    // A non-wrapping carousel still tracks the pointer 1:1 up to its edges
-    // (no drag in "the middle" feels any different) - only past the first
-    // or last slot does it add resistance, like pulling on a rubber band
-    // instead of slamming into a wall, and it eases back on release via
-    // the same CSS transition every other settle uses.
-    let next = raw;
-    if (!wrap) {
-      const max = Math.max(0, countRef.current - 1);
-      if (raw < 0) next = raw * 0.35;
-      else if (raw > max) next = max + (raw - max) * 0.35;
-    }
-    posRef.current = next;
-    setPos(next);
-  }, [spacing, wrap]);
+    posRef.current = d.start + (e.clientX - d.x) / spacing;
+    setPos(posRef.current);
+  }, [spacing]);
   const onPointerUp = useCallback(() => {
     const d = dragRef.current;
     if (!d) return;
