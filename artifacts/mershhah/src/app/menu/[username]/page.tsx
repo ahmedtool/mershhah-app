@@ -563,44 +563,7 @@ function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir,
 
   return (
     <div className="space-y-2">
-      {/* Category pills - draggable, curved arrangement */}
-      <div
-        {...catCarousel.bind}
-        style={{ position: 'relative', height: 44, touchAction: 'pan-y', cursor: 'grab', userSelect: 'none' }}
-      >
-        <div style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0 }}>
-          {tabs.map((cat, i) => {
-            const n = tabs.length;
-            const d = signedDelta(i, catCarousel.pos, n);
-            const a = Math.abs(d);
-            const on = a < 0.5;
-            const label = cat === ALL_CATEGORY_ID ? t('publicMenu.allCategory') : cat;
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => catCarousel.jumpTo(i)}
-                style={{
-                  position: 'absolute', left: 0, top: 0, marginLeft: -39, marginTop: -17,
-                  width: 78, height: 34, padding: 0, borderRadius: 999, border: 'none',
-                  cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap',
-                  transform: `translate3d(${-d * 86}px, ${a * 2}px, 0) scale(${Math.max(0.82, 1 - a * 0.09)})`,
-                  opacity: a > 2.2 ? 0 : 1,
-                  zIndex: Math.round(20 - a * 4),
-                  background: on ? '#fff' : 'rgba(255,255,255,.22)',
-                  color: on ? primaryColor : 'var(--r-button-text)',
-                  boxShadow: on ? '0 10px 20px -12px rgba(0,0,0,.35)' : 'none',
-                  transition: catCarousel.dragging ? 'background .25s, color .25s, box-shadow .25s' : 'transform .3s ease, background .25s, color .25s, box-shadow .25s',
-                }}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Themed hero: item image carousel + active item name/description */}
+      {/* Themed hero: category picker + item image carousel + active item name/description */}
       <div
         style={{
           position: 'relative', borderRadius: '48px 48px 0 0', overflow: 'hidden',
@@ -609,6 +572,45 @@ function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir,
       >
         <div style={{ position: 'absolute', top: -50, insetInlineEnd: -40, width: 170, height: 170, borderRadius: '50%', background: 'rgba(255,255,255,.06)' }} />
         <div style={{ position: 'absolute', bottom: 90, insetInlineStart: -60, width: 210, height: 210, borderRadius: '50%', background: 'rgba(255,255,255,.05)' }} />
+
+        {/* Category pills - draggable, curved arrangement, sitting on the
+            themed backdrop above so the translucent "unselected" pills
+            actually have contrast to read against. */}
+        <div
+          {...catCarousel.bind}
+          style={{ position: 'relative', height: 46, marginTop: 14, touchAction: 'pan-y', cursor: 'grab', userSelect: 'none' }}
+        >
+          <div style={{ position: 'absolute', top: '50%', left: '50%', width: 0, height: 0 }}>
+            {tabs.map((cat, i) => {
+              const n = tabs.length;
+              const d = signedDelta(i, catCarousel.pos, n);
+              const a = Math.abs(d);
+              const on = a < 0.5;
+              const label = cat === ALL_CATEGORY_ID ? t('publicMenu.allCategory') : cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => catCarousel.jumpTo(i)}
+                  style={{
+                    position: 'absolute', left: 0, top: 0, marginLeft: -42, marginTop: -18,
+                    width: 84, height: 36, padding: '0 8px', borderRadius: 999, border: 'none',
+                    cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap',
+                    transform: `translate3d(${-d * 76}px, ${a * 1.5}px, 0) scale(${Math.max(0.9, 1 - a * 0.05)})`,
+                    opacity: Math.max(0.55, 1 - a * 0.16),
+                    zIndex: Math.round(20 - a * 4),
+                    background: on ? '#fff' : 'rgba(255,255,255,.3)',
+                    color: on ? primaryColor : 'var(--r-button-text)',
+                    boxShadow: on ? '0 10px 20px -12px rgba(0,0,0,.35)' : 'none',
+                    transition: catCarousel.dragging ? 'background .25s, color .25s, box-shadow .25s' : 'transform .3s ease, opacity .3s ease, background .25s, color .25s, box-shadow .25s',
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {items.length === 0 ? (
           <div className="relative flex flex-col items-center justify-center gap-2 py-16 text-center" style={{ color: 'var(--r-button-text)' }}>
