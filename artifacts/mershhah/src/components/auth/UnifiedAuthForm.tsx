@@ -84,7 +84,12 @@ export function UnifiedAuthForm() {
       setIsOtpLoading(false);
       return;
     }
-    sessionStorage.setItem(`mershhah_otp_verified_${data.user.id}`, '1');
+    // Do NOT mark mershhah_otp_verified_* here: this is only the app's
+    // first-factor sign-in. Owner/admin accounts still need the separate
+    // second-factor step OtpGate enforces (send-login-otp/verify-login-otp),
+    // which is what actually stamps profiles.otp_verified_at server-side and
+    // feeds the otp_ok JWT claim the RLS policies check. Setting this flag
+    // early let owner/admin sessions skip that second factor entirely.
     const route = await resolvePostAuthRoute(data.user);
     router.push(route);
     router.refresh();

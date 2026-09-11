@@ -8,9 +8,13 @@ import { resolvePostAuthRoute } from '@/lib/post-auth-redirect';
 
 // Landing page for Supabase's OAuth redirectTo (Google "Continue with
 // Google" button). Its only job is: read the session that Supabase just
-// established, mark it as OTP-verified (Google sign-in is itself a strong
-// identity proof, so OtpGate shouldn't immediately ask again), then send
-// the visitor to onboarding or their dashboard.
+// established, then send the visitor to onboarding or their dashboard.
+// This must NOT mark mershhah_otp_verified_* itself - owner/admin accounts
+// still need OtpGate's separate second-factor step (send-login-otp/
+// verify-login-otp), which is what stamps profiles.otp_verified_at and
+// feeds the otp_ok JWT claim the RLS policies check. For every other role
+// OtpGate never gates on this flag at all, so skipping it here is a no-op
+// for them and only restores the required 2FA for owner/admin.
 export default function AuthCallbackPage() {
   const router = useRouter();
 
@@ -28,7 +32,6 @@ export default function AuthCallbackPage() {
         router.push('/login');
         return;
       }
-      sessionStorage.setItem(`mershhah_otp_verified_${user.id}`, '1');
       const route = await resolvePostAuthRoute(user);
       if (cancelled) return;
       router.push(route);
