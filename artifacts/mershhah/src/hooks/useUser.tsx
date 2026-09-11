@@ -155,6 +155,66 @@ interface UserContextValue {
 
 const UserContext = createContext<UserContextValue>({ user: null, isLoading: true });
 
+// Fetches profile -> (owner's) restaurant -> active subscription -> plan and
+// combines them into one AppUser, or null if the profile doesn't exist (yet,
+// or ever). Shared by the initial load and the background revalidation below
+// so both build the exact same shape - they only differ in how they react to
+// a failure, which is genuinely different between the two call sites (see
+// revalidateUserData's comment).
+async function fetchUserBundle(userId: string): Promise<AppUser | null> {
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (profileError || !profile) return null;
+
+  let restaurantData: Restaurant | null = null;
+  if (profile.role === 'owner' && profile.restaurant_id) {
+    const { data: restaurant } = await supabase
+      .from('restaurants')
+      .select('*')
+      .eq('id', profile.restaurant_id)
+      .single();
+    restaurantData = restaurant;
+  }
+
+  const { data: subscriptions } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .eq('profile_id', userId)
+    .eq('status', 'active');
+
+  const activeSub = pickActiveSubscription(subscriptions || []);
+  let planRow: PlanRow | null = null;
+  if (activeSub) {
+    const { data: plan } = await supabase
+      .from('plans')
+      .select('id, max_branches, max_menu_items, max_tools, max_job_postings, features')
+      .eq('id', activeSub.plan_id)
+      .maybeSingle();
+    planRow = plan;
+  }
+
+  const entitlements = computeEntitlements(activeSub, profile, planRow);
+
+  return {
+    ...profile,
+    ...(restaurantData ? { ...restaurantData } : {}),
+    uid: userId,
+    id: userId,
+    restaurantId: restaurantData?.id || profile.restaurant_id || undefined,
+    entitlements,
+  } as AppUser;
+}
+
+// Background re-check interval/trigger for an already-loaded session - not
+// how often the DATA is actually protected (RLS re-evaluates role on every
+// query regardless of this), just how quickly a role/permission change made
+// elsewhere shows up in an already-open tab's UI.
+const REVALIDATE_INTERVAL_MS = 5 * 60 * 1000;
+
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -168,15 +228,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
     loadingRef.current = true;
 
     try {
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      const combinedUser = await fetchUserBundle(userId);
 
       if (!mountedRef.current) return;
 
-      if (profileError || !profile) {
+      if (!combinedUser) {
         // Profile might not be committed yet (race condition after login)
         if (retryCount < 3) {
           await new Promise(r => setTimeout(r, 500));
@@ -186,48 +242,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
         return;
       }
-
-      let restaurantData: Restaurant | null = null;
-      if (profile.role === 'owner' && profile.restaurant_id) {
-        const { data: restaurant } = await supabase
-          .from('restaurants')
-          .select('*')
-          .eq('id', profile.restaurant_id)
-          .single();
-        restaurantData = restaurant;
-      }
-
-      const { data: subscriptions } = await supabase
-        .from('subscriptions')
-        .select('*')
-        .eq('profile_id', userId)
-        .eq('status', 'active');
-
-      if (!mountedRef.current) return;
-
-      const activeSub = pickActiveSubscription(subscriptions || []);
-      let planRow: PlanRow | null = null;
-      if (activeSub) {
-        const { data: plan } = await supabase
-          .from('plans')
-          .select('id, max_branches, max_menu_items, max_tools, max_job_postings, features')
-          .eq('id', activeSub.plan_id)
-          .maybeSingle();
-        planRow = plan;
-      }
-
-      if (!mountedRef.current) return;
-
-      const entitlements = computeEntitlements(activeSub, profile, planRow);
-
-      const combinedUser: AppUser = {
-        ...profile,
-        ...(restaurantData ? { ...restaurantData } : {}),
-        uid: userId,
-        id: userId,
-        restaurantId: restaurantData?.id || profile.restaurant_id || undefined,
-        entitlements,
-      };
 
       setUser(combinedUser);
       loadedUserIdRef.current = userId;
@@ -240,6 +254,27 @@ export function UserProvider({ children }: { children: ReactNode }) {
     } finally {
       if (mountedRef.current) setIsLoading(false);
       loadingRef.current = false;
+    }
+  }, []);
+
+  // Re-checks role/permissions/account_status for the session that's already
+  // loaded and displayed - e.g. an admin's access was revoked from another
+  // tab/device while this one stayed open. Deliberately best-effort: unlike
+  // loadUserData, a failed or empty fetch here NEVER signs the user out or
+  // clears the UI - a transient network blip during a routine background
+  // check must not look like a real sign-out. Actual data access was never
+  // gated by this anyway (RLS re-checks the DB's current role on every
+  // query); this only keeps the UI itself from showing stale permissions
+  // for longer than necessary.
+  const revalidateUserData = useCallback(async () => {
+    const userId = loadedUserIdRef.current;
+    if (!userId || loadingRef.current) return;
+    try {
+      const combinedUser = await fetchUserBundle(userId);
+      if (!mountedRef.current || !combinedUser) return;
+      setUser(combinedUser);
+    } catch {
+      // Keep showing the last known-good state.
     }
   }, []);
 
@@ -293,6 +328,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
       authSubscription.unsubscribe();
     };
   }, [loadUserData]);
+
+  // Catches a role/permission/account_status change made elsewhere while
+  // this tab stayed open: once when the tab regains focus (the common case -
+  // someone switches back after an admin changed something), and otherwise
+  // on a slow interval as a backstop for a tab that's simply left open and
+  // never loses focus.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') revalidateUserData();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    const interval = setInterval(revalidateUserData, REVALIDATE_INTERVAL_MS);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      clearInterval(interval);
+    };
+  }, [revalidateUserData]);
 
   const ctxValue = useMemo(() => ({ user, isLoading }), [user, isLoading]);
 
