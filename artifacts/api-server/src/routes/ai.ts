@@ -1,6 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { generateImageBuffer } from "@workspace/integrations-openai-ai-server/image";
+import { requireOwnerOrAdmin } from "../middleware/requireOwnerOrAdmin";
 
 const router: IRouter = Router();
 
@@ -9,6 +10,10 @@ function jsonError(res: Response, err: unknown, fallback: object) {
   res.json(fallback);
 }
 
+// Public by design: this is the AI chat widget on a restaurant's own public
+// menu page (see src/components/public/ChatInterface.tsx) - visitors are
+// anonymous customers, never logged in. Registered before the auth
+// middleware below so it's the one route in this file that stays open.
 router.post("/restaurant-chat", async (req: Request, res: Response) => {
   try {
     const { customerMessage, restaurantData, locale } = req.body as {
@@ -48,6 +53,10 @@ router.post("/restaurant-chat", async (req: Request, res: Response) => {
     jsonError(res, err, { smartReply: "عفواً، واجهتني مشكلة فنية. حاول مرة ثانية.", showApplications: false, showBranches: false });
   }
 });
+
+// Everything below is an owner/admin dashboard tool - require a real,
+// identifiable session before spending AI provider credits on it.
+router.use(requireOwnerOrAdmin);
 
 router.post("/analyze-menu-health", async (req: Request, res: Response) => {
   try {
