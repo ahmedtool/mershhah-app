@@ -63,6 +63,12 @@ function buildOrderChannels(item: MenuItem, branch: any, basePrice: number): Ord
 // category name (and stable across language toggles, unlike a label string).
 const ALL_CATEGORY_ID = '__all__';
 
+// Distance (px) the category carousel moves per slot - must match between
+// the drag hook (converts pointer pixels to a fractional slot position) and
+// the render below (places each pill that many px from center), or dragging
+// visibly desyncs from the pointer.
+const CATEGORY_SPACING = 128;
+
 // Signed shortest-path distance from position `pos` to slot `i` among `n`
 // slots. Below 3 slots there's nothing meaningful to wrap around, so the
 // distance is just linear - matching a 1-2 item category not doing anything
@@ -486,7 +492,7 @@ interface MenuExperienceProps {
 // three components independently re-deriving it.
 function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir, t, nearestBranch, onEngageItem, onSubmitRating, onChannelClick }: MenuExperienceProps) {
   const tabs = useMemo(() => [ALL_CATEGORY_ID, ...categories], [categories]);
-  const catCarousel = useDragCarousel(tabs.length, 100);
+  const catCarousel = useDragCarousel(tabs.length, CATEGORY_SPACING);
   const activeCatIndex = resolveIndex(catCarousel.pos, tabs.length);
   const activeCategory = tabs[activeCatIndex] ?? ALL_CATEGORY_ID;
 
@@ -593,10 +599,14 @@ function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir,
                   type="button"
                   onClick={() => catCarousel.jumpTo(i)}
                   style={{
-                    position: 'absolute', left: 0, top: 0, marginLeft: -42, marginTop: -18,
-                    width: 82, height: 36, padding: '0 8px', borderRadius: 999, border: 'none',
+                    position: 'absolute', left: 0, top: 0,
+                    minWidth: 44, maxWidth: 140, height: 38, padding: '0 18px', borderRadius: 999, border: 'none',
                     cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap',
-                    transform: `translate3d(${-d * 100}px, ${a * 1.5}px, 0) scale(${Math.max(0.9, 1 - a * 0.05)})`,
+                    // translate(-50%,-50%) self-centers on the anchor regardless of
+                    // the label's actual rendered width, so a long category name
+                    // (e.g. "وجبات رئيسية") gets real breathing room via padding
+                    // instead of being squeezed into a width sized for "الكل".
+                    transform: `translate3d(${-d * CATEGORY_SPACING}px, ${a * 1.5}px, 0) translate(-50%, -50%) scale(${Math.max(0.9, 1 - a * 0.05)})`,
                     opacity: Math.max(0.55, 1 - a * 0.16),
                     zIndex: Math.round(20 - a * 4),
                     background: on ? '#fff' : 'rgba(255,255,255,.3)',
