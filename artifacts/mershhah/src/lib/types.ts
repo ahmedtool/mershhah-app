@@ -464,7 +464,7 @@ export type Plan = {
     max_job_postings?: number;
 };
 
-// Mirrors public.discount_codes (see streampay_financial.sql) — column
+// Mirrors public.discount_codes (see supabase/migrations/*_streampay_financial.sql) — column
 // names here must match exactly, since Supabase rejects insert/update
 // payloads that reference a column the table doesn't have.
 export type DiscountCode = {
