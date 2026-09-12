@@ -347,7 +347,7 @@ export default function PublicMenuPage() {
 
   if (loading) return (
     <div className="min-h-screen bg-white" dir={dir}>
-      <div className="max-w-lg mx-auto px-5 space-y-8 pt-8">
+      <div className="max-w-lg md:max-w-xl lg:max-w-2xl mx-auto px-5 space-y-8 pt-8">
         <div className="flex flex-col items-center space-y-4">
           <Skeleton className="h-20 w-20 rounded-2xl" />
           <Skeleton className="h-6 w-40" />
@@ -378,7 +378,7 @@ export default function PublicMenuPage() {
       <PublicPageBackdrop />
 
       {/* Header - compact single row: back, logo, name + subtitle, search, language */}
-      <div className="max-w-lg mx-auto w-full px-5 pt-3 pb-2 flex items-center gap-2.5">
+      <div className="max-w-lg md:max-w-xl lg:max-w-2xl mx-auto w-full px-5 pt-3 pb-2 flex items-center gap-2.5">
         <Button
           variant="ghost"
           size="icon"
@@ -423,7 +423,7 @@ export default function PublicMenuPage() {
         <LanguageSwitcher />
       </div>
 
-      <div className="max-w-lg mx-auto w-full px-5 space-y-2">
+      <div className="max-w-lg md:max-w-xl lg:max-w-2xl mx-auto w-full px-5 space-y-2">
         {/* Search - collapsed by default, matching the header's icon-only affordance */}
         {searchOpen && (
           <div className="relative">
@@ -463,7 +463,7 @@ export default function PublicMenuPage() {
         )}
       </div>
 
-      <div className="max-w-lg mx-auto w-full mt-2 px-5">
+      <div className="max-w-lg md:max-w-xl lg:max-w-2xl mx-auto w-full mt-2 px-5">
         <MenuExperience
           categories={categories}
           categoryNameEn={categoryNameEn}
