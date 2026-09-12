@@ -157,8 +157,17 @@ export function NearestBranchSection({ branches, restaurantId, primaryColor, use
     );
   };
 
-  const nearestTwo = sortedBranches.slice(0, 2);
-  const hasMoreBranches = sortedBranches.length > 2;
+  // Just the one nearest branch as the actual suggestion - the full list
+  // already lives on /branches/:username, so duplicating a second card here
+  // only competes with it instead of pointing there.
+  const nearest = sortedBranches[0];
+  const hasMoreBranches = sortedBranches.length > 1;
+  // Past this radius, showing "your nearest branch is 370km away" reads as
+  // broken rather than helpful - the visitor is clearly outside every
+  // branch's real service area, so say so plainly instead.
+  const FAR_AWAY_KM = 60;
+  const nearestDistance = nearest?.distance;
+  const isTooFar = nearestDistance != null && nearestDistance !== Infinity && nearestDistance > FAR_AWAY_KM;
 
   return (
     <section className={`space-y-3 ${alignStart}`}>
@@ -188,7 +197,16 @@ export function NearestBranchSection({ branches, restaurantId, primaryColor, use
         </div>
       ) : phase === 'located' ? (
         <div className="space-y-3">
-          {nearestTwo.map((b, index) => renderBranchCard(b, index === 0))}
+          {isTooFar ? (
+            <div
+              className="p-4 text-center text-sm font-semibold text-gray-600 border border-dashed"
+              style={{ borderRadius: 'var(--r-radius)', borderColor: 'var(--r-border, #e5e7eb)' }}
+            >
+              {t('publicBranches.noBranchesNearby')}
+            </div>
+          ) : (
+            nearest && renderBranchCard(nearest, true)
+          )}
           {hasMoreBranches && username && (
             <Link
               href={`/branches/${username}`}
