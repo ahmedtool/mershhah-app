@@ -221,6 +221,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const loadingRef = useRef(false);
   const mountedRef = useRef(true);
   const loadedUserIdRef = useRef<string | null>(null);
+  const userRef = useRef<AppUser | null>(null);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   const loadUserData = useCallback(async (userId: string, retryCount = 0) => {
     if (loadingRef.current && retryCount === 0) return;
@@ -272,6 +274,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
     try {
       const combinedUser = await fetchUserBundle(userId);
       if (!mountedRef.current || !combinedUser) return;
+      // fetchUserBundle always returns a brand-new object, so calling
+      // setUser unconditionally re-renders every useUser() consumer in the
+      // app (context value changes identity) on every 5-minute tick and
+      // every tab-focus - even when nothing actually changed, which is the
+      // overwhelmingly common case. That was visible as the owner's pages
+      // seeming to "reload" out of nowhere. Only commit the new object when
+      // the data actually differs.
+      if (JSON.stringify(combinedUser) === JSON.stringify(userRef.current)) return;
       setUser(combinedUser);
     } catch {
       // Keep showing the last known-good state.

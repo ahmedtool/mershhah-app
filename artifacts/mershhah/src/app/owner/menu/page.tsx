@@ -33,8 +33,13 @@ export default function MenuPage() {
   const [activeCategoryId, setActiveCategoryId] = useState('all');
   const [isFetchingData, setIsFetchingData] = useState(true);
 
-  const fetchMenuData = async (restaurantId: string) => {
-    setIsFetchingData(true);
+  // `silent` skips the full-page skeleton - used when re-fetching after an
+  // edit (add/update/delete one item, translate-all, etc.) where the page
+  // is already showing data and flashing the whole thing back to skeletons
+  // read as an unwanted "reload" rather than a save confirmation. The
+  // initial mount and the explicit "تحديث" button still show it.
+  const fetchMenuData = async (restaurantId: string, options?: { silent?: boolean }) => {
+    if (!options?.silent) setIsFetchingData(true);
     const [menuRes, interactionsRes, categoriesRes] = await Promise.all([
       supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId),
       supabase.from('menu_item_interactions').select('menu_item_id').eq('restaurant_id', restaurantId),
@@ -236,7 +241,7 @@ export default function MenuPage() {
           onApplySmartSort={handleApplySmartSort}
           onRefresh={handleRefresh}
           onTranslateAll={handleTranslateAll}
-          onSave={() => user?.restaurantId && fetchMenuData(user.restaurantId)}
+          onSave={() => user?.restaurantId && fetchMenuData(user.restaurantId, { silent: true })}
         />
       </PageHeader>
 
@@ -358,7 +363,7 @@ export default function MenuPage() {
           activeCategoryId={activeCategoryId}
           restaurantId={user!.restaurantId!}
           userId={user!.uid}
-          onActionCompletion={() => user?.restaurantId && fetchMenuData(user.restaurantId)}
+          onActionCompletion={() => user?.restaurantId && fetchMenuData(user.restaurantId, { silent: true })}
         />
       )}
     </div>
