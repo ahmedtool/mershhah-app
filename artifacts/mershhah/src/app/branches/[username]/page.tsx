@@ -212,21 +212,20 @@ export default function PublicBranchesPage() {
         <LanguageSwitcher />
       </div>
 
+      <div className="relative w-14 h-14 mx-auto mb-3 overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
+        <StorageImage
+          imagePath={restaurant.logo}
+          alt={restaurant.name}
+          fill
+          sizes="56px"
+          className="object-cover"
+        />
+      </div>
+
       <div className={`max-w-lg mx-auto w-full px-5 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${alignStart}`}>
-        <div className={`flex items-center gap-3 min-w-0 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
-          <div className="relative w-14 h-14 shrink-0 overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
-            <StorageImage
-              imagePath={restaurant.logo}
-              alt={restaurant.name}
-              fill
-              sizes="56px"
-              className="object-cover"
-            />
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
-            <p className="text-sm text-gray-600 mt-0.5">{branches.length > 0 ? `${branches.length} ${t('publicBranches.branchesSuffix')}` : t('hubPage.branches')}</p>
-          </div>
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
+          <p className="text-sm text-gray-600 mt-0.5">{branches.length > 0 ? `${branches.length} ${t('publicBranches.branchesSuffix')}` : t('hubPage.branches')}</p>
         </div>
 
         {userLocation ? (
