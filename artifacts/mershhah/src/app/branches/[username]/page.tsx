@@ -161,6 +161,7 @@ export default function PublicBranchesPage() {
 
   const themeStyle = getPublicThemeStyle(restaurant);
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
+  const displayName = dir === 'ltr' && restaurant.name_en ? restaurant.name_en : restaurant.name;
 
   return (
     <div className="min-h-screen pb-6 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
@@ -180,7 +181,7 @@ export default function PublicBranchesPage() {
       <div className="relative w-14 h-14 mx-auto mb-3 overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
         <StorageImage
           imagePath={restaurant.logo}
-          alt={restaurant.name}
+          alt={displayName}
           fill
           sizes="56px"
           className="object-cover"
@@ -189,7 +190,7 @@ export default function PublicBranchesPage() {
 
       <div className={`max-w-lg mx-auto w-full px-5 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${alignStart}`}>
         <div className="min-w-0">
-          <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
+          <h1 className="text-xl font-bold text-gray-900">{displayName}</h1>
           <p className="text-sm text-gray-600 mt-0.5">{branches.length > 0 ? `${branches.length} ${t('publicBranches.branchesSuffix')}` : t('hubPage.branches')}</p>
         </div>
 

@@ -224,6 +224,8 @@ export default function PublicReviewsPage() {
     );
   }
 
+  const displayName = dir === 'ltr' && restaurant.name_en ? restaurant.name_en : restaurant.name;
+
   // Tag chips/counts only make sense against reviews that have text to match
   // keywords in - but the review list itself should show every visible
   // review, comment or not (a star-only review shouldn't be silently hidden
@@ -256,14 +258,14 @@ export default function PublicReviewsPage() {
         <div className="relative w-14 h-14 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
-            alt={restaurant.name}
+            alt={displayName}
             fill
             sizes="56px"
             className="object-cover"
           />
         </div>
         <div>
-          <h1 className="text-xl font-black text-gray-900">{restaurant.name}</h1>
+          <h1 className="text-xl font-black text-gray-900">{displayName}</h1>
           <p className="text-xs text-gray-600 mt-0.5">{t('publicReviews.pageSubtitle')}</p>
         </div>
       </div>
@@ -400,7 +402,7 @@ export default function PublicReviewsPage() {
       <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir={dir}>
           <DialogHeader className={`p-5 pb-0 ${alignStart}`}>
-            <DialogTitle className="text-base font-black text-gray-900">{t('publicReviews.dialogTitlePrefix')} {restaurant.name}</DialogTitle>
+            <DialogTitle className="text-base font-black text-gray-900">{t('publicReviews.dialogTitlePrefix')} {displayName}</DialogTitle>
             <DialogDescription className="text-xs text-gray-600">
               {t('publicReviews.dialogDesc')}
             </DialogDescription>

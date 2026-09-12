@@ -127,6 +127,7 @@ export default function SupportGatewayPage() {
 
   const themeStyle = getPublicThemeStyle(restaurant);
   const cards = SERVICE_CARDS.filter(c => enabledServices.includes(c.type));
+  const displayName = dir === 'ltr' && restaurant.name_en ? restaurant.name_en : restaurant.name;
 
   return (
     <div className="min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
@@ -147,14 +148,14 @@ export default function SupportGatewayPage() {
         <div className="relative w-16 h-16 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
           <StorageImage
             imagePath={restaurant.logo}
-            alt={restaurant.name}
+            alt={displayName}
             fill
             sizes="64px"
             className="object-cover"
           />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
+          <h1 className="text-xl font-bold text-gray-900">{displayName}</h1>
           <p className="text-sm text-gray-600 mt-0.5">{t('publicGateway.pageTitle')}</p>
         </div>
       </div>
