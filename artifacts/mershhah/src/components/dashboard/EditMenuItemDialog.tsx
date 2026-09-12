@@ -441,30 +441,39 @@ export function EditMenuItemDialog({
 
             {/* Delivery channel prices - optional per-app price override, shown
                 on the public menu's order-channel tiles instead of the base
-                (first size) price above. Left blank = use the base price. */}
+                (first size) price above. Left blank = use the base price.
+                Only offered for single-size items: the override applies to
+                one price, not per-size, and silently tying it to whichever
+                size happens to be first was confusing rather than useful. */}
             {globalApps.length > 0 && (
               <div className="space-y-2">
                 <FormLabel className="text-xs text-gray-600">{t('menuItem.channelPrices')}</FormLabel>
-                <p className="text-[10px] text-gray-600">{t('menuItem.channelPricesHint')}</p>
-                <div className="space-y-2">
-                  {globalApps.map((app) => (
-                    <div key={app.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
-                      <div className="relative w-6 h-6 rounded-md bg-white border border-gray-100 shrink-0 overflow-hidden">
-                        <StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="24px" />
-                      </div>
-                      <span className="text-[11px] font-bold text-gray-700 flex-1 truncate">{app.name}</span>
-                      <Input
-                        type="number"
-                        dir="ltr"
-                        value={channelPrices[app.id] ?? ''}
-                        onChange={(e) => setChannelPrices((prev) => ({ ...prev, [app.id]: e.target.value }))}
-                        placeholder={t('menuItem.pricePlaceholder')}
-                        className="h-8 w-24 text-xs rounded-lg border-gray-200"
-                        disabled={pending}
-                      />
+                {fields.length > 1 ? (
+                  <p className="text-[10px] text-gray-600">{t('menuItem.channelPricesMultiSizeNote')}</p>
+                ) : (
+                  <>
+                    <p className="text-[10px] text-gray-600">{t('menuItem.channelPricesHint')}</p>
+                    <div className="space-y-2">
+                      {globalApps.map((app) => (
+                        <div key={app.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                          <div className="relative w-6 h-6 rounded-md bg-white border border-gray-100 shrink-0 overflow-hidden">
+                            <StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="24px" />
+                          </div>
+                          <span className="text-[11px] font-bold text-gray-700 flex-1 truncate">{app.name}</span>
+                          <Input
+                            type="number"
+                            dir="ltr"
+                            value={channelPrices[app.id] ?? ''}
+                            onChange={(e) => setChannelPrices((prev) => ({ ...prev, [app.id]: e.target.value }))}
+                            placeholder={t('menuItem.pricePlaceholder')}
+                            className="h-8 w-24 text-xs rounded-lg border-gray-200"
+                            disabled={pending}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </>
+                )}
               </div>
             )}
 

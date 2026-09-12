@@ -15,6 +15,20 @@ export type Profile = {
   ai_trial_used?: boolean;
 };
 
+// One delivery-app link, either from the admin-managed global catalog
+// (platformId set, e.g. jahez/hungerstation) or a restaurant's own custom
+// app. Stored both on a restaurant (as the app's catalog definition, plus
+// its link when the restaurant has no branches) and on each branch (as
+// that branch's own copy, with its own `value` link).
+export type AppLink = {
+  id: string;
+  type: 'global' | 'custom';
+  platformId?: string;
+  name: string;
+  logo: string;
+  value: string;
+};
+
 // Represents a record from the 'restaurants' table. Defines WHAT the user owns.
 export type Restaurant = {
   id: string;
@@ -34,6 +48,7 @@ export type Restaurant = {
   fontFamily: string | null;
   socialLinks: Json | null;
   deliveryApps: Json | null;
+  applications?: AppLink[] | null;
   aiConfig: Json | null;
   created_at: any;
   updated_at?: any | null;
@@ -78,6 +93,7 @@ export type Branch = {
   status: 'active' | 'inactive';
   latitude?: number;
   longitude?: number;
+  applications?: AppLink[] | null;
 };
 
 export type MenuItemSize = {

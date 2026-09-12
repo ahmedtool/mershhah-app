@@ -37,7 +37,6 @@ import { cn } from '@/lib/utils';
 import { extractColorsFromImage } from '@/lib/extract-colors-from-image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FONT_OPTIONS, RADIUS_PRESETS } from '@/lib/public-theme';
-import { Copy } from 'lucide-react';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { translateText } from '@/lib/translate-text';
 
@@ -405,56 +404,10 @@ export default function CustomizePage() {
     });
   };
 
-  // Branch-aware app links: once a restaurant has branches, each branch
-  // can have its own link per platform (a single restaurant-wide link
-  // doesn't work — e.g. each branch has a different Careem storefront).
-  // Available apps combine the admin's global registry with this
-  // restaurant's own custom app definitions (name + logo, defined below),
-  // so an owner's own app can be enabled per branch exactly like a global
-  // one — only its link differs per branch.
+  // Custom apps this restaurant defines itself (name + logo). Once there
+  // are branches, the actual per-branch link is edited from the Branches
+  // page instead of here — see the "Apps" accordion content below.
   const customAppDefs = (settings?.applications || []).filter((a: any) => a.type === 'custom');
-  const availableApps = [
-    ...globalApps.map((a: any) => ({ id: a.id, name: a.name, logo_url: a.logo_url, type: 'global' as const })),
-    ...customAppDefs.map((a: any) => ({ id: a.id, name: a.name, logo_url: a.logo, type: 'custom' as const })),
-  ];
-
-  const isBranchAppActive = (platformId: string) =>
-    branches.some(b => b.applications?.some((a: any) => a.platformId === platformId));
-
-  const toggleBranchApp = (app: { id: string; name: string; logo_url: string; type: 'global' | 'custom' }) => {
-    const isActive = isBranchAppActive(app.id);
-    setBranches(branches.map(b => {
-      if (isActive) {
-        return { ...b, applications: b.applications.filter((a: any) => a.platformId !== app.id) };
-      }
-      if (b.applications.some((a: any) => a.platformId === app.id)) return b;
-      return {
-        ...b,
-        applications: [...b.applications, { id: `branch-app-${app.id}`, type: app.type, platformId: app.id, name: app.name, logo: app.logo_url, value: '' }],
-      };
-    }));
-  };
-
-  const updateBranchAppValue = (branchId: string, platformId: string, value: string) => {
-    setBranches(branches.map(b => b.id !== branchId ? b : {
-      ...b,
-      applications: b.applications.map((a: any) => a.platformId === platformId ? { ...a, value } : a),
-    }));
-  };
-
-  const copyAppLinkToAllBranches = (platformId: string) => {
-    const source = branches.find(b => b.applications?.some((a: any) => a.platformId === platformId && a.value?.trim()));
-    const value = source?.applications.find((a: any) => a.platformId === platformId)?.value ?? '';
-    if (!value) {
-      toast({ title: t('customize.nothingToCopy'), description: t('customize.enterLinkFirst'), variant: 'destructive' });
-      return;
-    }
-    setBranches(branches.map(b => ({
-      ...b,
-      applications: b.applications.map((a: any) => a.platformId === platformId ? { ...a, value } : a),
-    })));
-    toast({ title: t('customize.copiedToAllBranches') });
-  };
 
   const addSocialLink = (platform: string) => {
     const newLink = { id: Math.random().toString(36).substr(2, 9), platform, value: '' };
@@ -693,39 +646,18 @@ export default function CustomizePage() {
                                   {t('customize.multiBranchAppsNote')}
                               </p>
                           </div>
-                          <div className="flex flex-wrap gap-2 justify-end">
-                              {availableApps.map(app => {
-                                  const isActive = isBranchAppActive(app.id);
-                                  return (
-                                      <button key={app.id} type="button"
-                                          className={cn(
-                                              "h-8 gap-1.5 text-[10px] font-bold rounded-lg px-3 flex items-center border transition-colors",
-                                              isActive ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
-                                          )}
-                                          onClick={() => toggleBranchApp(app)}
-                                      >
-                                          <div className="relative w-3.5 h-3.5 shrink-0">
-                                              <StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="14px" />
-                                          </div>
-                                          {app.name}
-                                      </button>
-                                  );
-                              })}
-                          </div>
 
-                          {/* Custom apps this restaurant defines itself - just name + logo here;
-                              enabling one from the buttons above adds a per-branch link field below,
-                              exactly like a global app. */}
-                          <div className="space-y-3 border-t border-gray-100 pt-3">
+                          {/* Custom apps this restaurant defines itself - just name + logo
+                              here; enabling one and setting each branch's own link happens
+                              from the Branches page, the single place that manages
+                              per-branch app links (both global and custom). */}
+                          <div className="space-y-3">
                               <div className={`flex justify-between items-center ${rowReverse}`}>
                                   <h4 className="text-xs font-bold text-gray-900">{t('customize.customApps')}</h4>
                                   <button onClick={addCustomApp} className="text-[10px] font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1 transition-colors">
                                       <PlusCircle className="h-3 w-3" /> {t('customize.add')}
                                   </button>
                               </div>
-                              {customAppDefs.length > 0 && (
-                                  <p className="text-[10px] text-gray-600">{t('customize.customAppsBranchNote')}</p>
-                              )}
                               {customAppDefs.map((app: any) => (
                                   <div key={app.id} className={`flex items-center gap-2 p-3 bg-gray-50 border border-gray-100 rounded-xl ${rowReverse}`}>
                                       <div
@@ -741,33 +673,6 @@ export default function CustomizePage() {
                               ))}
                           </div>
 
-                          {availableApps.filter(app => isBranchAppActive(app.id)).map(app => (
-                              <div key={app.id} className="space-y-2 border-t border-gray-100 pt-3">
-                                  <div className="flex items-center justify-between">
-                                      <button type="button" onClick={() => copyAppLinkToAllBranches(app.id)}
-                                          className="text-[10px] font-bold text-gray-600 hover:text-gray-900 flex items-center gap-1 transition-colors">
-                                          <Copy className="h-3 w-3" /> {t('customize.copyToAllBranches')}
-                                      </button>
-                                      <h4 className="text-xs font-bold text-gray-900 flex items-center gap-1.5">
-                                          {app.name}
-                                          <div className="relative w-4 h-4 shrink-0"><StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="16px" /></div>
-                                      </h4>
-                                  </div>
-                                  <p className="text-[9px] text-gray-600">{t('customize.copyToAllBranchesHint')}</p>
-                                  <div className="space-y-1.5">
-                                      {branches.map(branch => {
-                                          const entry = branch.applications.find((a: any) => a.platformId === app.id);
-                                          return (
-                                              <div key={branch.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
-                                                  <span className="text-[10px] font-bold text-gray-600 w-16 shrink-0 truncate">{branch.name}</span>
-                                                  <Input dir="ltr" value={entry?.value || ''} onChange={e => updateBranchAppValue(branch.id, app.id, e.target.value)}
-                                                      placeholder={t('customize.linkPlaceholder')} className="h-8 text-[10px] rounded-lg border-gray-200 flex-1" />
-                                              </div>
-                                          );
-                                      })}
-                                  </div>
-                              </div>
-                          ))}
                           <p className="text-[10px] text-gray-600 pt-1">
                               {t('customize.addBranchNote')} <Link href="/owner/branches" className="text-gray-600 underline">{t('customize.fromBranchesPage')}</Link>.
                           </p>

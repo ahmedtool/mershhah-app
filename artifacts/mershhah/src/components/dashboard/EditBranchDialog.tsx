@@ -110,6 +110,7 @@ export function EditBranchDialog({
   const [fridayClose, setFridayClose] = useState('');
   const [branchApps, setBranchApps] = useState<any[]>([]);
   const [globalApps, setGlobalApps] = useState<any[]>([]);
+  const [customAppDefs, setCustomAppDefs] = useState<any[]>([]);
   const [citySearch, setCitySearch] = useState('');
   const [cityOpen, setCityOpen] = useState(false);
   const [districtSearch, setDistrictSearch] = useState('');
@@ -163,11 +164,26 @@ export function EditBranchDialog({
     sessionTokenRef.current = createPlacesSessionToken();
   }, [open, branch, form]);
 
+  // Both the admin-managed global catalog (jahez/hungerstation) and this
+  // restaurant's own custom apps (defined in Customize > Apps) need to be
+  // toggleable here - a custom app's link is per-branch just like a global
+  // one, so this dialog has to know about both to be the single place that
+  // manages a branch's delivery-app links.
   useEffect(() => {
-    if (open) {
-      supabase.from('applications').select('*').then(({ data }) => setGlobalApps(data || []));
+    if (!open) return;
+    supabase.from('applications').select('*').then(({ data }: { data: any[] | null }) => setGlobalApps(data || []));
+    if (restaurantId) {
+      supabase.from('restaurants').select('applications').eq('id', restaurantId).single().then(({ data }: { data: any }) => {
+        const apps = Array.isArray(data?.applications) ? data.applications : [];
+        setCustomAppDefs(apps.filter((a: any) => a.type === 'custom'));
+      });
     }
-  }, [open]);
+  }, [open, restaurantId]);
+
+  const availableApps = [
+    ...globalApps.map((a: any) => ({ id: a.id, name: a.name, logo_url: a.logo_url, type: 'global' as const })),
+    ...customAppDefs.map((a: any) => ({ id: a.id, name: a.name, logo_url: a.logo, type: 'custom' as const })),
+  ];
 
   useEffect(() => { if (!city) form.setValue('district', ''); }, [city, form]);
 
@@ -471,9 +487,9 @@ export function EditBranchDialog({
               <FormLabel className="text-xs text-gray-600">{t('settings.deliveryApps')}</FormLabel>
               <p className="text-[10px] text-gray-600">{t('branches.addBranchAppLinks')}</p>
               
-              {globalApps.length > 0 && (
+              {availableApps.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
-                  {globalApps.map(app => {
+                  {availableApps.map(app => {
                     const isAdded = branchApps.some((a: any) => a.platformId === app.id);
                     return (
                       <button key={app.id} type="button"
@@ -483,7 +499,7 @@ export function EditBranchDialog({
                           } else {
                             setBranchApps([...branchApps, {
                               id: `branch-app-${app.id}`,
-                              type: 'global',
+                              type: app.type,
                               platformId: app.id,
                               name: app.name,
                               logo: app.logo_url,
