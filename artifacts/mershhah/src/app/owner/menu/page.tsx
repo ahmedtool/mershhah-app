@@ -13,6 +13,9 @@ import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import type { MenuItem, MenuCategory } from '@/lib/types';
+import { translateText } from '@/lib/translate-text';
+import { translateMenuItem } from '@/ai/flows/translate-menu-item';
+import { syncPublicPage } from '@/lib/public-pages';
 
 type ItemCategory = 'Star' | 'Plow-Horse' | 'Puzzle' | 'Dog';
 
@@ -21,6 +24,7 @@ export default function MenuPage() {
   const { t } = useLanguage();
   const [isRefreshing, startRefresh] = useTransition();
   const [isApplyingSort, startApplyingSort] = useTransition();
+  const [isTranslatingAll, startTranslatingAll] = useTransition();
   const { toast } = useToast();
 
   const [rawMenuItems, setRawMenuItems] = useState<MenuItem[]>([]);
@@ -141,6 +145,56 @@ export default function MenuPage() {
     });
   };
 
+  // Translates everything missing an English counterpart in one pass:
+  // category names, item names/descriptions, and each size's name. Runs
+  // sequentially (not Promise.all) since the free translation API can
+  // throttle on a burst of requests - identical strings across items
+  // (e.g. the same size name reused everywhere) hit translateText's own
+  // cache after the first call, so this stays fast in practice.
+  const handleTranslateAll = () => {
+    if (!user?.restaurantId) return;
+    startTranslatingAll(async () => {
+      try {
+        for (const cat of categories) {
+          if (cat.name_en) continue;
+          const name_en = await translateText(cat.name);
+          await supabase.from('menu_categories').update({ name_en }).eq('id', cat.id);
+        }
+
+        for (const item of rawMenuItems) {
+          const updates: Record<string, unknown> = {};
+
+          if (!item.name_en || !item.description_en) {
+            const result = await translateMenuItem({ name: item.name, description: item.description || '' });
+            if (!item.name_en && result.name_en) updates.name_en = result.name_en;
+            if (!item.description_en && result.description_en) updates.description_en = result.description_en;
+          }
+
+          const sizes = Array.isArray(item.sizes) ? item.sizes : [];
+          let sizesChanged = false;
+          const newSizes = [];
+          for (const size of sizes) {
+            if (size.name_en) { newSizes.push(size); continue; }
+            const name_en = await translateText(size.name);
+            newSizes.push({ ...size, name_en });
+            sizesChanged = true;
+          }
+          if (sizesChanged) updates.sizes = newSizes;
+
+          if (Object.keys(updates).length > 0) {
+            await supabase.from('menu_items').update(updates).eq('id', item.id);
+          }
+        }
+
+        await syncPublicPage(user.restaurantId!).catch(() => {});
+        await fetchMenuData(user.restaurantId!);
+        toast({ title: t('menu.translateAllDone') });
+      } catch (e: any) {
+        toast({ variant: 'destructive', title: t('menuItem.translationFailed'), description: e.message });
+      }
+    });
+  };
+
   const loadingOrNoUser = isFetchingData || isUserLoading;
   const popularItem = menuItems.find((item) => item.status === 'available') || null;
   const totalItems = menuItems.length;
@@ -178,8 +232,10 @@ export default function MenuPage() {
           menuItemsCount={menuItems.length}
           isApplyingSort={isApplyingSort}
           isRefreshing={isRefreshing}
+          isTranslatingAll={isTranslatingAll}
           onApplySmartSort={handleApplySmartSort}
           onRefresh={handleRefresh}
+          onTranslateAll={handleTranslateAll}
           onSave={() => user?.restaurantId && fetchMenuData(user.restaurantId)}
         />
       </PageHeader>

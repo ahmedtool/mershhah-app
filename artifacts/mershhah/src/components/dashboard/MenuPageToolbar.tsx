@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlusCircle, UploadCloud, Sparkles, RefreshCw, Tag, Library, MoreHorizontal, Loader2, X } from 'lucide-react';
+import { PlusCircle, UploadCloud, Sparkles, RefreshCw, Tag, Library, MoreHorizontal, Loader2, X, Languages } from 'lucide-react';
 import { EditMenuItemDialog } from './EditMenuItemDialog';
 import { ImportMenuDialog } from './ImportMenuDialog';
 import { AddFromLibraryDialog } from './AddFromLibraryDialog';
@@ -63,14 +63,16 @@ type MenuPageToolbarProps = {
   menuItemsCount: number;
   isApplyingSort: boolean;
   isRefreshing: boolean;
+  isTranslatingAll: boolean;
   onApplySmartSort: () => void;
   onRefresh: () => void;
+  onTranslateAll: () => void;
   onSave: () => void;
 };
 
 export function MenuPageToolbar({
   restaurantId, userId, disabled, rawMenuItems, menuItemsCount,
-  isApplyingSort, isRefreshing, onApplySmartSort, onRefresh, onSave,
+  isApplyingSort, isRefreshing, isTranslatingAll, onApplySmartSort, onRefresh, onTranslateAll, onSave,
 }: MenuPageToolbarProps) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
@@ -94,6 +96,15 @@ export function MenuPageToolbar({
       onClick: onRefresh,
       spinning: isRefreshing,
       disabled: isRefreshing || disabled,
+    },
+    {
+      key: 'translateAll',
+      icon: Languages,
+      label: t('menu.translateAll'),
+      description: t('menu.translateAllTooltip'),
+      onClick: onTranslateAll,
+      spinning: isTranslatingAll,
+      disabled: isTranslatingAll || disabled,
     },
   ];
 
