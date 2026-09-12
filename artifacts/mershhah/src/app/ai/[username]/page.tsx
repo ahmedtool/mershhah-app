@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'wouter';
 import { useRouter } from '@/lib/navigation';
-import { SendHorizonal, User, ChevronRight, Utensils, Info, MessageCircle, MapPin, Bot } from 'lucide-react';
+import { SendHorizonal, User, ChevronRight, ChevronLeft, Utensils, Info, MessageCircle, MapPin, Bot } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage } from '@/lib/public-pages';
@@ -13,11 +13,14 @@ import { Link } from 'wouter';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useLanguage } from '@/components/shared/LanguageContext';
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 
 export default function AiAssistantPage() {
   const params = useParams();
   const router = useRouter();
   const username = params.username as string;
+  const { t, dir } = useLanguage();
 
   const [restaurant, setRestaurant] = useState<any>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -55,7 +58,7 @@ export default function AiAssistantPage() {
           setOffers(Array.isArray(data.offers) ? (data.offers as Offer[]) : []);
           setBranches(Array.isArray(data.branches) ? data.branches : []);
           setMessages([
-            { id: '1', sender: 'bot', text: "أنا رفيقك الذكي. كيف أقدر أساعدك اليوم؟", timestamp: new Date() }
+            { id: '1', sender: 'bot', text: t('publicAi.greeting'), timestamp: new Date() }
           ]);
           setLoading(false);
           return;
@@ -271,7 +274,7 @@ export default function AiAssistantPage() {
       setStreamingMessageId(botId);
       setStreamingLength(0);
     } catch (error) {
-      setMessages(prev => [...prev, { id: 'err', sender: 'bot', text: 'حدث خطأ فني...', timestamp: new Date() }]);
+      setMessages(prev => [...prev, { id: 'err', sender: 'bot', text: t('publicAi.genericError'), timestamp: new Date() }]);
       setIsTyping(false);
     }
   };
@@ -286,7 +289,7 @@ export default function AiAssistantPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white" dir="rtl">
+      <div className="min-h-screen bg-white" dir={dir}>
         <div className="max-w-lg mx-auto px-5 py-8 space-y-6">
           <div className="flex flex-col items-center space-y-3">
             <Skeleton className="h-20 w-20 rounded-2xl" />
@@ -303,13 +306,13 @@ export default function AiAssistantPage() {
 
   if (!restaurant) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white text-center p-6" dir="rtl">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white text-center p-6" dir={dir}>
         <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
           <Info className="h-6 w-6 text-gray-600" />
         </div>
-        <h1 className="text-lg font-black text-gray-900">المطعم غير موجود</h1>
+        <h1 className="text-lg font-black text-gray-900">{t('hubPage.restaurantNotFound')}</h1>
         <Link href="/" className="mt-4 h-10 px-6 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 inline-flex items-center">
-          العودة للرئيسية
+          {t('hubPage.backToHome')}
         </Link>
       </div>
     );
@@ -317,49 +320,54 @@ export default function AiAssistantPage() {
 
   if (!restaurant.is_paid_plan) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white text-center p-6" dir="rtl">
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white text-center p-6" dir={dir}>
         <div className="max-w-sm w-full bg-white border border-gray-100 rounded-2xl p-8 space-y-3">
           <div className="w-14 h-14 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-center mx-auto">
             <Bot className="h-6 w-6 text-gray-600" />
           </div>
-          <h1 className="text-base font-black text-gray-900">المساعد الذكي متاح في الباقات المدفوعة</h1>
-          <p className="text-[11px] text-gray-600">قم بترقية باقتك من لوحة التحكم</p>
+          <h1 className="text-base font-black text-gray-900">{t('publicAi.paidOnlyTitle')}</h1>
+          <p className="text-[11px] text-gray-600">{t('publicAi.paidOnlyDesc')}</p>
           <Link href={`/${username}`} className="w-full h-10 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 flex items-center justify-center">
-            العودة للرابط الرئيسي
+            {t('publicAi.backToMainLink')}
           </Link>
         </div>
       </div>
     );
   }
 
+  const displayName = dir === 'ltr' && restaurant.name_en ? restaurant.name_en : restaurant.name;
+
   return (
-    <div className="flex flex-col min-h-screen bg-white pb-4 overflow-x-hidden" dir="rtl">
+    <div className="flex flex-col min-h-screen bg-white pb-4 overflow-x-hidden" dir={dir}>
       {/* Header */}
       <div className="border-b border-gray-100 px-4 py-5 flex flex-col items-center text-center relative">
         <Link href={`/${username}`}
-          className="absolute top-4 right-4 w-9 h-9 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-100 transition-colors">
-          <ChevronRight className="h-4 w-4" />
+          className="absolute top-4 start-4 w-9 h-9 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-100 transition-colors">
+          {dir === 'rtl' ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Link>
+        <div className="absolute top-4 end-4">
+          <LanguageSwitcher />
+        </div>
 
         <div className="relative w-16 h-16 rounded-2xl overflow-hidden border border-gray-100">
           <StorageImage
             imagePath={restaurant.logo}
-            alt={restaurant.name}
+            alt={displayName}
             fill
             sizes="64px"
             className="object-cover"
           />
         </div>
         <div className="space-y-0.5 mt-3">
-          <h1 className="text-base font-black text-gray-900">{restaurant.name}</h1>
-          <p className="text-[11px] text-gray-600">المساعد الذكي</p>
+          <h1 className="text-base font-black text-gray-900">{displayName}</h1>
+          <p className="text-[11px] text-gray-600">{t('hubPage.aiAssistant')}</p>
         </div>
         <Link
           href={`/menu/${username}`}
           className="inline-flex items-center gap-1.5 mt-2 text-[11px] font-bold text-gray-600 rounded-lg px-3 py-1.5 border border-gray-100 hover:bg-gray-50 transition-colors"
         >
           <Utensils className="h-3 w-3" />
-          قائمة الطعام
+          {t('publicAi.menuLink')}
         </Link>
       </div>
 
@@ -439,14 +447,14 @@ export default function AiAssistantPage() {
                       {branch.phone && String(branch.phone).trim() && (
                         <a href={toWhatsAppUrl(branch.phone)} target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-50 border border-emerald-100 text-emerald-600 text-[9px] font-bold">
-                          <MessageCircle className="h-2.5 w-2.5" /> واتساب
+                          <MessageCircle className="h-2.5 w-2.5" /> {t('publicBranches.whatsapp')}
                         </a>
                       )}
                       {(branch.google_maps_url || branch.address) && (
                         <a href={branch.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([branch.address, branch.city, branch.district].filter(Boolean).join('، '))}`}
                           target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-50 border border-gray-100 text-gray-600 text-[9px] font-bold">
-                          <MapPin className="h-2.5 w-2.5" /> الخريطة
+                          <MapPin className="h-2.5 w-2.5" /> {t('publicAi.mapLabel')}
                         </a>
                       )}
                     </div>
@@ -473,7 +481,7 @@ export default function AiAssistantPage() {
                       <div className="p-2 space-y-0.5">
                         <p className="text-[11px] font-bold text-gray-900 truncate">{card.name}</p>
                         {card.price && (
-                          <p className="text-[10px] font-bold text-gray-900">{card.price} ر.س</p>
+                          <p className="text-[10px] font-bold text-gray-900">{card.price} {t('ownerSettings.currency')}</p>
                         )}
                         {card.category && (
                           <p className="text-[9px] text-gray-600 truncate">{card.category}</p>
@@ -486,19 +494,19 @@ export default function AiAssistantPage() {
                 {messages[messages.length - 1]?.totalBudget && (
                   <div className="border border-gray-100 rounded-xl p-3 bg-gray-50">
                     <div className="flex justify-between items-center text-[11px]">
-                      <span className="text-gray-600">الميزانية</span>
-                      <span className="font-bold text-gray-900">{messages[messages.length - 1].totalBudget} ر.س</span>
+                      <span className="text-gray-600">{t('publicAi.budgetLabel')}</span>
+                      <span className="font-bold text-gray-900">{messages[messages.length - 1].totalBudget} {t('ownerSettings.currency')}</span>
                     </div>
                     <div className="flex justify-between items-center text-[11px] mt-1">
-                      <span className="text-gray-600">الإجمالي</span>
+                      <span className="text-gray-600">{t('publicAi.totalLabel')}</span>
                       <span className="font-bold text-gray-900">
-                        {messages[messages.length - 1].menuCards.reduce((sum: number, c: any) => sum + (c.price || 0), 0)} ر.س
+                        {messages[messages.length - 1].menuCards.reduce((sum: number, c: any) => sum + (c.price || 0), 0)} {t('ownerSettings.currency')}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-[11px] mt-1 pt-1 border-t border-gray-100">
-                      <span className="text-gray-600">المتبقي</span>
+                      <span className="text-gray-600">{t('publicAi.remainingLabel')}</span>
                       <span className="font-bold text-emerald-600">
-                        {messages[messages.length - 1].totalBudget - messages[messages.length - 1].menuCards.reduce((sum: number, c: any) => sum + (c.price || 0), 0)} ر.س
+                        {messages[messages.length - 1].totalBudget - messages[messages.length - 1].menuCards.reduce((sum: number, c: any) => sum + (c.price || 0), 0)} {t('ownerSettings.currency')}
                       </span>
                     </div>
                   </div>
@@ -553,7 +561,7 @@ export default function AiAssistantPage() {
           <div className="p-3 border-t border-gray-100 bg-white">
             <div className="flex gap-2 items-center">
               <input
-                placeholder="اسأل عن أي شيء..."
+                placeholder={t('publicAi.inputPlaceholder')}
                 className="flex-1 h-10 px-3 rounded-xl border border-gray-200 text-xs outline-none focus:border-gray-300 transition-colors"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
