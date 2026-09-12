@@ -7,6 +7,17 @@ function utf8ByteLength(str: string): number {
   return new TextEncoder().encode(str).length;
 }
 
+// MyMemory's free tier sometimes returns a fuzzy match straight out of its
+// translation-memory corpus for short, ambiguous words (e.g. "حبة") -
+// those come with leftover CAT-tool placeholder markup like
+// `<ph x="1" type="2906"/>` that was never meant to reach an end user.
+// Strips any such tag-like markup and tidies the leftover whitespace.
+// Applied on both the read and write path so previously-cached bad
+// results self-heal instead of returning the artifact forever.
+function sanitizeTranslation(text: string): string {
+  return text.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
 async function getCached(text: string): Promise<string | null> {
   try {
     const { data } = await supabase
@@ -49,13 +60,13 @@ export async function translateText(text: string): Promise<string> {
   if (!trimmed) return '';
 
   const cached = await getCached(trimmed);
-  if (cached) return cached;
+  if (cached) return sanitizeTranslation(cached);
 
   if (utf8ByteLength(trimmed) > MYMEMORY_MAX_BYTES) {
     throw new Error('Text too long to translate in one request');
   }
 
-  const translated = await translateWithMyMemory(trimmed);
+  const translated = sanitizeTranslation(await translateWithMyMemory(trimmed));
   setCached(trimmed, translated);
   return translated;
 }
