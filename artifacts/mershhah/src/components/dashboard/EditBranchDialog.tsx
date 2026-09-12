@@ -8,7 +8,8 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MapPin, X } from 'lucide-react';
+import { Loader2, MapPin, X, Image as ImageIcon } from 'lucide-react';
+import { StorageImage } from '@/components/shared/StorageImage';
 import { TimePicker } from '@/components/ui/time-picker';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
@@ -510,6 +511,9 @@ export function EditBranchDialog({
                         className={`h-8 gap-1.5 text-[10px] font-bold rounded-lg px-3 flex items-center border transition-colors ${
                           isAdded ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
                         }`}>
+                        <div className="relative w-3.5 h-3.5 shrink-0">
+                          <StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="14px" />
+                        </div>
                         {app.name}
                       </button>
                     );
@@ -519,8 +523,12 @@ export function EditBranchDialog({
 
               {branchApps.map((app: any) => (
                 <div key={app.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
-                  <div className="p-1.5 bg-white rounded-lg border border-gray-100 shrink-0">
-                    <span className="text-[10px] font-bold text-gray-600">{app.name?.charAt(0)}</span>
+                  <div className="relative w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+                    {app.logo ? (
+                      <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain p-1" sizes="32px" />
+                    ) : (
+                      <ImageIcon size={14} className="text-gray-200" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[10px] font-bold text-gray-700">{app.name}</p>
