@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useParams } from 'wouter';
 import { ChevronRight, ChevronLeft, MapPin, Phone, Clock, Info, Navigation, MessageCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -25,9 +26,32 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 }
 
+// A small radar-style pulse behind the location pin - two rings expanding
+// outward and fading, staggered so one is always mid-pulse. Reads as "still
+// listening for your location" rather than a static icon, without being
+// distracting once it settles into its loop.
+function RadarPin({ color, reduced }: { color: string; reduced: boolean }) {
+  return (
+    <span className="relative inline-flex items-center justify-center w-4 h-4 shrink-0">
+      {!reduced && [0, 0.9].map((delay) => (
+        <motion.span
+          key={delay}
+          className="absolute inset-0 rounded-full"
+          style={{ border: `1.5px solid ${color}` }}
+          initial={{ opacity: 0.55, scale: 0.4 }}
+          animate={{ opacity: 0, scale: 2.4 }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut', delay }}
+        />
+      ))}
+      <Navigation className="h-4 w-4 relative" style={{ color }} />
+    </span>
+  );
+}
+
 export default function PublicBranchesPage() {
   const params = useParams();
   const username = params.username as string;
+  const prefersReducedMotion = useReducedMotion();
 
   const [restaurant, setRestaurant] = useState<any>(null);
   const [branches, setBranches] = useState<any[]>([]);
@@ -188,39 +212,42 @@ export default function PublicBranchesPage() {
         <LanguageSwitcher />
       </div>
 
-      <div className={`max-w-lg mx-auto w-full px-5 pb-4 text-center space-y-2 ${alignStart}`}>
-        <div className="relative w-14 h-14 mx-auto overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
-          <StorageImage
-            imagePath={restaurant.logo}
-            alt={restaurant.name}
-            fill
-            sizes="56px"
-            className="object-cover"
-          />
+      <div className={`max-w-lg mx-auto w-full px-5 pb-4 flex items-center justify-between gap-3 ${alignStart}`}>
+        <div className={`flex items-center gap-3 min-w-0 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
+          <div className="relative w-14 h-14 shrink-0 overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
+            <StorageImage
+              imagePath={restaurant.logo}
+              alt={restaurant.name}
+              fill
+              sizes="56px"
+              className="object-cover"
+            />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-gray-900 truncate">{restaurant.name}</h1>
+            <p className="text-sm text-gray-600 mt-0.5 truncate">{branches.length > 0 ? `${branches.length} ${t('publicBranches.branchesSuffix')}` : t('hubPage.branches')}</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
-          <p className="text-sm text-gray-600 mt-0.5">{branches.length > 0 ? `${branches.length} ${t('publicBranches.branchesSuffix')}` : t('hubPage.branches')}</p>
-          {userLocation ? (
-            <div
-              className="inline-flex items-center gap-2 h-9 px-4 mt-3 text-xs font-bold rounded-full"
-              style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
-            >
-              <Navigation className="h-3.5 w-3.5" />
-              {t('publicBranches.sortedByProximity')}
-            </div>
-          ) : branches.length > 1 && (
-            <button
-              onClick={requestLocation}
-              disabled={locating}
-              className="inline-flex items-center gap-2 h-10 px-5 mt-3 text-sm font-bold rounded-full border transition-opacity hover:opacity-90 disabled:opacity-50"
-              style={{ borderColor: `${primaryColor}40`, color: primaryColor, backgroundColor: `${primaryColor}0A` }}
-            >
-              <Navigation className="h-4 w-4" />
-              {locating ? t('publicBranches.locating') : t('publicBranches.sortByNearest')}
-            </button>
-          )}
-        </div>
+
+        {userLocation ? (
+          <div
+            className="inline-flex items-center gap-2 h-9 px-3.5 text-xs font-bold rounded-full shrink-0"
+            style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
+          >
+            <Navigation className="h-3.5 w-3.5" />
+            {t('publicBranches.sortedByProximity')}
+          </div>
+        ) : branches.length > 1 && (
+          <button
+            onClick={requestLocation}
+            disabled={locating}
+            className="inline-flex items-center gap-2 h-10 px-4 text-sm font-bold rounded-full border transition-opacity hover:opacity-90 disabled:opacity-50 shrink-0"
+            style={{ borderColor: `${primaryColor}40`, color: primaryColor, backgroundColor: `${primaryColor}0A` }}
+          >
+            <RadarPin color={primaryColor} reduced={!!prefersReducedMotion || locating} />
+            {locating ? t('publicBranches.locating') : t('publicBranches.sortByNearest')}
+          </button>
+        )}
       </div>
 
       <div className={`max-w-lg mx-auto w-full px-5 space-y-3 ${alignStart}`} dir={dir}>
