@@ -212,7 +212,7 @@ export default function PublicBranchesPage() {
         <LanguageSwitcher />
       </div>
 
-      <div className={`max-w-lg mx-auto w-full px-5 pb-4 flex items-center justify-between gap-3 ${alignStart}`}>
+      <div className={`max-w-lg mx-auto w-full px-5 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${alignStart}`}>
         <div className={`flex items-center gap-3 min-w-0 ${dir === 'rtl' ? 'flex-row-reverse' : ''}`}>
           <div className="relative w-14 h-14 shrink-0 overflow-hidden" style={{ borderRadius: 'var(--r-radius)' }}>
             <StorageImage
@@ -224,14 +224,14 @@ export default function PublicBranchesPage() {
             />
           </div>
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-gray-900 truncate">{restaurant.name}</h1>
-            <p className="text-sm text-gray-600 mt-0.5 truncate">{branches.length > 0 ? `${branches.length} ${t('publicBranches.branchesSuffix')}` : t('hubPage.branches')}</p>
+            <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
+            <p className="text-sm text-gray-600 mt-0.5">{branches.length > 0 ? `${branches.length} ${t('publicBranches.branchesSuffix')}` : t('hubPage.branches')}</p>
           </div>
         </div>
 
         {userLocation ? (
           <div
-            className="inline-flex items-center gap-2 h-9 px-3.5 text-xs font-bold rounded-full shrink-0"
+            className="inline-flex items-center gap-2 h-9 px-3.5 text-xs font-bold rounded-full self-start sm:self-auto shrink-0"
             style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
           >
             <Navigation className="h-3.5 w-3.5" />
@@ -241,7 +241,7 @@ export default function PublicBranchesPage() {
           <button
             onClick={requestLocation}
             disabled={locating}
-            className="inline-flex items-center gap-2 h-10 px-4 text-sm font-bold rounded-full border transition-opacity hover:opacity-90 disabled:opacity-50 shrink-0"
+            className="inline-flex items-center gap-2 h-10 px-4 text-sm font-bold rounded-full border transition-opacity hover:opacity-90 disabled:opacity-50 self-start sm:self-auto shrink-0"
             style={{ borderColor: `${primaryColor}40`, color: primaryColor, backgroundColor: `${primaryColor}0A` }}
           >
             <RadarPin color={primaryColor} reduced={!!prefersReducedMotion || locating} />
