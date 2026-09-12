@@ -170,12 +170,13 @@ export default function PublicMenuPage() {
 
   const [restaurant, setRestaurant] = useState<any>(null);
   const displayName = dir === 'ltr' && restaurant?.name_en ? restaurant.name_en : restaurant?.name;
+  const displayDescription = dir === 'ltr' && restaurant?.description_en ? restaurant.description_en : restaurant?.description;
   useDocumentMeta(
     displayName
       ? (dir === 'rtl' ? `${t('hubPage.menuWord')} ${displayName}` : `${displayName} ${t('hubPage.menuWord')}`)
       : undefined,
     restaurant
-      ? ((dir === 'ltr' && restaurant.description_en ? restaurant.description_en : restaurant.description) || (dir === 'rtl'
+      ? (displayDescription || (dir === 'rtl'
           ? `${t('publicMenu.metaDescPrefixWord')} ${t('hubPage.menuWord')} ${displayName} ${t('publicMenu.metaDescSuffix')}`
           : `${t('publicMenu.metaDescPrefixWord')} ${displayName}'s ${t('publicMenu.metaDescSuffix')}`))
       : undefined
@@ -410,7 +411,7 @@ export default function PublicMenuPage() {
         </div>
         <div className={`flex-1 min-w-0 ${alignStart}`}>
           <h1 className="text-sm font-bold text-gray-900 truncate">{displayName}</h1>
-          <p className="text-[10px] text-gray-600 truncate">{restaurant.description || t('publicMenu.menuSubtitle')}</p>
+          <p className="text-[10px] text-gray-600 truncate">{displayDescription || t('publicMenu.menuSubtitle')}</p>
         </div>
         <button
           type="button"
