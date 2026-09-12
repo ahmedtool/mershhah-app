@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { uploadToImageKit } from '@/lib/imagekit';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { translateMenuItem } from '@/ai/flows/translate-menu-item';
+import { translateText } from '@/lib/translate-text';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { cn } from '@/lib/utils';
@@ -40,6 +41,7 @@ function buildMenuItemSchema(t: (key: string) => string) {
   const sizeSchema = z.object({
     id: z.string(),
     name: z.string().min(1, t('menuItem.nameRequired')),
+    name_en: z.string().optional().or(z.literal('')),
     price: z.coerce.number().min(0, t('menuItem.sizePriceRequired')),
     cost: z.coerce.number().min(0, t('menuItem.sizeCostRequired')),
     calories: z.coerce.number().optional(),
@@ -143,6 +145,21 @@ export function EditMenuItemDialog({
   }, [open, menuItem, isEditing, form]);
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'sizes' });
+  const [translatingSizeIdx, setTranslatingSizeIdx] = useState<number | null>(null);
+
+  const handleTranslateSize = async (idx: number) => {
+    const name = form.getValues(`sizes.${idx}.name`);
+    if (!name) return;
+    setTranslatingSizeIdx(idx);
+    try {
+      const name_en = await translateText(name);
+      form.setValue(`sizes.${idx}.name_en`, name_en, { shouldValidate: true });
+    } catch (e: any) {
+      toast({ title: t('menuItem.translationFailed'), description: e.message, variant: 'destructive' });
+    } finally {
+      setTranslatingSizeIdx(null);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -408,30 +425,46 @@ export function EditMenuItemDialog({
               <FormLabel className="text-xs text-gray-600">{t('menuItem.sizesAndPrices')}</FormLabel>
               <div className="space-y-2">
                 {fields.map((field, idx) => (
-                  <div key={field.id} className="flex items-center gap-2">
-                    <FormField control={form.control} name={`sizes.${idx}.name`} render={({ field }) => (
-                      <Input {...field} placeholder={t('menuItem.sizePlaceholder')} className="h-9 text-xs rounded-lg border-gray-200 flex-1" disabled={pending} />
-                    )} />
-                    <FormField control={form.control} name={`sizes.${idx}.price`} render={({ field }) => (
-                      <Input {...field} type="number" placeholder={t('menuItem.pricePlaceholder')} className="h-9 text-xs rounded-lg border-gray-200 flex-1" dir="ltr" disabled={pending} />
-                    )} />
-                    <FormField control={form.control} name={`sizes.${idx}.cost`} render={({ field }) => (
-                      <Input {...field} type="number" placeholder={t('menuItem.costPlaceholder')} className="h-9 text-xs rounded-lg border-gray-200 flex-1" dir="ltr" disabled={pending} />
-                    )} />
-                    <button
-                      type="button"
-                      onClick={() => remove(idx)}
-                      disabled={fields.length <= 1}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-30"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                  <div key={field.id} className="flex flex-col gap-1.5 p-2 rounded-lg border border-gray-100 bg-gray-50">
+                    <div className="flex items-center gap-2">
+                      <FormField control={form.control} name={`sizes.${idx}.name`} render={({ field }) => (
+                        <Input {...field} placeholder={t('menuItem.sizePlaceholder')} className="h-9 text-xs rounded-lg border-gray-200 bg-white flex-1" disabled={pending} />
+                      )} />
+                      <button
+                        type="button"
+                        onClick={() => handleTranslateSize(idx)}
+                        disabled={pending || translatingSizeIdx === idx}
+                        title={t('menuItem.translateAuto')}
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-700 hover:bg-white transition-colors disabled:opacity-50 shrink-0"
+                      >
+                        {translatingSizeIdx === idx ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => remove(idx)}
+                        disabled={fields.length <= 1}
+                        className="w-9 h-9 rounded-lg flex items-center justify-center text-gray-600 hover:text-red-500 hover:bg-white transition-colors disabled:opacity-30 shrink-0"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <FormField control={form.control} name={`sizes.${idx}.name_en`} render={({ field }) => (
+                        <Input {...field} placeholder={t('menuItem.sizeNameEnPlaceholder')} dir="ltr" className="h-9 text-xs rounded-lg border-gray-200 bg-white flex-1" disabled={pending} />
+                      )} />
+                      <FormField control={form.control} name={`sizes.${idx}.price`} render={({ field }) => (
+                        <Input {...field} type="number" placeholder={t('menuItem.pricePlaceholder')} className="h-9 text-xs rounded-lg border-gray-200 bg-white w-24" dir="ltr" disabled={pending} />
+                      )} />
+                      <FormField control={form.control} name={`sizes.${idx}.cost`} render={({ field }) => (
+                        <Input {...field} type="number" placeholder={t('menuItem.costPlaceholder')} className="h-9 text-xs rounded-lg border-gray-200 bg-white w-24" dir="ltr" disabled={pending} />
+                      )} />
+                    </div>
                   </div>
                 ))}
               </div>
               <button
                 type="button"
-                onClick={() => append({ id: `s-${Date.now()}`, name: '', price: 0, cost: 0 })}
+                onClick={() => append({ id: `s-${Date.now()}`, name: '', name_en: '', price: 0, cost: 0 })}
                 className="flex items-center gap-1.5 text-xs font-medium text-gray-600 hover:text-gray-700 transition-colors mt-1"
               >
                 <Plus className="h-3.5 w-3.5" />

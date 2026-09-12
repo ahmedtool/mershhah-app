@@ -296,14 +296,14 @@ export default function CustomizePage() {
           // is why the change never showed up on the public menu page.
           // Refresh name/logo here from the latest definitions, keyed by
           // platformId, leaving each branch's own value (link) untouched.
-          const latestByPlatformId = new Map<string, { name: string; logo: string }>();
-          globalApps.forEach((a: any) => latestByPlatformId.set(a.id, { name: a.name, logo: a.logo_url }));
-          updatedApplications.forEach((a: any) => latestByPlatformId.set(a.id, { name: a.name, logo: a.logo }));
+          const latestByPlatformId = new Map<string, { name: string; name_en?: string; logo: string }>();
+          globalApps.forEach((a: any) => latestByPlatformId.set(a.id, { name: a.name, name_en: a.name_en, logo: a.logo_url }));
+          updatedApplications.forEach((a: any) => latestByPlatformId.set(a.id, { name: a.name, name_en: a.name_en, logo: a.logo }));
           const refreshedBranches = branches.map((b: any) => ({
             ...b,
             applications: (b.applications || []).map((a: any) => {
               const latest = latestByPlatformId.get(a.platformId);
-              return latest ? { ...a, name: latest.name, logo: latest.logo } : a;
+              return latest ? { ...a, name: latest.name, name_en: latest.name_en, logo: latest.logo } : a;
             }),
           }));
 
@@ -352,6 +352,7 @@ export default function CustomizePage() {
         type: 'global',
         platformId: app.id,
         name: app.name,
+        name_en: app.name_en,
         logo: app.logo_url,
         value: ''
       };

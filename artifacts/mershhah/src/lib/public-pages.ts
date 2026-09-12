@@ -60,7 +60,7 @@ export type PublicPageData = {
     created_at?: unknown;
     is_visible?: boolean;
   }>;
-  categories: Array<{ id: string; name: string; position: number }>;
+  categories: Array<{ id: string; name: string; name_en?: string | null; position: number }>;
   gatewayServices: Array<{
     service_type: string;
     config: { title?: string; icon?: string; fields?: Array<{ id: string; label: string; type: string; options?: string[] }> };
@@ -120,7 +120,7 @@ export async function syncPublicPage(restaurantId: string): Promise<void> {
         .select('menu_item_id, rating')
         .eq('restaurant_id', restaurantId)
         .neq('is_visible', false),
-      supabase.from('menu_categories').select('id, name, position').eq('restaurant_id', restaurantId).order('position'),
+      supabase.from('menu_categories').select('id, name, name_en, position').eq('restaurant_id', restaurantId).order('position'),
       supabase.from('business_gateway_services').select('service_type, config').eq('restaurant_id', restaurantId).eq('is_enabled', true),
       supabase.from('job_postings').select('id, title, location, employment_type, description').eq('restaurant_id', restaurantId).eq('is_active', true),
     ]);

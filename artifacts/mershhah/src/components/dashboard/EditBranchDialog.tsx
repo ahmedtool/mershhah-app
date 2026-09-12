@@ -182,8 +182,8 @@ export function EditBranchDialog({
   }, [open, restaurantId]);
 
   const availableApps = [
-    ...globalApps.map((a: any) => ({ id: a.id, name: a.name, logo_url: a.logo_url, type: 'global' as const })),
-    ...customAppDefs.map((a: any) => ({ id: a.id, name: a.name, logo_url: a.logo, type: 'custom' as const })),
+    ...globalApps.map((a: any) => ({ id: a.id, name: a.name, name_en: a.name_en, logo_url: a.logo_url, type: 'global' as const })),
+    ...customAppDefs.map((a: any) => ({ id: a.id, name: a.name, name_en: a.name_en, logo_url: a.logo, type: 'custom' as const })),
   ];
 
   useEffect(() => { if (!city) form.setValue('district', ''); }, [city, form]);
@@ -503,6 +503,7 @@ export function EditBranchDialog({
                               type: app.type,
                               platformId: app.id,
                               name: app.name,
+                              name_en: app.name_en,
                               logo: app.logo_url,
                               value: ''
                             }]);

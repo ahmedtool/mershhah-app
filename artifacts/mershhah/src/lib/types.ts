@@ -25,6 +25,7 @@ export type AppLink = {
   type: 'global' | 'custom';
   platformId?: string;
   name: string;
+  name_en?: string | null;
   logo: string;
   value: string;
 };
@@ -119,6 +120,7 @@ export type MenuCategory = {
   id: string;
   restaurant_id: string;
   name: string;
+  name_en?: string | null;
   position: number;
   created_at?: any;
 };
@@ -318,6 +320,7 @@ export type Tool = {
 export type Application = {
   id: string;
   name: string;
+  name_en?: string | null;
   platform_id: string;
   logo_url: string;
   category: 'delivery' | 'loyalty' | 'payment' | 'other';

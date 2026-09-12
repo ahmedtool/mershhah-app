@@ -29,6 +29,7 @@ import { useNearestBranch } from '@/hooks/useNearestBranch';
 type OrderChannel = {
   id: string;
   name: string;
+  name_en?: string;
   logo?: string;
   value: string;
   price: number;
@@ -40,6 +41,7 @@ function buildOrderChannels(item: MenuItem, branch: any, basePrice: number): Ord
   const withPrice = (app: any): OrderChannel => ({
     id: app.platformId,
     name: app.name,
+    name_en: app.name_en,
     logo: app.logo,
     value: app.value,
     price: item.channel_prices?.[app.platformId] ?? basePrice,
@@ -194,6 +196,7 @@ export default function PublicMenuPage() {
 
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [categoryNameEn, setCategoryNameEn] = useState<Record<string, string>>({});
   const [branches, setBranches] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -269,6 +272,9 @@ export default function PublicMenuPage() {
           const orderedNames = (data.categories || []).map((c) => c.name);
           const tabs = buildCategoryTabs(items, orderedNames);
           setCategories(tabs);
+          const enMap: Record<string, string> = {};
+          (data.categories || []).forEach((c: any) => { if (c.name_en) enMap[c.name] = c.name_en; });
+          setCategoryNameEn(enMap);
           setBranches(((data.branches || []) as any[]).filter((b) => b.status === 'active'));
           setLoading(false);
           return;
@@ -291,7 +297,7 @@ export default function PublicMenuPage() {
 
         const [{ data: items }, { data: categoryRows }, { data: branchRows }] = await Promise.all([
           supabase.from('menu_items').select('*').eq('restaurant_id', rest.id),
-          supabase.from('menu_categories').select('name').eq('restaurant_id', rest.id).order('position'),
+          supabase.from('menu_categories').select('name, name_en').eq('restaurant_id', rest.id).order('position'),
           supabase.from('branches').select('*').eq('restaurant_id', rest.id).eq('status', 'active'),
         ]);
 
@@ -299,6 +305,9 @@ export default function PublicMenuPage() {
         setMenuItems(sorted);
         const tabs = buildCategoryTabs(sorted, (categoryRows || []).map((c: any) => c.name));
         setCategories(tabs);
+        const enMap: Record<string, string> = {};
+        (categoryRows || []).forEach((c: any) => { if (c.name_en) enMap[c.name] = c.name_en; });
+        setCategoryNameEn(enMap);
         setBranches((branchRows || []) as any[]);
       } catch (e) {
         console.error(e);
@@ -456,6 +465,7 @@ export default function PublicMenuPage() {
       <div className="max-w-lg mx-auto w-full mt-2 px-5">
         <MenuExperience
           categories={categories}
+          categoryNameEn={categoryNameEn}
           menuItems={menuItems}
           searchQuery={searchQuery}
           primaryColor={primaryColor}
@@ -477,6 +487,7 @@ export default function PublicMenuPage() {
 
 interface MenuExperienceProps {
   categories: string[];
+  categoryNameEn: Record<string, string>;
   menuItems: MenuItem[];
   searchQuery: string;
   primaryColor: string;
@@ -492,7 +503,7 @@ interface MenuExperienceProps {
 // on "which item is active right now" - the rating chip, the size picker
 // and the order-channel picker all read the same live position instead of
 // three components independently re-deriving it.
-function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir, t, nearestBranch, onEngageItem, onSubmitRating, onChannelClick }: MenuExperienceProps) {
+function MenuExperience({ categories, categoryNameEn, menuItems, searchQuery, primaryColor, dir, t, nearestBranch, onEngageItem, onSubmitRating, onChannelClick }: MenuExperienceProps) {
   const tabs = useMemo(() => [ALL_CATEGORY_ID, ...categories], [categories]);
   const catCarousel = useDragCarousel(tabs.length, CATEGORY_SPACING);
   const activeCatIndex = resolveIndex(catCarousel.pos, tabs.length, true);
@@ -552,6 +563,8 @@ function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir,
   const ar = dir !== 'ltr';
   const nameOf = (item: MenuItem) => (ar ? item.name : (item.name_en || item.name));
   const descOf = (item: MenuItem) => (ar ? item.description : (item.description_en || item.description));
+  const sizeNameOf = (size: any) => (ar ? size.name : (size.name_en || size.name));
+  const channelNameOf = (channel: OrderChannel) => (ar ? channel.name : (channel.name_en || channel.name));
 
   const sizes = activeItem?.sizes || [];
   const basePrice = sizes[0]?.price ?? 0;
@@ -597,7 +610,7 @@ function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir,
               const d = signedDelta(i, catCarousel.pos, n, true);
               const a = Math.abs(d);
               const on = a < 0.5;
-              const label = cat === ALL_CATEGORY_ID ? t('publicMenu.allCategory') : cat;
+              const label = cat === ALL_CATEGORY_ID ? t('publicMenu.allCategory') : (ar ? cat : (categoryNameEn[cat] || cat));
               return (
                 <button
                   key={cat}
@@ -794,7 +807,7 @@ function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir,
                             border: `1px solid ${on ? primaryColor : '#EFEBE0'}`,
                           }}
                         >
-                          <span className="text-[11px] font-semibold">{size.name}</span>
+                          <span className="text-[11px] font-semibold">{sizeNameOf(size)}</span>
                           <span className="text-[10px] font-bold" style={{ opacity: on ? 0.9 : 0.7 }}>{size.price} {t('ownerSettings.currency')}</span>
                         </button>
                       );
@@ -826,14 +839,14 @@ function MenuExperience({ categories, menuItems, searchQuery, primaryColor, dir,
                             )}
                             <div className="relative w-7 h-7 rounded-xl bg-gray-50 overflow-hidden">
                               {channel.logo ? (
-                                <StorageImage imagePath={channel.logo} alt={channel.name} fill className="object-contain p-1" sizes="28px" />
+                                <StorageImage imagePath={channel.logo} alt={channelNameOf(channel)} fill className="object-contain p-1" sizes="28px" />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-gray-600">
-                                  {channel.name.slice(0, 2)}
+                                  {channelNameOf(channel).slice(0, 2)}
                                 </div>
                               )}
                             </div>
-                            <span className="text-[9px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[18px]">{channel.name}</span>
+                            <span className="text-[9px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[18px]">{channelNameOf(channel)}</span>
                             <span className="text-[10px] font-bold" style={{ color: channel.isDirect ? primaryColor : undefined }}>
                               {channel.price} {t('ownerSettings.currency')}
                             </span>

@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown, ArrowRight, Check, ListChecks, Tag, Search } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, ChevronUp, ChevronDown, ArrowRight, Check, ListChecks, Tag, Search, Sparkles } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
+import { translateText } from '@/lib/translate-text';
 import { cn } from '@/lib/utils';
 import type { MenuCategory, MenuItem } from '@/lib/types';
 import { COMMON_CATEGORY_SUGGESTIONS } from '@/lib/category-suggestions';
@@ -29,6 +30,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [translatingId, setTranslatingId] = useState<string | null>(null);
   const [assigning, setAssigning] = useState<MenuCategory | null>(null);
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [isSavingAssignment, setIsSavingAssignment] = useState(false);
@@ -103,6 +105,22 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
       toast({ variant: 'destructive', title: t('common.errorTitle'), description: e.message });
     } finally {
       setBusyId(null);
+    }
+  };
+
+  const handleTranslate = async (cat: MenuCategory) => {
+    setTranslatingId(cat.id);
+    try {
+      const name_en = await translateText(cat.name);
+      const { error } = await supabase.from('menu_categories').update({ name_en }).eq('id', cat.id);
+      if (error) throw error;
+      fetchCategories();
+      onSave?.();
+      syncPublicPage(restaurantId).catch(() => {});
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: t('menuItem.translationFailed'), description: e.message });
+    } finally {
+      setTranslatingId(null);
     }
   };
 
@@ -278,10 +296,18 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                       ) : (
                         <button onClick={() => openAssignment(cat)} className="flex-1 text-start min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{cat.name}</p>
-                          <p className="text-[10px] text-gray-600">{countInCategory(cat.id)} {t('menu.itemsSuffix')}</p>
+                          <p className="text-[10px] text-gray-600">
+                            {countInCategory(cat.id)} {t('menu.itemsSuffix')}
+                            {cat.name_en ? ` · ${cat.name_en}` : ''}
+                          </p>
                         </button>
                       )}
 
+                      <button onClick={() => handleTranslate(cat)} disabled={translatingId === cat.id}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-700 hover:bg-gray-50 transition-colors shrink-0 disabled:opacity-50"
+                        title={t('menuItem.translateAuto')}>
+                        {translatingId === cat.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      </button>
                       <button onClick={() => openAssignment(cat)}
                         className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-700 hover:bg-gray-50 transition-colors shrink-0" title={t('menu.linkItemsTooltip')}>
                         <ListChecks className="h-3.5 w-3.5" />
