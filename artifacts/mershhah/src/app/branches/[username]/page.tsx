@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useParams } from 'wouter';
 import { ChevronRight, ChevronLeft, MapPin, Phone, Clock, Info, Navigation, MessageCircle } from 'lucide-react';
@@ -13,18 +13,7 @@ import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
-
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-}
+import { useNearestBranch } from '@/hooks/useNearestBranch';
 
 // A small radar-style pulse behind the location pin - two rings expanding
 // outward and fading, staggered so one is always mid-pulse. Reads as "still
@@ -57,9 +46,10 @@ export default function PublicBranchesPage() {
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locating, setLocating] = useState(false);
   const { t, dir } = useLanguage();
+  const { phase: locationPhase, sortedBranches, requestLocation } = useNearestBranch(branches);
+  const userLocation = locationPhase === 'located';
+  const locating = locationPhase === 'locating';
 
   useEffect(() => {
     if (!username) return;
@@ -115,31 +105,6 @@ export default function PublicBranchesPage() {
   }, [username]);
 
   const primaryColor = restaurant?.primaryColor || '#111827';
-
-  const sortedBranches = useMemo(() => {
-    if (!userLocation) return branches;
-    return [...branches]
-      .map((b) => {
-        if (b.latitude && b.longitude) {
-          return { ...b, distance: haversineDistance(userLocation.lat, userLocation.lng, b.latitude, b.longitude) };
-        }
-        return { ...b, distance: Infinity };
-      })
-      .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
-  }, [branches, userLocation]);
-
-  const requestLocation = () => {
-    if (!navigator.geolocation) return;
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLocating(false);
-      },
-      () => setLocating(false),
-      { enableHighAccuracy: false, timeout: 5000 }
-    );
-  };
 
   const isBranchOpen = (hours?: string | null) => {
     if (!hours) return null;

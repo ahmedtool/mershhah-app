@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'wouter';
 import { MapPin, Navigation, Phone, ShoppingBag, Locate } from 'lucide-react';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { trackAppClick, trackMapsClick, trackPhoneClick } from '@/lib/event-tracker';
-import { haversineDistanceKm } from '@/lib/geo-distance';
 import { isBranchOpenNow } from '@/lib/branch-hours';
+import { useNearestBranch } from '@/hooks/useNearestBranch';
 
 interface NearestBranchSectionProps {
   branches: any[];
@@ -16,39 +16,11 @@ interface NearestBranchSectionProps {
   username?: string;
 }
 
-type LocationPhase = 'idle' | 'locating' | 'located' | 'denied';
-
 export function NearestBranchSection({ branches, restaurantId, primaryColor, username }: NearestBranchSectionProps) {
   const { t, dir } = useLanguage();
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
-  const [phase, setPhase] = useState<LocationPhase>('idle');
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const { phase, sortedBranches, requestLocation } = useNearestBranch(branches);
   const [expandedAppsId, setExpandedAppsId] = useState<string | null>(null);
-
-  const sortedBranches = useMemo(() => {
-    if (!userLocation) return branches;
-    return [...branches]
-      .map((b) => ({
-        ...b,
-        distance: b.latitude && b.longitude
-          ? haversineDistanceKm(userLocation.lat, userLocation.lng, b.latitude, b.longitude)
-          : Infinity,
-      }))
-      .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
-  }, [branches, userLocation]);
-
-  const requestLocation = () => {
-    if (!navigator.geolocation) { setPhase('denied'); return; }
-    setPhase('locating');
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setPhase('located');
-      },
-      () => setPhase('denied'),
-      { enableHighAccuracy: false, timeout: 8000 }
-    );
-  };
 
   if (branches.length === 0) return null;
 
