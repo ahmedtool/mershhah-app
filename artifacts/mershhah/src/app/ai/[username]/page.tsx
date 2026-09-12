@@ -90,7 +90,7 @@ export default function AiAssistantPage() {
         setBranches(branchesRes.data || []);
 
         setMessages([
-          { id: '1', sender: 'bot', text: "أنا رفيقك الذكي. كيف أقدر أساعدك اليوم؟", timestamp: new Date() }
+          { id: '1', sender: 'bot', text: t('publicAi.greeting'), timestamp: new Date() }
         ]);
       } catch (error) {
         console.error("Error fetching restaurant data", error);
