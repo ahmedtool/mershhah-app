@@ -202,18 +202,21 @@ export default function PublicBranchesPage() {
           <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
           <p className="text-sm text-gray-600 mt-0.5">{branches.length > 0 ? `${branches.length} ${t('publicBranches.branchesSuffix')}` : t('hubPage.branches')}</p>
           {userLocation ? (
-            <p className="text-[10px] text-gray-600 mt-1 flex items-center justify-center gap-1">
-              <Navigation className="h-2.5 w-2.5" />
+            <div
+              className="inline-flex items-center gap-2 h-9 px-4 mt-3 text-xs font-bold rounded-full"
+              style={{ backgroundColor: `${primaryColor}14`, color: primaryColor }}
+            >
+              <Navigation className="h-3.5 w-3.5" />
               {t('publicBranches.sortedByProximity')}
-            </p>
+            </div>
           ) : branches.length > 1 && (
             <button
               onClick={requestLocation}
               disabled={locating}
-              className="text-[10px] font-bold mt-1.5 flex items-center justify-center gap-1 mx-auto disabled:opacity-50"
-              style={{ color: primaryColor }}
+              className="inline-flex items-center gap-2 h-10 px-5 mt-3 text-sm font-bold rounded-full border transition-opacity hover:opacity-90 disabled:opacity-50"
+              style={{ borderColor: `${primaryColor}40`, color: primaryColor, backgroundColor: `${primaryColor}0A` }}
             >
-              <Navigation className="h-2.5 w-2.5" />
+              <Navigation className="h-4 w-4" />
               {locating ? t('publicBranches.locating') : t('publicBranches.sortByNearest')}
             </button>
           )}
