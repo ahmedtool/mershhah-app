@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Database, Cloud, CreditCard, Sparkles, Mail, Shield, Info, Pencil, Loader2, RefreshCw, Image as ImageIcon, MapPin, Trophy } from 'lucide-react';
+import { Database, Cloud, CreditCard, Sparkles, Mail, Shield, Info, Pencil, Loader2, RefreshCw, Image as ImageIcon, MapPin, Trophy, Users } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -12,7 +12,7 @@ import type { ServiceUsageRow } from '@/lib/types';
 // Services synced automatically by the sync-service-usage Edge Function -
 // the rest stay manual since no usable API exists for them (see the
 // "استهلاك الخدمات" conversation).
-const AUTO_SYNCED_KEYS = new Set(['streampay', 'mistral', 'cloudflare', 'sndr', 'imagekit', 'supabase']);
+const AUTO_SYNCED_KEYS = new Set(['streampay', 'mistral', 'cloudflare', 'sndr', 'imagekit', 'supabase', 'supabase_mau']);
 
 type ServiceStatus = 'ok' | 'warning' | 'critical' | 'unknown';
 
@@ -68,6 +68,13 @@ const SERVICES: ServiceMeta[] = [
     name: 'Supabase',
     icon: Database,
     description: 'قاعدة البيانات، المصادقة، التخزين، وEdge Functions',
+    dashboardUrl: 'https://supabase.com/dashboard/project/smmriycsboexindabanc/settings/billing/usage',
+  },
+  {
+    key: 'supabase_mau',
+    name: 'Supabase — المستخدمون النشطون',
+    icon: Users,
+    description: 'تقريبي: محسوب من تاريخ آخر تسجيل دخول، وليس رقم الفوترة الرسمي لـ Supabase',
     dashboardUrl: 'https://supabase.com/dashboard/project/smmriycsboexindabanc/settings/billing/usage',
   },
   {

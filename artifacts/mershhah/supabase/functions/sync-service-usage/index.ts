@@ -244,6 +244,13 @@ async function syncImageKit(supabase: any): Promise<SyncResult> {
 // automated here. Uses the platform-provided SUPABASE_SERVICE_ROLE_KEY
 // secret that's already available to every Edge Function - no new secret
 // needed.
+function extractGauge(text: string, metricName: string, mustInclude?: string): number | null {
+  const lines = text.split("\n").filter((l) => l.startsWith(metricName + "{") && (!mustInclude || l.includes(mustInclude)));
+  if (lines.length === 0) return null;
+  const match = lines[0].match(/}\s+([0-9.eE+-]+)\s*$/);
+  return match ? parseFloat(match[1]) : null;
+}
+
 async function syncSupabase(supabase: any): Promise<SyncResult> {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -256,16 +263,33 @@ async function syncSupabase(supabase: any): Promise<SyncResult> {
     if (!res.ok) throw new Error(`Supabase metrics endpoint returned ${res.status}`);
     const text = await res.text();
 
-    const lines = text.split("\n").filter((l) => l.startsWith("pg_database_size_bytes{"));
-    if (lines.length === 0) throw new Error("pg_database_size_bytes metric not found in response");
+    const dbSizeLines = text.split("\n").filter((l) => l.startsWith("pg_database_size_bytes{"));
+    if (dbSizeLines.length === 0) throw new Error("pg_database_size_bytes metric not found in response");
 
     let totalBytes = 0;
-    for (const line of lines) {
+    for (const line of dbSizeLines) {
       const match = line.match(/}\s+([0-9.eE+-]+)\s*$/);
       if (match) totalBytes += parseFloat(match[1]);
     }
 
     const dbSizeGB = Math.round((totalBytes / 1024 / 1024 / 1024) * 1000) / 1000;
+
+    // Free bonus from the same response: real-time server health gauges
+    // (no rate/delta math needed, so no second sample required). These are
+    // operational, not billing metrics - kept in `notes`, not the tracked
+    // usage_value, so they never get confused with the DB-size quota above.
+    const activeConns = extractGauge(text, "pg_stat_database_num_backends");
+    const maxConns = extractGauge(text, "max_connections_connection_count");
+    const memAvail = extractGauge(text, "node_memory_MemAvailable_bytes");
+    const memTotal = extractGauge(text, "node_memory_MemTotal_bytes");
+    const diskFree = extractGauge(text, "node_filesystem_free_bytes", 'mountpoint="/data"');
+    const diskTotal = extractGauge(text, "node_filesystem_size_bytes", 'mountpoint="/data"');
+
+    const healthParts: string[] = [];
+    if (activeConns !== null && maxConns !== null) healthParts.push(`اتصالات: ${activeConns}/${maxConns}`);
+    if (memAvail !== null && memTotal !== null && memTotal > 0) healthParts.push(`ذاكرة: ${Math.round((1 - memAvail / memTotal) * 100)}%`);
+    if (diskFree !== null && diskTotal !== null && diskTotal > 0) healthParts.push(`قرص: ${Math.round((1 - diskFree / diskTotal) * 100)}%`);
+    const healthLine = healthParts.length ? ` | صحة الخادم الآن: ${healthParts.join("، ")}` : "";
 
     await upsertUsage(supabase, "supabase", {
       plan: "Free",
@@ -275,11 +299,52 @@ async function syncSupabase(supabase: any): Promise<SyncResult> {
       limit_unit: "GB",
       cost_sar: 0,
       billing_cycle: "شهري",
-      notes: "تلقائي: حجم قاعدة البيانات فقط (المصدر الوحيد المتاح فعليًا عبر Supabase Metrics API). باقي المؤشرات (Storage، Egress، Cached Egress، Edge Functions، MAU، Realtime) غير موجودة إطلاقًا في هذا الـ API — تحديثها يبقى يدويًا من لوحة Supabase.",
+      notes: `تلقائي: حجم قاعدة البيانات فقط (المصدر الوحيد المتاح فعليًا عبر Supabase Metrics API). باقي مؤشرات الفوترة (Storage، Egress، Cached Egress، Edge Functions، Realtime) غير موجودة إطلاقًا في هذا الـ API — تحديثها يبقى يدويًا من لوحة Supabase.${healthLine}`,
     });
     return { service: "supabase", status: "synced" };
   } catch (err: any) {
     return { service: "supabase", status: "failed", detail: err.message };
+  }
+}
+
+// Our own approximation of Monthly Active Users, computed from auth.users'
+// last_sign_in_at - deliberately kept as a SEPARATE service_key from
+// "supabase" (the one row that matches the official billing number exactly)
+// so this can never be mistaken for a verified quota figure. Supabase's own
+// MAU billing definition may count activity differently (e.g. any
+// authenticated request, not just a sign-in) - labeled تقريبي everywhere.
+async function syncSupabaseMau(supabase: any): Promise<SyncResult> {
+  try {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    let activeCount = 0;
+    let page = 1;
+    const perPage = 1000;
+    while (true) {
+      const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+      if (error) throw error;
+      const users = data?.users || [];
+      for (const u of users) {
+        if (u.last_sign_in_at && new Date(u.last_sign_in_at) >= monthStart) activeCount++;
+      }
+      if (users.length < perPage) break;
+      page++;
+    }
+
+    await upsertUsage(supabase, "supabase_mau", {
+      plan: "Free",
+      usage_value: activeCount,
+      usage_unit: "مستخدم نشط هذا الشهر (تقريبي)",
+      limit_value: 50000,
+      limit_unit: "مستخدم",
+      cost_sar: 0,
+      billing_cycle: "شهري",
+      notes: "تقريبي: عدد المستخدمين اللي سجّلوا دخول هذا الشهر (last_sign_in_at من auth.users) — قد لا يطابق تعريف Supabase الرسمي لـ MAU في صفحة الفوترة تمامًا.",
+    });
+    return { service: "supabase_mau", status: "synced" };
+  } catch (err: any) {
+    return { service: "supabase_mau", status: "failed", detail: err.message };
   }
 }
 
@@ -310,7 +375,7 @@ serve(async (req) => {
       });
     }
 
-    const results = await Promise.all([syncStreamPay(admin), syncMistral(admin), syncCloudflare(admin), syncSndr(admin), syncImageKit(admin), syncSupabase(admin)]);
+    const results = await Promise.all([syncStreamPay(admin), syncMistral(admin), syncCloudflare(admin), syncSndr(admin), syncImageKit(admin), syncSupabase(admin), syncSupabaseMau(admin)]);
 
     return new Response(JSON.stringify({ results }), {
       status: 200,
