@@ -55,9 +55,24 @@ export async function resolvePostAuthRoute(user: User): Promise<string> {
     .maybeSingle();
 
   if (!profile) {
+    // profiles RLS only lets a session read its OWN row, so it's
+    // impossible to tell client-side whether this email already has an
+    // account under a DIFFERENT auth identity (e.g. this person originally
+    // registered with a password, and is now trying Google for the first
+    // time - a different provider that, without account linking
+    // configured, gets its own separate auth.users id). Ask the
+    // service-role-backed check before assuming "brand new" - this applies
+    // to the hardcoded admin email too: `profiles.email` is UNIQUE, so
+    // blindly inserting a second admin row here would violate that
+    // constraint and silently leave this new identity with no profile at
+    // all, bouncing the admin straight back to /login.
+    if (await hasExistingAccountUnderDifferentIdentity()) {
+      return '/auth/account-exists';
+    }
+
     if (user.email === ADMIN_EMAIL) {
       const now = new Date().toISOString();
-      await supabase.from('profiles').insert({
+      const { error } = await supabase.from('profiles').insert({
         id: user.id,
         full_name: user.user_metadata?.full_name || user.email,
         email: user.email,
@@ -69,20 +84,13 @@ export async function resolvePostAuthRoute(user: User): Promise<string> {
         restaurant_id: null,
         admin_permissions: allAdminPermissions,
       });
+      if (error) {
+        console.error('Failed to create admin profile:', error);
+        return '/auth/account-exists';
+      }
       return '/admin/dashboard';
     }
 
-    // profiles RLS only lets a session read its OWN row, so it's
-    // impossible to tell client-side whether this email already has an
-    // account under a DIFFERENT auth identity (e.g. this person originally
-    // registered with a password, and is now trying Google for the first
-    // time - a different provider that, without account linking
-    // configured, gets its own separate auth.users id). Ask the
-    // service-role-backed check before assuming "brand new" and creating a
-    // second, empty restaurant for someone who already has one.
-    if (await hasExistingAccountUnderDifferentIdentity()) {
-      return '/auth/account-exists';
-    }
     return '/onboarding';
   }
 
