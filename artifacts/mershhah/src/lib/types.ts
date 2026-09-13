@@ -13,6 +13,8 @@ export type Profile = {
   admin_permissions?: string[];
   // Flag to control one-time AI trial access for free plans
   ai_trial_used?: boolean;
+  // Internal, admin-only note - never shown to the owner themselves
+  admin_notes?: string | null;
 };
 
 // One delivery-app link, either from the admin-managed global catalog

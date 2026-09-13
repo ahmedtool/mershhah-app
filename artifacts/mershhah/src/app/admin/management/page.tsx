@@ -1,540 +1,89 @@
 'use client';
 
-import { useState, useEffect, useTransition, useCallback } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { useState, useEffect, useTransition, useCallback, useMemo } from 'react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { User, Building2, KeyRound, Loader2, CreditCard, Clock, Trash2, Search } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, Trash2, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { syncPublicPage } from '@/lib/public-pages';
-import { format, addMonths, isAfter } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { isAfter, addDays } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RestaurantsTable } from '@/components/admin/management/RestaurantsTable';
-import { ImpersonationAccessCard } from '@/components/admin/management/ImpersonationAccessCard';
+import { SubscriberStats } from '@/components/admin/management/SubscriberStats';
+import { SubscribersTable, type SubscriberRow } from '@/components/admin/management/SubscribersTable';
+import { SubscriberDrawer } from '@/components/admin/management/SubscriberDrawer';
+import { pickActiveSubscription } from '@/hooks/useUser';
 import type { Profile, Subscription } from '@/lib/types';
-import { cn } from '@/lib/utils';
 
-type ManagementPlan = {
-  id: string;
-  name: string;
-  price: number;
-  price_monthly: number;
-  price_yearly: number;
-  duration_months: number;
-  is_featured: boolean;
-};
+type PlanLite = { id: string; name: string; price_yearly: number };
 
-const formSchema = z.object({
-  restaurant_name: z.string().min(2, 'اسم المشروع مطلوب'),
-  full_name: z.string().min(2, 'الاسم الكامل مطلوب'),
-  email: z.string().email('إيميل غير صحيح'),
-  phone_number: z.string().optional().nullable(),
-  account_status: z.enum(['active', 'pending', 'suspended']),
-});
-type FormValues = z.infer<typeof formSchema>;
-
-function ProfileDetails({
-  profileId,
-  onSave,
-  onDeleteRequest,
-}: {
-  profileId: string | null;
-  onSave: () => void;
-  onDeleteRequest: (profile: Profile) => void;
-}) {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [currentSub, setCurrentSub] = useState<Subscription | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, startSaving] = useTransition();
-  const [isActivating, startActivating] = useTransition();
-  const { toast } = useToast();
-  const [activePlans, setActivePlans] = useState<ManagementPlan[]>([]);
-  const [selectedPlanId, setSelectedPlanId] = useState<string>('');
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const form = useForm<FormValues>({ resolver: zodResolver(formSchema) });
-
-  useEffect(() => {
-    const fetchPlans = async () => {
-      const { data } = await supabase.from('plans')
-        .select('id, name, price, price_monthly, price_yearly, duration_months, is_featured')
-        .eq('is_active', true);
-      setActivePlans((data || []) as ManagementPlan[]);
-    };
-    fetchPlans();
-  }, []);
-
-  // Re-pick the renew dropdown's default every time a different subscriber
-  // is selected (or their data reloads) - without this, switching from one
-  // subscriber to another kept whichever plan was picked for the previous
-  // one, so clicking "Activate/Renew" without re-checking the dropdown
-  // could silently grant the wrong plan to the wrong customer. Defaults to
-  // the subscriber's own current/expired plan when it's still sellable, so
-  // "renew" naturally continues what they already have.
-  useEffect(() => {
-    if (activePlans.length === 0) return;
-    const currentPlanStillActive = currentSub && activePlans.some((p) => p.id === currentSub.plan_id);
-    if (currentPlanStillActive) {
-      setSelectedPlanId(currentSub!.plan_id);
-    } else {
-      const featured = activePlans.find((p) => p.is_featured);
-      setSelectedPlanId(featured ? featured.id : activePlans[0].id);
-    }
-  }, [profileId, currentSub, activePlans]);
-
-  useEffect(() => {
-    if (!profileId) {
-      setProfile(null);
-      setCurrentSub(null);
-      setIsLoading(false);
-      return;
-    }
-
-    let isMounted = true;
-    setIsLoading(true);
-
-    const fetchProfile = async () => {
-      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', profileId).single();
-      if (!isMounted) return;
-
-      if (profileData) {
-        setProfile(profileData as Profile);
-        form.reset({
-          restaurant_name: profileData.restaurant_name || '',
-          full_name: profileData.full_name || '',
-          email: profileData.email || '',
-          phone_number: profileData.phone_number || '',
-          account_status: profileData.account_status || 'pending',
-        });
-
-        const { data: subsData } = await supabase
-          .from('subscriptions')
-          .select('*')
-          .eq('profile_id', profileId);
-
-        if (!isMounted) return;
-        const subs = (subsData || []) as Subscription[];
-        const activeSubs = subs
-          .filter((s) => s.status === 'active')
-          .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
-        setCurrentSub(activeSubs[0] || null);
-      } else {
-        setProfile(null);
-      }
-      setIsLoading(false);
-    };
-
-    fetchProfile();
-
-    const channel = supabase
-      .channel(`profile-detail-${profileId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${profileId}` }, () => {
-        fetchProfile();
-      })
-      .subscribe();
-
-    return () => {
-      isMounted = false;
-      supabase.removeChannel(channel);
-    };
-  }, [profileId, form, refreshKey]);
-
-  function onSubmit(values: FormValues) {
-    startSaving(async () => {
-      if (!profile) return;
-      try {
-        const { error } = await supabase.from('profiles').update({
-          restaurant_name: values.restaurant_name,
-          full_name: values.full_name,
-          phone_number: values.phone_number,
-          account_status: values.account_status,
-        }).eq('id', profile.id);
-        if (error) throw error;
-
-        if (profile.restaurant_id) {
-          const { error: restErr } = await supabase.from('restaurants').update({ name: values.restaurant_name }).eq('id', profile.restaurant_id);
-          if (restErr) throw restErr;
-          syncPublicPage(profile.restaurant_id).catch(() => {});
-        }
-
-        toast({ title: `تم تحديث بيانات "${values.restaurant_name}" بنجاح` });
-        setRefreshKey(k => k + 1);
-        onSave();
-      } catch (err: any) {
-        toast({ title: 'خطأ في الحفظ', description: err.message, variant: 'destructive' });
-      }
-    });
-  }
-
-  const handleActivateOrRenew = () => {
-    const selectedPlan = activePlans.find((p) => p.id === selectedPlanId);
-    if (!profile || !selectedPlan) {
-      toast({ title: 'بيانات ناقصة', description: 'الرجاء اختيار باقة اشتراك صالحة.', variant: 'destructive' });
-      return;
-    }
-
-    startActivating(async () => {
-      try {
-        const { error: profErr } = await supabase.from('profiles').update({ account_status: 'active' }).eq('id', profile.id);
-        if (profErr) throw profErr;
-
-        if (profile.restaurant_id) {
-          const { error: restErr } = await supabase.from('restaurants')
-            .update({ is_paid_plan: selectedPlan.id !== 'free' })
-            .eq('id', profile.restaurant_id);
-          if (restErr) throw restErr;
-        }
-
-        // Supersede (not delete) any previously active subscriptions — this
-        // is an admin override, but it must stay in the audit trail, and
-        // must not erase the history that /admin/financials reports on.
-        const { error: supersedeErr } = await supabase
-          .from('subscriptions')
-          .update({ status: 'inactive', updated_at: new Date().toISOString() })
-          .eq('profile_id', profile.id)
-          .eq('status', 'active');
-        if (supersedeErr) throw supersedeErr;
-
-        let startDate = new Date();
-        const subEndDate = currentSub?.end_date ? new Date(currentSub.end_date) : null;
-        if (currentSub && currentSub.plan_id !== 'free' && subEndDate && isAfter(subEndDate, startDate)) {
-          startDate = subEndDate;
-        }
-        const endDate = addMonths(startDate, selectedPlan.duration_months || 1);
-        const isYearlyPlan = (selectedPlan.duration_months || 1) >= 12;
-        const planAmount = (isYearlyPlan ? selectedPlan.price_yearly : selectedPlan.price_monthly) || selectedPlan.price || 0;
-
-        const { data: newSub, error: subErr } = await supabase.from('subscriptions').insert({
-          id: crypto.randomUUID(),
-          profile_id: profile.id,
-          plan_name: selectedPlan.name,
-          plan_id: selectedPlan.id,
-          status: 'active',
-          billing_cycle: isYearlyPlan ? 'yearly' : 'monthly',
-          amount: 0,
-          start_date: startDate.toISOString(),
-          end_date: endDate.toISOString(),
-          next_billing_date: endDate.toISOString(),
-        }).select('id').single();
-        if (subErr) throw subErr;
-
-        // Record it as a $0 manual adjustment so it shows up in
-        // /admin/financials — a grant given outside StreamPay must never be
-        // invisible to the money trail, even though nothing was charged.
-        if (planAmount > 0) {
-          await supabase.from('transactions').insert({
-            profile_id: profile.id,
-            type: 'adjustment',
-            amount: 0,
-            currency: 'SAR',
-            status: 'completed',
-            description: `منح/تجديد يدوي من الإدارة — ${selectedPlan.name} (القيمة السوقية ${planAmount} ر.س)`,
-            reference_type: 'subscription',
-            reference_id: newSub?.id,
-          });
-        }
-
-        // The public hub page reads a denormalized snapshot (public_pages),
-        // not the restaurants row directly — without this, is_paid_plan
-        // flips in the database but the customer-facing page (and features
-        // gated on it, like the AI assistant) keeps showing the stale value
-        // until something else happens to trigger a resync.
-        if (profile.restaurant_id) {
-          syncPublicPage(profile.restaurant_id).catch(() => {});
-        }
-
-        toast({ title: 'تم تجديد/تفعيل الاشتراك بنجاح!' });
-        setRefreshKey(k => k + 1);
-        onSave();
-      } catch (err: any) {
-        toast({ title: 'خطأ في التفعيل', description: err.message, variant: 'destructive' });
-      }
-    });
-  };
-
-  const handleDelete = () => { if (profile) onDeleteRequest(profile); };
-
-  const handleResetPassword = async () => {
-    if (!profile?.email) return;
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(profile.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (error) throw error;
-      toast({
-        title: 'تم إرسال رابط التغيير',
-        description: `تم إرسال تعليمات إعادة تعيين كلمة المرور إلى بريد ${profile.email}`,
-      });
-    } catch (error: any) {
-      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
-      </div>
-    );
-  }
-
-  if (!profile) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center text-center text-gray-600 py-20">
-        <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-          <Building2 className="h-8 w-8 text-gray-200" />
-        </div>
-        <h3 className="text-sm font-bold text-gray-600">لم يتم اختيار مشترك</h3>
-        <p className="text-xs text-gray-600 mt-1 max-w-[200px]">
-          اختر مشتركاً من القائمة لعرض بياناته
-        </p>
-      </div>
-    );
-  }
-
-  const subEndDate = currentSub?.end_date ? new Date(currentSub.end_date) : null;
-  const isSubActive = subEndDate && isAfter(subEndDate, new Date());
-
-  return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="px-5 pt-5 pb-4 border-b border-gray-100 shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-              <User className="h-5 w-5 text-gray-600" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-gray-900">{profile.restaurant_name}</h2>
-              <p className="text-xs text-gray-600">{profile.full_name}</p>
-            </div>
-          </div>
-          <Badge className={cn('text-[10px] font-medium px-2.5 py-1 rounded-full', isSubActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200')}>
-            {isSubActive ? 'نشط' : 'منتهي'}
-          </Badge>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-5">
-        {/* Subscription Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Current Subscription */}
-          <div className="rounded-xl border border-gray-100 p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-gray-600" />
-              <span className="text-xs font-bold text-gray-600">الاشتراك الحالي</span>
-            </div>
-            {currentSub ? (
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] text-gray-600">الباقة</span>
-                  <span className="text-xs font-bold text-gray-700">{currentSub.plan_name}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[11px] text-gray-600">ينتهي</span>
-                  <span className={cn('text-xs font-bold', isSubActive ? 'text-emerald-600' : 'text-red-600')}>
-                    {currentSub.plan_id === 'free' ? 'دائم' : (subEndDate ? format(subEndDate, 'dd MMM yyyy', { locale: ar }) : '—')}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <p className="text-[11px] text-gray-600 italic">لا يوجد اشتراك نشط</p>
-            )}
-          </div>
-
-          {/* Renew */}
-          <div className="rounded-xl border border-gray-100 p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-gray-600" />
-              <span className="text-xs font-bold text-gray-600">تجديد / تفعيل</span>
-            </div>
-            <Select onValueChange={setSelectedPlanId} value={selectedPlanId}>
-              <SelectTrigger className="h-9 rounded-lg border-gray-200 text-xs">
-                <SelectValue placeholder="اختر الباقة" />
-              </SelectTrigger>
-              <SelectContent dir="rtl">
-                {activePlans.map((p) => (
-                  <SelectItem key={p.id} value={p.id} className="text-xs">
-                    {p.name} — {(p.duration_months || 1) >= 12 ? `${p.price_yearly || p.price || 0} ر.س/سنة` : `${p.price_monthly || p.price || 0} ر.س / ${p.duration_months || 1} أشهر`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <button
-              type="button"
-              onClick={handleActivateOrRenew}
-              disabled={isActivating || !selectedPlanId}
-              className="w-full h-9 rounded-xl bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isActivating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Clock className="h-3.5 w-3.5" />}
-              {isSubActive && currentSub?.plan_id !== 'free' ? 'تجديد' : 'تفعيل'}
-            </button>
-          </div>
-        </div>
-
-        <ImpersonationAccessCard restaurantId={profile.restaurant_id} />
-
-        {/* Account Info */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-bold text-gray-600">بيانات الحساب</h3>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormField control={form.control} name="restaurant_name" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[10px] text-gray-600">اسم المشروع</FormLabel>
-                    <FormControl>
-                      <Input {...field} className="h-10 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
-                    </FormControl>
-                    <FormMessage className="text-[10px]" />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="full_name" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[10px] text-gray-600">اسم المالك</FormLabel>
-                    <FormControl>
-                      <Input {...field} className="h-10 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
-                    </FormControl>
-                    <FormMessage className="text-[10px]" />
-                  </FormItem>
-                )} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <FormField control={form.control} name="email" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[10px] text-gray-600">البريد الإلكتروني</FormLabel>
-                    <FormControl>
-                      <Input type="email" {...field} disabled className="h-10 rounded-xl border-gray-200 text-sm bg-gray-50" />
-                    </FormControl>
-                    <FormMessage className="text-[10px]" />
-                  </FormItem>
-                )} />
-                <FormField control={form.control} name="phone_number" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-[10px] text-gray-600">رقم الجوال</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ''} dir="ltr" className="h-10 rounded-xl border-gray-200 text-sm text-left" placeholder="05XXXXXXXX" disabled={isSaving} />
-                    </FormControl>
-                    <FormMessage className="text-[10px]" />
-                  </FormItem>
-                )} />
-              </div>
-              <FormField control={form.control} name="account_status" render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-[10px] text-gray-600">حالة الحساب</FormLabel>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    {[
-                      { value: 'active', label: 'نشط', color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
-                      { value: 'pending', label: 'بانتظار', color: 'bg-amber-50 border-amber-200 text-amber-700' },
-                      { value: 'suspended', label: 'معلق', color: 'bg-red-50 border-red-200 text-red-700' },
-                    ].map((status) => (
-                      <button
-                        key={status.value}
-                        type="button"
-                        onClick={() => field.onChange(status.value)}
-                        className={`h-9 rounded-xl text-xs font-medium transition-all border ${field.value === status.value ? status.color : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}
-                      >
-                        {status.label}
-                      </button>
-                    ))}
-                  </div>
-                  <FormMessage className="text-[10px]" />
-                </FormItem>
-              )} />
-              <button type="submit" disabled={isSaving}
-                className="h-10 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 w-full sm:w-auto sm:px-8">
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {isSaving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
-              </button>
-            </form>
-          </Form>
-        </div>
-
-        {/* Danger Zone */}
-        <div className="space-y-3">
-          <h3 className="text-xs font-bold text-red-400">منطقة الخطر</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={handleResetPassword}
-              className="h-auto p-4 rounded-xl border border-gray-200 text-right hover:bg-gray-50 transition-colors flex flex-col items-start gap-2"
-            >
-              <div className="flex items-center gap-2">
-                <KeyRound className="h-4 w-4 text-gray-600" />
-                <span className="text-xs font-bold text-gray-600">إعادة تعيين كلمة المرور</span>
-              </div>
-              <span className="text-[10px] text-gray-600">إرسال رابط آمن للبريد</span>
-            </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="h-auto p-4 rounded-xl border border-red-200 bg-red-50/50 text-right hover:bg-red-50 transition-colors flex flex-col items-start gap-2"
-            >
-              <div className="flex items-center gap-2">
-                <Trash2 className="h-4 w-4 text-red-400" />
-                <span className="text-xs font-bold text-red-600">حذف المشترك</span>
-              </div>
-              <span className="text-[10px] text-red-300">حذف نهائي للبيانات والمطعم</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// The hidden dev-only 1 SAR/year plan (see restructure_plans.sql) - the
+// only plan flagged as a "trial" for the stats row/filter, matching how
+// PlanPricingGrid already treats it as the one non-customer-facing plan.
+const TRIAL_PLAN_ID = '93250b42-d34c-4996-8d83-359ea26ab264';
 
 export default function ManagementPage() {
-  const [subscribers, setSubscribers] = useState<Profile[]>([]);
+  const [subscribers, setSubscribers] = useState<SubscriberRow[]>([]);
+  const [plans, setPlans] = useState<PlanLite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [profileToDelete, setProfileToDelete] = useState<Profile | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [planFilter, setPlanFilter] = useState<string>('all');
 
   const fetchSubscribers = useCallback(async () => {
-    const { data } = await supabase
-      .from('profiles')
+    const [{ data: profilesData }, { data: plansData }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('role', 'owner').order('created_at', { ascending: false }),
+      supabase.from('plans').select('id, name, price_yearly').eq('is_active', true),
+    ]);
+    const profiles = (profilesData || []) as Profile[];
+    setPlans((plansData || []) as PlanLite[]);
+
+    if (profiles.length === 0) {
+      setSubscribers([]);
+      setIsLoading(false);
+      return;
+    }
+
+    const { data: subsData } = await supabase
+      .from('subscriptions')
       .select('*')
-      .eq('role', 'owner')
-      .order('created_at', { ascending: false });
-    const profiles = (data || []) as Profile[];
-    setSubscribers(profiles);
+      .in('profile_id', profiles.map((p) => p.id));
+
+    const subsByProfile = new Map<string, Subscription[]>();
+    for (const sub of (subsData || []) as Subscription[]) {
+      const list = subsByProfile.get(sub.profile_id) || [];
+      list.push(sub);
+      subsByProfile.set(sub.profile_id, list);
+    }
+
+    const rows: SubscriberRow[] = profiles.map((p) => ({
+      ...p,
+      currentSub: pickActiveSubscription(subsByProfile.get(p.id) || []),
+    }));
+    setSubscribers(rows);
     setIsLoading(false);
   }, []);
 
   useEffect(() => {
     fetchSubscribers();
-
     const channel = supabase
       .channel('profiles-management')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
-        fetchSubscribers();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchSubscribers())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions' }, () => fetchSubscribers())
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [fetchSubscribers]);
 
-  useEffect(() => {
-    if (!selectedProfileId && subscribers.length > 0) {
-      setSelectedProfileId(subscribers[0].id);
-    }
-  }, [subscribers, selectedProfileId]);
-
-  const handleProfileSelect = useCallback((profile: Profile) => {
-    setSelectedProfileId(profile.id);
+  const handleSelect = useCallback((row: SubscriberRow) => {
+    setSelectedProfileId(row.id);
+    setDrawerOpen(true);
   }, []);
 
   const handleDeleteRequest = (profile: Profile) => setProfileToDelete(profile);
@@ -545,10 +94,6 @@ export default function ManagementPage() {
       try {
         const restId = profileToDelete.restaurant_id;
 
-        // A live StreamPay recurring subscription has to be cancelled at the
-        // gateway before its local row disappears - once the subscription
-        // (and the profile that owns it) is gone, streampay_subscription_id
-        // is gone with it and there is no way left to ever stop the charge.
         const { data: { session } } = await supabase.auth.getSession();
         const { data: liveSubs } = await supabase
           .from('subscriptions')
@@ -568,7 +113,6 @@ export default function ManagementPage() {
           }
         }
 
-        // Delete related data first (some may not cascade)
         if (restId) {
           await supabase.from('menu_items').delete().eq('restaurant_id', restId);
           await supabase.from('branches').delete().eq('restaurant_id', restId);
@@ -579,30 +123,25 @@ export default function ManagementPage() {
         }
         await supabase.from('subscriptions').delete().eq('profile_id', profileToDelete.id);
         await supabase.from('activated_tools').delete().eq('profile_id', profileToDelete.id);
-        // chats.id is its own random id, not the owner - ownerId is the
-        // actual profile-linking column (see ChatList.tsx's createChat).
         await supabase.from('chats').delete().eq('ownerId', profileToDelete.id);
         await supabase.from('activity').delete().eq('userId', profileToDelete.id);
 
-        // Delete restaurant (cascades to menu_items, branches, offers, reviews)
         if (restId) {
           const { error: restDelErr } = await supabase.from('restaurants').delete().eq('id', restId);
           if (restDelErr) throw restDelErr;
         }
 
-        // Delete profile (cascades to subscriptions, activated_tools)
         const { error: delErr } = await supabase.from('profiles').delete().eq('id', profileToDelete.id);
         if (delErr) throw delErr;
 
-        // Delete auth user via SECURITY DEFINER function
         const { error: authErr } = await supabase.rpc('delete_auth_user', { target_user_id: profileToDelete.id });
         if (authErr) throw authErr;
 
         toast({ title: 'تم الحذف', description: `تم حذف ${profileToDelete.restaurant_name} بالكامل من النظام.` });
         setProfileToDelete(null);
         if (selectedProfileId === profileToDelete.id) {
-          const remaining = subscribers.filter((s) => s.id !== profileToDelete.id);
-          setSelectedProfileId(remaining.length > 0 ? remaining[0].id : null);
+          setDrawerOpen(false);
+          setSelectedProfileId(null);
         }
       } catch (err: any) {
         toast({ title: 'خطأ في الحذف', description: err.message, variant: 'destructive' });
@@ -611,69 +150,108 @@ export default function ManagementPage() {
     });
   };
 
-  const filteredSubscribers = subscribers.filter((s) =>
-    !searchQuery || s.restaurant_name?.includes(searchQuery) || s.full_name?.includes(searchQuery) || s.email?.includes(searchQuery)
-  );
+  const filteredSubscribers = useMemo(() => subscribers.filter((s) => {
+    const matchesSearch = !searchQuery
+      || s.restaurant_name?.includes(searchQuery)
+      || s.full_name?.includes(searchQuery)
+      || s.email?.includes(searchQuery);
+    const matchesStatus = statusFilter === 'all' || s.account_status === statusFilter;
+    const matchesPlan = planFilter === 'all' || s.currentSub?.plan_id === planFilter;
+    return matchesSearch && matchesStatus && matchesPlan;
+  }), [subscribers, searchQuery, statusFilter, planFilter]);
+
+  const stats = useMemo(() => {
+    const now = new Date();
+    const in30Days = addDays(now, 30);
+    let active = 0, expiringSoon = 0, trial = 0, annualRevenue = 0;
+    for (const s of subscribers) {
+      if (s.account_status === 'active') active++;
+      const end = s.currentSub?.end_date ? new Date(s.currentSub.end_date) : null;
+      if (end && isAfter(end, now) && !isAfter(end, in30Days)) expiringSoon++;
+      if (s.currentSub?.plan_id === TRIAL_PLAN_ID) trial++;
+      if (s.currentSub && isAfter(end || now, now)) {
+        const plan = plans.find((p) => p.id === s.currentSub!.plan_id);
+        if (plan) annualRevenue += plan.price_yearly || 0;
+      }
+    }
+    return { total: subscribers.length, active, expiringSoon, trial, annualRevenue };
+  }, [subscribers, plans]);
+
+  const selectedProfile = subscribers.find((s) => s.id === selectedProfileId) || null;
+
+  const resetFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setPlanFilter('all');
+  };
 
   if (isLoading) {
     return (
-      <div className="flex flex-col h-[calc(100vh-8.5rem)] p-4 lg:p-6 gap-4">
-        <div className="space-y-2">
-          <Skeleton className="h-7 w-48" />
-          <Skeleton className="h-4 w-80" />
+      <div className="p-4 lg:p-6 space-y-4">
+        <Skeleton className="h-8 w-56" />
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-2xl" />)}
         </div>
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 flex-1">
-          <Skeleton className="h-full" />
-          <Skeleton className="h-full" />
-        </div>
+        <Skeleton className="h-96 rounded-2xl" />
       </div>
     );
   }
 
   return (
     <>
-      <div className="flex flex-col h-[calc(100vh-8.5rem)] p-4 lg:p-6">
-        {/* Page Header */}
-        <div className="mb-4 shrink-0">
+      <div className="p-4 lg:p-6 space-y-4">
+        <div>
           <h1 className="text-lg font-bold text-gray-900">إدارة المشتركين</h1>
-          <p className="text-xs text-gray-600 mt-0.5">{subscribers.length} مشترك في المنصة</p>
+          <p className="text-xs text-gray-600 mt-0.5">إدارة حسابات المطاعم، الاشتراكات، النشاط والصلاحيات من مكان واحد.</p>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 flex-1 min-h-0">
-          {/* Subscribers List */}
-          <div className="xl:col-span-1 h-full flex flex-col rounded-2xl border border-gray-100 overflow-hidden">
-            {/* Search */}
-            <div className="p-3 border-b border-gray-100 shrink-0">
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
-                <input
-                  type="text"
-                  placeholder="بحث بالاسم أو البريد..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-9 pr-9 pl-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
-                />
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto">
-              <RestaurantsTable
-                restaurants={filteredSubscribers}
-                selectedProfileId={selectedProfileId}
-                onProfileSelect={handleProfileSelect}
-              />
-            </div>
-          </div>
+        <SubscriberStats {...stats} />
 
-          {/* Profile Details */}
-          <div className="xl:col-span-2 h-full rounded-2xl border border-gray-100 overflow-hidden">
-            <ProfileDetails
-              profileId={selectedProfileId}
-              onSave={fetchSubscribers}
-              onDeleteRequest={handleDeleteRequest}
+        <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px_180px_auto] gap-2.5">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
+            <input
+              type="text"
+              placeholder="ابحث باسم المشروع أو المالك أو البريد..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full h-10 pr-9 pl-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
             />
           </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="h-10 rounded-xl border-gray-200 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent dir="rtl">
+              <SelectItem value="all" className="text-xs">كل الحالات</SelectItem>
+              <SelectItem value="active" className="text-xs">نشط</SelectItem>
+              <SelectItem value="pending" className="text-xs">بانتظار</SelectItem>
+              <SelectItem value="suspended" className="text-xs">معلق</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={planFilter} onValueChange={setPlanFilter}>
+            <SelectTrigger className="h-10 rounded-xl border-gray-200 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent dir="rtl">
+              <SelectItem value="all" className="text-xs">كل الباقات</SelectItem>
+              {plans.map((p) => <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <button onClick={resetFilters}
+            className="h-10 px-4 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors whitespace-nowrap">
+            إعادة الفلاتر
+          </button>
+        </div>
+
+        <div className="rounded-2xl border border-gray-100 overflow-hidden bg-white">
+          <SubscribersTable rows={filteredSubscribers} selectedProfileId={selectedProfileId} onSelect={handleSelect} />
         </div>
       </div>
+
+      <SubscriberDrawer
+        profile={selectedProfile}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        onSave={fetchSubscribers}
+        onDeleteRequest={handleDeleteRequest}
+      />
 
       <AlertDialog open={!!profileToDelete} onOpenChange={(open) => !open && setProfileToDelete(null)}>
         <AlertDialogContent className="sm:max-w-lg p-0 gap-0" dir="rtl">
