@@ -48,11 +48,22 @@ async function hasExistingAccountUnderDifferentIdentity(): Promise<boolean> {
  * straight to their dashboard.
  */
 export async function resolvePostAuthRoute(user: User): Promise<string> {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle();
+  // A profile row can take a beat to become visible to this session right
+  // after a fresh OTP/OAuth sign-in (same class of race useUser.tsx's own
+  // loadUserData already retries around) - a single immediate miss here
+  // must NOT be treated as proof the account doesn't exist, or a perfectly
+  // normal returning admin/owner gets bounced to /auth/account-exists just
+  // because this query ran a few hundred ms too early.
+  let profile: any = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, 500));
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (data) { profile = data; break; }
+  }
 
   if (!profile) {
     // profiles RLS only lets a session read its OWN row, so it's
