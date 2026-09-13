@@ -12,7 +12,7 @@ import type { ServiceUsageRow } from '@/lib/types';
 // Services synced automatically by the sync-service-usage Edge Function -
 // the rest stay manual since no usable API exists for them (see the
 // "استهلاك الخدمات" conversation).
-const AUTO_SYNCED_KEYS = new Set(['streampay', 'mistral', 'cloudflare', 'sndr', 'imagekit', 'supabase', 'supabase_mau']);
+const AUTO_SYNCED_KEYS = new Set(['streampay', 'mistral', 'cloudflare', 'sndr', 'imagekit', 'supabase', 'supabase_mau', 'supabase_api_traffic']);
 
 type ServiceStatus = 'ok' | 'warning' | 'critical' | 'unknown';
 
@@ -76,6 +76,13 @@ const SERVICES: ServiceMeta[] = [
     icon: Users,
     description: 'تقريبي: محسوب من تاريخ آخر تسجيل دخول، وليس رقم الفوترة الرسمي لـ Supabase',
     dashboardUrl: 'https://supabase.com/dashboard/project/smmriycsboexindabanc/settings/billing/usage',
+  },
+  {
+    key: 'supabase_api_traffic',
+    name: 'Supabase — حركة API',
+    icon: Database,
+    description: 'تشغيلي فقط (آخر 24 ساعة): مجموع طلبات REST وAuth وStorage وRealtime — ليس رقم فوترة',
+    dashboardUrl: 'https://supabase.com/dashboard/project/smmriycsboexindabanc/logs/explorer',
   },
   {
     key: 'vercel',

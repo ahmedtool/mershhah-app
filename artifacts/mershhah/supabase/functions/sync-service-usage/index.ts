@@ -348,6 +348,53 @@ async function syncSupabaseMau(supabase: any): Promise<SyncResult> {
   }
 }
 
+// Supabase Management API request-count endpoint - verified live on
+// 2026-09-13 via a raw diagnostic call, field names confirmed real
+// (total_auth_requests / total_realtime_requests / total_rest_requests /
+// total_storage_requests, hourly buckets over the last day for
+// interval=1day). This is RAW API TRAFFIC, not a billing usage number -
+// it must never be shown as Egress/Storage-size/Edge-Function/Realtime
+// quota, since those definitions don't match. Kept as its own operational
+// "آخر 24 ساعة" snapshot instead. Requires a Management API Personal
+// Access Token (org-level - more powerful than any other secret this app
+// uses) set by the admin directly as SUPABASE_MANAGEMENT_API_TOKEN.
+async function syncSupabaseApiTraffic(supabase: any): Promise<SyncResult> {
+  const pat = Deno.env.get("SUPABASE_MANAGEMENT_API_TOKEN");
+  if (!pat) return { service: "supabase_api_traffic", status: "skipped", detail: "SUPABASE_MANAGEMENT_API_TOKEN not set" };
+
+  try {
+    const projectRef = new URL(Deno.env.get("SUPABASE_URL")!).hostname.split(".")[0];
+    const res = await fetch(
+      `https://api.supabase.com/v1/projects/${projectRef}/analytics/endpoints/usage.api-counts?interval=1day`,
+      { headers: { Authorization: `Bearer ${pat}` } }
+    );
+    if (!res.ok) throw new Error(`Management API returned ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+    const buckets = data?.result || [];
+
+    let auth = 0, realtime = 0, rest = 0, storage = 0;
+    for (const b of buckets) {
+      auth += Number(b.total_auth_requests) || 0;
+      realtime += Number(b.total_realtime_requests) || 0;
+      rest += Number(b.total_rest_requests) || 0;
+      storage += Number(b.total_storage_requests) || 0;
+    }
+    const total = auth + realtime + rest + storage;
+
+    await upsertUsage(supabase, "supabase_api_traffic", {
+      plan: "—",
+      usage_value: total,
+      usage_unit: "طلب API خلال آخر 24 ساعة",
+      cost_sar: 0,
+      billing_cycle: "يومي",
+      notes: `تشغيلي فقط، وليس رقم فوترة: REST ${rest} · Auth ${auth} · Storage ${storage} · Realtime ${realtime} (آخر 24 ساعة، من Supabase Management API).`,
+    });
+    return { service: "supabase_api_traffic", status: "synced" };
+  } catch (err: any) {
+    return { service: "supabase_api_traffic", status: "failed", detail: err.message };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -375,7 +422,7 @@ serve(async (req) => {
       });
     }
 
-    const results = await Promise.all([syncStreamPay(admin), syncMistral(admin), syncCloudflare(admin), syncSndr(admin), syncImageKit(admin), syncSupabase(admin), syncSupabaseMau(admin)]);
+    const results = await Promise.all([syncStreamPay(admin), syncMistral(admin), syncCloudflare(admin), syncSndr(admin), syncImageKit(admin), syncSupabase(admin), syncSupabaseMau(admin), syncSupabaseApiTraffic(admin)]);
 
     return new Response(JSON.stringify({ results }), {
       status: 200,
