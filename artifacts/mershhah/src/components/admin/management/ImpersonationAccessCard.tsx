@@ -5,13 +5,16 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { Loader2, KeyRound, ExternalLink, Clock } from 'lucide-react';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar, enUS } from 'date-fns/locale';
+import { useLanguage } from '@/components/shared/LanguageContext';
 
 interface ImpersonationAccessCardProps {
   restaurantId: string | null | undefined;
 }
 
 export function ImpersonationAccessCard({ restaurantId }: ImpersonationAccessCardProps) {
+  const { t, locale } = useLanguage();
+  const dateLocale = locale === 'ar' ? ar : enUS;
   const [request, setRequest] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRequesting, setIsRequesting] = useState(false);
@@ -50,7 +53,7 @@ export function ImpersonationAccessCard({ restaurantId }: ImpersonationAccessCar
       body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'حدث خطأ');
+    if (!res.ok) throw new Error(data.error || t('adminManagement.genericError'));
     return data;
   };
 
@@ -59,10 +62,10 @@ export function ImpersonationAccessCard({ restaurantId }: ImpersonationAccessCar
     setIsRequesting(true);
     try {
       await callFunction('request-owner-access', { restaurantId });
-      toast({ title: 'تم إرسال الطلب', description: 'وصل إشعار لصاحب المطعم بلوحة تحكمه وبريده' });
+      toast({ title: t('adminManagement.impersonationRequestSent'), description: t('adminManagement.impersonationRequestSentDesc') });
       fetchLatestRequest();
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+      toast({ variant: 'destructive', title: t('adminManagement.genericError'), description: e.message });
     } finally {
       setIsRequesting(false);
     }
@@ -76,7 +79,7 @@ export function ImpersonationAccessCard({ restaurantId }: ImpersonationAccessCar
       window.open(data.actionLink, '_blank');
       fetchLatestRequest();
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'خطأ', description: e.message });
+      toast({ variant: 'destructive', title: t('adminManagement.genericError'), description: e.message });
     } finally {
       setIsEntering(false);
     }
@@ -91,17 +94,17 @@ export function ImpersonationAccessCard({ restaurantId }: ImpersonationAccessCar
     <div className="rounded-xl border border-gray-100 p-4 space-y-3">
       <div className="flex items-center gap-2">
         <KeyRound className="h-4 w-4 text-gray-600" />
-        <span className="text-xs font-bold text-gray-600">الدخول للوحة تحكم المطعم</span>
+        <span className="text-xs font-bold text-gray-600">{t('adminManagement.impersonationTitle')}</span>
       </div>
 
       {(!request || effectiveStatus === 'denied' || effectiveStatus === 'expired') && (
         <>
-          {effectiveStatus === 'denied' && <p className="text-[11px] text-red-500">رفض صاحب المطعم آخر طلب.</p>}
-          {effectiveStatus === 'expired' && <p className="text-[11px] text-gray-600">انتهت صلاحية آخر دخول (24 ساعة).</p>}
+          {effectiveStatus === 'denied' && <p className="text-[11px] text-red-500">{t('adminManagement.impersonationDenied')}</p>}
+          {effectiveStatus === 'expired' && <p className="text-[11px] text-gray-600">{t('adminManagement.impersonationExpired')}</p>}
           <button onClick={handleRequest} disabled={isRequesting}
             className="w-full h-9 rounded-lg bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 disabled:opacity-50 flex items-center justify-center gap-2">
             {isRequesting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-            اطلب دخول (24 ساعة بعد الموافقة)
+            {t('adminManagement.impersonationRequest')}
           </button>
         </>
       )}
@@ -109,19 +112,19 @@ export function ImpersonationAccessCard({ restaurantId }: ImpersonationAccessCar
       {effectiveStatus === 'pending' && (
         <div className="flex items-center gap-2 text-[11px] text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
           <Clock className="h-3.5 w-3.5" />
-          بانتظار موافقة صاحب المطعم
+          {t('adminManagement.impersonationPending')}
         </div>
       )}
 
       {effectiveStatus === 'approved' && (
         <>
           <p className="text-[11px] text-emerald-600">
-            موافق عليه — صالح لين {request.expires_at ? format(new Date(request.expires_at), 'dd MMM، hh:mm a', { locale: ar }) : ''}
+            {t('adminManagement.impersonationApprovedUntil')} {request.expires_at ? format(new Date(request.expires_at), locale === 'ar' ? 'dd MMM، hh:mm a' : 'dd MMM, hh:mm a', { locale: dateLocale }) : ''}
           </p>
           <button onClick={handleEnter} disabled={isEntering}
             className="w-full h-9 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2">
             {isEntering ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ExternalLink className="h-3.5 w-3.5" />}
-            دخول الآن
+            {t('adminManagement.impersonationEnter')}
           </button>
         </>
       )}

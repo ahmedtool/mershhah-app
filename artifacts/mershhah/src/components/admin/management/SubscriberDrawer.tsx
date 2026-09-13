@@ -19,7 +19,8 @@ import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
 import { pickActiveSubscription } from '@/hooks/useUser';
 import { format, addMonths, addDays, isAfter, differenceInCalendarDays } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar, enUS } from 'date-fns/locale';
+import { useLanguage } from '@/components/shared/LanguageContext';
 import { ImpersonationAccessCard } from '@/components/admin/management/ImpersonationAccessCard';
 import type { Profile, Subscription } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -46,19 +47,6 @@ type UsageStats = {
 
 type ActivityRow = { id: string; type: string | null; timestamp: string };
 
-const ACTIVITY_LABELS: Record<string, string> = {
-  logo_added: 'تمت إضافة شعار جديد',
-};
-
-const formSchema = z.object({
-  restaurant_name: z.string().min(2, 'اسم المشروع مطلوب'),
-  full_name: z.string().min(2, 'الاسم الكامل مطلوب'),
-  email: z.string().email('إيميل غير صحيح'),
-  phone_number: z.string().optional().nullable(),
-  account_status: z.enum(['active', 'pending', 'suspended']),
-});
-type FormValues = z.infer<typeof formSchema>;
-
 interface SubscriberDrawerProps {
   profile: SubscriberRow | null;
   open: boolean;
@@ -68,6 +56,23 @@ interface SubscriberDrawerProps {
 }
 
 export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDeleteRequest }: SubscriberDrawerProps) {
+  const { t, locale } = useLanguage();
+  const dateLocale = locale === 'ar' ? ar : enUS;
+  const dateTimeFormat = locale === 'ar' ? 'dd MMM yyyy، hh:mm a' : 'dd MMM yyyy, hh:mm a';
+
+  const ACTIVITY_LABELS: Record<string, string> = {
+    logo_added: t('adminManagement.activityLogoAdded'),
+  };
+
+  const formSchema = z.object({
+    restaurant_name: z.string().min(2, t('adminManagement.restaurantNameRequired')),
+    full_name: z.string().min(2, t('adminManagement.fullNameRequired')),
+    email: z.string().email(t('adminManagement.invalidEmail')),
+    phone_number: z.string().optional().nullable(),
+    account_status: z.enum(['active', 'pending', 'suspended']),
+  });
+  type FormValues = z.infer<typeof formSchema>;
+
   const [currentSub, setCurrentSub] = useState<Subscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, startSaving] = useTransition();
@@ -180,11 +185,11 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
           syncPublicPage(profile.restaurant_id).catch(() => {});
         }
 
-        toast({ title: `تم تحديث بيانات "${values.restaurant_name}" بنجاح` });
+        toast({ title: t('adminManagement.updateSuccess') });
         setRefreshKey((k) => k + 1);
         onSave();
       } catch (err: any) {
-        toast({ title: 'خطأ في الحفظ', description: err.message, variant: 'destructive' });
+        toast({ title: t('adminManagement.saveError'), description: err.message, variant: 'destructive' });
       }
     });
   }
@@ -192,7 +197,7 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
   const handleActivateOrRenew = () => {
     const selectedPlan = activePlans.find((p) => p.id === selectedPlanId);
     if (!profile || !selectedPlan) {
-      toast({ title: 'بيانات ناقصة', description: 'الرجاء اختيار باقة اشتراك صالحة.', variant: 'destructive' });
+      toast({ title: t('adminManagement.missingData'), description: t('adminManagement.choosePlanFirst'), variant: 'destructive' });
       return;
     }
 
@@ -253,18 +258,18 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
 
         if (profile.restaurant_id) syncPublicPage(profile.restaurant_id).catch(() => {});
 
-        toast({ title: 'تم تجديد/تفعيل الاشتراك بنجاح!' });
+        toast({ title: t('adminManagement.activateSuccess') });
         setRefreshKey((k) => k + 1);
         onSave();
       } catch (err: any) {
-        toast({ title: 'خطأ في التفعيل', description: err.message, variant: 'destructive' });
+        toast({ title: t('adminManagement.activateError'), description: err.message, variant: 'destructive' });
       }
     });
   };
 
   const handleExtendTrial = () => {
     if (!currentSub) {
-      toast({ title: 'ما فيه اشتراك نشط لتمديده', variant: 'destructive' });
+      toast({ title: t('adminManagement.noActiveSubToExtend'), variant: 'destructive' });
       return;
     }
     startExtending(async () => {
@@ -272,11 +277,11 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
         const newEnd = addDays(subEndDate || new Date(), 30);
         const { error } = await supabase.from('subscriptions').update({ end_date: newEnd.toISOString() }).eq('id', currentSub.id);
         if (error) throw error;
-        toast({ title: 'تمت إضافة 30 يومًا للاشتراك' });
+        toast({ title: t('adminManagement.extendSuccess') });
         setRefreshKey((k) => k + 1);
         onSave();
       } catch (err: any) {
-        toast({ title: 'خطأ', description: err.message, variant: 'destructive' });
+        toast({ title: t('adminManagement.genericError'), description: err.message, variant: 'destructive' });
       }
     });
   };
@@ -286,10 +291,10 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
       try {
         const { error } = await supabase.from('profiles').update({ admin_notes: notes }).eq('id', profile.id);
         if (error) throw error;
-        toast({ title: 'تم حفظ الملاحظة' });
+        toast({ title: t('adminManagement.noteSaved') });
         onSave();
       } catch (err: any) {
-        toast({ title: 'خطأ', description: err.message, variant: 'destructive' });
+        toast({ title: t('adminManagement.genericError'), description: err.message, variant: 'destructive' });
       }
     });
   };
@@ -301,15 +306,15 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
         redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) throw error;
-      toast({ title: 'تم إرسال رابط التغيير', description: `تم إرسال تعليمات إعادة تعيين كلمة المرور إلى بريد ${profile.email}` });
+      toast({ title: t('adminManagement.resetLinkSent'), description: `${t('adminManagement.resetLinkSentDesc')} ${profile.email}` });
     } catch (error: any) {
-      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+      toast({ title: t('adminManagement.genericError'), description: error.message, variant: 'destructive' });
     }
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-full sm:max-w-xl p-0 flex flex-col gap-0" dir="rtl">
+      <SheetContent side="left" className="w-full sm:max-w-xl p-0 flex flex-col gap-0">
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-gray-600" /></div>
         ) : (
@@ -328,7 +333,7 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
                     profile.account_status === 'active' ? 'bg-emerald-50 text-emerald-700' : profile.account_status === 'suspended' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'
                   )}>
                     <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                    {profile.account_status === 'active' ? 'نشط' : profile.account_status === 'suspended' ? 'معلق' : 'بانتظار'}
+                    {profile.account_status === 'active' ? t('adminManagement.statusActive') : profile.account_status === 'suspended' ? t('adminManagement.statusSuspended') : t('adminManagement.statusPending')}
                   </span>
                 </div>
               </div>
@@ -337,13 +342,13 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
               <div className="mt-4 rounded-2xl p-4 text-white" style={{ background: 'linear-gradient(135deg, #111827, #1f2937)' }}>
                 <div className="flex justify-between items-start gap-4">
                   <div>
-                    <div className="text-[11px] text-gray-300">الاشتراك الحالي</div>
-                    <div className="text-lg font-bold mt-1">{currentSub?.plan_name || 'لا يوجد'}</div>
+                    <div className="text-[11px] text-gray-300">{t('adminManagement.currentSubscription')}</div>
+                    <div className="text-lg font-bold mt-1">{currentSub?.plan_name || t('adminManagement.none')}</div>
                   </div>
                   {subEndDate && (
-                    <div className="text-left">
-                      <div className="text-[11px] text-gray-300">ينتهي</div>
-                      <div className="text-sm font-bold mt-1">{isPerpetual ? 'دائم' : format(subEndDate, 'dd MMM yyyy', { locale: ar })}</div>
+                    <div className="text-end">
+                      <div className="text-[11px] text-gray-300">{t('adminManagement.expiresLabel')}</div>
+                      <div className="text-sm font-bold mt-1">{isPerpetual ? t('adminManagement.perpetual') : format(subEndDate, 'dd MMM yyyy', { locale: dateLocale })}</div>
                     </div>
                   )}
                 </div>
@@ -352,15 +357,15 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
                     <div className="h-2 rounded-full bg-white/15 mt-4 mb-2 overflow-hidden">
                       <div className="h-full bg-white rounded-full" style={{ width: `${elapsedPct}%` }} />
                     </div>
-                    <div className="text-[11px] text-gray-300">{daysRemaining} يوم متبقي من الاشتراك</div>
+                    <div className="text-[11px] text-gray-300">{daysRemaining} {t('adminManagement.daysRemainingSuffix')}</div>
                   </>
                 )}
                 <div className="flex flex-wrap gap-2 mt-3">
                   <Select onValueChange={setSelectedPlanId} value={selectedPlanId}>
                     <SelectTrigger className="h-9 rounded-lg border-white/20 bg-white/10 text-white text-xs w-auto min-w-[140px]">
-                      <SelectValue placeholder="اختر الباقة" />
+                      <SelectValue placeholder={t('adminManagement.choosePlan')} />
                     </SelectTrigger>
-                    <SelectContent dir="rtl">
+                    <SelectContent>
                       {activePlans.map((p) => (
                         <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
                       ))}
@@ -369,12 +374,12 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
                   <button onClick={handleActivateOrRenew} disabled={isActivating || !selectedPlanId}
                     className="h-9 px-3 rounded-lg bg-white/10 border border-white/20 text-white text-xs font-bold hover:bg-white/20 transition-colors disabled:opacity-50 flex items-center gap-1.5">
                     {isActivating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Clock className="h-3.5 w-3.5" />}
-                    {isSubActive && currentSub?.plan_id !== 'free' ? 'تجديد الاشتراك' : 'تفعيل'}
+                    {isSubActive && currentSub?.plan_id !== 'free' ? t('adminManagement.renew') : t('adminManagement.activate')}
                   </button>
                   <button onClick={handleExtendTrial} disabled={isExtending || !currentSub}
                     className="h-9 px-3 rounded-lg bg-white/10 border border-white/20 text-white text-xs font-bold hover:bg-white/20 transition-colors disabled:opacity-50 flex items-center gap-1.5">
                     {isExtending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                    + 30 يوم مجاني
+                    {t('adminManagement.extend30')}
                   </button>
                 </div>
               </div>
@@ -383,14 +388,14 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
             <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
               <TabsList className="mx-6 mt-3 w-fit bg-transparent p-0 border-b border-gray-100 rounded-none justify-start gap-1 shrink-0">
                 {[
-                  { value: 'overview', label: 'نظرة عامة' },
-                  { value: 'account', label: 'الحساب' },
-                  { value: 'subscription', label: 'الاشتراك' },
-                  { value: 'activity', label: 'النشاط' },
-                ].map((t) => (
-                  <TabsTrigger key={t.value} value={t.value}
+                  { value: 'overview', label: t('adminManagement.tabOverview') },
+                  { value: 'account', label: t('adminManagement.tabAccount') },
+                  { value: 'subscription', label: t('adminManagement.tabSubscription') },
+                  { value: 'activity', label: t('adminManagement.tabActivity') },
+                ].map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value}
                     className="rounded-none border-b-2 border-transparent data-[state=active]:border-gray-900 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 py-2.5 text-xs font-bold text-gray-600 data-[state=active]:text-gray-900">
-                    {t.label}
+                    {tab.label}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -399,29 +404,29 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
                 <TabsContent value="overview" className="mt-0 space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="rounded-xl border border-gray-100 p-4 space-y-2.5">
-                      <h3 className="text-xs font-bold text-gray-900 mb-1">معلومات الحساب</h3>
-                      <div className="flex justify-between text-[11px] border-b border-dashed border-gray-100 pb-2"><span className="text-gray-600">البريد</span><strong className="text-gray-900">{profile.email}</strong></div>
-                      <div className="flex justify-between text-[11px] border-b border-dashed border-gray-100 pb-2"><span className="text-gray-600">الجوال</span><strong className="text-gray-900" dir="ltr">{profile.phone_number || '—'}</strong></div>
-                      <div className="flex justify-between text-[11px]"><span className="text-gray-600">تاريخ الإنشاء</span><strong className="text-gray-900">{profile.created_at ? format(new Date(profile.created_at), 'dd MMM yyyy', { locale: ar }) : '—'}</strong></div>
+                      <h3 className="text-xs font-bold text-gray-900 mb-1">{t('adminManagement.accountInfo')}</h3>
+                      <div className="flex justify-between text-[11px] border-b border-dashed border-gray-100 pb-2"><span className="text-gray-600">{t('adminManagement.emailLabel')}</span><strong className="text-gray-900">{profile.email}</strong></div>
+                      <div className="flex justify-between text-[11px] border-b border-dashed border-gray-100 pb-2"><span className="text-gray-600">{t('adminManagement.phoneLabel')}</span><strong className="text-gray-900" dir="ltr">{profile.phone_number || '—'}</strong></div>
+                      <div className="flex justify-between text-[11px]"><span className="text-gray-600">{t('adminManagement.createdAtLabel')}</span><strong className="text-gray-900">{profile.created_at ? format(new Date(profile.created_at), 'dd MMM yyyy', { locale: dateLocale }) : '—'}</strong></div>
                     </div>
                     <ImpersonationAccessCard restaurantId={profile.restaurant_id} />
                   </div>
 
                   {usage && (
                     <div className="rounded-xl border border-gray-100 p-4">
-                      <h3 className="text-xs font-bold text-gray-900 mb-3">استخدام المنصة</h3>
+                      <h3 className="text-xs font-bold text-gray-900 mb-3">{t('adminManagement.platformUsage')}</h3>
                       <div className="grid grid-cols-3 gap-2.5">
                         {[
-                          { icon: MapPin, label: 'الفروع', value: usage.branches },
-                          { icon: Utensils, label: 'عناصر المنيو', value: usage.menuItems },
-                          { icon: Tag, label: 'العروض', value: usage.offers },
-                          { icon: Eye, label: 'الزيارات', value: usage.visits },
-                          { icon: MousePointerClick, label: 'النقرات', value: usage.clicks },
-                          { icon: MessageSquare, label: 'طلبات التواصل', value: usage.contactRequests },
+                          { icon: MapPin, label: t('adminManagement.usageBranches'), value: usage.branches },
+                          { icon: Utensils, label: t('adminManagement.usageMenuItems'), value: usage.menuItems },
+                          { icon: Tag, label: t('adminManagement.usageOffers'), value: usage.offers },
+                          { icon: Eye, label: t('adminManagement.usageVisits'), value: usage.visits },
+                          { icon: MousePointerClick, label: t('adminManagement.usageClicks'), value: usage.clicks },
+                          { icon: MessageSquare, label: t('adminManagement.usageContactRequests'), value: usage.contactRequests },
                         ].map((u) => (
                           <div key={u.label} className="bg-gray-50 rounded-xl p-3">
                             <div className="flex items-center gap-1.5 text-[10px] text-gray-600"><u.icon className="h-3 w-3" />{u.label}</div>
-                            <div className="text-lg font-bold text-gray-900 mt-1" style={{ fontVariantNumeric: 'tabular-nums' }}>{u.value.toLocaleString('ar')}</div>
+                            <div className="text-lg font-bold text-gray-900 mt-1" style={{ fontVariantNumeric: 'tabular-nums' }}>{u.value.toLocaleString(locale === 'ar' ? 'ar' : 'en-US')}</div>
                           </div>
                         ))}
                       </div>
@@ -429,12 +434,12 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
                   )}
 
                   <div className="rounded-xl border border-gray-100 p-4">
-                    <h3 className="text-xs font-bold text-gray-900 mb-2">ملاحظات داخلية</h3>
-                    <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="text-xs rounded-xl resize-y" placeholder="ملاحظة داخلية عن هذا المشترك..." />
+                    <h3 className="text-xs font-bold text-gray-900 mb-2">{t('adminManagement.internalNotes')}</h3>
+                    <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="text-xs rounded-xl resize-y" placeholder={t('adminManagement.notesPlaceholder')} />
                     <button onClick={handleSaveNotes} disabled={isSavingNotes}
                       className="mt-2 h-8 px-3 rounded-lg border border-gray-200 text-gray-600 text-[11px] font-bold hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center gap-1.5">
                       {isSavingNotes ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-                      حفظ الملاحظة
+                      {t('adminManagement.saveNote')}
                     </button>
                   </div>
                 </TabsContent>
@@ -445,14 +450,14 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <FormField control={form.control} name="restaurant_name" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-[10px] text-gray-600">اسم المشروع</FormLabel>
+                            <FormLabel className="text-[10px] text-gray-600">{t('adminManagement.businessNameLabel')}</FormLabel>
                             <FormControl><Input {...field} className="h-10 rounded-xl border-gray-200 text-sm" disabled={isSaving} /></FormControl>
                             <FormMessage className="text-[10px]" />
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="full_name" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-[10px] text-gray-600">اسم المالك</FormLabel>
+                            <FormLabel className="text-[10px] text-gray-600">{t('adminManagement.ownerNameLabel')}</FormLabel>
                             <FormControl><Input {...field} className="h-10 rounded-xl border-gray-200 text-sm" disabled={isSaving} /></FormControl>
                             <FormMessage className="text-[10px]" />
                           </FormItem>
@@ -461,14 +466,14 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <FormField control={form.control} name="email" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-[10px] text-gray-600">البريد الإلكتروني</FormLabel>
+                            <FormLabel className="text-[10px] text-gray-600">{t('adminManagement.emailFieldLabel')}</FormLabel>
                             <FormControl><Input type="email" {...field} disabled className="h-10 rounded-xl border-gray-200 text-sm bg-gray-50" /></FormControl>
                             <FormMessage className="text-[10px]" />
                           </FormItem>
                         )} />
                         <FormField control={form.control} name="phone_number" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-[10px] text-gray-600">رقم الجوال</FormLabel>
+                            <FormLabel className="text-[10px] text-gray-600">{t('adminManagement.phoneFieldLabel')}</FormLabel>
                             <FormControl><Input {...field} value={field.value || ''} dir="ltr" className="h-10 rounded-xl border-gray-200 text-sm text-left" placeholder="05XXXXXXXX" disabled={isSaving} /></FormControl>
                             <FormMessage className="text-[10px]" />
                           </FormItem>
@@ -476,12 +481,12 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
                       </div>
                       <FormField control={form.control} name="account_status" render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-[10px] text-gray-600">حالة الحساب</FormLabel>
+                          <FormLabel className="text-[10px] text-gray-600">{t('adminManagement.accountStatusLabel')}</FormLabel>
                           <div className="grid grid-cols-3 gap-2">
                             {[
-                              { value: 'active', label: 'نشط', color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
-                              { value: 'pending', label: 'بانتظار', color: 'bg-amber-50 border-amber-200 text-amber-700' },
-                              { value: 'suspended', label: 'معلق', color: 'bg-red-50 border-red-200 text-red-700' },
+                              { value: 'active', label: t('adminManagement.statusActive'), color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+                              { value: 'pending', label: t('adminManagement.statusPending'), color: 'bg-amber-50 border-amber-200 text-amber-700' },
+                              { value: 'suspended', label: t('adminManagement.statusSuspended'), color: 'bg-red-50 border-red-200 text-red-700' },
                             ].map((status) => (
                               <button key={status.value} type="button" onClick={() => field.onChange(status.value)}
                                 className={`h-9 rounded-xl text-xs font-medium transition-all border ${field.value === status.value ? status.color : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'}`}>
@@ -495,23 +500,23 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
                       <button type="submit" disabled={isSaving}
                         className="h-10 rounded-xl bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 w-full sm:w-auto sm:px-8">
                         {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                        {isSaving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                        {isSaving ? t('adminManagement.saving') : t('adminManagement.saveChanges')}
                       </button>
                     </form>
                   </Form>
 
                   <div className="rounded-xl border border-red-200 bg-red-50/40 p-4 space-y-3">
-                    <h3 className="text-xs font-bold text-red-500">منطقة الخطر</h3>
+                    <h3 className="text-xs font-bold text-red-500">{t('adminManagement.dangerZone')}</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <button type="button" onClick={handleResetPassword}
-                        className="h-auto p-3 rounded-xl border border-gray-200 bg-white text-right hover:bg-gray-50 transition-colors flex flex-col items-start gap-1.5">
-                        <div className="flex items-center gap-2"><KeyRound className="h-4 w-4 text-gray-600" /><span className="text-xs font-bold text-gray-700">إعادة تعيين كلمة المرور</span></div>
-                        <span className="text-[10px] text-gray-600">إرسال رابط آمن للبريد</span>
+                        className="h-auto p-3 rounded-xl border border-gray-200 bg-white text-start hover:bg-gray-50 transition-colors flex flex-col items-start gap-1.5">
+                        <div className="flex items-center gap-2"><KeyRound className="h-4 w-4 text-gray-600" /><span className="text-xs font-bold text-gray-700">{t('adminManagement.resetPassword')}</span></div>
+                        <span className="text-[10px] text-gray-600">{t('adminManagement.resetPasswordDesc')}</span>
                       </button>
                       <button type="button" onClick={() => onDeleteRequest(profile)}
-                        className="h-auto p-3 rounded-xl border border-red-200 bg-white text-right hover:bg-red-50 transition-colors flex flex-col items-start gap-1.5">
-                        <div className="flex items-center gap-2"><Trash2 className="h-4 w-4 text-red-400" /><span className="text-xs font-bold text-red-600">حذف المشترك نهائيًا</span></div>
-                        <span className="text-[10px] text-red-300">حذف نهائي للبيانات والمطعم</span>
+                        className="h-auto p-3 rounded-xl border border-red-200 bg-white text-start hover:bg-red-50 transition-colors flex flex-col items-start gap-1.5">
+                        <div className="flex items-center gap-2"><Trash2 className="h-4 w-4 text-red-400" /><span className="text-xs font-bold text-red-600">{t('adminManagement.deleteSubscriber')}</span></div>
+                        <span className="text-[10px] text-red-300">{t('adminManagement.deleteSubscriberDesc')}</span>
                       </button>
                     </div>
                   </div>
@@ -519,21 +524,23 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
 
                 <TabsContent value="subscription" className="mt-0 space-y-4">
                   <div className="rounded-xl border border-gray-100 p-4 space-y-2.5">
-                    <h3 className="text-xs font-bold text-gray-900 mb-1">إدارة الاشتراك</h3>
-                    <div className="flex justify-between text-[11px] border-b border-dashed border-gray-100 pb-2"><span className="text-gray-600">الباقة</span><strong className="text-gray-900">{currentSub?.plan_name || 'لا يوجد'}</strong></div>
-                    <div className="flex justify-between text-[11px] border-b border-dashed border-gray-100 pb-2"><span className="text-gray-600">بداية الاشتراك</span><strong className="text-gray-900">{subStartDate ? format(subStartDate, 'dd MMM yyyy', { locale: ar }) : '—'}</strong></div>
-                    <div className="flex justify-between text-[11px]"><span className="text-gray-600">تاريخ الانتهاء</span><strong className="text-gray-900">{isPerpetual ? 'دائم' : subEndDate ? format(subEndDate, 'dd MMM yyyy', { locale: ar }) : '—'}</strong></div>
+                    <h3 className="text-xs font-bold text-gray-900 mb-1">{t('adminManagement.manageSubscription')}</h3>
+                    <div className="flex justify-between text-[11px] border-b border-dashed border-gray-100 pb-2"><span className="text-gray-600">{t('adminManagement.planLabel')}</span><strong className="text-gray-900">{currentSub?.plan_name || t('adminManagement.none')}</strong></div>
+                    <div className="flex justify-between text-[11px] border-b border-dashed border-gray-100 pb-2"><span className="text-gray-600">{t('adminManagement.subStartLabel')}</span><strong className="text-gray-900">{subStartDate ? format(subStartDate, 'dd MMM yyyy', { locale: dateLocale }) : '—'}</strong></div>
+                    <div className="flex justify-between text-[11px]"><span className="text-gray-600">{t('adminManagement.subEndLabel')}</span><strong className="text-gray-900">{isPerpetual ? t('adminManagement.perpetual') : subEndDate ? format(subEndDate, 'dd MMM yyyy', { locale: dateLocale }) : '—'}</strong></div>
                   </div>
                   <div className="rounded-xl border border-gray-100 p-4 space-y-3">
-                    <h3 className="text-xs font-bold text-gray-900">تغيير أو تجديد الباقة</h3>
+                    <h3 className="text-xs font-bold text-gray-900">{t('adminManagement.changeOrRenewPlan')}</h3>
                     <Select onValueChange={setSelectedPlanId} value={selectedPlanId}>
                       <SelectTrigger className="h-9 rounded-lg border-gray-200 text-xs">
-                        <SelectValue placeholder="اختر الباقة" />
+                        <SelectValue placeholder={t('adminManagement.choosePlan')} />
                       </SelectTrigger>
-                      <SelectContent dir="rtl">
+                      <SelectContent>
                         {activePlans.map((p) => (
                           <SelectItem key={p.id} value={p.id} className="text-xs">
-                            {p.name} — {(p.duration_months || 1) >= 12 ? `${p.price_yearly || p.price || 0} ر.س/سنة` : `${p.price_monthly || p.price || 0} ر.س / ${p.duration_months || 1} أشهر`}
+                            {p.name} — {(p.duration_months || 1) >= 12
+                              ? `${p.price_yearly || p.price || 0} ${t('ownerSettings.currency')}/${t('ownerBilling.perYear')}`
+                              : `${p.price_monthly || p.price || 0} ${t('ownerSettings.currency')} / ${p.duration_months || 1} ${t('ownerBilling.perMonth')}`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -542,12 +549,12 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
                       <button onClick={handleActivateOrRenew} disabled={isActivating || !selectedPlanId}
                         className="h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 disabled:opacity-50 flex items-center gap-2">
                         {isActivating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="h-3.5 w-3.5" />}
-                        {isSubActive && currentSub?.plan_id !== 'free' ? 'تجديد' : 'تفعيل'}
+                        {isSubActive && currentSub?.plan_id !== 'free' ? t('adminManagement.renew') : t('adminManagement.activate')}
                       </button>
                       <button onClick={handleExtendTrial} disabled={isExtending || !currentSub}
                         className="h-9 px-4 rounded-xl border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 disabled:opacity-50 flex items-center gap-2">
                         {isExtending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                        تمديد 30 يوم
+                        {t('adminManagement.extend30Short')}
                       </button>
                     </div>
                   </div>
@@ -555,16 +562,16 @@ export function SubscriberDrawer({ profile, open, onOpenChange, onSave, onDelete
 
                 <TabsContent value="activity" className="mt-0">
                   <div className="rounded-xl border border-gray-100 p-4">
-                    <h3 className="text-xs font-bold text-gray-900 mb-3">آخر النشاط</h3>
+                    <h3 className="text-xs font-bold text-gray-900 mb-3">{t('adminManagement.recentActivity')}</h3>
                     {activityLog.length === 0 ? (
-                      <p className="text-[11px] text-gray-600 py-6 text-center">ما فيه نشاط مسجّل لهذا الحساب.</p>
+                      <p className="text-[11px] text-gray-600 py-6 text-center">{t('adminManagement.noActivity')}</p>
                     ) : (
                       <div className="relative pe-4 space-y-4 before:content-[''] before:absolute before:top-1 before:bottom-1 before:end-1 before:w-px before:bg-gray-100">
                         {activityLog.map((item) => (
                           <div key={item.id} className="relative pe-3.5">
                             <span className="absolute end-[-5px] top-1 w-2 h-2 rounded-full bg-gray-900 ring-2 ring-white" />
-                            <strong className="block text-xs text-gray-900">{ACTIVITY_LABELS[item.type || ''] || item.type || 'نشاط'}</strong>
-                            <span className="block text-[10px] text-gray-600 mt-1">{format(new Date(item.timestamp), 'dd MMM yyyy، hh:mm a', { locale: ar })}</span>
+                            <strong className="block text-xs text-gray-900">{ACTIVITY_LABELS[item.type || ''] || item.type || t('adminManagement.genericActivity')}</strong>
+                            <span className="block text-[10px] text-gray-600 mt-1">{format(new Date(item.timestamp), dateTimeFormat, { locale: dateLocale })}</span>
                           </div>
                         ))}
                       </div>

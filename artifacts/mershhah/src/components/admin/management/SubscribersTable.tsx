@@ -2,8 +2,9 @@
 
 import { MoreHorizontal } from 'lucide-react';
 import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { ar, enUS } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/components/shared/LanguageContext';
 import type { Profile, Subscription } from '@/lib/types';
 
 export type SubscriberRow = Profile & { currentSub: Subscription | null };
@@ -14,25 +15,27 @@ interface SubscribersTableProps {
   onSelect: (profile: SubscriberRow) => void;
 }
 
-const statusConfig = {
-  active: { text: 'نشط', className: 'bg-emerald-50 text-emerald-700' },
-  pending: { text: 'بانتظار', className: 'bg-amber-50 text-amber-700' },
-  suspended: { text: 'معلق', className: 'bg-red-50 text-red-700' },
-};
-
 export function SubscribersTable({ rows, selectedProfileId, onSelect }: SubscribersTableProps) {
+  const { t, locale } = useLanguage();
+  const dateLocale = locale === 'ar' ? ar : enUS;
+  const statusConfig = {
+    active: { text: t('adminManagement.statusActive'), className: 'bg-emerald-50 text-emerald-700' },
+    pending: { text: t('adminManagement.statusPending'), className: 'bg-amber-50 text-amber-700' },
+    suspended: { text: t('adminManagement.statusSuspended'), className: 'bg-red-50 text-red-700' },
+  };
+
   if (rows.length === 0) {
-    return <div className="py-16 text-center text-gray-600 text-sm">لا توجد نتائج مطابقة.</div>;
+    return <div className="py-16 text-center text-gray-600 text-sm">{t('adminManagement.noResults')}</div>;
   }
 
   return (
     <div className="overflow-x-auto">
       <div className="min-w-[720px]">
         <div className="grid grid-cols-[1.8fr_1fr_1fr_1fr_.6fr] gap-3 items-center px-5 py-3 bg-gray-50 border-b border-gray-100 text-[11px] font-bold text-gray-600">
-          <div>المشترك</div>
-          <div>الحالة</div>
-          <div>الباقة</div>
-          <div>الانتهاء</div>
+          <div>{t('adminManagement.colSubscriber')}</div>
+          <div>{t('adminManagement.colStatus')}</div>
+          <div>{t('adminManagement.colPlan')}</div>
+          <div>{t('adminManagement.colExpiry')}</div>
           <div />
         </div>
         <div className="divide-y divide-gray-50">
@@ -46,7 +49,7 @@ export function SubscribersTable({ rows, selectedProfileId, onSelect }: Subscrib
                 type="button"
                 onClick={() => onSelect(row)}
                 className={cn(
-                  'w-full grid grid-cols-[1.8fr_1fr_1fr_1fr_.6fr] gap-3 items-center px-5 py-3.5 text-right hover:bg-gray-50 transition-colors',
+                  'w-full grid grid-cols-[1.8fr_1fr_1fr_1fr_.6fr] gap-3 items-center px-5 py-3.5 text-start hover:bg-gray-50 transition-colors',
                   selectedProfileId === row.id && 'bg-gray-50'
                 )}
               >
@@ -68,7 +71,7 @@ export function SubscribersTable({ rows, selectedProfileId, onSelect }: Subscrib
                 <div className="text-xs font-bold text-gray-700 truncate">{row.currentSub?.plan_name || '—'}</div>
                 <div>
                   <div className="text-xs font-bold text-gray-900">
-                    {isPerpetual ? 'دائم' : endDate ? format(endDate, 'dd MMM yyyy', { locale: ar }) : '—'}
+                    {isPerpetual ? t('adminManagement.perpetual') : endDate ? format(endDate, 'dd MMM yyyy', { locale: dateLocale }) : '—'}
                   </div>
                 </div>
                 <div className="flex justify-end">

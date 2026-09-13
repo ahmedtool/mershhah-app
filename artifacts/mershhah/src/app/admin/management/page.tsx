@@ -15,6 +15,7 @@ import { SubscriberStats } from '@/components/admin/management/SubscriberStats';
 import { SubscribersTable, type SubscriberRow } from '@/components/admin/management/SubscribersTable';
 import { SubscriberDrawer } from '@/components/admin/management/SubscriberDrawer';
 import { pickActiveSubscription } from '@/hooks/useUser';
+import { useLanguage } from '@/components/shared/LanguageContext';
 import type { Profile, Subscription } from '@/lib/types';
 
 type PlanLite = { id: string; name: string; price_yearly: number };
@@ -25,6 +26,7 @@ type PlanLite = { id: string; name: string; price_yearly: number };
 const TRIAL_PLAN_ID = '93250b42-d34c-4996-8d83-359ea26ab264';
 
 export default function ManagementPage() {
+  const { t } = useLanguage();
   const [subscribers, setSubscribers] = useState<SubscriberRow[]>([]);
   const [plans, setPlans] = useState<PlanLite[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -137,14 +139,17 @@ export default function ManagementPage() {
         const { error: authErr } = await supabase.rpc('delete_auth_user', { target_user_id: profileToDelete.id });
         if (authErr) throw authErr;
 
-        toast({ title: 'تم الحذف', description: `تم حذف ${profileToDelete.restaurant_name} بالكامل من النظام.` });
+        toast({
+          title: t('adminManagement.deleted'),
+          description: [t('adminManagement.deletedPrefix'), profileToDelete.restaurant_name, t('adminManagement.deletedSuffix')].filter(Boolean).join(' '),
+        });
         setProfileToDelete(null);
         if (selectedProfileId === profileToDelete.id) {
           setDrawerOpen(false);
           setSelectedProfileId(null);
         }
       } catch (err: any) {
-        toast({ title: 'خطأ في الحذف', description: err.message, variant: 'destructive' });
+        toast({ title: t('adminManagement.deleteError'), description: err.message, variant: 'destructive' });
         setProfileToDelete(null);
       }
     });
@@ -201,42 +206,42 @@ export default function ManagementPage() {
     <>
       <div className="p-4 lg:p-6 space-y-4">
         <div>
-          <h1 className="text-lg font-bold text-gray-900">إدارة المشتركين</h1>
-          <p className="text-xs text-gray-600 mt-0.5">إدارة حسابات المطاعم، الاشتراكات، النشاط والصلاحيات من مكان واحد.</p>
+          <h1 className="text-lg font-bold text-gray-900">{t('adminManagement.title')}</h1>
+          <p className="text-xs text-gray-600 mt-0.5">{t('adminManagement.subtitle')}</p>
         </div>
 
         <SubscriberStats {...stats} />
 
         <div className="grid grid-cols-1 sm:grid-cols-[1fr_180px_180px_auto] gap-2.5">
           <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
+            <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-600" />
             <input
               type="text"
-              placeholder="ابحث باسم المشروع أو المالك أو البريد..."
+              placeholder={t('adminManagement.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-10 pr-9 pl-3 rounded-xl border border-gray-200 text-xs text-right placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
+              className="w-full h-10 pe-9 ps-3 rounded-xl border border-gray-200 text-xs text-start placeholder:text-gray-600 focus:outline-none focus:border-gray-300"
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="h-10 rounded-xl border-gray-200 text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent dir="rtl">
-              <SelectItem value="all" className="text-xs">كل الحالات</SelectItem>
-              <SelectItem value="active" className="text-xs">نشط</SelectItem>
-              <SelectItem value="pending" className="text-xs">بانتظار</SelectItem>
-              <SelectItem value="suspended" className="text-xs">معلق</SelectItem>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">{t('adminManagement.allStatuses')}</SelectItem>
+              <SelectItem value="active" className="text-xs">{t('adminManagement.statusActive')}</SelectItem>
+              <SelectItem value="pending" className="text-xs">{t('adminManagement.statusPending')}</SelectItem>
+              <SelectItem value="suspended" className="text-xs">{t('adminManagement.statusSuspended')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={planFilter} onValueChange={setPlanFilter}>
             <SelectTrigger className="h-10 rounded-xl border-gray-200 text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent dir="rtl">
-              <SelectItem value="all" className="text-xs">كل الباقات</SelectItem>
+            <SelectContent>
+              <SelectItem value="all" className="text-xs">{t('adminManagement.allPlans')}</SelectItem>
               {plans.map((p) => <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>)}
             </SelectContent>
           </Select>
           <button onClick={resetFilters}
             className="h-10 px-4 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold hover:bg-gray-50 transition-colors whitespace-nowrap">
-            إعادة الفلاتر
+            {t('adminManagement.resetFilters')}
           </button>
         </div>
 
@@ -254,34 +259,34 @@ export default function ManagementPage() {
       />
 
       <AlertDialog open={!!profileToDelete} onOpenChange={(open) => !open && setProfileToDelete(null)}>
-        <AlertDialogContent className="sm:max-w-lg p-0 gap-0" dir="rtl">
+        <AlertDialogContent className="sm:max-w-lg p-0 gap-0">
           <div className="px-5 pt-5 pb-3 border-b border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
                 <Trash2 className="h-5 w-5 text-red-500" />
               </div>
               <div>
-                <AlertDialogTitle className="text-base font-bold text-gray-900">حذف المشترك</AlertDialogTitle>
-                <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">لا يمكن التراجع عن هذا الإجراء</AlertDialogDescription>
+                <AlertDialogTitle className="text-base font-bold text-gray-900">{t('adminManagement.deleteTitle')}</AlertDialogTitle>
+                <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">{t('adminManagement.deleteWarning')}</AlertDialogDescription>
               </div>
             </div>
           </div>
           <div className="p-5">
             <p className="text-sm text-gray-600 leading-relaxed">
-              سيتم حذف حساب <strong className="text-gray-900">{profileToDelete?.restaurant_name}</strong> وجميع بياناته المرتبطة بشكل نهائي.
+              {t('adminManagement.deleteConfirmPrefix')} <strong className="text-gray-900">{profileToDelete?.restaurant_name}</strong> {t('adminManagement.deleteConfirmSuffix')}
             </p>
           </div>
           <div className="flex gap-2 px-5 pb-5">
             <AlertDialogCancel disabled={isDeleting}
               className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-              إلغاء
+              {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
               className="flex-1 h-11 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              نعم، حذف نهائي
+              {t('adminManagement.confirmDelete')}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>

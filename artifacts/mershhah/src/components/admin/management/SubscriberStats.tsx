@@ -1,5 +1,7 @@
 'use client';
 
+import { useLanguage } from '@/components/shared/LanguageContext';
+
 interface SubscriberStatsProps {
   total: number;
   active: number;
@@ -9,12 +11,13 @@ interface SubscriberStatsProps {
 }
 
 export function SubscriberStats({ total, active, expiringSoon, trial, annualRevenue }: SubscriberStatsProps) {
+  const { t, locale } = useLanguage();
   const tiles = [
-    { label: 'إجمالي المشتركين', value: total },
-    { label: 'الحسابات النشطة', value: active },
-    { label: 'تنتهي خلال 30 يوم', value: expiringSoon },
-    { label: 'مشتركون تجريبيون', value: trial },
-    { label: 'الإيراد السنوي', value: `${annualRevenue.toLocaleString('ar')} ر.س` },
+    { label: t('adminManagement.statTotal'), value: total },
+    { label: t('adminManagement.statActive'), value: active },
+    { label: t('adminManagement.statExpiring'), value: expiringSoon },
+    { label: t('adminManagement.statTrial'), value: trial },
+    { label: t('adminManagement.statRevenue'), value: `${annualRevenue.toLocaleString(locale === 'ar' ? 'ar' : 'en-US')} ${t('ownerSettings.currency')}` },
   ];
 
   return (
