@@ -215,6 +215,25 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+// Manually-entered snapshot of one third-party service's usage against its
+// plan/quota - see /admin/infrastructure. Most providers don't expose this
+// through a public API, so an admin reads it off that provider's own
+// billing page and enters it here.
+export type ServiceUsageRow = {
+  id: string;
+  service_key: string;
+  plan: string | null;
+  usage_value: number | null;
+  usage_unit: string | null;
+  limit_value: number | null;
+  limit_unit: string | null;
+  cost_sar: number | null;
+  billing_cycle: string | null;
+  notes: string | null;
+  updated_by: string | null;
+  updated_at: string;
+};
+
 
 // Live Support Chat
 export type ChatSession = {
