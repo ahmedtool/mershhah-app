@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Database, Cloud, CreditCard, Sparkles, Mail, Shield, Info, Pencil, Loader2, RefreshCw } from 'lucide-react';
+import { Database, Cloud, CreditCard, Sparkles, Mail, Shield, Info, Pencil, Loader2, RefreshCw, Image as ImageIcon, MapPin } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -12,7 +12,7 @@ import type { ServiceUsageRow } from '@/lib/types';
 // Services synced automatically by the sync-service-usage Edge Function -
 // the rest stay manual since no usable API exists for them (see the
 // "استهلاك الخدمات" conversation).
-const AUTO_SYNCED_KEYS = new Set(['streampay', 'mistral', 'cloudflare', 'sndr']);
+const AUTO_SYNCED_KEYS = new Set(['streampay', 'mistral', 'cloudflare', 'sndr', 'imagekit']);
 
 type ServiceStatus = 'ok' | 'warning' | 'critical' | 'unknown';
 
@@ -69,6 +69,20 @@ const SERVICES: ServiceMeta[] = [
     icon: Shield,
     description: 'تحليلات وحماية الموقع',
     dashboardUrl: 'https://dash.cloudflare.com',
+  },
+  {
+    key: 'imagekit',
+    name: 'ImageKit',
+    icon: ImageIcon,
+    description: 'رفع وتخزين وتحويل الصور (لوقو، صور المنتجات)',
+    dashboardUrl: 'https://imagekit.io/dashboard/usage',
+  },
+  {
+    key: 'google_maps',
+    name: 'Google Maps',
+    icon: MapPin,
+    description: 'تحويل عنوان الفرع لإحداثيات (Geocoding)',
+    dashboardUrl: 'https://console.cloud.google.com/billing',
   },
 ];
 

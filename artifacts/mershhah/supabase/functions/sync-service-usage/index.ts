@@ -196,6 +196,45 @@ async function syncSndr(supabase: any): Promise<SyncResult> {
   }
 }
 
+async function syncImageKit(supabase: any): Promise<SyncResult> {
+  const privateKey = Deno.env.get("IMAGEKIT_PRIVATE_KEY");
+  if (!privateKey) return { service: "imagekit", status: "skipped", detail: "IMAGEKIT_PRIVATE_KEY not set" };
+
+  try {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const end = new Date(now);
+    end.setDate(end.getDate() + 1); // ImageKit's range excludes the end date itself
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+    const credentials = btoa(`${privateKey}:`);
+    const res = await fetch(
+      `https://api.imagekit.io/v1/accounts/usage?startDate=${fmt(start)}&endDate=${fmt(end)}`,
+      { headers: { Authorization: `Basic ${credentials}` } }
+    );
+    if (!res.ok) throw new Error(`ImageKit API returned ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+
+    // Field names aren't independently verified against a live account -
+    // try the documented ones, keep the raw payload in notes either way.
+    const bandwidthBytes = data.bandwidthBytes ?? data.bandwidth ?? null;
+    const storageBytes = data.mediaLibraryStorageBytes ?? data.storage ?? null;
+    const bandwidthGB = typeof bandwidthBytes === "number" ? Math.round((bandwidthBytes / 1024 / 1024 / 1024) * 100) / 100 : null;
+
+    await upsertUsage(supabase, "imagekit", {
+      plan: "—",
+      usage_value: bandwidthGB,
+      usage_unit: "GB نقل بيانات هذا الشهر",
+      cost_sar: null,
+      billing_cycle: "شهري",
+      notes: `تخزين الوسائط: ${typeof storageBytes === "number" ? Math.round((storageBytes / 1024 / 1024 / 1024) * 100) / 100 + " GB" : "غير معروف"}. آخر استجابة خام: ${JSON.stringify(data).slice(0, 400)}`,
+    });
+    return { service: "imagekit", status: "synced" };
+  } catch (err: any) {
+    return { service: "imagekit", status: "failed", detail: err.message };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -223,7 +262,7 @@ serve(async (req) => {
       });
     }
 
-    const results = await Promise.all([syncStreamPay(admin), syncMistral(admin), syncCloudflare(admin), syncSndr(admin)]);
+    const results = await Promise.all([syncStreamPay(admin), syncMistral(admin), syncCloudflare(admin), syncSndr(admin), syncImageKit(admin)]);
 
     return new Response(JSON.stringify({ results }), {
       status: 200,
