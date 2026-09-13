@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,8 +9,9 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, KeyRound, User } from 'lucide-react';
+import { Loader2, KeyRound, User, Link2, Unlink } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { UserIdentity } from '@supabase/supabase-js';
 
 const profileFormSchema = z.object({
   full_name: z.string().min(3, { message: 'الاسم يجب أن يكون 3 أحرف على الأقل.' }),
@@ -23,6 +24,9 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [isSaving, startSaving] = useTransition();
   const [isSendingReset, startSendingReset] = useTransition();
+  const [identities, setIdentities] = useState<UserIdentity[] | null>(null);
+  const [isLinkingGoogle, setIsLinkingGoogle] = useState(false);
+  const [isUnlinkingGoogle, startUnlinkingGoogle] = useTransition();
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -34,6 +38,46 @@ export default function SettingsPage() {
       form.reset({ full_name: user.full_name || '' });
     }
   }, [user, form]);
+
+  useEffect(() => {
+    supabase.auth.getUserIdentities().then(({ data }: any) => {
+      setIdentities(data?.identities || []);
+    });
+  }, []);
+
+  const googleIdentity = identities?.find((i) => i.provider === 'google') || null;
+
+  const handleLinkGoogle = async () => {
+    setIsLinkingGoogle(true);
+    try {
+      // Links a Google identity to the CURRENTLY signed-in auth user - unlike
+      // signInWithOAuth, this reuses the existing auth.users row instead of
+      // creating a new one, so "Continue with Google" starts resolving to
+      // this same account/profile instead of hitting /auth/account-exists.
+      const { error } = await supabase.auth.linkIdentity({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/admin/settings` },
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+      setIsLinkingGoogle(false);
+    }
+  };
+
+  const handleUnlinkGoogle = () => {
+    if (!googleIdentity) return;
+    startUnlinkingGoogle(async () => {
+      try {
+        const { error } = await supabase.auth.unlinkIdentity(googleIdentity);
+        if (error) throw error;
+        setIdentities((prev) => (prev || []).filter((i) => i.provider !== 'google'));
+        toast({ title: 'تم إلغاء ربط حساب جوجل' });
+      } catch (error: any) {
+        toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+      }
+    });
+  };
 
   const handleProfileUpdate = async (data: ProfileFormValues) => {
     if (!user) return;
@@ -153,6 +197,43 @@ export default function SettingsPage() {
               {isSendingReset ? 'جاري الإرسال...' : 'إرسال رابط تغيير كلمة المرور'}
             </button>
             <p className="text-[10px] text-gray-600 text-center">سيتم إرسال الرابط إلى بريدك المسجل</p>
+          </div>
+        </div>
+
+        {/* Connected accounts */}
+        <div className="rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="px-5 pt-5 pb-3 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                <Link2 className="h-5 w-5 text-blue-500" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">الحسابات المرتبطة</h2>
+                <p className="text-[11px] text-gray-600">ربط حساب جوجل يخليك تدخل به مباشرة لنفس حسابك</p>
+              </div>
+            </div>
+          </div>
+          <div className="p-5 space-y-3">
+            {identities === null ? (
+              <Skeleton className="h-11 rounded-xl" />
+            ) : googleIdentity ? (
+              <>
+                <div className="flex items-center justify-between h-11 px-4 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-bold">
+                  <span>حساب جوجل مرتبط بهذا الحساب</span>
+                </div>
+                <button onClick={handleUnlinkGoogle} disabled={isUnlinkingGoogle}
+                  className="h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 w-full">
+                  {isUnlinkingGoogle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlink className="h-4 w-4" />}
+                  إلغاء ربط حساب جوجل
+                </button>
+              </>
+            ) : (
+              <button onClick={handleLinkGoogle} disabled={isLinkingGoogle}
+                className="h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 w-full">
+                {isLinkingGoogle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+                {isLinkingGoogle ? 'جاري التحويل إلى جوجل...' : 'ربط حساب جوجل'}
+              </button>
+            )}
           </div>
         </div>
       </div>
