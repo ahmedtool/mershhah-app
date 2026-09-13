@@ -499,7 +499,7 @@ export const mockSupabase = {
         restaurant_name: null,
         restaurant_id: null,
         admin_permissions: email.includes('admin')
-          ? ['dashboard', 'management', 'financials', 'store-management', 'applications', 'announcements', 'support', 'team', 'workflow', 'sales']
+          ? ['dashboard', 'management', 'financials', 'store-management', 'applications', 'announcements', 'support', 'team', 'sales']
           : [],
         ai_trial_used: false,
         created_at: new Date().toISOString(),

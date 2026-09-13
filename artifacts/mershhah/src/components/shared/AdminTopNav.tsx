@@ -13,7 +13,6 @@ import {
   Building,
   Store,
   Users,
-  Activity,
   Megaphone,
   AppWindow,
   TrendingUp,
@@ -45,7 +44,6 @@ export function AdminTopNav() {
     { href: '/admin/blog', label: 'المدونة', icon: FileText, permissionId: 'blog' },
     { href: '/admin/support', label: 'الدعم', icon: MessageSquare, permissionId: 'support', showBadge: true },
     { href: '/admin/team', label: 'الفريق', icon: Users, permissionId: 'team' },
-    { href: '/admin/workflow', label: 'سير العمل', icon: Activity, permissionId: 'workflow' },
     { href: '/admin/sales', label: 'دليل المبيعات', icon: TrendingUp, permissionId: 'sales' },
   ];
 

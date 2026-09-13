@@ -5,7 +5,7 @@ export const ADMIN_EMAIL = 'ahmedsupsa@gmail.com';
 
 const allAdminPermissions = [
   'dashboard', 'management', 'financials', 'store-management',
-  'applications', 'announcements', 'support', 'team', 'workflow', 'sales',
+  'applications', 'announcements', 'support', 'team', 'sales',
 ];
 
 const adminPages = [
@@ -16,7 +16,6 @@ const adminPages = [
   { href: '/admin/store-management', permissionId: 'store-management' },
   { href: '/admin/support', permissionId: 'support' },
   { href: '/admin/team', permissionId: 'team' },
-  { href: '/admin/workflow', permissionId: 'workflow' },
   { href: '/admin/sales', permissionId: 'sales' },
 ];
 

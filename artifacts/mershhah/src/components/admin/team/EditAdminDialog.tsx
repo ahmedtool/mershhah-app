@@ -25,7 +25,6 @@ const permissions = [
   { id: 'announcements', label: 'الإعلانات' },
   { id: 'support', label: 'الدعم المباشر' },
   { id: 'team', label: 'إدارة الفريق' },
-  { id: 'workflow', label: 'سير العمل' },
   { id: 'sales', label: 'دليل المبيعات' },
 ];
 

@@ -36,7 +36,7 @@ export const MOCK_USERS: Record<string, { password: string; profile: Profile }> 
       restaurant_id: null,
       admin_permissions: [
         'dashboard', 'management', 'financials', 'store-management',
-        'applications', 'announcements', 'support', 'team', 'workflow', 'sales',
+        'applications', 'announcements', 'support', 'team', 'sales',
       ],
       ai_trial_used: false,
       created_at: now,

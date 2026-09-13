@@ -17,7 +17,6 @@ const routePermissions: Record<string, string> = {
     '/admin/announcements': 'announcements',
     '/admin/support': 'support',
     '/admin/team': 'team',
-    '/admin/workflow': 'workflow',
     '/admin/sales': 'sales',
     // '/admin/settings' is accessible to all admins
 };

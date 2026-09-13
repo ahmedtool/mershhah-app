@@ -85,7 +85,6 @@ const AdminSalesPage = lazyWithReload(() => import("@/app/admin/sales/page"));
 const AdminApplicationsPage = lazyWithReload(() => import("@/app/admin/applications/page"));
 const AdminAnnouncementsPage = lazyWithReload(() => import("@/app/admin/announcements/page"));
 const AdminBlogPage = lazyWithReload(() => import("@/app/admin/blog/page"));
-const AdminWorkflowPage = lazyWithReload(() => import("@/app/admin/workflow/page"));
 const AdminDiscountsPage = lazyWithReload(() => import("@/app/admin/discounts/page"));
 const AdminFinancialsPage = lazyWithReload(() => import("@/app/admin/financials/page"));
 const AdminFinancialsOrdersPage = lazyWithReload(() => import("@/app/admin/financials/orders/page"));
@@ -240,7 +239,6 @@ function Router() {
         <Route path="/admin/applications" component={() => <AdminLayout><AdminApplicationsPage /></AdminLayout>} />
         <Route path="/admin/announcements" component={() => <AdminLayout><AdminAnnouncementsPage /></AdminLayout>} />
         <Route path="/admin/blog" component={() => <AdminLayout><AdminBlogPage /></AdminLayout>} />
-        <Route path="/admin/workflow" component={() => <AdminLayout><AdminWorkflowPage /></AdminLayout>} />
         <Route path="/admin/financials" component={() => <AdminLayout><AdminFinancialsPage /></AdminLayout>} />
         <Route path="/admin/financials/orders" component={() => <AdminLayout><AdminFinancialsOrdersPage /></AdminLayout>} />
         <Route path="/admin/financials/discounts" component={() => <AdminLayout><AdminFinancialsDiscountsPage /></AdminLayout>} />
