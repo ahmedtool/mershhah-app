@@ -40,7 +40,7 @@ export function RecentActivityCard({ items }: RecentActivityCardProps) {
         </div>
       ) : (
         <div className="divide-y divide-gray-50">
-          {items.slice(0, 10).map((item) => {
+          {items.slice(0, 6).map((item) => {
             const ts = item.timestamp ? new Date(item.timestamp) : new Date(0);
             const config = activityConfig[item.type] || activityConfig.restaurant_created;
             const Icon = config.icon;

@@ -13,6 +13,7 @@ import { ExpiringSoonCard, type ExpiringItem } from '@/components/admin/dashboar
 import { UsageStatsGrid } from '@/components/admin/dashboard/UsageStatsGrid';
 import { TopRestaurantsCard, type TopRestaurant } from '@/components/admin/dashboard/TopRestaurantsCard';
 import { RecentActivityCard, type ActivityItem } from '@/components/admin/dashboard/RecentActivityCard';
+import { NewestSubscribersCard, type NewestSubscriber } from '@/components/admin/dashboard/NewestSubscribersCard';
 import type { Profile, Subscription } from '@/lib/types';
 
 const TRIAL_PLAN_ID = '93250b42-d34c-4996-8d83-359ea26ab264';
@@ -210,6 +211,21 @@ export default function AdminDashboardPage() {
     return { items, total: owners.length };
   }, [activeSubs, owners, plans]);
 
+  const newestSubscribers = useMemo((): NewestSubscriber[] => {
+    const activeSubByProfile = new Map(activeSubs.map((s) => [s.profile_id, s]));
+    return [...owners]
+      .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+      .slice(0, 6)
+      .map((o) => ({
+        id: o.id,
+        name: o.restaurant_name || 'مطعم بدون اسم',
+        ownerName: o.full_name,
+        createdAt: o.created_at,
+        status: o.account_status,
+        planName: activeSubByProfile.get(o.id)?.plan_name || null,
+      }));
+  }, [owners, activeSubs]);
+
   const monthlyGrowth = useMemo((): MonthPoint[] => {
     const now = new Date();
     const planPrice = new Map(plans.map((p) => [p.id, p.price_yearly || 0]));
@@ -290,7 +306,10 @@ export default function AdminDashboardPage() {
 
       <TopRestaurantsCard items={topRestaurants} />
 
-      <RecentActivityCard items={activities} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <RecentActivityCard items={activities} />
+        <NewestSubscribersCard items={newestSubscribers} />
+      </div>
     </div>
   );
 }
