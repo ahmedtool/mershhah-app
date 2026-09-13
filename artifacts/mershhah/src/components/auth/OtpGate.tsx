@@ -39,14 +39,18 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState('');
   const [cooldown, setCooldown] = useState(0);
   // Fail OPEN if the email provider isn't configured yet (SNDR_API_KEY
-  // missing server-side) — a broken send must never lock owners/admins out
-  // of their own dashboard entirely. It starts actually enforcing itself
+  // missing server-side) — a broken send must never lock admins out of
+  // their own dashboard entirely. It starts actually enforcing itself
   // automatically the moment the key is added, no redeploy needed.
   const [providerUnavailable, setProviderUnavailable] = useState(false);
   const sentForUid = useRef<string | null>(null);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const needsOtp = !!user && (user.role === 'owner' || user.role === 'admin');
+  // Mandatory step-up OTP is admin-only. Owner sign-in must stay one
+  // factor (Google, or a single email OTP) so restaurant sign-up stays
+  // fast - see custom_access_token_hook, the actual server-side gate this
+  // client check mirrors.
+  const needsOtp = !!user && user.role === 'admin';
 
   // A fresh sign-in must never be treated as already-verified just because
   // this browser tab verified a *previous* session for the same account —
