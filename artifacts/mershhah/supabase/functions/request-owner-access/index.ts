@@ -95,17 +95,24 @@ serve(async (req) => {
           </div>
         </div>
       `;
-      await fetch("https://api.sndr.sh/v1/send", {
+      const notifySubject = "طلب دخول مؤقت لحسابك - مرشح";
+      fetch("https://api.sndr.sh/v1/send", {
         method: "POST",
         headers: { Authorization: `Bearer ${sndrApiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           // SNDR's `from` field rejects any display name - bare email only.
           from: Deno.env.get("SNDR_FROM_AUTH") || "auth@mershhah.com",
           to: [ownerProfile.email],
-          subject: "طلب دخول مؤقت لحسابك - مرشح",
+          subject: notifySubject,
           html,
         }),
-      }).catch((e) => console.error("[request-owner-access] notify failed:", e));
+      }).then(
+        (res) => supabase.from("email_log").insert({ source: "request-owner-access", recipient: ownerProfile.email, subject: notifySubject, status: res.ok ? "sent" : "failed" }),
+        (e) => {
+          console.error("[request-owner-access] notify failed:", e);
+          return supabase.from("email_log").insert({ source: "request-owner-access", recipient: ownerProfile.email, subject: notifySubject, status: "failed" });
+        }
+      ).catch(() => { /* best-effort */ });
     }
 
     return json({ request: inserted });

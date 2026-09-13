@@ -86,9 +86,11 @@ serve(async (req) => {
 
     if (!emailRes.ok) {
       console.error("[send-welcome-email] SNDR send failed:", emailRes.status, await emailRes.text());
+      try { await supabase.from("email_log").insert({ source: "send-welcome-email", recipient: user.email, subject, status: "failed" }); } catch { /* best-effort */ }
       return json({ error: "send failed" }, 500);
     }
 
+    try { await supabase.from("email_log").insert({ source: "send-welcome-email", recipient: user.email, subject, status: "sent" }); } catch { /* best-effort */ }
     return json({ sent: true });
   } catch (error) {
     console.error("[send-welcome-email] Fatal error:", error);

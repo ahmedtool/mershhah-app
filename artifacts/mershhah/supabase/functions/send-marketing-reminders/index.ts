@@ -99,14 +99,17 @@ serve(async (req) => {
         }),
       });
 
+      const reminderSubject = `تذكير: ${reminder.occasion_name} بعد ${REMIND_DAYS_BEFORE} أيام`;
       if (emailRes.ok) {
         await supabase
           .from("marketing_calendar_reminders")
           .update({ last_sent_year: currentYear })
           .eq("id", reminder.id);
+        try { await supabase.from("email_log").insert({ source: "send-marketing-reminders", recipient: profile.email, subject: reminderSubject, status: "sent" }); } catch { /* best-effort */ }
         sentCount++;
       } else {
         console.error("[send-marketing-reminders] SNDR send failed:", emailRes.status, await emailRes.text());
+        try { await supabase.from("email_log").insert({ source: "send-marketing-reminders", recipient: profile.email, subject: reminderSubject, status: "failed" }); } catch { /* best-effort */ }
       }
     }
 

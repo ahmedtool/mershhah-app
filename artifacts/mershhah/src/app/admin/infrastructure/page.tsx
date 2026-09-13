@@ -12,7 +12,7 @@ import type { ServiceUsageRow } from '@/lib/types';
 // Services synced automatically by the sync-service-usage Edge Function -
 // the rest stay manual since no usable API exists for them (see the
 // "استهلاك الخدمات" conversation).
-const AUTO_SYNCED_KEYS = new Set(['streampay', 'mistral', 'cloudflare']);
+const AUTO_SYNCED_KEYS = new Set(['streampay', 'mistral', 'cloudflare', 'sndr']);
 
 type ServiceStatus = 'ok' | 'warning' | 'critical' | 'unknown';
 

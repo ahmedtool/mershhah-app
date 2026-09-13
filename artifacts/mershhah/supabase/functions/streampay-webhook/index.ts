@@ -153,7 +153,17 @@ async function consumeDiscountCode(supabase: any, discountCodeId: string, profil
 
 const ADMIN_NOTIFICATION_EMAIL = Deno.env.get("ADMIN_NOTIFICATION_EMAIL") || "ahmedsupsa@gmail.com";
 
-async function sendEmail(to: string, subject: string, html: string) {
+async function logEmail(supabase: any, source: string, recipient: string, subject: string, status: "sent" | "failed") {
+  // Best-effort only - a logging failure must never affect whether the
+  // actual email send is treated as successful.
+  try {
+    await supabase.from("email_log").insert({ source, recipient, subject, status });
+  } catch {
+    // ignore
+  }
+}
+
+async function sendEmail(supabase: any, to: string, subject: string, html: string) {
   const sndrApiKey = Deno.env.get("SNDR_API_KEY");
   // SNDR's `from` field rejects any display name, Arabic or Latin - bare
   // email only (confirmed live via their validation error). Don't retry this.
@@ -170,9 +180,13 @@ async function sendEmail(to: string, subject: string, html: string) {
     });
     if (!res.ok) {
       console.error("[StreamPay Webhook] SNDR send failed:", res.status, await res.text());
+      await logEmail(supabase, "streampay-webhook", to, subject, "failed");
+    } else {
+      await logEmail(supabase, "streampay-webhook", to, subject, "sent");
     }
   } catch (err) {
     console.error("[StreamPay Webhook] SNDR send threw:", err);
+    await logEmail(supabase, "streampay-webhook", to, subject, "failed");
   }
 }
 
@@ -339,9 +353,9 @@ serve(async (req) => {
 
           const toolLabel = metadata.description || "شراء أداة";
           if (customerEmail) {
-            await sendEmail(customerEmail, "تم الدفع بنجاح - مرشح", paymentSuccessEmail(customerName, toolLabel, paidAmount));
+            await sendEmail(supabase, customerEmail, "تم الدفع بنجاح - مرشح", paymentSuccessEmail(customerName, toolLabel, paidAmount));
           }
-          await sendEmail(ADMIN_NOTIFICATION_EMAIL, "💰 عملية دفع ناجحة جديدة - مرشح", adminPaymentNotificationEmail(customerName, customerEmail, toolLabel, paidAmount));
+          await sendEmail(supabase, ADMIN_NOTIFICATION_EMAIL, "💰 عملية دفع ناجحة جديدة - مرشح", adminPaymentNotificationEmail(customerName, customerEmail, toolLabel, paidAmount));
 
           break;
         }
@@ -416,9 +430,9 @@ serve(async (req) => {
 
           const creditsLabel = metadata.description || "شحن رصيد صور";
           if (customerEmail) {
-            await sendEmail(customerEmail, "تم الدفع بنجاح - مرشح", paymentSuccessEmail(customerName, creditsLabel, paidAmount));
+            await sendEmail(supabase, customerEmail, "تم الدفع بنجاح - مرشح", paymentSuccessEmail(customerName, creditsLabel, paidAmount));
           }
-          await sendEmail(ADMIN_NOTIFICATION_EMAIL, "💰 عملية دفع ناجحة جديدة - مرشح", adminPaymentNotificationEmail(customerName, customerEmail, creditsLabel, paidAmount));
+          await sendEmail(supabase, ADMIN_NOTIFICATION_EMAIL, "💰 عملية دفع ناجحة جديدة - مرشح", adminPaymentNotificationEmail(customerName, customerEmail, creditsLabel, paidAmount));
 
           break;
         }
@@ -527,9 +541,9 @@ serve(async (req) => {
 
         const planLabel = metadata.description || "اشتراك باقة";
         if (customerEmail) {
-          await sendEmail(customerEmail, "تم الدفع بنجاح - مرشح", paymentSuccessEmail(customerName, planLabel, paidAmount));
+          await sendEmail(supabase, customerEmail, "تم الدفع بنجاح - مرشح", paymentSuccessEmail(customerName, planLabel, paidAmount));
         }
-        await sendEmail(ADMIN_NOTIFICATION_EMAIL, "💰 عملية دفع ناجحة جديدة - مرشح", adminPaymentNotificationEmail(customerName, customerEmail, planLabel, paidAmount));
+        await sendEmail(supabase, ADMIN_NOTIFICATION_EMAIL, "💰 عملية دفع ناجحة جديدة - مرشح", adminPaymentNotificationEmail(customerName, customerEmail, planLabel, paidAmount));
 
         break;
       }

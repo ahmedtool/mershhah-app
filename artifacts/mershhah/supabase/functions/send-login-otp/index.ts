@@ -120,8 +120,11 @@ serve(async (req) => {
     if (!emailRes.ok) {
       const errBody = await emailRes.text();
       console.error("[send-login-otp] SNDR send failed:", emailRes.status, errBody);
+      try { await supabase.from("email_log").insert({ source: "send-login-otp", recipient: profile.email, subject: "كود تسجيل الدخول", status: "failed" }); } catch { /* best-effort */ }
       return json({ error: "فشل إرسال كود التحقق. حاول مرة أخرى." }, 500);
     }
+
+    try { await supabase.from("email_log").insert({ source: "send-login-otp", recipient: profile.email, subject: "كود تسجيل الدخول", status: "sent" }); } catch { /* best-effort */ }
 
     // Mask the email so the client can confirm where the code went
     const maskedEmail = profile.email.replace(/^(.{2}).+(@.+)$/, "$1***$2");

@@ -6,13 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Pulls real numbers for the three services that actually have something to
-// fetch (see the "استهلاك الخدمات" plan) and upserts them into
-// service_usage - StreamPay needs no external call at all (it's our own
-// transactions table from streampay-webhook), Mistral and Cloudflare each
-// need one secret set as an Edge Function secret by the admin directly
-// (never passed through chat/code). A missing secret just skips that one
-// service instead of failing the whole sync.
+// Pulls real numbers for the services that actually have something to fetch
+// (see the "استهلاك الخدمات" plan) and upserts them into service_usage -
+// StreamPay and SNDR need no external call at all (both computed from our
+// own tables), Mistral and Cloudflare each need one secret set as an Edge
+// Function secret by the admin directly (never passed through chat/code).
+// A missing secret just skips that one service instead of failing the sync.
 type SyncResult = { service: string; status: "synced" | "skipped" | "failed"; detail?: string };
 
 async function upsertUsage(
@@ -29,10 +28,20 @@ async function upsertUsage(
     notes: string | null;
   }>
 ) {
-  const { error } = await supabase.from("service_usage").upsert(
-    { service_key: serviceKey, updated_at: new Date().toISOString(), updated_by: null, ...fields },
-    { onConflict: "service_key" }
-  );
+  const patch: Record<string, unknown> = { service_key: serviceKey, updated_at: new Date().toISOString(), updated_by: null, ...fields };
+
+  // None of these providers expose a real quota/limit - if an admin typed
+  // one in manually via the edit dialog, a sync that has nothing to report
+  // for limit_value/limit_unit must not silently wipe it back to null.
+  if (!("limit_value" in fields) || !("limit_unit" in fields)) {
+    const { data: existing } = await supabase.from("service_usage").select("limit_value, limit_unit").eq("service_key", serviceKey).maybeSingle();
+    if (existing) {
+      if (!("limit_value" in fields)) patch.limit_value = existing.limit_value;
+      if (!("limit_unit" in fields)) patch.limit_unit = existing.limit_unit;
+    }
+  }
+
+  const { error } = await supabase.from("service_usage").upsert(patch, { onConflict: "service_key" });
   if (error) throw error;
 }
 
@@ -56,8 +65,6 @@ async function syncStreamPay(supabase: any): Promise<SyncResult> {
       plan: "Pay-per-transaction",
       usage_value: txCount,
       usage_unit: "معاملة هذا الشهر",
-      limit_value: null,
-      limit_unit: null,
       cost_sar: Math.round(totalFees * 100) / 100,
       billing_cycle: "شهري",
       notes: "الرسوم = مجموع عمولة البوابة + ضريبتها لهذا الشهر، من جدول transactions مباشرة (بدون أي API خارجي).",
@@ -95,8 +102,6 @@ async function syncMistral(supabase: any): Promise<SyncResult> {
       plan: "Usage-based",
       usage_value: total,
       usage_unit: data.currency || "USD",
-      limit_value: null,
-      limit_unit: null,
       cost_sar: null,
       billing_cycle: "شهري",
       notes: `آخر استجابة خام من Mistral Admin API: ${JSON.stringify(data).slice(0, 500)}`,
@@ -150,8 +155,6 @@ async function syncCloudflare(supabase: any): Promise<SyncResult> {
       plan: "Free",
       usage_value: totalRequests,
       usage_unit: "طلب هذا الشهر",
-      limit_value: null,
-      limit_unit: null,
       cost_sar: 0,
       billing_cycle: "شهري",
       notes: "الخطة المجانية عادة بدون حد صارم لعدد الطلبات - الرقم هنا للمتابعة فقط.",
@@ -159,6 +162,37 @@ async function syncCloudflare(supabase: any): Promise<SyncResult> {
     return { service: "cloudflare", status: "synced" };
   } catch (err: any) {
     return { service: "cloudflare", status: "failed", detail: err.message };
+  }
+}
+
+// SNDR has no public usage/quota API (confirmed - their docs aren't even
+// crawlable). Instead this counts what WE logged ourselves in email_log,
+// written by every edge function that sends through SNDR (except the raw
+// auth-send-email hook, deliberately left uninstrumented - see its own
+// comment). Zero external calls, same pattern as StreamPay.
+async function syncSndr(supabase: any): Promise<SyncResult> {
+  try {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const { data, error } = await supabase
+      .from("email_log")
+      .select("status")
+      .eq("status", "sent")
+      .gte("created_at", monthStart);
+    if (error) throw error;
+
+    await upsertUsage(supabase, "sndr", {
+      plan: "—",
+      usage_value: (data || []).length,
+      usage_unit: "إيميل هذا الشهر",
+      cost_sar: 0,
+      billing_cycle: "شهري",
+      notes: "العدد من سجلنا الداخلي (email_log) لكل الإيميلات اللي أرسلناها عبر SNDR هذا الشهر - عدا إيميلات auth-send-email (تأكيد الحساب، استعادة كلمة المرور...) غير مسجّلة حاليًا.",
+    });
+    return { service: "sndr", status: "synced" };
+  } catch (err: any) {
+    return { service: "sndr", status: "failed", detail: err.message };
   }
 }
 
@@ -189,7 +223,7 @@ serve(async (req) => {
       });
     }
 
-    const results = await Promise.all([syncStreamPay(admin), syncMistral(admin), syncCloudflare(admin)]);
+    const results = await Promise.all([syncStreamPay(admin), syncMistral(admin), syncCloudflare(admin), syncSndr(admin)]);
 
     return new Response(JSON.stringify({ results }), {
       status: 200,
