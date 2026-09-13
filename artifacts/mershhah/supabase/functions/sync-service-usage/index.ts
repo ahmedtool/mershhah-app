@@ -235,6 +235,54 @@ async function syncImageKit(supabase: any): Promise<SyncResult> {
   }
 }
 
+// Supabase itself exposes a project-level Prometheus metrics endpoint
+// (undocumented for anything beyond Postgres internals). Verified live on
+// 2026-09-13 against this exact project: only pg_database_size_bytes is
+// present - there is NO metric anywhere in the ~200-line dump for Storage,
+// Egress, Cached Egress, Edge Function invocations, MAU, or Realtime
+// message/connection counts. Those 7 stay dashboard-only; only DB size is
+// automated here. Uses the platform-provided SUPABASE_SERVICE_ROLE_KEY
+// secret that's already available to every Edge Function - no new secret
+// needed.
+async function syncSupabase(supabase: any): Promise<SyncResult> {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const credentials = btoa(`service_role:${serviceRoleKey}`);
+
+    const res = await fetch(`${supabaseUrl}/customer/v1/privileged/metrics`, {
+      headers: { Authorization: `Basic ${credentials}` },
+    });
+    if (!res.ok) throw new Error(`Supabase metrics endpoint returned ${res.status}`);
+    const text = await res.text();
+
+    const lines = text.split("\n").filter((l) => l.startsWith("pg_database_size_bytes{"));
+    if (lines.length === 0) throw new Error("pg_database_size_bytes metric not found in response");
+
+    let totalBytes = 0;
+    for (const line of lines) {
+      const match = line.match(/}\s+([0-9.eE+-]+)\s*$/);
+      if (match) totalBytes += parseFloat(match[1]);
+    }
+
+    const dbSizeGB = Math.round((totalBytes / 1024 / 1024 / 1024) * 1000) / 1000;
+
+    await upsertUsage(supabase, "supabase", {
+      plan: "Free",
+      usage_value: dbSizeGB,
+      usage_unit: "GB قاعدة البيانات",
+      limit_value: 0.5,
+      limit_unit: "GB",
+      cost_sar: 0,
+      billing_cycle: "شهري",
+      notes: "تلقائي: حجم قاعدة البيانات فقط (المصدر الوحيد المتاح فعليًا عبر Supabase Metrics API). باقي المؤشرات (Storage، Egress، Cached Egress، Edge Functions، MAU، Realtime) غير موجودة إطلاقًا في هذا الـ API — تحديثها يبقى يدويًا من لوحة Supabase.",
+    });
+    return { service: "supabase", status: "synced" };
+  } catch (err: any) {
+    return { service: "supabase", status: "failed", detail: err.message };
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -262,7 +310,7 @@ serve(async (req) => {
       });
     }
 
-    const results = await Promise.all([syncStreamPay(admin), syncMistral(admin), syncCloudflare(admin), syncSndr(admin), syncImageKit(admin)]);
+    const results = await Promise.all([syncStreamPay(admin), syncMistral(admin), syncCloudflare(admin), syncSndr(admin), syncImageKit(admin), syncSupabase(admin)]);
 
     return new Response(JSON.stringify({ results }), {
       status: 200,
