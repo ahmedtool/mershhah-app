@@ -10,7 +10,21 @@ import { FullScreenLoader } from '@/components/shared/FullScreenLoader';
 
 const sessionKey = (uid: string) => `mershhah_otp_verified_${uid}`;
 const IDLE_SIGNOUT_MS = 60 * 60 * 1000;
+// Must match otp_ok()'s own window server-side (otp_verified_at <= now() -
+// interval '1 hour' blocks). The stored flag has no server-enforced expiry
+// of its own - it's plain sessionStorage - so without this the client can
+// keep believing "still verified" long after the DB has started blocking
+// every OTP-gated table again, showing an admin a dashboard that's silently
+// empty instead of the code screen that would actually fix it.
+const OTP_VALID_MS = 60 * 60 * 1000;
 const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = ['mousemove', 'keydown', 'mousedown', 'touchstart'];
+
+function isVerificationFresh(uid: string): boolean {
+  const raw = sessionStorage.getItem(sessionKey(uid));
+  if (!raw) return false;
+  const verifiedAt = Number(raw);
+  return Number.isFinite(verifiedAt) && Date.now() - verifiedAt < OTP_VALID_MS;
+}
 
 async function callOtpFunction(path: string, body: Record<string, unknown> = {}) {
   const { data: { session } } = await supabase.auth.getSession();
@@ -93,7 +107,7 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
     // effects raced: the send-effect ran with the stale (default false)
     // isVerified before the check-effect's setIsVerified(true) had actually
     // re-rendered, firing an OTP send that then got silently bypassed.
-    const verified = sessionStorage.getItem(sessionKey(user.uid)) === '1';
+    const verified = isVerificationFresh(user.uid);
     setIsVerified(verified);
     if (verified || sentForUid.current === user.uid) return;
     sentForUid.current = user.uid;
@@ -110,7 +124,7 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
         // Strip the param either way so it can't be replayed via a bookmark/share.
         window.history.replaceState({}, '', window.location.pathname);
         if (ok && data.valid) {
-          sessionStorage.setItem(sessionKey(user.uid), '1');
+          sessionStorage.setItem(sessionKey(user.uid), String(Date.now()));
           setIsVerified(true);
           // The current JWT was minted before the grant stamped
           // otp_verified_at server-side - refresh so its otp_ok claim
@@ -126,6 +140,24 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
 
     if (needsOtp) sendCode();
   }, [needsOtp, user]);
+
+  // The mount-time check above only runs once per sign-in - it won't
+  // notice the 1-hour window lapsing during a long-lived open tab. Without
+  // this, an admin who stays active past the hour (so the idle-signout
+  // timer below never fires) keeps seeing real pages while otp_ok() has
+  // already started blocking every OTP-gated table server-side, the exact
+  // silent-empty-dashboard symptom this file exists to prevent.
+  useEffect(() => {
+    if (!needsOtp || !isVerified || !user) return;
+    const interval = setInterval(() => {
+      if (!isVerificationFresh(user.uid)) {
+        setIsVerified(false);
+        sentForUid.current = null;
+        sendCode();
+      }
+    }, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [needsOtp, isVerified, user]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -185,7 +217,7 @@ export function OtpGate({ children }: { children: React.ReactNode }) {
     const { ok, data } = await callOtpFunction('verify-login-otp', { code: fullCode });
     setIsSubmitting(false);
     if (ok && data.verified) {
-      sessionStorage.setItem(sessionKey(user.uid), '1');
+      sessionStorage.setItem(sessionKey(user.uid), String(Date.now()));
       setIsVerified(true);
       // Same reason as the grant path: the session's JWT was minted before
       // verify-login-otp stamped otp_verified_at, so it still carries the
