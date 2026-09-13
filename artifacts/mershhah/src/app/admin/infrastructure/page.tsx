@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Database, Cloud, CreditCard, Sparkles, Mail, Shield, Info, Pencil, Loader2, RefreshCw, Image as ImageIcon, MapPin } from 'lucide-react';
+import { Database, Cloud, CreditCard, Sparkles, Mail, Shield, Info, Pencil, Loader2, RefreshCw, Image as ImageIcon, MapPin, Trophy } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -25,36 +25,15 @@ type ServiceMeta = {
 };
 
 // Descriptive metadata only - the actual numbers live in service_usage
-// (manually entered, since most providers don't expose billing-quota usage
-// through a public API - see the "استهلاك الخدمات" conversation).
+// (manually entered for services with no public usage API - see the
+// "استهلاك الخدمات" conversation).
 const SERVICES: ServiceMeta[] = [
-  {
-    key: 'supabase',
-    name: 'Supabase',
-    icon: Database,
-    description: 'قاعدة البيانات، المصادقة، التخزين، وEdge Functions',
-    dashboardUrl: 'https://supabase.com/dashboard/project/smmriycsboexindabanc/settings/billing/usage',
-  },
-  {
-    key: 'vercel',
-    name: 'Vercel',
-    icon: Cloud,
-    description: 'استضافة الموقع (الواجهة وAPI)',
-    dashboardUrl: 'https://vercel.com/dashboard',
-  },
   {
     key: 'streampay',
     name: 'StreamPay',
     icon: CreditCard,
     description: 'بوابة الدفع وإدارة الاشتراكات',
     dashboardUrl: 'https://app.streampay.sa',
-  },
-  {
-    key: 'mistral',
-    name: 'Mistral AI',
-    icon: Sparkles,
-    description: 'المساعد الذكي وتحليل قوائم الطعام',
-    dashboardUrl: 'https://console.mistral.ai/usage',
   },
   {
     key: 'sndr',
@@ -78,6 +57,27 @@ const SERVICES: ServiceMeta[] = [
     dashboardUrl: 'https://imagekit.io/dashboard/usage',
   },
   {
+    key: 'mistral',
+    name: 'Mistral AI',
+    icon: Sparkles,
+    description: 'المساعد الذكي وتحليل قوائم الطعام — لا يمكن ربطه برمجيًا حاليًا (يحتاج حساب Enterprise)',
+    dashboardUrl: 'https://console.mistral.ai/usage',
+  },
+  {
+    key: 'supabase',
+    name: 'Supabase',
+    icon: Database,
+    description: 'قاعدة البيانات، المصادقة، التخزين، وEdge Functions',
+    dashboardUrl: 'https://supabase.com/dashboard/project/smmriycsboexindabanc/settings/billing/usage',
+  },
+  {
+    key: 'vercel',
+    name: 'Vercel',
+    icon: Cloud,
+    description: 'استضافة الموقع (الواجهة وAPI)',
+    dashboardUrl: 'https://vercel.com/dashboard',
+  },
+  {
     key: 'google_maps',
     name: 'Google Maps',
     icon: MapPin,
@@ -90,7 +90,7 @@ const statusConfig: Record<ServiceStatus, { label: string; className: string }> 
   ok: { label: 'جيد', className: 'bg-emerald-50 text-emerald-700' },
   warning: { label: 'قريب من الحد', className: 'bg-amber-50 text-amber-700' },
   critical: { label: 'تجاوز الحد', className: 'bg-red-50 text-red-700' },
-  unknown: { label: 'ما تم إدخال بيانات', className: 'bg-gray-100 text-gray-600' },
+  unknown: { label: 'بدون حد مُدخل', className: 'bg-gray-100 text-gray-600' },
 };
 
 function computeStatus(usage: number | null, limit: number | null): ServiceStatus {
@@ -101,11 +101,14 @@ function computeStatus(usage: number | null, limit: number | null): ServiceStatu
   return 'ok';
 }
 
+type TopSubscriber = { name: string; amount: number; count: number };
+
 export default function InfrastructurePage() {
   const [rows, setRows] = useState<Record<string, ServiceUsageRow>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [topSubscribers, setTopSubscribers] = useState<TopSubscriber[]>([]);
   const { toast } = useToast();
 
   const fetchUsage = useCallback(async () => {
@@ -114,6 +117,35 @@ export default function InfrastructurePage() {
     for (const row of (data || []) as ServiceUsageRow[]) map[row.service_key] = row;
     setRows(map);
     setIsLoading(false);
+  }, []);
+
+  const fetchTopSubscribers = useCallback(async () => {
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+    const { data: txRows } = await supabase
+      .from('transactions')
+      .select('profile_id, amount, status')
+      .eq('status', 'completed')
+      .gte('created_at', monthStart);
+
+    const byProfile = new Map<string, { amount: number; count: number }>();
+    for (const tx of (txRows || []) as any[]) {
+      if (!tx.profile_id) continue;
+      const entry = byProfile.get(tx.profile_id) || { amount: 0, count: 0 };
+      entry.amount += Number(tx.amount) || 0;
+      entry.count += 1;
+      byProfile.set(tx.profile_id, entry);
+    }
+    const profileIds = [...byProfile.keys()];
+    if (profileIds.length === 0) { setTopSubscribers([]); return; }
+
+    const { data: profiles } = await supabase.from('profiles').select('id, restaurant_name, full_name').in('id', profileIds);
+    const nameById = new Map<string, string>((profiles || []).map((p: any) => [p.id, p.restaurant_name || p.full_name || '—']));
+
+    const list: TopSubscriber[] = profileIds
+      .map((id) => ({ name: nameById.get(id) || '—', amount: byProfile.get(id)!.amount, count: byProfile.get(id)!.count }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+    setTopSubscribers(list);
   }, []);
 
   const handleSync = async () => {
@@ -148,14 +180,19 @@ export default function InfrastructurePage() {
 
   useEffect(() => {
     fetchUsage();
+    fetchTopSubscribers();
     const channel = supabase
       .channel('service-usage-admin')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_usage' }, () => fetchUsage())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [fetchUsage]);
+  }, [fetchUsage, fetchTopSubscribers]);
 
   const editingService = useMemo(() => SERVICES.find((s) => s.key === editingKey) || null, [editingKey]);
+
+  const alerts = SERVICES
+    .map((s) => ({ s, row: rows[s.key] }))
+    .filter(({ row }) => row && row.usage_value != null && row.limit_value != null && row.limit_value > 0 && (row.usage_value / row.limit_value) >= 0.8);
 
   return (
     <div className="p-4 lg:p-6 space-y-5">
@@ -174,121 +211,126 @@ export default function InfrastructurePage() {
         </button>
       </div>
 
-      <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 flex items-start gap-3">
-        <Info className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-        <p className="text-xs text-amber-800 leading-relaxed">
-          أغلب مزوّدي الخدمات ما يعطون نسبة الاستهلاك مقابل الحد عبر API عام (بيانات لوحة الفوترة نفسها فقط) — لهذا الأرقام هنا تُدخل يدويًا من لوحة كل خدمة. اضغط "تحديث" على أي خدمة عشان تدخل آخر رقم شفته، أو اضغط على اسم الخدمة يوديك للوحتها الفعلية بتبويب جديد.
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <div className="min-w-[960px]">
-            <div className="grid grid-cols-[1.6fr_.8fr_.8fr_.8fr_.8fr_1.2fr_1fr_.9fr_.6fr] gap-3 items-center px-5 py-3 bg-gray-50 border-b border-gray-100 text-[11px] font-bold text-gray-600">
-              <div>الخدمة</div>
-              <div>الخطة</div>
-              <div>الاستخدام</div>
-              <div>الحد</div>
-              <div>المتبقي</div>
-              <div>نسبة الاستهلاك</div>
-              <div>الحالة</div>
-              <div>آخر تحديث</div>
-              <div />
-            </div>
-            <div className="divide-y divide-gray-50">
-              {isLoading ? (
-                <div className="py-14 text-center">
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-400 mx-auto" />
-                </div>
-              ) : (
-                SERVICES.map((s) => {
-                  const Icon = s.icon;
-                  const row = rows[s.key] || null;
-                  const usage = row?.usage_value ?? null;
-                  const limit = row?.limit_value ?? null;
-                  const pct = usage != null && limit != null && limit > 0 ? Math.min(100, Math.round((usage / limit) * 100)) : 0;
-                  const status = statusConfig[computeStatus(usage, limit)];
-                  const remaining = usage != null && limit != null ? `${Math.max(0, Math.round((limit - usage) * 100) / 100)} ${row?.limit_unit || ''}`.trim() : '—';
-
-                  return (
-                    <div key={s.key} className="grid grid-cols-[1.6fr_.8fr_.8fr_.8fr_.8fr_1.2fr_1fr_.9fr_.6fr] gap-3 items-center px-5 py-3.5">
-                      <a href={s.dashboardUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity">
-                        <div className="w-9 h-9 rounded-xl bg-gray-900 text-white flex items-center justify-center shrink-0">
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-xs font-bold text-gray-900 truncate">{s.name}</p>
-                            {AUTO_SYNCED_KEYS.has(s.key) && (
-                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">تلقائي</span>
-                            )}
-                          </div>
-                          <p className="text-[10px] text-gray-600 truncate">{s.description}</p>
-                        </div>
-                      </a>
-                      <div className="text-xs text-gray-700 truncate">{row?.plan || '—'}</div>
-                      <div className="text-xs text-gray-700 truncate">{usage != null ? `${usage} ${row?.usage_unit || ''}` : '—'}</div>
-                      <div className="text-xs text-gray-700 truncate">{limit != null ? `${limit} ${row?.limit_unit || ''}` : '—'}</div>
-                      <div className="text-xs text-gray-700 truncate">{remaining}</div>
-                      <div>
-                        <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-gray-900'}`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${status.className}`}>
-                          {status.label}
-                        </span>
-                      </div>
-                      <div className="text-[10px] text-gray-600 truncate">
-                        {row?.updated_at ? formatDistanceToNow(new Date(row.updated_at), { addSuffix: true, locale: ar }) : '—'}
-                      </div>
-                      <div className="flex justify-end">
-                        <button
-                          onClick={() => setEditingKey(s.key)}
-                          className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors"
-                          title="تحديث"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
+      {alerts.length > 0 && (
+        <div className="space-y-2">
+          {alerts.map(({ s, row }) => {
+            const pct = Math.round((row!.usage_value! / row!.limit_value!) * 100);
+            const isCritical = pct >= 100;
+            return (
+              <div key={s.key} className={`flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs font-bold ${isCritical ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
+                <Info className="h-3.5 w-3.5 shrink-0" />
+                {s.name} {isCritical ? 'تجاوز الحد' : `وصل ${pct}% من الحد`}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      )}
+
+      {isLoading ? (
+        <div className="py-14 text-center"><Loader2 className="h-5 w-5 animate-spin text-gray-400 mx-auto" /></div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {SERVICES.map((s) => {
+            const Icon = s.icon;
+            const row = rows[s.key] || null;
+            const usage = row?.usage_value ?? null;
+            const limit = row?.limit_value ?? null;
+            const hasLimit = usage != null && limit != null && limit > 0;
+            const pct = hasLimit ? Math.min(100, Math.round((usage! / limit!) * 100)) : 0;
+            const status = statusConfig[computeStatus(usage, limit)];
+            const remaining = hasLimit ? `${Math.max(0, Math.round((limit! - usage!) * 100) / 100)} ${row?.limit_unit || ''}`.trim() : null;
+            const isAuto = AUTO_SYNCED_KEYS.has(s.key);
+
+            return (
+              <div key={s.key} className="rounded-2xl border border-gray-100 p-4 flex flex-col gap-3">
+                <div className="flex items-start justify-between gap-2">
+                  <a href={s.dashboardUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity">
+                    <div className="w-10 h-10 rounded-xl bg-gray-900 text-white flex items-center justify-center shrink-0">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-bold text-gray-900 truncate">{s.name}</p>
+                        {isAuto && <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">تلقائي</span>}
+                      </div>
+                      <p className="text-[10px] text-gray-600 line-clamp-2">{s.description}</p>
+                    </div>
+                  </a>
+                  <button
+                    onClick={() => setEditingKey(s.key)}
+                    className="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors shrink-0"
+                    title="تحديث يدوي"
+                  >
+                    <Pencil className="h-3 w-3" />
+                  </button>
+                </div>
+
+                <div>
+                  {usage != null ? (
+                    <p className="text-xl font-black text-gray-900" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                      {usage.toLocaleString('ar')} <span className="text-xs font-bold text-gray-600">{row?.usage_unit}</span>
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-600">ما فيه بيانات استهلاك بعد</p>
+                  )}
+                  {row?.plan && row.plan !== '—' && <p className="text-[10px] text-gray-600 mt-0.5">الخطة: {row.plan}</p>}
+                </div>
+
+                {hasLimit ? (
+                  <div>
+                    <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-gray-900'}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between mt-1.5 text-[10px] text-gray-600">
+                      <span>الحد: {limit} {row?.limit_unit}</span>
+                      <span>باقي: {remaining}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-gray-500">
+                    {usage != null ? 'بدون حد مُدخل — اضغط ✏️ عشان تدخل الحد وتفعّل شريط النسبة' : ''}
+                  </p>
+                )}
+
+                <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                  <span className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-bold whitespace-nowrap ${status.className}`}>
+                    {status.label}
+                  </span>
+                  <span className="text-[10px] text-gray-500">
+                    {row?.updated_at ? formatDistanceToNow(new Date(row.updated_at), { addSuffix: true, locale: ar }) : 'ما تحدّث بعد'}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="rounded-2xl border border-gray-100 p-5">
-        <h2 className="text-sm font-bold text-gray-900 mb-1">تنبيهات ذكية</h2>
-        <p className="text-[10px] text-gray-600 mb-4">تظهر تلقائيًا لأي خدمة توصل نسبة استهلاكها 80% فأكثر</p>
-        {(() => {
-          const alerts = SERVICES
-            .map((s) => ({ s, row: rows[s.key] }))
-            .filter(({ row }) => row && row.usage_value != null && row.limit_value != null && row.limit_value > 0 && (row.usage_value / row.limit_value) >= 0.8);
-          if (alerts.length === 0) {
-            return <div className="py-10 text-center"><p className="text-xs text-gray-600">ما فيه تنبيهات حاليًا</p></div>;
-          }
-          return (
-            <div className="space-y-2">
-              {alerts.map(({ s, row }) => {
-                const pct = Math.round((row!.usage_value! / row!.limit_value!) * 100);
-                const isCritical = pct >= 100;
-                return (
-                  <div key={s.key} className={`flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-xs font-bold ${isCritical ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>
-                    <Info className="h-3.5 w-3.5 shrink-0" />
-                    {s.name} {isCritical ? 'تجاوز الحد' : `وصل ${pct}% من الحد`}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })()}
+        <div className="flex items-center gap-2 mb-1">
+          <Trophy className="h-4 w-4 text-amber-500" />
+          <h2 className="text-sm font-bold text-gray-900">أكثر المشتركين استهلاكًا (StreamPay) هذا الشهر</h2>
+        </div>
+        <p className="text-[10px] text-gray-600 mb-4">
+          مبني على جدول المعاملات الحقيقي — ترتيب المطاعم حسب قيمة المعاملات هذا الشهر. نفس التتبع لـ SNDR وImageKit يحتاج ربط كل عملية برقم المطعم أولاً (خطوة قادمة لو تبيها).
+        </p>
+        {topSubscribers.length === 0 ? (
+          <div className="py-8 text-center"><p className="text-xs text-gray-600">ما فيه معاملات مسجّلة هذا الشهر</p></div>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {topSubscribers.map((t, i) => (
+              <div key={i} className="flex items-center gap-3 py-2.5">
+                <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center text-[11px] font-bold text-gray-600 shrink-0">{i + 1}</div>
+                <div className="flex-1 min-w-0"><p className="text-xs font-bold text-gray-900 truncate">{t.name}</p></div>
+                <div className="text-[11px] text-gray-600 shrink-0">{t.count} معاملة</div>
+                <div className="text-xs font-bold text-gray-900 shrink-0" style={{ fontVariantNumeric: 'tabular-nums' }}>{t.amount.toLocaleString('ar')} ر.س</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {editingService && (
