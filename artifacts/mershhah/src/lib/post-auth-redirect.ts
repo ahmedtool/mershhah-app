@@ -5,7 +5,7 @@ export const ADMIN_EMAIL = 'ahmedsupsa@gmail.com';
 
 const allAdminPermissions = [
   'dashboard', 'management', 'financials', 'store-management',
-  'applications', 'announcements', 'support', 'team', 'sales',
+  'applications', 'announcements', 'support', 'team', 'sales', 'infrastructure',
 ];
 
 const adminPages = [
@@ -17,6 +17,7 @@ const adminPages = [
   { href: '/admin/support', permissionId: 'support' },
   { href: '/admin/team', permissionId: 'team' },
   { href: '/admin/sales', permissionId: 'sales' },
+  { href: '/admin/infrastructure', permissionId: 'infrastructure' },
 ];
 
 async function hasExistingAccountUnderDifferentIdentity(): Promise<boolean> {

@@ -77,6 +77,7 @@ const AdminStorePage = lazyWithReload(() => import("@/app/admin/store/page"));
 const AdminStoreDevelopersPage = lazyWithReload(() => import("@/app/admin/store/developers/page"));
 const AdminStoreManagementPage = lazyWithReload(() => import("@/app/admin/store-management/page"));
 const AdminSharedProductsPage = lazyWithReload(() => import("@/app/admin/shared-products/page"));
+const AdminInfrastructurePage = lazyWithReload(() => import("@/app/admin/infrastructure/page"));
 const AdminSupportPage = lazyWithReload(() => import("@/app/admin/support/page"));
 const AdminSupportChatPage = lazyWithReload(() => import("@/app/admin/support/[chatId]/page"));
 const AdminSettingsPage = lazyWithReload(() => import("@/app/admin/settings/page"));
@@ -231,6 +232,7 @@ function Router() {
         <Route path="/admin/store/developers" component={() => <AdminLayout><AdminStoreDevelopersPage /></AdminLayout>} />
         <Route path="/admin/store-management" component={() => <AdminLayout><AdminStoreManagementPage /></AdminLayout>} />
         <Route path="/admin/shared-products" component={() => <AdminLayout><AdminSharedProductsPage /></AdminLayout>} />
+        <Route path="/admin/infrastructure" component={() => <AdminLayout><AdminInfrastructurePage /></AdminLayout>} />
         <Route path="/admin/support/:chatId" component={() => <AdminLayout><AdminSupportChatPage /></AdminLayout>} />
         <Route path="/admin/support" component={() => <AdminLayout><AdminSupportPage /></AdminLayout>} />
         <Route path="/admin/settings" component={() => <AdminLayout><AdminSettingsPage /></AdminLayout>} />

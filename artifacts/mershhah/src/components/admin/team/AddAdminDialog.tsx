@@ -27,6 +27,7 @@ const permissions = [
   { id: 'support', label: 'الدعم المباشر' },
   { id: 'team', label: 'إدارة الفريق' },
   { id: 'sales', label: 'دليل المبيعات' },
+  { id: 'infrastructure', label: 'استهلاك الخدمات' },
 ];
 
 const formSchema = z.object({
