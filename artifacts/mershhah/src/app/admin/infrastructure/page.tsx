@@ -1,12 +1,18 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Database, Cloud, CreditCard, Sparkles, Mail, Shield, Info, Pencil, Loader2 } from 'lucide-react';
+import { Database, Cloud, CreditCard, Sparkles, Mail, Shield, Info, Pencil, Loader2, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { UpdateServiceUsageDialog } from '@/components/admin/infrastructure/UpdateServiceUsageDialog';
+import { useToast } from '@/hooks/use-toast';
 import type { ServiceUsageRow } from '@/lib/types';
+
+// Services synced automatically by the sync-service-usage Edge Function -
+// the rest stay manual since no usable API exists for them (see the
+// "استهلاك الخدمات" conversation).
+const AUTO_SYNCED_KEYS = new Set(['streampay', 'mistral', 'cloudflare']);
 
 type ServiceStatus = 'ok' | 'warning' | 'critical' | 'unknown';
 
@@ -85,6 +91,8 @@ export default function InfrastructurePage() {
   const [rows, setRows] = useState<Record<string, ServiceUsageRow>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const { toast } = useToast();
 
   const fetchUsage = useCallback(async () => {
     const { data } = await supabase.from('service_usage').select('*');
@@ -93,6 +101,36 @@ export default function InfrastructurePage() {
     setRows(map);
     setIsLoading(false);
   }, []);
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-service-usage`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session?.access_token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'فشلت المزامنة');
+
+      const synced = (data.results || []).filter((r: any) => r.status === 'synced').map((r: any) => r.service);
+      const skipped = (data.results || []).filter((r: any) => r.status === 'skipped');
+      const failed = (data.results || []).filter((r: any) => r.status === 'failed');
+
+      if (failed.length > 0) {
+        toast({ title: 'اكتملت المزامنة مع أخطاء', description: failed.map((f: any) => `${f.service}: ${f.detail}`).join(' — '), variant: 'destructive' });
+      } else if (synced.length > 0) {
+        toast({ title: 'تمت المزامنة', description: `تحديث: ${synced.join('، ')}${skipped.length > 0 ? ` — تخطي (بدون مفتاح): ${skipped.map((s: any) => s.service).join('، ')}` : ''}` });
+      } else {
+        toast({ title: 'ما تم تحديث أي خدمة', description: 'كل الخدمات محتاجة مفتاح API غير مُعدّ بعد.' });
+      }
+      await fetchUsage();
+    } catch (error: any) {
+      toast({ title: 'خطأ في المزامنة', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   useEffect(() => {
     fetchUsage();
@@ -107,9 +145,19 @@ export default function InfrastructurePage() {
 
   return (
     <div className="p-4 lg:p-6 space-y-5">
-      <div>
-        <h1 className="text-lg font-bold text-gray-900">استهلاك الخدمات</h1>
-        <p className="text-xs text-gray-600 mt-0.5">مراقبة كل الخدمات الخارجية اللي تعتمد عليها المنصة، وكم مستهلك من كل وحدة</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-bold text-gray-900">استهلاك الخدمات</h1>
+          <p className="text-xs text-gray-600 mt-0.5">مراقبة كل الخدمات الخارجية اللي تعتمد عليها المنصة، وكم مستهلك من كل وحدة</p>
+        </div>
+        <button
+          onClick={handleSync}
+          disabled={isSyncing}
+          className="h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-2 shrink-0"
+        >
+          {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+          مزامنة تلقائية الآن
+        </button>
       </div>
 
       <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 flex items-start gap-3">
@@ -155,7 +203,12 @@ export default function InfrastructurePage() {
                           <Icon className="h-4 w-4" />
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs font-bold text-gray-900 truncate">{s.name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-xs font-bold text-gray-900 truncate">{s.name}</p>
+                            {AUTO_SYNCED_KEYS.has(s.key) && (
+                              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-600">تلقائي</span>
+                            )}
+                          </div>
                           <p className="text-[10px] text-gray-600 truncate">{s.description}</p>
                         </div>
                       </a>

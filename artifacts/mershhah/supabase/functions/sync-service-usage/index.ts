@@ -1,0 +1,204 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+// Pulls real numbers for the three services that actually have something to
+// fetch (see the "استهلاك الخدمات" plan) and upserts them into
+// service_usage - StreamPay needs no external call at all (it's our own
+// transactions table from streampay-webhook), Mistral and Cloudflare each
+// need one secret set as an Edge Function secret by the admin directly
+// (never passed through chat/code). A missing secret just skips that one
+// service instead of failing the whole sync.
+type SyncResult = { service: string; status: "synced" | "skipped" | "failed"; detail?: string };
+
+async function upsertUsage(
+  supabase: any,
+  serviceKey: string,
+  fields: Partial<{
+    plan: string | null;
+    usage_value: number | null;
+    usage_unit: string | null;
+    limit_value: number | null;
+    limit_unit: string | null;
+    cost_sar: number | null;
+    billing_cycle: string | null;
+    notes: string | null;
+  }>
+) {
+  const { error } = await supabase.from("service_usage").upsert(
+    { service_key: serviceKey, updated_at: new Date().toISOString(), updated_by: null, ...fields },
+    { onConflict: "service_key" }
+  );
+  if (error) throw error;
+}
+
+async function syncStreamPay(supabase: any): Promise<SyncResult> {
+  try {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("amount, gateway_fee, gateway_fee_vat, status")
+      .eq("status", "completed")
+      .gte("created_at", monthStart);
+    if (error) throw error;
+
+    const rows = data || [];
+    const txCount = rows.length;
+    const totalFees = rows.reduce((sum: number, r: any) => sum + (Number(r.gateway_fee) || 0) + (Number(r.gateway_fee_vat) || 0), 0);
+
+    await upsertUsage(supabase, "streampay", {
+      plan: "Pay-per-transaction",
+      usage_value: txCount,
+      usage_unit: "معاملة هذا الشهر",
+      limit_value: null,
+      limit_unit: null,
+      cost_sar: Math.round(totalFees * 100) / 100,
+      billing_cycle: "شهري",
+      notes: "الرسوم = مجموع عمولة البوابة + ضريبتها لهذا الشهر، من جدول transactions مباشرة (بدون أي API خارجي).",
+    });
+    return { service: "streampay", status: "synced" };
+  } catch (err: any) {
+    return { service: "streampay", status: "failed", detail: err.message };
+  }
+}
+
+async function syncMistral(supabase: any): Promise<SyncResult> {
+  const apiKey = Deno.env.get("MISTRAL_ADMIN_API_KEY");
+  if (!apiKey) return { service: "mistral", status: "skipped", detail: "MISTRAL_ADMIN_API_KEY not set" };
+
+  try {
+    const now = new Date();
+    const res = await fetch(`https://api.mistral.ai/v1/admin/usage?month=${now.getMonth() + 1}&year=${now.getFullYear()}`, {
+      headers: { "x-api-key": apiKey },
+    });
+    if (!res.ok) throw new Error(`Mistral API returned ${res.status}: ${await res.text()}`);
+    const data = await res.json();
+
+    // Response shape isn't fully documented publicly - try the obvious
+    // total field first, else sum whatever numeric category costs are
+    // present, and always keep the raw payload in notes so a wrong guess
+    // here is still visible/fixable from the admin page rather than silent.
+    let total: number | null = typeof data.total_cost === "number" ? data.total_cost : null;
+    if (total === null && data && typeof data === "object") {
+      const categories = ["chat", "completion", "ocr", "audio", "connectors", "libraries_api", "fine_tuning", "vibe_usage"];
+      const found = categories.map((c) => data[c]?.cost ?? data[c]?.total_cost ?? data[c]).filter((v) => typeof v === "number");
+      if (found.length > 0) total = found.reduce((a: number, b: number) => a + b, 0);
+    }
+
+    await upsertUsage(supabase, "mistral", {
+      plan: "Usage-based",
+      usage_value: total,
+      usage_unit: data.currency || "USD",
+      limit_value: null,
+      limit_unit: null,
+      cost_sar: null,
+      billing_cycle: "شهري",
+      notes: `آخر استجابة خام من Mistral Admin API: ${JSON.stringify(data).slice(0, 500)}`,
+    });
+    return { service: "mistral", status: "synced" };
+  } catch (err: any) {
+    return { service: "mistral", status: "failed", detail: err.message };
+  }
+}
+
+async function syncCloudflare(supabase: any): Promise<SyncResult> {
+  const token = Deno.env.get("CLOUDFLARE_API_TOKEN");
+  const zoneName = Deno.env.get("CLOUDFLARE_ZONE_NAME") || "mershhah.com";
+  if (!token) return { service: "cloudflare", status: "skipped", detail: "CLOUDFLARE_API_TOKEN not set" };
+
+  try {
+    const zoneRes = await fetch(`https://api.cloudflare.com/client/v4/zones?name=${zoneName}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const zoneData = await zoneRes.json();
+    const zoneId = zoneData?.result?.[0]?.id;
+    if (!zoneId) throw new Error(`No Cloudflare zone found for ${zoneName}`);
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    const today = now.toISOString().slice(0, 10);
+
+    const query = `
+      query {
+        viewer {
+          zones(filter: { zoneTag: "${zoneId}" }) {
+            httpRequests1dGroups(limit: 31, filter: { date_geq: "${monthStart}", date_leq: "${today}" }) {
+              sum { requests }
+            }
+          }
+        }
+      }
+    `;
+    const gqlRes = await fetch("https://api.cloudflare.com/client/v4/graphql", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ query }),
+    });
+    const gqlData = await gqlRes.json();
+    if (gqlData.errors?.length) throw new Error(JSON.stringify(gqlData.errors));
+
+    const groups = gqlData?.data?.viewer?.zones?.[0]?.httpRequests1dGroups || [];
+    const totalRequests = groups.reduce((sum: number, g: any) => sum + (g.sum?.requests || 0), 0);
+
+    await upsertUsage(supabase, "cloudflare", {
+      plan: "Free",
+      usage_value: totalRequests,
+      usage_unit: "طلب هذا الشهر",
+      limit_value: null,
+      limit_unit: null,
+      cost_sar: 0,
+      billing_cycle: "شهري",
+      notes: "الخطة المجانية عادة بدون حد صارم لعدد الطلبات - الرقم هنا للمتابعة فقط.",
+    });
+    return { service: "cloudflare", status: "synced" };
+  } catch (err: any) {
+    return { service: "cloudflare", status: "failed", detail: err.message };
+  }
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await admin.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: callerProfile } = await admin.from("profiles").select("role").eq("id", user.id).single();
+    if (callerProfile?.role !== "admin") {
+      return new Response(JSON.stringify({ error: "Forbidden — admin only" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const results = await Promise.all([syncStreamPay(admin), syncMistral(admin), syncCloudflare(admin)]);
+
+    return new Response(JSON.stringify({ results }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
