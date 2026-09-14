@@ -24,9 +24,6 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 const categoryOptionsBase = [
   { value: 'complaint', labelKey: 'ownerTickets.categoryComplaint', icon: '⚠️' },
   { value: 'inquiry', labelKey: 'ownerTickets.categoryInquiry', icon: '❓' },
-  { value: 'employment', labelKey: 'ownerTickets.categoryEmployment', icon: '💼' },
-  { value: 'suggestion', labelKey: 'ownerTickets.categorySuggestion', icon: '💡' },
-  { value: 'other', labelKey: 'ownerTickets.categoryOther', icon: '📝' },
 ] as const;
 
 export default function ContactPage() {
@@ -39,7 +36,7 @@ export default function ContactPage() {
   const ticketSchema = useMemo(() => z.object({
     name: z.string().min(2, t('publicSupport.nameRequired')),
     phone: z.string().min(10, t('publicSupport.phoneRequired')),
-    category: z.enum(['complaint', 'inquiry', 'employment', 'suggestion', 'other']),
+    category: z.enum(['complaint', 'inquiry']),
     subject: z.string().min(3, t('publicSupport.subjectRequired')),
     message: z.string().min(5, t('publicSupport.messageRequired')),
   }), [t]);
@@ -52,7 +49,7 @@ export default function ContactPage() {
 
   const form = useForm<z.infer<typeof ticketSchema>>({
     resolver: zodResolver(ticketSchema),
-    defaultValues: { name: '', phone: '', category: 'other', subject: '', message: '' },
+    defaultValues: { name: '', phone: '', category: 'complaint', subject: '', message: '' },
   });
 
   useEffect(() => {
@@ -249,7 +246,7 @@ export default function ContactPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs text-gray-600">{t('publicSupport.ticketTypeLabel')}</FormLabel>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         {categoryOptionsBase.map((opt) => (
                           <button
                             key={opt.value}
