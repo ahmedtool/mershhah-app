@@ -14,6 +14,7 @@ import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useNearestBranch } from '@/hooks/useNearestBranch';
+import { usePublicPageBackground } from '@/hooks/usePublicPageBackground';
 
 // A small radar-style pulse behind the location pin - two rings expanding
 // outward and fading, staggered so one is always mid-pulse. Reads as "still
@@ -50,6 +51,7 @@ export default function PublicBranchesPage() {
   const { phase: locationPhase, sortedBranches, requestLocation } = useNearestBranch(branches);
   const userLocation = locationPhase === 'located';
   const locating = locationPhase === 'locating';
+  usePublicPageBackground(restaurant?.secondaryColor);
 
   useEffect(() => {
     if (!username) return;

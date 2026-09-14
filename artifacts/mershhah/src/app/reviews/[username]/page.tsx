@@ -19,6 +19,7 @@ import { getPublicThemeStyle, getContrastTextColor } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { usePublicPageBackground } from '@/hooks/usePublicPageBackground';
 
 interface Review {
   id: string;
@@ -56,6 +57,7 @@ export default function PublicReviewsPage() {
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const { t, dir } = useLanguage();
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
+  usePublicPageBackground(restaurant?.secondaryColor);
 
   const reviewTags = [
     { id: 'quality', labelKey: 'ownerReviews.topicQuality', icon: '✦', keywords: ['جودة', 'ممتاز', 'رائع', 'جميل', 'فخم', 'مميز', 'أفضل', 'نظيف', 'مرتب'] },

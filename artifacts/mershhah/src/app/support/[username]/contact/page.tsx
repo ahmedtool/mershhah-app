@@ -20,6 +20,7 @@ import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { usePublicPageBackground } from '@/hooks/usePublicPageBackground';
 
 const categoryOptionsBase = [
   { value: 'complaint', labelKey: 'ownerTickets.categoryComplaint', icon: '⚠️' },
@@ -46,6 +47,7 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(true);
   const [isSubmitting, startSubmitting] = useTransition();
   const [submitted, setSubmitted] = useState(false);
+  usePublicPageBackground(restaurant?.secondaryColor);
 
   const form = useForm<z.infer<typeof ticketSchema>>({
     resolver: zodResolver(ticketSchema),

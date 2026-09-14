@@ -13,6 +13,7 @@ import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { getCustomTypeIcon } from '@/lib/gateway-service-types';
+import { usePublicPageBackground } from '@/hooks/usePublicPageBackground';
 
 const SERVICE_CARDS = [
   { type: 'contact', icon: MessageSquare, titleKey: 'ownerGateway.contactTitle', descKey: 'publicGateway.contactCardDesc' },
@@ -46,6 +47,7 @@ export default function SupportGatewayPage() {
   const [enabledServices, setEnabledServices] = useState<string[]>([]);
   const [customCards, setCustomCards] = useState<CustomCard[]>([]);
   const [loading, setLoading] = useState(true);
+  usePublicPageBackground(restaurant?.secondaryColor);
 
   useEffect(() => {
     const fetchData = async () => {

@@ -17,6 +17,7 @@ import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import type { BusinessGatewayField, BusinessGatewayServiceType, BusinessGatewayBaseFields } from '@/lib/types';
+import { usePublicPageBackground } from '@/hooks/usePublicPageBackground';
 
 interface GatewayRequestFormProps {
   serviceType: BusinessGatewayServiceType;
@@ -47,6 +48,7 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
   const [loading, setLoading] = useState(true);
   const [isSubmitting, startSubmitting] = useTransition();
   const [submitted, setSubmitted] = useState(false);
+  usePublicPageBackground(restaurant?.secondaryColor);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');

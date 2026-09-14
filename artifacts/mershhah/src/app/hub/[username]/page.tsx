@@ -26,6 +26,7 @@ import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useToast } from '@/hooks/use-toast';
 import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 import { useGoogleFont } from '@/hooks/useGoogleFont';
+import { usePublicPageBackground } from '@/hooks/usePublicPageBackground';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { NearestBranchSection } from '@/components/public/NearestBranchSection';
@@ -74,6 +75,7 @@ export default function RestaurantHubPage() {
       : undefined
   );
   useGoogleFont(restaurant?.fontFamily);
+  usePublicPageBackground(restaurant?.secondaryColor);
   // Offers with a branch_id only show to visitors known to be at that branch
   // (via a branch-specific link/QR); offers with no branch_id always show.
   const visibleOffers = branchParam ? offers.filter((o) => !o.branch_id || o.branch_id === branchParam) : offers;

@@ -15,6 +15,7 @@ import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { usePublicPageBackground } from '@/hooks/usePublicPageBackground';
 
 type JobPostingLite = {
   id: string;
@@ -36,6 +37,7 @@ export default function PublicJobsPage() {
   const [postings, setPostings] = useState<JobPostingLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobPostingLite | null>(null);
+  usePublicPageBackground(restaurant?.secondaryColor);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
