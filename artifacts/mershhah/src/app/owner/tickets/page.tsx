@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   AlertTriangle, RefreshCw, MessageSquare, User, Clock, ArrowLeft, ArrowRight, Bot,
   Briefcase, Store, Package, Building2, Handshake, Lock, Plus, Trash2, FileText, Loader2, Inbox,
-  Sparkles, Pencil, Settings, ChevronUp, ChevronDown,
+  Sparkles, Pencil, Settings, ChevronUp, ChevronDown, Languages,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/useUser';
@@ -19,6 +19,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
+import { translateText } from '@/lib/translate-text';
 import { GATEWAY_FIELD_DEFS, CUSTOM_TYPE_ICONS, DEFAULT_CUSTOM_TYPE_ICON, getCustomTypeIcon } from '@/lib/gateway-service-types';
 import type { SupportTicket, BusinessGatewayService, JobPosting, BusinessRequest, BusinessGatewayField } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -295,12 +296,14 @@ export default function OwnerTicketsPage() {
 
   const [isCustomEditorOpen, setIsCustomEditorOpen] = useState(false);
   const [editingCustomType, setEditingCustomType] = useState<BusinessGatewayService | null>(null);
-  const [customDraft, setCustomDraft] = useState<{ title: string; icon: string; fields: BusinessGatewayField[] }>({ title: '', icon: DEFAULT_CUSTOM_TYPE_ICON, fields: [] });
+  const [customDraft, setCustomDraft] = useState<{ title: string; title_en: string; icon: string; fields: BusinessGatewayField[] }>({ title: '', title_en: '', icon: DEFAULT_CUSTOM_TYPE_ICON, fields: [] });
   const [isSavingCustomType, startSavingCustomType] = useTransition();
+  const [isTranslatingTitle, setIsTranslatingTitle] = useState(false);
+  const [translatingFieldIndex, setTranslatingFieldIndex] = useState<number | null>(null);
 
   const openNewCustomType = () => {
     setEditingCustomType(null);
-    setCustomDraft({ title: '', icon: DEFAULT_CUSTOM_TYPE_ICON, fields: [] });
+    setCustomDraft({ title: '', title_en: '', icon: DEFAULT_CUSTOM_TYPE_ICON, fields: [] });
     setIsCustomEditorOpen(true);
   };
 
@@ -308,10 +311,38 @@ export default function OwnerTicketsPage() {
     setEditingCustomType(service);
     setCustomDraft({
       title: service.config?.title || '',
+      title_en: service.config?.title_en || '',
       icon: service.config?.icon || DEFAULT_CUSTOM_TYPE_ICON,
       fields: service.config?.fields || [],
     });
     setIsCustomEditorOpen(true);
+  };
+
+  const translateTitle = async () => {
+    if (!customDraft.title.trim()) return;
+    setIsTranslatingTitle(true);
+    try {
+      const title_en = await translateText(customDraft.title);
+      setCustomDraft(d => ({ ...d, title_en }));
+    } catch (e: any) {
+      toast({ title: t('menuItem.translationFailed'), description: e.message, variant: 'destructive' });
+    } finally {
+      setIsTranslatingTitle(false);
+    }
+  };
+
+  const translateFieldLabel = async (index: number) => {
+    const label = customDraft.fields[index]?.label;
+    if (!label?.trim()) return;
+    setTranslatingFieldIndex(index);
+    try {
+      const label_en = await translateText(label);
+      updateDraftField(index, { label_en });
+    } catch (e: any) {
+      toast({ title: t('menuItem.translationFailed'), description: e.message, variant: 'destructive' });
+    } finally {
+      setTranslatingFieldIndex(null);
+    }
   };
 
   const addDraftField = () => {
@@ -348,6 +379,7 @@ export default function OwnerTicketsPage() {
       try {
         const config = {
           title: customDraft.title.trim(),
+          title_en: customDraft.title_en.trim() || undefined,
           icon: customDraft.icon,
           fields: customDraft.fields.filter(f => (f.label || '').trim()),
         };
@@ -682,6 +714,27 @@ export default function OwnerTicketsPage() {
                   />
                 </div>
                 <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-bold text-gray-600">{t('ownerGateway.customTypeTitleEnLabel')}</label>
+                    <button
+                      type="button"
+                      onClick={translateTitle}
+                      disabled={isTranslatingTitle || !customDraft.title.trim()}
+                      className="flex items-center gap-1 text-[10px] font-bold text-gray-600 hover:text-gray-900 disabled:opacity-40 transition-colors"
+                    >
+                      {isTranslatingTitle ? <Loader2 className="h-3 w-3 animate-spin" /> : <Languages className="h-3 w-3" />}
+                      {t('menuItem.translateAuto')}
+                    </button>
+                  </div>
+                  <Input
+                    value={customDraft.title_en}
+                    onChange={(e) => setCustomDraft({ ...customDraft, title_en: e.target.value })}
+                    placeholder={t('ownerGateway.customTypeTitleEnPlaceholder')}
+                    dir="ltr"
+                    className="h-10 rounded-xl border-gray-200 text-xs"
+                  />
+                </div>
+                <div>
                   <label className="text-[11px] font-bold text-gray-600 mb-1.5 block">{t('ownerGateway.customTypeIconLabel')}</label>
                   <div className="flex flex-wrap gap-2">
                     {Object.keys(CUSTOM_TYPE_ICONS).map((name) => {
@@ -732,6 +785,24 @@ export default function OwnerTicketsPage() {
                         />
                         <button type="button" onClick={() => removeDraftField(index)} className="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-gray-600 hover:bg-red-50 hover:text-red-500 transition-colors">
                           <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 ps-8">
+                        <Input
+                          value={field.label_en || ''}
+                          onChange={(e) => updateDraftField(index, { label_en: e.target.value })}
+                          placeholder={t('ownerGateway.fieldLabelEnPlaceholder')}
+                          dir="ltr"
+                          className="h-8 rounded-lg border-gray-200 text-[11px] flex-1"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => translateFieldLabel(index)}
+                          disabled={translatingFieldIndex === index || !field.label?.trim()}
+                          className="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-40 transition-colors"
+                          title={t('menuItem.translateAuto')}
+                        >
+                          {translatingFieldIndex === index ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Languages className="h-3.5 w-3.5" />}
                         </button>
                       </div>
                       <Select value={field.type} onValueChange={(v) => updateDraftField(index, { type: v as BusinessGatewayField['type'] })}>

@@ -359,9 +359,13 @@ export type BusinessGatewayField = {
   id: string;
   // Exactly one of these is set: labelKey for built-in field defs (i18n,
   // src/lib/gateway-service-types.ts), label for owner-authored custom
-  // fields (raw text the owner typed - not translated).
+  // fields (raw text the owner typed).
   labelKey?: string;
   label?: string;
+  // Optional English translation of `label`, filled by the same free
+  // MyMemory-backed translateText() helper used on menu item names -
+  // shown instead of `label` when the visitor's language is English.
+  label_en?: string;
   // 'paragraph' renders as static descriptive text on the public form -
   // it collects no input and is never required or submitted.
   type: 'text' | 'textarea' | 'number' | 'select' | 'paragraph';
@@ -388,6 +392,7 @@ export type BusinessGatewayBaseFields = {
 
 export type BusinessGatewayServiceConfig = {
   title?: string; // custom types only
+  title_en?: string; // custom types only - see BusinessGatewayField.label_en
   icon?: string; // custom types only
   fields?: BusinessGatewayField[]; // franchise/wholesale/corporate/partnership/custom
   baseFields?: BusinessGatewayBaseFields;

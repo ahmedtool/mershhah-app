@@ -65,8 +65,9 @@ export type PublicPageData = {
     service_type: string;
     config: {
       title?: string;
+      title_en?: string;
       icon?: string;
-      fields?: Array<{ id: string; label: string; type: string; options?: string[] }>;
+      fields?: Array<{ id: string; label: string; label_en?: string; type: string; options?: string[] }>;
       baseFields?: { name?: boolean; phone?: boolean; email?: boolean };
     };
   }>;

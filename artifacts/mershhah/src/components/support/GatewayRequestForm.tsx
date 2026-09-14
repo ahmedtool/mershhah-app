@@ -42,7 +42,7 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
   const isCustom = serviceType.startsWith('custom:');
 
   const [restaurant, setRestaurant] = useState<any>(null);
-  const [customConfig, setCustomConfig] = useState<{ title?: string; fields?: BusinessGatewayField[] } | null>(null);
+  const [customConfig, setCustomConfig] = useState<{ title?: string; title_en?: string; fields?: BusinessGatewayField[] } | null>(null);
   const [baseFields, setBaseFields] = useState<BusinessGatewayBaseFields>({});
   const [loading, setLoading] = useState(true);
   const [isSubmitting, startSubmitting] = useTransition();
@@ -88,8 +88,12 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
     fetchData();
   }, [username]);
 
-  const effectiveTitle = isCustom ? (customConfig?.title || '') : (titleKey ? t(titleKey) : '');
+  const isEnglish = dir === 'ltr';
+  const effectiveTitle = isCustom
+    ? ((isEnglish && customConfig?.title_en) || customConfig?.title || '')
+    : (titleKey ? t(titleKey) : '');
   const effectiveFields = isCustom ? (customConfig?.fields || []) : (fields || []);
+  const fieldLabel = (field: BusinessGatewayField) => field.labelKey ? t(field.labelKey) : ((isEnglish && field.label_en) || field.label || '');
   const nameRequired = baseFields.name !== false;
   const phoneRequired = baseFields.phone !== false;
   const emailRequired = baseFields.email === true;
@@ -207,10 +211,10 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
 
             {effectiveFields.map((field) => (
               field.type === 'paragraph' ? (
-                <p key={field.id} className="text-xs text-gray-600 leading-relaxed">{field.labelKey ? t(field.labelKey) : field.label}</p>
+                <p key={field.id} className="text-xs text-gray-600 leading-relaxed">{fieldLabel(field)}</p>
               ) : (
               <div key={field.id}>
-                <label className="text-xs text-gray-600 mb-1.5 block">{field.labelKey ? t(field.labelKey) : field.label}</label>
+                <label className="text-xs text-gray-600 mb-1.5 block">{fieldLabel(field)}</label>
                 {field.type === 'textarea' ? (
                   <Textarea
                     value={fieldValues[field.id] || ''}
