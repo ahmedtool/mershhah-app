@@ -11,7 +11,7 @@ import {
     Star,
     Share2,
     Info,
-    Ticket,
+    MessageCircle,
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { supabase } from '@/lib/supabase';
@@ -413,7 +413,7 @@ export default function RestaurantHubPage() {
                     className="w-11 h-11 flex items-center justify-center shrink-0"
                     style={{ backgroundColor: 'color-mix(in srgb, var(--r-primary) 14%, white)', color: 'var(--r-primary)', borderRadius: 'var(--r-radius-sm)' }}
                   >
-                    <Ticket className="h-5 w-5" />
+                    <MessageCircle className="h-5 w-5" />
                   </div>
                   <div className={`flex-1 ${alignStart} min-w-0`}>
                     <span className="font-black text-sm text-gray-900 block truncate">{t('hubPage.supportTicket')}</span>
