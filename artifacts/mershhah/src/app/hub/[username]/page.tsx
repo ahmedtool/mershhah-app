@@ -53,6 +53,7 @@ export default function RestaurantHubPage() {
   const [offers, setOffers] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [socialOpen, setSocialOpen] = useState(false);
   const [activeOfferIndex, setActiveOfferIndex] = useState(0);
   const offerSlideRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const recordedViewOfferIds = useRef<Set<string>>(new Set());
@@ -478,31 +479,55 @@ export default function RestaurantHubPage() {
           })()}
 
           {/* التواصل الاجتماعي */}
-          {Array.isArray(socialLinks) && socialLinks.filter((link: any) => link?.value?.trim()).length > 0 && (
-            <section className="space-y-3">
-              <h3 className={`font-black text-sm text-gray-600 px-1 ${alignStart}`}>{t('hubPage.contactUs')}</h3>
-              <div className="flex flex-wrap justify-center gap-3 pb-8">
-                {socialLinks
-                  .filter((link: any) => link?.platform && link?.value?.trim())
-                  .map((link: any, idx: number) => {
-                    const Icon = SOCIAL_ICONS[link.platform] || WebsiteIcon;
-                    return (
-                      <Link 
-                        key={link.id || idx} 
-                        href={link.value.trim()} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        onClick={() => restaurant.id && trackSocialClick(restaurant.id, link.platform || 'unknown')}
-                        className="w-12 h-12 flex items-center justify-center rounded-2xl shadow-sm hover:shadow-md active:scale-90 transition-all animate-in fade-in zoom-in-75 duration-300"
-                        style={{ backgroundColor: primaryColor, animationDelay: `${idx * 70}ms`, animationFillMode: 'backwards' }}
-                      >
-                        <Icon size={22} style={{ color: 'var(--r-button-text)' }} />
-                      </Link>
-                    );
-                  })}
-              </div>
-            </section>
-          )}
+          {(() => {
+            const filteredSocialLinks = Array.isArray(socialLinks)
+              ? socialLinks.filter((link: any) => link?.platform && link?.value?.trim())
+              : [];
+            if (filteredSocialLinks.length === 0) return null;
+            const cascadeWidth = filteredSocialLinks.length * 56;
+            return (
+              <section className="space-y-3">
+                <h3 className={`font-black text-sm text-gray-600 px-1 ${alignStart}`}>{t('hubPage.contactUs')}</h3>
+                <div className="flex items-center justify-center gap-2 pb-8">
+                  <button
+                    type="button"
+                    onClick={() => setSocialOpen((o) => !o)}
+                    aria-expanded={socialOpen}
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm active:scale-90 transition-transform"
+                    style={{ background: `linear-gradient(135deg, ${primaryColor}, color-mix(in srgb, ${primaryColor} 45%, white))` }}
+                  >
+                    <Share2 className="h-5 w-5" style={{ color: 'var(--r-button-text)' }} />
+                  </button>
+                  <div
+                    className="flex items-center gap-2 overflow-hidden transition-[max-width] duration-500 ease-out"
+                    style={{ maxWidth: socialOpen ? `${cascadeWidth}px` : '0px' }}
+                  >
+                    {filteredSocialLinks.map((link: any, idx: number) => {
+                      const Icon = SOCIAL_ICONS[link.platform] || WebsiteIcon;
+                      return (
+                        <Link
+                          key={link.id || idx}
+                          href={link.value.trim()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => restaurant.id && trackSocialClick(restaurant.id, link.platform || 'unknown')}
+                          className="w-12 h-12 flex items-center justify-center rounded-2xl shadow-sm shrink-0 active:scale-90 transition-all duration-300 ease-out"
+                          style={{
+                            backgroundColor: primaryColor,
+                            transitionDelay: socialOpen ? `${idx * 60}ms` : '0ms',
+                            transform: socialOpen ? 'scale(1)' : 'scale(0.4)',
+                            opacity: socialOpen ? 1 : 0,
+                          }}
+                        >
+                          <Icon size={22} style={{ color: 'var(--r-button-text)' }} />
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
 
           {/* الفوتر */}
           {!restaurant.is_paid_plan && (
