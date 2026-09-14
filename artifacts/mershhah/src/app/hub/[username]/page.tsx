@@ -41,17 +41,6 @@ const SOCIAL_ICONS: { [key: string]: React.ElementType } = {
     website: WebsiteIcon,
 };
 
-const SOCIAL_COLORS: { [key: string]: string } = {
-    whatsapp: '#25D366',
-    instagram: '#E4405F',
-    tiktok: '#000000',
-    twitter: '#000000',
-    snapchat: '#FFFC00',
-    facebook: '#1877F2',
-    youtube: '#FF0000',
-    website: '#714dfa',
-};
-
 export default function RestaurantHubPage() {
   const params = useParams();
   const username = params.username as string;
@@ -504,9 +493,10 @@ export default function RestaurantHubPage() {
                         target="_blank" 
                         rel="noopener noreferrer"
                         onClick={() => restaurant.id && trackSocialClick(restaurant.id, link.platform || 'unknown')}
-                        className="w-12 h-12 flex items-center justify-center rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all"
+                        className="w-12 h-12 flex items-center justify-center rounded-2xl shadow-sm hover:shadow-md transition-all"
+                        style={{ backgroundColor: primaryColor }}
                       >
-                        <Icon size={22} style={{ color: SOCIAL_COLORS[link.platform] || primaryColor }} />
+                        <Icon size={22} style={{ color: 'var(--r-button-text)' }} />
                       </Link>
                     );
                   })}
