@@ -12,20 +12,31 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'mershhah_locale';
+const DEFAULT_STORAGE_KEY = 'mershhah_locale';
 
-function readStoredLocale(): Locale {
+function readStoredLocale(storageKey: string): Locale {
   if (typeof window === 'undefined') return 'ar';
-  const stored = window.localStorage.getItem(STORAGE_KEY);
+  const stored = window.localStorage.getItem(storageKey);
   return stored === 'en' ? 'en' : 'ar';
 }
 
 export function LanguageProvider({
   children,
   initialLocale,
+  storageKey = DEFAULT_STORAGE_KEY,
+  manageDocument = true,
 }: {
   children: React.ReactNode;
   initialLocale?: Locale;
+  // Lets a subtree (e.g. the owner dashboard) keep its own language choice
+  // independent from the public-facing pages, which nest a LanguageProvider
+  // with a different key so the two never share state or storage.
+  storageKey?: string;
+  // Only the outermost provider should own <html lang/dir> - a nested
+  // provider (owner dashboard) leaves it alone and relies on its own
+  // subtree passing `dir` down explicitly, so two providers never fight
+  // over the same global attribute.
+  manageDocument?: boolean;
 }) {
   const [locale, setLocaleState] = useState<Locale>(initialLocale || 'ar');
 
@@ -33,18 +44,19 @@ export function LanguageProvider({
   // available during the initial server-rendered pass, so this can't run
   // in the useState initializer above).
   useEffect(() => {
-    setLocaleState(readStoredLocale());
-  }, []);
+    setLocaleState(readStoredLocale(storageKey));
+  }, [storageKey]);
 
   useEffect(() => {
+    if (!manageDocument) return;
     document.documentElement.lang = locale;
     document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
-  }, [locale]);
+  }, [locale, manageDocument]);
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
-    window.localStorage.setItem(STORAGE_KEY, newLocale);
-  }, []);
+    window.localStorage.setItem(storageKey, newLocale);
+  }, [storageKey]);
 
   const t = useCallback((key: string): string => {
     if (!key) return '';

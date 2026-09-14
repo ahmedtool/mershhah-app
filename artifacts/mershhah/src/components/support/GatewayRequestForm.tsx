@@ -94,10 +94,14 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
     : (titleKey ? t(titleKey) : '');
   const effectiveFields = isCustom ? (customConfig?.fields || []) : (fields || []);
   const fieldLabel = (field: BusinessGatewayField) => field.labelKey ? t(field.labelKey) : ((isEnglish && field.label_en) || field.label || '');
-  const nameRequired = baseFields.name !== false;
-  const phoneRequired = baseFields.phone !== false;
-  const emailRequired = baseFields.email === true;
-  const canSubmit = (!nameRequired || !!name.trim()) && (!phoneRequired || !!phone.trim()) && (!emailRequired || !!email.trim());
+  const restaurantName = (isEnglish && restaurant?.name_en) || restaurant?.name || '';
+  // A base field is shown-and-required, or hidden entirely - there's no
+  // "shown but optional" state, so visibility and required-ness are the
+  // same flag.
+  const nameVisible = baseFields.name !== false;
+  const phoneVisible = baseFields.phone !== false;
+  const emailVisible = baseFields.email === true;
+  const canSubmit = (!nameVisible || !!name.trim()) && (!phoneVisible || !!phone.trim()) && (!emailVisible || !!email.trim());
 
   const handleSubmit = () => {
     if (!restaurant) return;
@@ -175,7 +179,7 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
           />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-gray-900">{restaurant.name}</h1>
+          <h1 className="text-xl font-bold text-gray-900">{restaurantName}</h1>
           <p className="text-sm text-gray-600 mt-0.5">{effectiveTitle}</p>
         </div>
       </div>
@@ -196,18 +200,24 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
           </div>
         ) : (
           <div className={`border border-gray-100 p-5 space-y-4 ${alignStart}`} style={{ borderRadius: 'var(--r-radius)' }}>
-            <div>
-              <label className="text-xs text-gray-600 mb-1.5 block">{t('publicSupport.nameLabel')}{nameRequired && ' *'}</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('publicSupport.namePlaceholder')} className="h-10 text-sm rounded-lg border-gray-100" />
-            </div>
-            <div>
-              <label className="text-xs text-gray-600 mb-1.5 block">{t('ownerSettings.phoneLabel')}{phoneRequired && ' *'}</label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" placeholder="05XXXXXXXX" className="h-10 text-sm rounded-lg border-gray-100" dir="ltr" />
-            </div>
-            <div>
-              <label className="text-xs text-gray-600 mb-1.5 block">{t('ownerSettings.emailLabel')}{emailRequired && ' *'}</label>
-              <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="h-10 text-sm rounded-lg border-gray-100" dir="ltr" />
-            </div>
+            {nameVisible && (
+              <div>
+                <label className="text-xs text-gray-600 mb-1.5 block">{t('publicSupport.nameLabel')} *</label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('publicSupport.namePlaceholder')} className="h-10 text-sm rounded-lg border-gray-100" />
+              </div>
+            )}
+            {phoneVisible && (
+              <div>
+                <label className="text-xs text-gray-600 mb-1.5 block">{t('ownerSettings.phoneLabel')} *</label>
+                <Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" placeholder="05XXXXXXXX" className="h-10 text-sm rounded-lg border-gray-100" dir="ltr" />
+              </div>
+            )}
+            {emailVisible && (
+              <div>
+                <label className="text-xs text-gray-600 mb-1.5 block">{t('ownerSettings.emailLabel')} *</label>
+                <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="h-10 text-sm rounded-lg border-gray-100" dir="ltr" />
+              </div>
+            )}
 
             {effectiveFields.map((field) => (
               field.type === 'paragraph' ? (

@@ -8,7 +8,7 @@ import { useUser } from "@/hooks/useUser";
 import { useRouter } from '@/lib/navigation';
 import { AnnouncementBanner } from "@/components/dashboard/AnnouncementBanner";
 import { AccessRequestBanner } from "@/components/dashboard/AccessRequestBanner";
-import { useLanguage } from "@/components/shared/LanguageContext";
+import { LanguageProvider, useLanguage } from "@/components/shared/LanguageContext";
 import { FullScreenLoader } from "@/components/shared/FullScreenLoader";
 
 function OwnerLayoutContent({ children }: { children: React.ReactNode }) {
@@ -51,5 +51,9 @@ export default memo(function OwnerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <OwnerLayoutContent>{children}</OwnerLayoutContent>;
+  return (
+    <LanguageProvider storageKey="mershhah_locale_owner" manageDocument={false}>
+      <OwnerLayoutContent>{children}</OwnerLayoutContent>
+    </LanguageProvider>
+  );
 });
