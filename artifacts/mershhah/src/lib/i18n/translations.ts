@@ -1030,7 +1030,7 @@ export const translations = {
       subjectRequired: 'الموضوع مطلوب',
       messageRequired: 'الرسالة مطلوبة',
       sendFailedDesc: 'فشل إرسال التذكرة. حاول مرة أخرى.',
-      limitReachedDesc: 'وصل هذا المطعم للحد الأقصى من الرسائل لهذا الشهر، حاول التواصل معه بوسيلة ثانية أو حاول لاحقاً.',
+      limitReachedDesc: 'تعذر إرسال رسالتك حالياً. حاول مرة أخرى بعد قليل.',
       submittedTitle: 'تم الإرسال!',
       submittedDesc: 'شكراً لتواصلك. تم استلام رسالتك وسنرد عليك قريباً.',
       back: 'العودة',
@@ -1090,6 +1090,7 @@ export const translations = {
       wholesaleCardDesc: 'اطلب أسعار الجملة والكميات',
       corporateCardDesc: 'اطلب بوفيهات، كاترينغ، أو حجز فعاليات وكميات كبيرة',
       partnershipCardDesc: 'قدّم عرض توريد أو شراكة تجارية',
+      noChannelsAvailable: 'لا توجد طرق تواصل متاحة حالياً',
     },
     publicGatewayForm: {
       submittedDesc: 'شكراً لتواصلك، تم استلام طلبك وسنتواصل معك قريباً.',
@@ -2345,7 +2346,7 @@ export const translations = {
       subjectRequired: 'Subject is required',
       messageRequired: 'Message is required',
       sendFailedDesc: 'Failed to send the ticket. Please try again.',
-      limitReachedDesc: 'This restaurant has reached its monthly message limit. Try contacting them another way or try again later.',
+      limitReachedDesc: 'Your message couldn’t be sent right now. Please try again shortly.',
       submittedTitle: 'Sent!',
       submittedDesc: "Thanks for reaching out. We've received your message and will reply soon.",
       back: 'Back',
@@ -2405,6 +2406,7 @@ export const translations = {
       wholesaleCardDesc: 'Request wholesale and bulk pricing',
       corporateCardDesc: 'Request buffets, catering, or book an event and bulk orders',
       partnershipCardDesc: 'Submit a supply offer or business partnership',
+      noChannelsAvailable: 'No contact options are available right now',
     },
     publicGatewayForm: {
       submittedDesc: "Thanks for reaching out. We've received your request and will contact you soon.",

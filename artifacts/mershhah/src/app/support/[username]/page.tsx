@@ -52,38 +52,45 @@ export default function SupportGatewayPage() {
       if (!username) return;
       try {
         const data = await getPublicPage(username);
+        let restaurantId: string | undefined;
+        let gatewayServices: Array<{ service_type: string; config?: any }> = [];
+
         if (data?.restaurant) {
           setRestaurant(data.restaurant);
-          const gatewayServices = data.gatewayServices || [];
-          const enabledTypes = gatewayServices
-            .map((s) => s.service_type)
-            .filter((type) => BUILDABLE_SERVICE_TYPES.includes(type));
-          const customs = gatewayServices.filter((s) => s.service_type.startsWith('custom:'));
-          setCustomCards(customs.map((s) => ({ type: s.service_type, title: s.config?.title || '', icon: s.config?.icon || '' })));
-          setEnabledServices(['contact', ...enabledTypes, ...customs.map((s) => s.service_type)]);
-          setLoading(false);
-          return;
+          restaurantId = data.restaurant.id;
+          gatewayServices = data.gatewayServices || [];
+        } else {
+          const { data: rest } = await supabase.from('restaurants').select('*').eq('username', username).limit(1).single();
+          if (!rest) {
+            setRestaurant(null);
+            setLoading(false);
+            return;
+          }
+          setRestaurant(rest);
+          restaurantId = rest.id;
+          const { data: gw } = await supabase
+            .from('business_gateway_services')
+            .select('service_type, config')
+            .eq('restaurant_id', rest.id)
+            .eq('is_enabled', true);
+          gatewayServices = gw || [];
         }
 
-        const { data: rest } = await supabase.from('restaurants').select('*').eq('username', username).limit(1).single();
-        if (!rest) {
-          setRestaurant(null);
-          setLoading(false);
-          return;
-        }
-        setRestaurant(rest);
-        const { data: gw } = await supabase
-          .from('business_gateway_services')
-          .select('service_type, config')
-          .eq('restaurant_id', rest.id)
-          .eq('is_enabled', true);
-        const gatewayServices = gw || [];
         const enabledTypes = gatewayServices
-          .map((s: any) => s.service_type)
-          .filter((type: string) => BUILDABLE_SERVICE_TYPES.includes(type));
-        const customs = gatewayServices.filter((s: any) => s.service_type.startsWith('custom:'));
-        setCustomCards(customs.map((s: any) => ({ type: s.service_type, title: s.config?.title || '', icon: s.config?.icon || '' })));
-        setEnabledServices(['contact', ...enabledTypes, ...customs.map((s: any) => s.service_type)]);
+          .map((s) => s.service_type)
+          .filter((type) => BUILDABLE_SERVICE_TYPES.includes(type));
+        const customs = gatewayServices.filter((s) => s.service_type.startsWith('custom:'));
+        setCustomCards(customs.map((s) => ({ type: s.service_type, title: s.config?.title || '', icon: s.config?.icon || '' })));
+
+        // Hides the "contact" card entirely once a free-plan restaurant has
+        // hit its monthly cap, rather than letting the customer tap it and
+        // hit a submission error that would hint the restaurant is capped.
+        const { data: contactAvailable } = restaurantId
+          ? await supabase.rpc('contact_form_available', { p_restaurant_id: restaurantId })
+          : { data: true };
+
+        const baseServices = [...enabledTypes, ...customs.map((s) => s.service_type)];
+        setEnabledServices(contactAvailable === false ? baseServices : ['contact', ...baseServices]);
       } catch (e) {
         console.error(e);
       } finally {
@@ -206,6 +213,9 @@ export default function SupportGatewayPage() {
             </Link>
           );
         })}
+        {cards.length === 0 && customCards.length === 0 && (
+          <p className="text-center text-xs text-gray-500 py-10">{t('publicGateway.noChannelsAvailable')}</p>
+        )}
       </div>
     </div>
   );

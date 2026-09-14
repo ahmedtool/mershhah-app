@@ -45,6 +45,7 @@ export default function ContactPage() {
   }), [t]);
 
   const [restaurant, setRestaurant] = useState<any>(null);
+  const [available, setAvailable] = useState(true);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, startSubmitting] = useTransition();
   const [submitted, setSubmitted] = useState(false);
@@ -59,18 +60,24 @@ export default function ContactPage() {
       if (!username) return;
       try {
         const data = await getPublicPage(username);
-        if (data?.restaurant) {
-          setRestaurant(data.restaurant);
-          setLoading(false);
-          return;
+        let rest = data?.restaurant;
+        if (!rest) {
+          const { data: liveRest } = await supabase
+            .from('restaurants')
+            .select('*')
+            .eq('username', username)
+            .limit(1)
+            .single();
+          rest = liveRest || null;
         }
-        const { data: rest } = await supabase
-          .from('restaurants')
-          .select('*')
-          .eq('username', username)
-          .limit(1)
-          .single();
         setRestaurant(rest || null);
+        if (rest) {
+          // A free-plan restaurant may have hit its monthly cap since this
+          // link was shared/bookmarked - re-check live rather than trusting
+          // that the "contact" card was ever shown.
+          const { data: contactAvailable } = await supabase.rpc('contact_form_available', { p_restaurant_id: rest.id });
+          setAvailable(contactAvailable !== false);
+        }
       } catch (e) {
         console.error(e);
       } finally {
@@ -127,13 +134,15 @@ export default function ContactPage() {
     );
   }
 
-  if (!restaurant) {
+  if (!restaurant || !available) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-white text-center p-6 space-y-5">
         <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">
           <Info size={28} />
         </div>
-        <h1 className="text-lg font-bold text-gray-900">{t('hubPage.restaurantNotFound')}</h1>
+        <h1 className="text-lg font-bold text-gray-900">
+          {t(restaurant ? 'publicGateway.noChannelsAvailable' : 'hubPage.restaurantNotFound')}
+        </h1>
       </div>
     );
   }
