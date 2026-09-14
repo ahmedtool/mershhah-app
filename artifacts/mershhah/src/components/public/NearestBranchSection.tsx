@@ -114,7 +114,7 @@ export function NearestBranchSection({ branches, restaurantId, primaryColor, use
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => restaurantId && trackAppClick(restaurantId, app.name || 'unknown')}
-                className="aspect-square bg-gray-50 border border-gray-100 p-2 flex flex-col items-center justify-center gap-1 hover:bg-gray-100 transition-colors"
+                className="aspect-square p-2 flex flex-col items-center justify-center gap-1 hover:bg-gray-50 transition-colors"
                 style={{ borderRadius: 'var(--r-radius-sm)' }}
               >
                 <div className="relative w-full flex-1">
