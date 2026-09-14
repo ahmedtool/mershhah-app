@@ -374,7 +374,7 @@ export default function PublicMenuPage() {
   const themeStyle = getPublicThemeStyle(restaurant);
 
   return (
-    <div className="flex flex-col pb-6 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
+    <div className="flex flex-col min-h-dvh pb-6 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
       <PublicPageBackdrop />
 
       {/* Header - compact single row: back, logo, name + subtitle, search, language */}
@@ -463,7 +463,7 @@ export default function PublicMenuPage() {
         )}
       </div>
 
-      <div className="max-w-lg md:max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto w-full mt-2 px-5">
+      <div className="max-w-lg md:max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto w-full mt-2 px-5 flex-1 flex flex-col justify-center">
         <MenuExperience
           categories={categories}
           categoryNameEn={categoryNameEn}
