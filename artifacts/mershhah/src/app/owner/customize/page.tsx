@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { ColorSwatchPicker } from '@/components/dashboard/ColorSwatchPicker';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/useUser';
 import {
@@ -573,18 +574,15 @@ export default function CustomizePage() {
                         <div className="space-y-2">
                             <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
                                 <Label className="text-[11px] font-bold text-gray-600">{t('customize.primaryColor')}</Label>
-                                <input type="color" value={settings.primaryColor || '#111827'} onChange={e => setSettings({...settings, primaryColor: e.target.value})}
-                                  className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer" />
+                                <ColorSwatchPicker value={settings.primaryColor || '#111827'} onChange={hex => setSettings({...settings, primaryColor: hex})} />
                             </div>
                             <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
                                 <Label className="text-[11px] font-bold text-gray-600">{t('customize.backgroundColor')}</Label>
-                                <input type="color" value={settings.secondaryColor || '#ffffff'} onChange={e => setSettings({...settings, secondaryColor: e.target.value})}
-                                  className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer" />
+                                <ColorSwatchPicker value={settings.secondaryColor || '#ffffff'} onChange={hex => setSettings({...settings, secondaryColor: hex})} />
                             </div>
                             <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
                                 <Label className="text-[11px] font-bold text-gray-600">{t('customize.buttonTextColor')}</Label>
-                                <input type="color" value={settings.buttonTextColor || '#ffffff'} onChange={e => setSettings({...settings, buttonTextColor: e.target.value})}
-                                  className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer" />
+                                <ColorSwatchPicker value={settings.buttonTextColor || '#ffffff'} onChange={hex => setSettings({...settings, buttonTextColor: hex})} />
                             </div>
                         </div>
 
