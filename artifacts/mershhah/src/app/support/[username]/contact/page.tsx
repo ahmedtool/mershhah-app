@@ -100,9 +100,10 @@ export default function ContactPage() {
         if (error) throw error;
         setSubmitted(true);
       } catch (error: any) {
+        const limitReached = typeof error?.message === 'string' && error.message.includes('contact_ticket_limit_reached');
         toast({
           title: t('ownerSettings.errorTitle'),
-          description: t('publicSupport.sendFailedDesc'),
+          description: limitReached ? t('publicSupport.limitReachedDesc') : t('publicSupport.sendFailedDesc'),
           variant: 'destructive',
         });
       }
