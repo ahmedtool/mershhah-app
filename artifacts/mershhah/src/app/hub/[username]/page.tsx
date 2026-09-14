@@ -484,11 +484,10 @@ export default function RestaurantHubPage() {
               ? socialLinks.filter((link: any) => link?.platform && link?.value?.trim())
               : [];
             if (filteredSocialLinks.length === 0) return null;
-            const cascadeWidth = filteredSocialLinks.length * 56;
             return (
               <section className="space-y-3">
                 <h3 className={`font-black text-sm text-gray-600 px-1 ${alignStart}`}>{t('hubPage.contactUs')}</h3>
-                <div className="flex items-center justify-center gap-2 pb-8">
+                <div className="flex items-start justify-center gap-2 pb-8">
                   <button
                     type="button"
                     onClick={() => setSocialOpen((o) => !o)}
@@ -498,31 +497,40 @@ export default function RestaurantHubPage() {
                   >
                     <Share2 className="h-5 w-5" style={{ color: 'var(--r-button-text)' }} />
                   </button>
+                  {/* Reveals to the content's natural (possibly multi-row)
+                      height instead of a fixed pixel width - a fixed width
+                      overflowed the page on narrow phone screens and got
+                      clipped by the page's own overflow-x-hidden, hiding
+                      icons that didn't fit on one line. */}
                   <div
-                    className="flex items-center gap-2 overflow-hidden transition-[max-width] duration-500 ease-out"
-                    style={{ maxWidth: socialOpen ? `${cascadeWidth}px` : '0px' }}
+                    className="grid overflow-hidden transition-[grid-template-rows] duration-500 ease-out flex-1 min-w-0"
+                    style={{ gridTemplateRows: socialOpen ? '1fr' : '0fr' }}
                   >
-                    {filteredSocialLinks.map((link: any, idx: number) => {
-                      const Icon = SOCIAL_ICONS[link.platform] || WebsiteIcon;
-                      return (
-                        <Link
-                          key={link.id || idx}
-                          href={link.value.trim()}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => restaurant.id && trackSocialClick(restaurant.id, link.platform || 'unknown')}
-                          className="w-12 h-12 flex items-center justify-center rounded-2xl shadow-sm shrink-0 active:scale-90 transition-all duration-300 ease-out"
-                          style={{
-                            backgroundColor: primaryColor,
-                            transitionDelay: socialOpen ? `${idx * 60}ms` : '0ms',
-                            transform: socialOpen ? 'scale(1)' : 'scale(0.4)',
-                            opacity: socialOpen ? 1 : 0,
-                          }}
-                        >
-                          <Icon size={22} style={{ color: 'var(--r-button-text)' }} />
-                        </Link>
-                      );
-                    })}
+                    <div className="overflow-hidden min-h-0">
+                      <div className="flex flex-wrap items-center gap-2 pb-1">
+                        {filteredSocialLinks.map((link: any, idx: number) => {
+                          const Icon = SOCIAL_ICONS[link.platform] || WebsiteIcon;
+                          return (
+                            <Link
+                              key={link.id || idx}
+                              href={link.value.trim()}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={() => restaurant.id && trackSocialClick(restaurant.id, link.platform || 'unknown')}
+                              className="w-12 h-12 flex items-center justify-center rounded-2xl shadow-sm shrink-0 active:scale-90 transition-all duration-300 ease-out"
+                              style={{
+                                backgroundColor: primaryColor,
+                                transitionDelay: socialOpen ? `${idx * 60}ms` : '0ms',
+                                transform: socialOpen ? 'scale(1)' : 'scale(0.4)',
+                                opacity: socialOpen ? 1 : 0,
+                              }}
+                            >
+                              <Icon size={22} style={{ color: 'var(--r-button-text)' }} />
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </section>
