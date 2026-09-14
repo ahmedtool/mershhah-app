@@ -260,7 +260,11 @@ export default function OwnerTicketsPage() {
   const updateBaseFields = (service: BusinessGatewayService, patch: Partial<import('@/lib/types').BusinessGatewayBaseFields>) => {
     if (!restaurantId) return;
     const newConfig = { ...service.config, baseFields: { ...service.config?.baseFields, ...patch } };
-    supabase.from('business_gateway_services').update({ config: newConfig, updated_at: new Date().toISOString() }).eq('id', service.id).then(() => {
+    supabase.from('business_gateway_services').update({ config: newConfig, updated_at: new Date().toISOString() }).eq('id', service.id).then(({ error }: { error: any }) => {
+      if (error) {
+        toast({ title: t('ownerSettings.errorTitle'), description: error.message, variant: 'destructive' });
+        return;
+      }
       fetchGatewayServices();
       syncPublicPage(restaurantId).catch(() => {});
     });
@@ -378,6 +382,7 @@ export default function OwnerTicketsPage() {
     startSavingCustomType(async () => {
       try {
         const config = {
+          ...(editingCustomType?.config || {}),
           title: customDraft.title.trim(),
           title_en: customDraft.title_en.trim() || undefined,
           icon: customDraft.icon,
