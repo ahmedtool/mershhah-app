@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CreditCard, Clock, CheckCircle, AlertCircle, Zap, Calendar, Receipt, Tag } from "lucide-react";
 import { PlanPricingGrid } from "@/components/dashboard/PlanPricingGrid";
 import { useLanguage } from "@/components/shared/LanguageContext";
+import { Riyal } from "@/components/shared/Riyal";
 
 export default function BillingPage() {
   const { user } = useUser();
@@ -81,7 +82,7 @@ export default function BillingPage() {
                 </div>
               </div>
               <div className={alignEnd}>
-                <p className="text-lg font-bold text-gray-900">{subscription.amount} {t('ownerSettings.currency')}</p>
+                <p className="text-lg font-bold text-gray-900">{subscription.amount} <Riyal /></p>
                 <p className="text-[10px] text-gray-600">/{subscription.billing_cycle === "yearly" ? t('ownerBilling.perYear') : t('ownerBilling.perMonth')}</p>
               </div>
             </div>
@@ -107,7 +108,7 @@ export default function BillingPage() {
             {subscription.discount_amount > 0 && (
               <div className="flex items-center gap-2 bg-emerald-50 rounded-xl px-3 py-2">
                 <Tag className="h-3.5 w-3.5 text-emerald-500" />
-                <span className="text-[11px] text-emerald-700 font-medium">{t('ownerBilling.discountAppliedPrefix')} {subscription.discount_amount} {t('ownerSettings.currency')} {t('ownerBilling.discountAppliedSuffix')}</span>
+                <span className="text-[11px] text-emerald-700 font-medium">{t('ownerBilling.discountAppliedPrefix')} {subscription.discount_amount} <Riyal /> {t('ownerBilling.discountAppliedSuffix')}</span>
               </div>
             )}
           </CardContent>
@@ -146,7 +147,7 @@ export default function BillingPage() {
                     </div>
                   </div>
                   <div className={alignEnd}>
-                    <p className="text-xs font-bold text-gray-900">{inv.amount} {t('ownerSettings.currency')}</p>
+                    <p className="text-xs font-bold text-gray-900">{inv.amount} <Riyal /></p>
                     <span className={`text-[10px] font-medium ${inv.status === 'paid' ? 'text-emerald-600' : inv.status === 'failed' ? 'text-red-500' : 'text-gray-600'}`}>
                       {inv.status === 'paid' ? t('ownerSettings.invoicePaid') : inv.status === 'failed' ? t('ownerSettings.invoiceFailed') : t('ownerBilling.statusPending')}
                     </span>

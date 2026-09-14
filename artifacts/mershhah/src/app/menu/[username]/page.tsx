@@ -21,6 +21,7 @@ import { useGoogleFont } from '@/hooks/useGoogleFont';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useNearestBranch } from '@/hooks/useNearestBranch';
+import { Riyal } from '@/components/shared/Riyal';
 
 // One order channel shown on an item's card - either the branch's own
 // custom app (the featured "direct" tile) or one of its enabled global
@@ -809,7 +810,7 @@ function MenuExperience({ categories, categoryNameEn, menuItems, searchQuery, pr
                           }}
                         >
                           <span className="text-[11px] font-semibold">{sizeNameOf(size)}</span>
-                          <span className="text-[10px] font-bold" style={{ opacity: on ? 0.9 : 0.7 }}>{size.price} {t('ownerSettings.currency')}</span>
+                          <span className="text-[10px] font-bold" style={{ opacity: on ? 0.9 : 0.7 }}>{size.price} <Riyal /></span>
                         </button>
                       );
                     })}
@@ -849,7 +850,7 @@ function MenuExperience({ categories, categoryNameEn, menuItems, searchQuery, pr
                             </div>
                             <span className="text-[9px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[18px]">{channelNameOf(channel)}</span>
                             <span className="text-[10px] font-bold" style={{ color: channel.isDirect ? primaryColor : undefined }}>
-                              {channel.price} {t('ownerSettings.currency')}
+                              {channel.price} <Riyal />
                             </span>
                           </button>
                         );
@@ -865,7 +866,11 @@ function MenuExperience({ categories, categoryNameEn, menuItems, searchQuery, pr
                   className="w-full h-12 rounded-full text-sm font-bold transition-transform active:scale-[0.98] disabled:opacity-50"
                   style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)', boxShadow: `0 16px 30px -18px color-mix(in srgb, ${primaryColor} 90%, transparent)` }}
                 >
-                  {selectedChannel ? `${t('publicMenu.orderNow')} · ${ctaPrice} ${t('ownerSettings.currency')}` : `${displayPrice} ${t('ownerSettings.currency')}`}
+                  {selectedChannel ? (
+                    <>{t('publicMenu.orderNow')} · {ctaPrice} <Riyal /></>
+                  ) : (
+                    <>{displayPrice} <Riyal /></>
+                  )}
                 </button>
               </div>
             )}

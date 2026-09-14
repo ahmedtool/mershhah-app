@@ -14,6 +14,7 @@ import { StorageImage } from '@/components/shared/StorageImage';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useLanguage } from '@/components/shared/LanguageContext';
+import { Riyal } from '@/components/shared/Riyal';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 
 export default function AiAssistantPage() {
@@ -481,7 +482,7 @@ export default function AiAssistantPage() {
                       <div className="p-2 space-y-0.5">
                         <p className="text-[11px] font-bold text-gray-900 truncate">{card.name}</p>
                         {card.price && (
-                          <p className="text-[10px] font-bold text-gray-900">{card.price} {t('ownerSettings.currency')}</p>
+                          <p className="text-[10px] font-bold text-gray-900">{card.price} <Riyal /></p>
                         )}
                         {card.category && (
                           <p className="text-[9px] text-gray-600 truncate">{card.category}</p>
@@ -495,18 +496,18 @@ export default function AiAssistantPage() {
                   <div className="border border-gray-100 rounded-xl p-3 bg-gray-50">
                     <div className="flex justify-between items-center text-[11px]">
                       <span className="text-gray-600">{t('publicAi.budgetLabel')}</span>
-                      <span className="font-bold text-gray-900">{messages[messages.length - 1].totalBudget} {t('ownerSettings.currency')}</span>
+                      <span className="font-bold text-gray-900">{messages[messages.length - 1].totalBudget} <Riyal /></span>
                     </div>
                     <div className="flex justify-between items-center text-[11px] mt-1">
                       <span className="text-gray-600">{t('publicAi.totalLabel')}</span>
                       <span className="font-bold text-gray-900">
-                        {messages[messages.length - 1].menuCards.reduce((sum: number, c: any) => sum + (c.price || 0), 0)} {t('ownerSettings.currency')}
+                        {messages[messages.length - 1].menuCards.reduce((sum: number, c: any) => sum + (c.price || 0), 0)} <Riyal />
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-[11px] mt-1 pt-1 border-t border-gray-100">
                       <span className="text-gray-600">{t('publicAi.remainingLabel')}</span>
                       <span className="font-bold text-emerald-600">
-                        {messages[messages.length - 1].totalBudget - messages[messages.length - 1].menuCards.reduce((sum: number, c: any) => sum + (c.price || 0), 0)} {t('ownerSettings.currency')}
+                        {messages[messages.length - 1].totalBudget - messages[messages.length - 1].menuCards.reduce((sum: number, c: any) => sum + (c.price || 0), 0)} <Riyal />
                       </span>
                     </div>
                   </div>

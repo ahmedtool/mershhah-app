@@ -4,6 +4,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Renders the official new Saudi Riyal symbol (U+FDFC) - MIT licensed,
+   https://github.com/upsilun/SaudiRiyalFont. Scoped via .riyal-symbol so it
+   never affects any other text (the font only defines this one glyph). */
+@font-face {
+  font-family: 'SaudiRiyalFont';
+  src: url('/fonts/SaudiRiyalFont.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));

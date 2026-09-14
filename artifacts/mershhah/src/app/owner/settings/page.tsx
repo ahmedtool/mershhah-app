@@ -18,6 +18,7 @@ import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { PlanPricingGrid } from '@/components/dashboard/PlanPricingGrid';
 import { useLanguage } from '@/components/shared/LanguageContext';
+import { Riyal } from '@/components/shared/Riyal';
 
 type ProfileFormValues = { full_name: string; phone_number?: string };
 
@@ -228,7 +229,7 @@ export default function OwnerSettingsPage() {
                         <span className="text-[11px] text-gray-600">{inv.description || t('ownerSettings.subscriptionFallback')}</span>
                       </div>
                       <div className={alignEnd}>
-                        <span className="text-xs font-bold text-gray-900">{inv.amount} {t('ownerSettings.currency')}</span>
+                        <span className="text-xs font-bold text-gray-900">{inv.amount} <Riyal /></span>
                         <span className={cn("text-[10px] font-bold mx-2", inv.status === 'paid' ? 'text-emerald-600' : 'text-red-500')}>
                           {inv.status === 'paid' ? t('ownerSettings.invoicePaid') : t('ownerSettings.invoiceFailed')}
                         </span>
