@@ -5,9 +5,9 @@ import { requireOwnerOrAdmin } from "../middleware/requireOwnerOrAdmin";
 
 const router: IRouter = Router();
 
-function jsonError(res: Response, err: unknown, fallback: object) {
+function jsonError(res: Response, err: unknown, fallback: object, status = 200) {
   console.error("[ai-route]", err);
-  res.json(fallback);
+  res.status(status).json(fallback);
 }
 
 // Public by design: this is the AI chat widget on a restaurant's own public
@@ -263,11 +263,15 @@ router.post("/extract-menu-from-image", async (req: Request, res: Response) => {
       console.log("[ocr-route]", "Extracted items count:", parsed.items?.length ?? 0);
       res.json(parsed);
     } else {
+      // Mistral OCR succeeded but returned no structured annotation at all -
+      // this is an integration failure (schema mismatch, model refusal),
+      // not a legitimately empty menu, so it must not look like a plain
+      // "no items found" result to the client.
       console.error("[ocr-route]", "No document_annotation in response. Response:", JSON.stringify(ocrData).substring(0, 500));
-      res.json({ items: [] });
+      res.status(500).json({ items: [], error: "OCR did not return structured data" });
     }
   } catch (err) {
-    jsonError(res, err, { items: [] });
+    jsonError(res, err, { items: [], error: err instanceof Error ? err.message : String(err) }, 500);
   }
 });
 

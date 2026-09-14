@@ -15,6 +15,13 @@ export async function callAiApi<T>(path: string, body: unknown): Promise<T> {
     },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error('AI request failed');
+  if (!res.ok) {
+    let message = 'AI request failed';
+    try {
+      const body = await res.json();
+      if (body?.error) message = body.error;
+    } catch {}
+    throw new Error(message);
+  }
   return res.json();
 }
