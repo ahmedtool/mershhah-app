@@ -254,9 +254,10 @@ export default function ContactPage() {
                             onClick={() => field.onChange(opt.value)}
                             className={`flex flex-col items-center gap-1 p-2.5 rounded-xl border text-xs font-bold transition-all ${
                               field.value === opt.value
-                                ? 'border-gray-900 bg-gray-900 text-white'
+                                ? ''
                                 : 'border-gray-100 bg-white text-gray-600 hover:border-gray-200'
                             }`}
+                            style={field.value === opt.value ? { backgroundColor: primaryColor, borderColor: primaryColor, color: 'var(--r-button-text)' } : undefined}
                           >
                             <span className="text-base">{opt.icon}</span>
                             <span>{t(opt.labelKey)}</span>
