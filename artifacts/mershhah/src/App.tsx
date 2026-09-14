@@ -48,7 +48,6 @@ const OwnerMenuPage = lazyWithReload(() => import("@/app/owner/menu/page"));
 const OwnerOffersPage = lazyWithReload(() => import("@/app/owner/offers/page"));
 const OwnerCustomizePage = lazyWithReload(() => import("@/app/owner/customize/page"));
 const OwnerBranchesPage = lazyWithReload(() => import("@/app/owner/branches/page"));
-const OwnerReviewsPage = lazyWithReload(() => import("@/app/owner/reviews/page"));
 const OwnerSettingsPage = lazyWithReload(() => import("@/app/owner/settings/page"));
 const OwnerStorePage = lazyWithReload(() => import("@/app/owner/store/page"));
 const OwnerReportsPage = lazyWithReload(() => import("@/app/owner/reports/page"));
@@ -56,7 +55,6 @@ const OwnerTicketsPage = lazyWithReload(() => import("@/app/owner/tickets/page")
 const OwnerTicketDetailPage = lazyWithReload(() => import("@/app/owner/tickets/[ticketId]/page"));
 const OwnerToolsPage = lazyWithReload(() => import("@/app/owner/tools/page"));
 const OwnerToolDetailPage = lazyWithReload(() => import("@/app/owner/tools/[toolId]/page"));
-const DailyPulsePage = lazyWithReload(() => import("@/app/owner/tools/daily-pulse-dashboard/page"));
 const MarketingCalendarPage = lazyWithReload(() => import("@/app/owner/tools/marketing-calendar/page"));
 const ReplyTemplatesPage = lazyWithReload(() => import("@/app/owner/tools/reply-templates/page"));
 const SummarizeFeedbackPage = lazyWithReload(() => import("@/app/owner/tools/summarize-feedback/page"));
@@ -204,13 +202,13 @@ function Router() {
         <Route path="/owner/offers" component={() => <OW><OwnerOffersPage /></OW>} />
         <Route path="/owner/customize" component={() => <OW><OwnerCustomizePage /></OW>} />
         <Route path="/owner/branches" component={() => <OW><OwnerBranchesPage /></OW>} />
-        <Route path="/owner/reviews" component={() => <OW><OwnerReviewsPage /></OW>} />
+        <Route path="/owner/reviews" component={() => <Redirect to="/owner/reports" />} />
         <Route path="/owner/settings" component={() => <OW><OwnerSettingsPage /></OW>} />
         <Route path="/owner/store" component={() => <OW><OwnerStorePage /></OW>} />
         <Route path="/owner/reports" component={() => <OW><OwnerReportsPage /></OW>} />
         <Route path="/owner/tickets/:ticketId" component={() => <OW><OwnerTicketDetailPage /></OW>} />
         <Route path="/owner/tickets" component={() => <OW><OwnerTicketsPage /></OW>} />
-        <Route path="/owner/tools/daily-pulse-dashboard" component={() => <OW><DailyPulsePage /></OW>} />
+        <Route path="/owner/tools/daily-pulse-dashboard" component={() => <Redirect to="/owner/reports" />} />
         <Route path="/owner/tools/marketing-calendar" component={() => <OW><MarketingCalendarPage /></OW>} />
         <Route path="/owner/tools/reply-templates" component={() => <OW><ReplyTemplatesPage /></OW>} />
         <Route path="/owner/tools/summarize-feedback" component={() => <OW><SummarizeFeedbackPage /></OW>} />

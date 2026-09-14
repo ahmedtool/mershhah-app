@@ -19,6 +19,9 @@ import {
     Sparkles,
     MapPin,
     Search,
+    Bot,
+    Lightbulb,
+    RefreshCw,
 } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +42,18 @@ import {
     type TrafficSource,
 } from '@/lib/traffic-source';
 import { useLanguage } from '@/components/shared/LanguageContext';
+import { generateDailyPulse, type DailyPulseOutput } from '@/ai/flows/generate-daily-pulse';
+import { syncPublicPage } from '@/lib/public-pages';
+import { formatDistanceToNow } from 'date-fns';
+import { ar } from 'date-fns/locale';
+
+type FullReview = {
+    id: string;
+    rating: number;
+    comment?: string | null;
+    created_at: string | null;
+    is_visible?: boolean;
+};
 
 const KNOWN_TRAFFIC_SOURCES = new Set(Object.keys(TRAFFIC_SOURCE_LABEL_KEYS));
 
@@ -157,12 +172,15 @@ export default function InsightsHubPage() {
     const [hubVisitsLink, setHubVisitsLink] = useState(0);
     const [sourceCounts, setSourceCounts] = useState<Partial<Record<TrafficSource, number>>>({});
     const [visitDates, setVisitDates] = useState<string[]>([]);
-    const [reviewComments, setReviewComments] = useState<string[]>([]);
+    const [fullReviews, setFullReviews] = useState<FullReview[]>([]);
     const [restaurantRating, setRestaurantRating] = useState(0);
     const [restaurantReviewCount, setRestaurantReviewCount] = useState(0);
     const [hubUsername, setHubUsername] = useState<string | null>(null);
     const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
     const [hoveredDay, setHoveredDay] = useState<number | null>(null);
+    const [dailyPulse, setDailyPulse] = useState<DailyPulseOutput | null>(null);
+    const [isPulseLoading, setIsPulseLoading] = useState(false);
+    const [isTogglingVisibility, setIsTogglingVisibility] = useState<string | null>(null);
 
     const isPaid = user?.entitlements?.planId && user.entitlements.planId !== 'free' && user.entitlements.planId !== 'none';
 
@@ -175,7 +193,7 @@ export default function InsightsHubPage() {
                 supabase.from('menu_item_interactions').select('menu_item_id').eq('restaurant_id', restaurantId),
                 supabase.from('hub_visits').select('source, created_at').eq('restaurant_id', restaurantId).gte('created_at', new Date(Date.now() - TREND_DAYS * DAY_MS).toISOString()),
                 supabase.from('restaurants').select('username, rating, review_count').eq('id', restaurantId).single(),
-                supabase.from('reviews').select('comment').eq('restaurant_id', restaurantId).neq('is_visible', false).not('comment', 'is', null),
+                supabase.from('reviews').select('id, rating, comment, created_at, is_visible').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }),
             ]);
 
             const items = (itemsRes.data || []) as MenuItem[];
@@ -207,7 +225,7 @@ export default function InsightsHubPage() {
             setRestaurantRating(rest?.rating || 0);
             setRestaurantReviewCount(rest?.review_count || 0);
 
-            setReviewComments((reviewsRes.data || []).map((r: any) => r.comment).filter(Boolean));
+            setFullReviews((reviewsRes.data || []) as FullReview[]);
 
             const popularityMap = new Map<string, number>();
             interactions.forEach((i: any) => popularityMap.set(i.menu_item_id, (popularityMap.get(i.menu_item_id) || 0) + 1));
@@ -297,8 +315,66 @@ export default function InsightsHubPage() {
         t,
     }), [engineered, weekChange, hubVisitsQr, hubVisitsLink, t]);
 
+    const reviewComments = useMemo(
+        () => fullReviews.filter(r => r.is_visible !== false && r.comment).map(r => r.comment as string),
+        [fullReviews],
+    );
     const topicCounts = useMemo(() => countReviewsByTag(reviewComments), [reviewComments]);
     const topicMax = Math.max(1, ...Object.values(topicCounts));
+
+    const fetchPulse = useCallback(async () => {
+        if (!user?.restaurantId || !user.name) return;
+        setIsPulseLoading(true);
+        try {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const { data: sessions } = await supabase
+                .from('ai_sessions')
+                .select('created_at')
+                .eq('restaurant_id', user.restaurantId)
+                .gte('created_at', yesterday.toISOString());
+            const recentSessions = sessions || [];
+            if (recentSessions.length === 0) {
+                setDailyPulse(null);
+                return;
+            }
+            const hourCounts: Record<number, number> = {};
+            recentSessions.forEach((session: any) => {
+                if (!session.created_at) return;
+                const hour = new Date(session.created_at).getHours();
+                hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+            });
+            let peakHour = -1; let maxCount = 0;
+            Object.entries(hourCounts).forEach(([hour, count]) => {
+                if (count > maxCount) { maxCount = count; peakHour = parseInt(hour, 10); }
+            });
+            const result = await generateDailyPulse({
+                restaurantName: user.name,
+                totalInteractions: recentSessions.length,
+                peakActivityHour: peakHour !== -1 ? `${peakHour}:00 - ${peakHour + 1}:00` : 'N/A',
+                mostDiscussedItem: 'N/A',
+            });
+            setDailyPulse(result);
+        } catch {
+            setDailyPulse(null);
+        } finally {
+            setIsPulseLoading(false);
+        }
+    }, [user?.restaurantId, user?.name]);
+
+    useEffect(() => {
+        if (user?.restaurantId) fetchPulse();
+    }, [user?.restaurantId, fetchPulse]);
+
+    const handleVisibilityToggle = (reviewId: string, newVisibility: boolean) => {
+        setIsTogglingVisibility(reviewId);
+        supabase.from('reviews').update({ is_visible: newVisibility }).eq('id', reviewId).then(({ error }: { error: any }) => {
+            setIsTogglingVisibility(null);
+            if (error) return;
+            setFullReviews(prev => prev.map(r => r.id === reviewId ? { ...r, is_visible: newVisibility } : r));
+            if (user?.restaurantId) syncPublicPage(user.restaurantId).catch(() => {});
+        });
+    };
 
     if (isLoadingData || isUserLoading) {
         return (
@@ -324,6 +400,37 @@ export default function InsightsHubPage() {
     return (
         <div className="space-y-5 pb-20">
             <PageHeader title={t('reports.title')} description={t('reports.subtitle')} />
+
+            {/* Daily pulse — one AI-generated summary + one actionable recommendation */}
+            {(isPulseLoading || dailyPulse) && (
+                <div className="bg-gray-900 rounded-2xl p-5 text-white">
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-2">
+                            <Bot className="h-4 w-4" />
+                            <h3 className="text-sm font-bold">{t('reports.dailyPulseTitle')}</h3>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={fetchPulse}
+                            disabled={isPulseLoading}
+                            className="shrink-0 w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+                        >
+                            <RefreshCw className={cn("h-3.5 w-3.5", isPulseLoading && "animate-spin")} />
+                        </button>
+                    </div>
+                    {isPulseLoading && !dailyPulse ? (
+                        <div className="h-10 flex items-center text-xs text-white/70">{t('reports.dailyPulseLoading')}</div>
+                    ) : dailyPulse ? (
+                        <div className="space-y-3">
+                            <p className="text-base font-bold leading-relaxed">{dailyPulse.pulseSummary}</p>
+                            <div className="flex items-start gap-2 pt-3 border-t border-white/10">
+                                <Lightbulb className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                                <p className="text-xs text-white/90 leading-relaxed">{dailyPulse.singleActionableRecommendation}</p>
+                            </div>
+                        </div>
+                    ) : null}
+                </div>
+            )}
 
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -640,6 +747,49 @@ export default function InsightsHubPage() {
                                         <div className="h-full rounded-full bg-[#2a78d6] transition-all" style={{ width: `${(count / topicMax) * 100}%` }} />
                                     </div>
                                     <span className="text-[10px] font-mono font-bold text-gray-600 w-6 text-left">{count}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* سمعتك — every review, with a visibility toggle for the public page */}
+            <div className="bg-white border border-gray-100 rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-4">
+                    <Eye className="h-4 w-4 text-gray-600" />
+                    <h3 className="text-sm font-bold text-gray-900">{t('reports.reputationTitle')}</h3>
+                </div>
+                {fullReviews.length === 0 ? (
+                    <div className="py-10 text-center text-gray-600 text-xs">{t('reports.noReviewsYet')}</div>
+                ) : (
+                    <div className="space-y-2 max-h-[28rem] overflow-y-auto">
+                        {fullReviews.map(review => {
+                            const isVisible = review.is_visible !== false;
+                            return (
+                                <div key={review.id} className="border border-gray-100 rounded-xl p-3">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex gap-0.5 shrink-0">
+                                            {[1, 2, 3, 4, 5].map(s => (
+                                                <Star key={s} className={cn("h-3 w-3", review.rating >= s ? "text-amber-400 fill-amber-400" : "text-gray-200")} />
+                                            ))}
+                                        </div>
+                                        <span className="text-[9px] text-gray-600 shrink-0">
+                                            {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: locale === 'ar' ? ar : undefined }) : ''}
+                                        </span>
+                                    </div>
+                                    {review.comment && <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">{review.comment}</p>}
+                                    <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-gray-50">
+                                        <span className="text-[9px] text-gray-600">{isVisible ? t('reports.reviewVisible') : t('reports.reviewHidden')}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleVisibilityToggle(review.id, !isVisible)}
+                                            disabled={isTogglingVisibility === review.id}
+                                            className={cn("relative w-9 h-5 rounded-full transition-colors", isVisible ? "bg-gray-900" : "bg-gray-200")}
+                                        >
+                                            <span className={cn("absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform", isVisible ? "right-0.5" : "right-[18px]")} />
+                                        </button>
+                                    </div>
                                 </div>
                             );
                         })}

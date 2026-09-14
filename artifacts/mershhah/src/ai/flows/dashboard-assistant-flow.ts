@@ -224,7 +224,7 @@ function detectIntent(msg: string, ctx: {
       'المنيو': '/owner/menu', 'menu': '/owner/menu',
       'التقارير': '/owner/reports', 'reports': '/owner/reports',
       'العروض': '/owner/offers', 'offers': '/owner/offers',
-      'التقييمات': '/owner/reviews', 'reviews': '/owner/reviews',
+      'التقييمات': '/owner/reports', 'reviews': '/owner/reports',
       'الفروع': '/owner/branches', 'branches': '/owner/branches',
       'التخصيص': '/owner/customize', 'customize': '/owner/customize',
       'المتجر': '/owner/store', 'store': '/owner/store',
@@ -513,8 +513,8 @@ export async function dashboardAssistant(input: DashboardAssistantInput): Promis
       }
       const avg = (ctx.reviews.reduce((sum: number, r: any) => sum + (r.rating || 0), 0) / ctx.reviews.length).toFixed(1);
       return {
-        answer: `⭐ عندك ${ctx.reviews.length} تقييم (متوسط: ${avg}/5)\n\nتبي تشوف التقييمات؟ [رابط صفحة التقييمات](/owner/reviews)`,
-        action: { type: 'NAVIGATE', payload: { path: '/owner/reviews' } },
+        answer: `⭐ عندك ${ctx.reviews.length} تقييم (متوسط: ${avg}/5)\n\nتبي تشوف التقييمات؟ [رابط صفحة التقارير](/owner/reports)`,
+        action: { type: 'NAVIGATE', payload: { path: '/owner/reports' } },
       };
     },
 
