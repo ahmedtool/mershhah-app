@@ -55,6 +55,8 @@ type FullReview = {
     is_visible?: boolean;
 };
 
+type ItemReview = FullReview & { menu_item_id: string };
+
 const KNOWN_TRAFFIC_SOURCES = new Set(Object.keys(TRAFFIC_SOURCE_LABEL_KEYS));
 
 const TRAFFIC_SOURCE_ICONS: Partial<Record<TrafficSource, React.ElementType>> = {
@@ -173,6 +175,9 @@ export default function InsightsHubPage() {
     const [sourceCounts, setSourceCounts] = useState<Partial<Record<TrafficSource, number>>>({});
     const [visitDates, setVisitDates] = useState<string[]>([]);
     const [fullReviews, setFullReviews] = useState<FullReview[]>([]);
+    const [itemReviews, setItemReviews] = useState<ItemReview[]>([]);
+    const [itemNames, setItemNames] = useState<Record<string, string>>({});
+    const [reputationTab, setReputationTab] = useState<'restaurant' | 'products'>('restaurant');
     const [restaurantRating, setRestaurantRating] = useState(0);
     const [restaurantReviewCount, setRestaurantReviewCount] = useState(0);
     const [hubUsername, setHubUsername] = useState<string | null>(null);
@@ -188,12 +193,13 @@ export default function InsightsHubPage() {
         if (!user?.restaurantId) return;
         try {
             const restaurantId = user.restaurantId;
-            const [itemsRes, interactionsRes, hubVisitsRes, restRes, reviewsRes] = await Promise.all([
+            const [itemsRes, interactionsRes, hubVisitsRes, restRes, reviewsRes, itemReviewsRes] = await Promise.all([
                 supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId),
                 supabase.from('menu_item_interactions').select('menu_item_id').eq('restaurant_id', restaurantId),
                 supabase.from('hub_visits').select('source, created_at').eq('restaurant_id', restaurantId).gte('created_at', new Date(Date.now() - TREND_DAYS * DAY_MS).toISOString()),
                 supabase.from('restaurants').select('username, rating, review_count').eq('id', restaurantId).single(),
                 supabase.from('reviews').select('id, rating, comment, created_at, is_visible').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }),
+                supabase.from('menu_item_reviews').select('id, menu_item_id, rating, comment, created_at, is_visible').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }),
             ]);
 
             const items = (itemsRes.data || []) as MenuItem[];
@@ -226,6 +232,10 @@ export default function InsightsHubPage() {
             setRestaurantReviewCount(rest?.review_count || 0);
 
             setFullReviews((reviewsRes.data || []) as FullReview[]);
+            setItemReviews((itemReviewsRes.data || []) as ItemReview[]);
+            const names: Record<string, string> = {};
+            items.forEach(i => { if (i.id) names[i.id] = i.name || ''; });
+            setItemNames(names);
 
             const popularityMap = new Map<string, number>();
             interactions.forEach((i: any) => popularityMap.set(i.menu_item_id, (popularityMap.get(i.menu_item_id) || 0) + 1));
@@ -372,6 +382,16 @@ export default function InsightsHubPage() {
             setIsTogglingVisibility(null);
             if (error) return;
             setFullReviews(prev => prev.map(r => r.id === reviewId ? { ...r, is_visible: newVisibility } : r));
+            if (user?.restaurantId) syncPublicPage(user.restaurantId).catch(() => {});
+        });
+    };
+
+    const handleItemVisibilityToggle = (reviewId: string, newVisibility: boolean) => {
+        setIsTogglingVisibility(reviewId);
+        supabase.from('menu_item_reviews').update({ is_visible: newVisibility }).eq('id', reviewId).then(({ error }: { error: any }) => {
+            setIsTogglingVisibility(null);
+            if (error) return;
+            setItemReviews(prev => prev.map(r => r.id === reviewId ? { ...r, is_visible: newVisibility } : r));
             if (user?.restaurantId) syncPublicPage(user.restaurantId).catch(() => {});
         });
     };
@@ -758,46 +778,106 @@ export default function InsightsHubPage() {
                 )}
             </div>
 
-            {/* سمعتك — every review, with a visibility toggle for the public page */}
+            {/* سمعتك — restaurant reviews and product reviews, each with a visibility toggle */}
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-4">
-                    <Eye className="h-4 w-4 text-gray-600" />
-                    <h3 className="text-sm font-bold text-gray-900">{t('reports.reputationTitle')}</h3>
-                </div>
-                {fullReviews.length === 0 ? (
-                    <div className="py-10 text-center text-gray-600 text-xs">{t('reports.noReviewsYet')}</div>
-                ) : (
-                    <div className="space-y-2 max-h-[28rem] overflow-y-auto">
-                        {fullReviews.map(review => {
-                            const isVisible = review.is_visible !== false;
-                            return (
-                                <div key={review.id} className="border border-gray-100 rounded-xl p-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                        <div className="flex gap-0.5 shrink-0">
-                                            {[1, 2, 3, 4, 5].map(s => (
-                                                <Star key={s} className={cn("h-3 w-3", review.rating >= s ? "text-amber-400 fill-amber-400" : "text-gray-200")} />
-                                            ))}
-                                        </div>
-                                        <span className="text-[9px] text-gray-600 shrink-0">
-                                            {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: locale === 'ar' ? ar : undefined }) : ''}
-                                        </span>
-                                    </div>
-                                    {review.comment && <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">{review.comment}</p>}
-                                    <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-gray-50">
-                                        <span className="text-[9px] text-gray-600">{isVisible ? t('reports.reviewVisible') : t('reports.reviewHidden')}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleVisibilityToggle(review.id, !isVisible)}
-                                            disabled={isTogglingVisibility === review.id}
-                                            className={cn("relative w-9 h-5 rounded-full transition-colors", isVisible ? "bg-gray-900" : "bg-gray-200")}
-                                        >
-                                            <span className={cn("absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform", isVisible ? "right-0.5" : "right-[18px]")} />
-                                        </button>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4 text-gray-600" />
+                        <h3 className="text-sm font-bold text-gray-900">{t('reports.reputationTitle')}</h3>
                     </div>
+                    <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
+                        <button
+                            type="button"
+                            onClick={() => setReputationTab('restaurant')}
+                            className={cn("px-3 h-7 rounded-md text-[11px] font-bold transition-all", reputationTab === 'restaurant' ? "bg-white text-gray-900 shadow-sm" : "text-gray-600")}
+                        >
+                            {t('reports.reputationTabRestaurant')} ({fullReviews.length})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setReputationTab('products')}
+                            className={cn("px-3 h-7 rounded-md text-[11px] font-bold transition-all", reputationTab === 'products' ? "bg-white text-gray-900 shadow-sm" : "text-gray-600")}
+                        >
+                            {t('reports.reputationTabProducts')} ({itemReviews.length})
+                        </button>
+                    </div>
+                </div>
+
+                {reputationTab === 'restaurant' ? (
+                    fullReviews.length === 0 ? (
+                        <div className="py-10 text-center text-gray-600 text-xs">{t('reports.noReviewsYet')}</div>
+                    ) : (
+                        <div className="space-y-2 max-h-[28rem] overflow-y-auto">
+                            {fullReviews.map(review => {
+                                const isVisible = review.is_visible !== false;
+                                return (
+                                    <div key={review.id} className="border border-gray-100 rounded-xl p-3">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex gap-0.5 shrink-0">
+                                                {[1, 2, 3, 4, 5].map(s => (
+                                                    <Star key={s} className={cn("h-3 w-3", review.rating >= s ? "text-amber-400 fill-amber-400" : "text-gray-200")} />
+                                                ))}
+                                            </div>
+                                            <span className="text-[9px] text-gray-600 shrink-0">
+                                                {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: locale === 'ar' ? ar : undefined }) : ''}
+                                            </span>
+                                        </div>
+                                        {review.comment && <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">{review.comment}</p>}
+                                        <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-gray-50">
+                                            <span className="text-[9px] text-gray-600">{isVisible ? t('reports.reviewVisible') : t('reports.reviewHidden')}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleVisibilityToggle(review.id, !isVisible)}
+                                                disabled={isTogglingVisibility === review.id}
+                                                className={cn("relative w-9 h-5 rounded-full transition-colors", isVisible ? "bg-gray-900" : "bg-gray-200")}
+                                            >
+                                                <span className={cn("absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform", isVisible ? "right-0.5" : "right-[18px]")} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )
+                ) : (
+                    itemReviews.length === 0 ? (
+                        <div className="py-10 text-center text-gray-600 text-xs">{t('reports.noProductReviewsYet')}</div>
+                    ) : (
+                        <div className="space-y-2 max-h-[28rem] overflow-y-auto">
+                            {itemReviews.map(review => {
+                                const isVisible = review.is_visible !== false;
+                                return (
+                                    <div key={review.id} className="border border-gray-100 rounded-xl p-3">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className="flex gap-0.5 shrink-0">
+                                                    {[1, 2, 3, 4, 5].map(s => (
+                                                        <Star key={s} className={cn("h-3 w-3", review.rating >= s ? "text-amber-400 fill-amber-400" : "text-gray-200")} />
+                                                    ))}
+                                                </div>
+                                                <span className="text-[10px] font-bold text-gray-700 truncate">{itemNames[review.menu_item_id] || t('reports.deletedItem')}</span>
+                                            </div>
+                                            <span className="text-[9px] text-gray-600 shrink-0">
+                                                {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: locale === 'ar' ? ar : undefined }) : ''}
+                                            </span>
+                                        </div>
+                                        {review.comment && <p className="text-[11px] text-gray-600 mt-2 leading-relaxed">{review.comment}</p>}
+                                        <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-gray-50">
+                                            <span className="text-[9px] text-gray-600">{isVisible ? t('reports.reviewVisible') : t('reports.reviewHidden')}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleItemVisibilityToggle(review.id, !isVisible)}
+                                                disabled={isTogglingVisibility === review.id}
+                                                className={cn("relative w-9 h-5 rounded-full transition-colors", isVisible ? "bg-gray-900" : "bg-gray-200")}
+                                            >
+                                                <span className={cn("absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform", isVisible ? "right-0.5" : "right-[18px]")} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )
                 )}
             </div>
         </div>
