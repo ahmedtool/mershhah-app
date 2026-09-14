@@ -89,6 +89,13 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
     setExistingNames(new Set());
   };
 
+  // An extracted item counts as "already exists" if either its Arabic or
+  // English name matches an existing item - catches a menu re-uploaded in
+  // the other language, not just an identical re-upload.
+  const isExistingItem = (item: any) =>
+    existingNames.has((item.name || '').toLowerCase().trim()) ||
+    (!!item.name_en && existingNames.has(item.name_en.toLowerCase().trim()));
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -144,10 +151,18 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
 
                 const { data: existing } = await supabase
                     .from('menu_items')
-                    .select('name')
+                    .select('name, name_en')
                     .eq('restaurant_id', restaurantId);
 
-                const nameSet = new Set<string>((existing ?? []).map((i: any) => i.name.toLowerCase().trim()));
+                // Cross-language re-uploads (Arabic menu today, English menu
+                // next time) name the same dish differently - matching on
+                // whichever of name/name_en is set catches that instead of
+                // treating the translated re-upload as all-new items.
+                const nameSet = new Set<string>();
+                (existing ?? []).forEach((i: any) => {
+                    if (i.name) nameSet.add(i.name.toLowerCase().trim());
+                    if (i.name_en) nameSet.add(i.name_en.toLowerCase().trim());
+                });
                 setExistingNames(nameSet);
                 setExtractedData(extractedItems);
                 setStage("confirm");
@@ -179,22 +194,27 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
     try {
         const { data: existingItems, error: fetchError } = await supabase
             .from('menu_items')
-            .select('id, name, sizes, calories, allergens')
+            .select('id, name, name_en, description_en, sizes, calories, allergens')
             .eq('restaurant_id', restaurantId);
 
         if (fetchError) throw fetchError;
 
+        // Keyed by BOTH name and name_en pointing at the same row, so a menu
+        // re-uploaded in the other language matches the item already saved
+        // from the first upload instead of creating a duplicate.
         const existingMap = new Map<string, typeof existingItems[number]>();
         for (const item of existingItems ?? []) {
-            existingMap.set(item.name.toLowerCase().trim(), item);
+            if (item.name) existingMap.set(item.name.toLowerCase().trim(), item);
+            if (item.name_en) existingMap.set(item.name_en.toLowerCase().trim(), item);
         }
 
         const toInsert: any[] = [];
         const toUpdate: { id: string; data: any }[] = [];
 
         for (const item of extractedData) {
-            const normalizedName = item.name.toLowerCase().trim();
-            const existing = existingMap.get(normalizedName);
+            const normalizedName = (item.name || '').toLowerCase().trim();
+            const normalizedNameEn = (item.name_en || '').toLowerCase().trim();
+            const existing = existingMap.get(normalizedName) || (normalizedNameEn ? existingMap.get(normalizedNameEn) : undefined);
 
             const newSizes = item.sizes.map((s: any) => ({
                 id: `size-${Date.now()}-${Math.random().toString(36).substring(7)}`,
@@ -209,18 +229,27 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
                 const pricesChanged = existingPrices !== newPrices;
                 const caloriesChanged = (existing.calories ?? null) !== (item.calories ?? null);
                 const allergensChanged = JSON.stringify(existing.allergens ?? []) !== JSON.stringify(item.allergens ?? []);
+                // Only fills in a translation the item is missing - never
+                // overwrites an English name/description the owner already
+                // has (whether from this same import or a manual edit).
+                const nameEnMissing = !existing.name_en && !!item.name_en;
+                const descEnMissing = !existing.description_en && !!item.description_en;
 
-                if (pricesChanged || caloriesChanged || allergensChanged) {
+                if (pricesChanged || caloriesChanged || allergensChanged || nameEnMissing || descEnMissing) {
                     const updateData: any = {};
                     if (pricesChanged) updateData.sizes = newSizes;
                     if (caloriesChanged) updateData.calories = item.calories || null;
                     if (allergensChanged) updateData.allergens = item.allergens || [];
+                    if (nameEnMissing) updateData.name_en = item.name_en;
+                    if (descEnMissing) updateData.description_en = item.description_en;
                     toUpdate.push({ id: existing.id, data: updateData });
                 }
             } else {
                 toInsert.push({
                     name: item.name,
+                    name_en: item.name_en || "",
                     description: item.description || "",
+                    description_en: item.description_en || "",
                     category: item.category || 'main',
                     sizes: newSizes,
                     calories: item.calories || null,
@@ -359,7 +388,7 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
                  {stage === "confirm" && (
                     <div className="space-y-4">
                         {(() => {
-                            const newCount = extractedData.filter(i => !existingNames.has(i.name.toLowerCase().trim())).length;
+                            const newCount = extractedData.filter(i => !isExistingItem(i)).length;
                             const existCount = extractedData.length - newCount;
                             return (
                                 <div className="flex items-center justify-between bg-gray-50 border border-gray-100 p-3 rounded-xl">
@@ -381,12 +410,15 @@ export function ImportMenuDialog({ children, restaurantId, onSave }: ImportMenuD
                         })()}
                         <div className="max-h-[40vh] overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-100">
                             {extractedData.map((item, index) => {
-                                const isNew = !existingNames.has(item.name.toLowerCase().trim());
+                                const isNew = !isExistingItem(item);
                                 return (
                                 <div key={index} className={`p-3 hover:bg-gray-50 transition-colors ${isRTL ? 'text-right' : 'text-left'}`}>
                                     <div className="flex justify-between items-start mb-1">
                                         <div className="flex items-center gap-2">
-                                            <h4 className="font-bold text-sm text-gray-900">{item.name}</h4>
+                                            <div>
+                                                <h4 className="font-bold text-sm text-gray-900">{item.name}</h4>
+                                                {item.name_en && <p className="text-[10px] text-gray-500">{item.name_en}</p>}
+                                            </div>
                                             {isNew
                                                 ? <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">{isRTL ? 'جديد' : 'NEW'}</span>
                                                 : <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">{isRTL ? 'موجود' : 'EXISTS'}</span>

@@ -191,8 +191,10 @@ router.post("/extract-menu-from-image", async (req: Request, res: Response) => {
           items: {
             type: "object",
             properties: {
-              name: { type: "string", description: "Menu item name in Arabic or English" },
-              description: { type: "string", description: "Brief description of the item" },
+              name: { type: "string", description: "Menu item name in Arabic. If the source document is in English, translate the name into Arabic here." },
+              name_en: { type: "string", description: "Menu item name in English. If the source document is in Arabic, translate the name into English here. Never leave empty." },
+              description: { type: "string", description: "Brief description of the item in Arabic (translate if the source is in English). Empty string if there is no description." },
+              description_en: { type: "string", description: "Brief description of the item in English (translate if the source is in Arabic). Empty string if there is no description." },
               category: { type: "string", description: "Category like: main, appetizer, drink, dessert, side, soup, salad, sandwich" },
               sizes: {
                 type: "array",
@@ -205,16 +207,16 @@ router.post("/extract-menu-from-image", async (req: Request, res: Response) => {
                   required: ["name", "price"],
                   additionalProperties: false,
                 },
-                description: "Different sizes with prices. If only one price, use size 'Default' or 'أساسي'",
+                description: "Every distinct size/variant of this item with its own price, exactly as printed - e.g. a row showing three prices for صغير/وسط/كبير must produce three separate entries here, not one. If the menu only ever shows one price for the item, use a single size named 'Default' or 'أساسي'.",
               },
-              calories: { type: "number", description: "Calories per serving, null if not visible" },
+              calories: { type: "number", description: "Calories per serving as printed on the menu. Only omit/null this when no calorie number appears next to the item at all - do not skip it just because it's small print." },
               allergens: {
                 type: "array",
                 items: { type: "string" },
                 description: "Allergens like: نواة, حليب, بيض, قمح, سمك, محار, صويا, سمسم, غلوتين",
               },
             },
-            required: ["name", "description", "category", "sizes"],
+            required: ["name", "name_en", "description", "description_en", "category", "sizes"],
             additionalProperties: false,
           },
         },
@@ -237,7 +239,7 @@ router.post("/extract-menu-from-image", async (req: Request, res: Response) => {
       body: JSON.stringify({
         model: "mistral-ocr-latest",
         document,
-        document_annotation_prompt: "Extract all menu items from this restaurant menu image/document. For each item, identify the name, description, category, sizes with prices, calories if visible, and allergens if mentioned. Return structured JSON.",
+        document_annotation_prompt: "Extract every menu item from this restaurant menu image/document - do not skip any. For each item, identify its name and description in BOTH Arabic and English (translate whichever language is missing from the source - never leave name_en or name blank), its category, EVERY distinct size/variant with its own price (not just one price if several are printed), its calories if a number is printed anywhere near it, and any allergens mentioned. Return structured JSON.",
         document_annotation_format: {
           type: "json_schema",
           json_schema: {
