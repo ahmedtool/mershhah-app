@@ -493,8 +493,8 @@ export default function RestaurantHubPage() {
                         target="_blank" 
                         rel="noopener noreferrer"
                         onClick={() => restaurant.id && trackSocialClick(restaurant.id, link.platform || 'unknown')}
-                        className="w-12 h-12 flex items-center justify-center rounded-2xl shadow-sm hover:shadow-md transition-all"
-                        style={{ backgroundColor: primaryColor }}
+                        className="w-12 h-12 flex items-center justify-center rounded-2xl shadow-sm hover:shadow-md active:scale-90 transition-all animate-in fade-in zoom-in-75 duration-300"
+                        style={{ backgroundColor: primaryColor, animationDelay: `${idx * 70}ms`, animationFillMode: 'backwards' }}
                       >
                         <Icon size={22} style={{ color: 'var(--r-button-text)' }} />
                       </Link>
