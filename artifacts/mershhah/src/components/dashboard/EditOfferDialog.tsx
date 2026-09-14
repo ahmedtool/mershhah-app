@@ -181,8 +181,10 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>{children}</DialogTrigger>
         <DialogContent className="sm:max-w-lg max-h-[92vh] overflow-y-auto p-0 gap-0" dir={dir}>
-          {/* Hero Image */}
-          <div className="relative w-full aspect-[16/9] bg-gray-100 overflow-hidden">
+          {/* Hero Image — aspect-[16/8] matches the public hub page's offer
+              banner exactly, so what the owner crops/previews here is
+              pixel-for-pixel what customers see, not a different frame. */}
+          <div className="relative w-full aspect-[16/8] bg-gray-100 overflow-hidden">
             {imagePreview ? (
               <>
                 <StorageImage imagePath={imagePreview} alt={t('offers.offerImageAlt')} fill className="object-cover" sizes="600px" />
@@ -200,6 +202,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                   <ImageIcon className="h-6 w-6 text-gray-600" />
                 </div>
                 <p className="text-sm text-gray-600">{t('offers.addOfferImage')}</p>
+                <p className="text-[11px] text-gray-500">{t('offers.recommendedImageSize')}</p>
               </div>
             )}
           </div>

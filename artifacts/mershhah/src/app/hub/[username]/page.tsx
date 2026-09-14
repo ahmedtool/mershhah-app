@@ -64,6 +64,8 @@ export default function RestaurantHubPage() {
   const [offers, setOffers] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeOfferIndex, setActiveOfferIndex] = useState(0);
+  const offerSlideRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const recordedViewOfferIds = useRef<Set<string>>(new Set());
   const searchParams = useSearchParams();
   const hubVisitRecorded = useRef(false);
@@ -85,6 +87,26 @@ export default function RestaurantHubPage() {
   // Offers with a branch_id only show to visitors known to be at that branch
   // (via a branch-specific link/QR); offers with no branch_id always show.
   const visibleOffers = branchParam ? offers.filter((o) => !o.branch_id || o.branch_id === branchParam) : offers;
+
+  // Tracks which offer slide is currently centered in the horizontal-scroll
+  // carousel, to drive the pagination dots. IntersectionObserver (not
+  // scrollLeft) because scrollLeft's sign/origin in RTL horizontal scroll
+  // containers is inconsistent across browsers - intersection ratio isn't.
+  useEffect(() => {
+    if (visibleOffers.length < 2) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const mostVisible = entries.reduce((best, e) => (e.intersectionRatio > (best?.intersectionRatio || 0) ? e : best), entries[0]);
+        if (mostVisible && mostVisible.intersectionRatio > 0.5) {
+          const idx = offerSlideRefs.current.findIndex((el) => el === mostVisible.target);
+          if (idx !== -1) setActiveOfferIndex(idx);
+        }
+      },
+      { threshold: [0.5, 0.6, 0.7, 0.8, 0.9, 1] },
+    );
+    offerSlideRefs.current.forEach((el) => { if (el) observer.observe(el); });
+    return () => observer.disconnect();
+  }, [visibleOffers.length]);
 
   useEffect(() => {
     if (!restaurant?.id || hubVisitRecorded.current) return;
@@ -311,14 +333,15 @@ export default function RestaurantHubPage() {
 
           {/* العروض */}
           {visibleOffers.length > 0 && (
-            <section className="space-y-3">
+            <section className="space-y-2">
               <div className="flex overflow-x-auto no-scrollbar pb-1 snap-x snap-mandatory gap-3">
-                {visibleOffers.map((offer) => (
+                {visibleOffers.map((offer, index) => (
                   <button
                     key={offer.id}
+                    ref={(el) => { offerSlideRefs.current[index] = el; }}
                     type="button"
                     onClick={() => handleOfferClick(offer)}
-                    className="shrink-0 flex-[0_0_100%] snap-center text-right"
+                    className={`shrink-0 snap-center text-right ${visibleOffers.length > 1 ? 'flex-[0_0_90%]' : 'flex-[0_0_100%]'}`}
                   >
                     <div className="relative shadow-md overflow-hidden group" style={{ aspectRatio: '16/8', borderRadius: 'var(--r-radius)' }}>
                       <StorageImage
@@ -343,6 +366,20 @@ export default function RestaurantHubPage() {
                   </button>
                 ))}
               </div>
+              {visibleOffers.length > 1 && (
+                <div className="flex items-center justify-center gap-1.5">
+                  {visibleOffers.map((offer, index) => (
+                    <span
+                      key={offer.id}
+                      className="h-1.5 rounded-full transition-all duration-300"
+                      style={{
+                        width: index === activeOfferIndex ? '18px' : '6px',
+                        backgroundColor: index === activeOfferIndex ? primaryColor : 'rgba(0,0,0,0.15)',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </section>
           )}
 
