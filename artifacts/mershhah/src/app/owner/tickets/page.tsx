@@ -496,15 +496,10 @@ export default function OwnerTicketsPage() {
 
   return (
     <div className="space-y-5 pb-20">
-      <PageHeader title={t('ownerTickets.pageTitle')} description={t('ownerTickets.pageDescription')} />
+      <PageHeader title={t('ownerGateway.sectionTitle')} description={t('ownerGateway.sectionDescription')} />
 
       {/* Gateway services */}
       <div className="space-y-3">
-        <div>
-          <h2 className="text-sm font-black text-gray-900">{t('ownerGateway.sectionTitle')}</h2>
-          <p className="text-[11px] text-gray-600 mt-0.5">{t('ownerGateway.sectionDescription')}</p>
-        </div>
-
         {isLoadingGateway ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
