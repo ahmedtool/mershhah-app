@@ -135,30 +135,21 @@ export default function InfrastructurePage() {
 
   const fetchTopSubscribers = useCallback(async () => {
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-    const { data: txRows } = await supabase
-      .from('transactions')
-      .select('profile_id, amount, status')
-      .eq('status', 'completed')
-      .gte('created_at', monthStart);
-
-    const byProfile = new Map<string, { amount: number; count: number }>();
-    for (const tx of (txRows || []) as any[]) {
-      if (!tx.profile_id) continue;
-      const entry = byProfile.get(tx.profile_id) || { amount: 0, count: 0 };
-      entry.amount += Number(tx.amount) || 0;
-      entry.count += 1;
-      byProfile.set(tx.profile_id, entry);
+    // RPC, not a raw table select - public.transactions carries a
+    // RESTRICTIVE OTP policy that would silently return zero rows here
+    // whenever the admin's step-up OTP is more than an hour old (see the
+    // migration this function lives in for the full story).
+    const { data, error } = await supabase.rpc('get_top_transaction_subscribers', { month_start: monthStart });
+    if (error) {
+      console.error('[infrastructure] get_top_transaction_subscribers failed:', error);
+      setTopSubscribers([]);
+      return;
     }
-    const profileIds = [...byProfile.keys()];
-    if (profileIds.length === 0) { setTopSubscribers([]); return; }
-
-    const { data: profiles } = await supabase.from('profiles').select('id, restaurant_name, full_name').in('id', profileIds);
-    const nameById = new Map<string, string>((profiles || []).map((p: any) => [p.id, p.restaurant_name || p.full_name || '—']));
-
-    const list: TopSubscriber[] = profileIds
-      .map((id) => ({ name: nameById.get(id) || '—', amount: byProfile.get(id)!.amount, count: byProfile.get(id)!.count }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, 5);
+    const list: TopSubscriber[] = (data || []).map((row: any) => ({
+      name: row.name || '—',
+      amount: Number(row.amount) || 0,
+      count: Number(row.tx_count) || 0,
+    }));
     setTopSubscribers(list);
   }, []);
 
