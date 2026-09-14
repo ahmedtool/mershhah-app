@@ -398,7 +398,7 @@ export default function InsightsHubPage() {
     const weekPct = weekChange.lastWeek > 0 ? Math.round(((weekChange.thisWeek - weekChange.lastWeek) / weekChange.lastWeek) * 100) : null;
 
     return (
-        <div className="space-y-5 pb-20">
+        <div className="space-y-4 pb-10">
             <PageHeader title={t('reports.title')} description={t('reports.subtitle')} />
 
             {/* Daily pulse — one AI-generated summary + one actionable recommendation */}
@@ -727,8 +727,8 @@ export default function InsightsHubPage() {
             </div>
 
             {/* Reviews by topic — paid tier */}
-            <div className={cn("bg-white border border-gray-100 rounded-2xl p-5", !isPaid && "relative")}>
-                <div className="flex items-center gap-2 mb-4">
+            <div className={cn("bg-white border border-gray-100 rounded-2xl p-4", !isPaid && "relative")}>
+                <div className="flex items-center gap-2 mb-3">
                     <Star className="h-4 w-4 text-gray-600" />
                     <h3 className="text-sm font-bold text-gray-900">{t('reports.whatCustomersSayTitle')}</h3>
                 </div>
@@ -737,16 +737,20 @@ export default function InsightsHubPage() {
                 ) : reviewComments.length === 0 ? (
                     <div className="py-10 text-center text-gray-600 text-xs">{t('reports.notEnoughComments')}</div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {REVIEW_TAGS.map(tag => {
                             const count = topicCounts[tag.id];
+                            const isTop = count === topicMax && count > 0;
                             return (
-                                <div key={tag.id} className="flex items-center gap-3">
-                                    <span className="text-xs font-bold text-gray-600 w-14 shrink-0">{t(tag.labelKey)}</span>
-                                    <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                        <div className="h-full rounded-full bg-[#2a78d6] transition-all" style={{ width: `${(count / topicMax) * 100}%` }} />
-                                    </div>
-                                    <span className="text-[10px] font-mono font-bold text-gray-600 w-6 text-left">{count}</span>
+                                <div
+                                    key={tag.id}
+                                    className={cn(
+                                        "rounded-xl p-3 text-center border",
+                                        isTop ? "bg-[#2a78d6]/5 border-[#2a78d6]/20" : "bg-gray-50 border-gray-100",
+                                    )}
+                                >
+                                    <p className={cn("text-xl font-black", isTop ? "text-[#2a78d6]" : "text-gray-900")}>{count}</p>
+                                    <p className="text-[10px] text-gray-600 mt-0.5">{t(tag.labelKey)}</p>
                                 </div>
                             );
                         })}
