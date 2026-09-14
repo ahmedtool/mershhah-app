@@ -154,7 +154,7 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
   const themeStyle = getPublicThemeStyle(restaurant);
 
   return (
-    <div className="min-h-screen pb-16 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
+    <div className="min-h-screen pb-16 relative overflow-x-hidden" style={themeStyle} dir={dir}>
       <PublicPageBackdrop />
 
       {/* Header */}

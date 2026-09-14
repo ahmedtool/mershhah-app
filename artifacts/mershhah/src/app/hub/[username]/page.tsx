@@ -269,7 +269,7 @@ export default function RestaurantHubPage() {
   return (
     <div
       className="min-h-screen flex flex-col items-center relative overflow-x-hidden"
-      style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 45%, white), white 55%)' }}
+      style={themeStyle}
       dir={dir}
     >
       <PublicPageBackdrop />

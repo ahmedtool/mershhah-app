@@ -62,5 +62,9 @@ export function getPublicThemeStyle(restaurant: ThemedRestaurant | null | undefi
     '--r-radius': `${radius}px`,
     '--r-radius-sm': `${Math.round(radius * 0.6)}px`,
     fontFamily: `'${font}', 'IBM Plex Sans Arabic', sans-serif`,
+    // Tints the whole page with the owner's chosen background color -
+    // pages used to fade this to white after ~220px, so "background color"
+    // only ever visibly colored the very top of the page.
+    background: 'color-mix(in srgb, var(--r-secondary) 25%, white)',
   } as CSSProperties;
 }

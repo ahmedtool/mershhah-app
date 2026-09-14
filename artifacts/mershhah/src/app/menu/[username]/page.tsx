@@ -375,7 +375,7 @@ export default function PublicMenuPage() {
   const themeStyle = getPublicThemeStyle(restaurant);
 
   return (
-    <div className="flex flex-col min-h-dvh pb-6 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
+    <div className="flex flex-col min-h-dvh pb-6 relative overflow-x-hidden" style={themeStyle} dir={dir}>
       <PublicPageBackdrop />
 
       {/* Header - compact single row: back, logo, name + subtitle, search, language */}

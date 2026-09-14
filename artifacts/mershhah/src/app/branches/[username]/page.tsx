@@ -164,7 +164,7 @@ export default function PublicBranchesPage() {
   const displayName = dir === 'ltr' && restaurant.name_en ? restaurant.name_en : restaurant.name;
 
   return (
-    <div className="min-h-screen pb-6 relative overflow-x-hidden" style={{ ...themeStyle, background: 'linear-gradient(to bottom, color-mix(in srgb, var(--r-secondary) 25%, white), white 220px)' }} dir={dir}>
+    <div className="min-h-screen pb-6 relative overflow-x-hidden" style={themeStyle} dir={dir}>
       <PublicPageBackdrop />
 
       {/* Header */}
