@@ -63,7 +63,12 @@ export type PublicPageData = {
   categories: Array<{ id: string; name: string; name_en?: string | null; position: number }>;
   gatewayServices: Array<{
     service_type: string;
-    config: { title?: string; icon?: string; fields?: Array<{ id: string; label: string; type: string; options?: string[] }> };
+    config: {
+      title?: string;
+      icon?: string;
+      fields?: Array<{ id: string; label: string; type: string; options?: string[] }>;
+      baseFields?: { name?: boolean; phone?: boolean; email?: boolean };
+    };
   }>;
   jobPostings: Array<{
     id: string;

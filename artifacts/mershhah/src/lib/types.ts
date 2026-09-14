@@ -362,7 +362,9 @@ export type BusinessGatewayField = {
   // fields (raw text the owner typed - not translated).
   labelKey?: string;
   label?: string;
-  type: 'text' | 'textarea' | 'number' | 'select';
+  // 'paragraph' renders as static descriptive text on the public form -
+  // it collects no input and is never required or submitted.
+  type: 'text' | 'textarea' | 'number' | 'select' | 'paragraph';
   options?: string[]; // for type: 'select'
 };
 
@@ -374,10 +376,21 @@ export type BusinessGatewayServiceType =
   | 'partnership'
   | `custom:${string}`;
 
+// Which of the three fixed contact fields the public form requires - applies
+// to every gateway type (built-in or custom), not just custom ones. Missing
+// key defaults to the pre-existing hardcoded behavior: name and phone
+// required, email optional.
+export type BusinessGatewayBaseFields = {
+  name?: boolean;
+  phone?: boolean;
+  email?: boolean;
+};
+
 export type BusinessGatewayServiceConfig = {
   title?: string; // custom types only
   icon?: string; // custom types only
   fields?: BusinessGatewayField[]; // franchise/wholesale/corporate/partnership/custom
+  baseFields?: BusinessGatewayBaseFields;
 };
 
 export type BusinessGatewayService = {

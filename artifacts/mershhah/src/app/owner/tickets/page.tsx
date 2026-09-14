@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   AlertTriangle, RefreshCw, MessageSquare, User, Clock, ArrowLeft, ArrowRight, Bot,
   Briefcase, Store, Package, Building2, Handshake, Lock, Plus, Trash2, FileText, Loader2, Inbox,
-  Sparkles, Pencil,
+  Sparkles, Pencil, Settings, ChevronUp, ChevronDown,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/useUser';
@@ -254,6 +254,17 @@ export default function OwnerTicketsPage() {
     return;
   }, [restaurantId, isUserLoading]);
 
+  const [expandedSettingsType, setExpandedSettingsType] = useState<string | null>(null);
+
+  const updateBaseFields = (service: BusinessGatewayService, patch: Partial<import('@/lib/types').BusinessGatewayBaseFields>) => {
+    if (!restaurantId) return;
+    const newConfig = { ...service.config, baseFields: { ...service.config?.baseFields, ...patch } };
+    supabase.from('business_gateway_services').update({ config: newConfig, updated_at: new Date().toISOString() }).eq('id', service.id).then(() => {
+      fetchGatewayServices();
+      syncPublicPage(restaurantId).catch(() => {});
+    });
+  };
+
   const toggleService = (type: 'jobs' | 'franchise' | 'wholesale' | 'corporate' | 'partnership') => {
     if (!restaurantId) return;
     startTogglingService(async () => {
@@ -311,6 +322,15 @@ export default function OwnerTicketsPage() {
   };
   const removeDraftField = (index: number) => {
     setCustomDraft(d => ({ ...d, fields: d.fields.filter((_, i) => i !== index) }));
+  };
+  const moveDraftField = (index: number, direction: -1 | 1) => {
+    setCustomDraft(d => {
+      const target = index + direction;
+      if (target < 0 || target >= d.fields.length) return d;
+      const fields = [...d.fields];
+      [fields[index], fields[target]] = [fields[target], fields[index]];
+      return { ...d, fields };
+    });
   };
   const addFieldOption = (fieldIndex: number) => {
     setCustomDraft(d => ({ ...d, fields: d.fields.map((f, i) => i === fieldIndex ? { ...f, options: [...(f.options || []), ''] } : f) }));
@@ -494,6 +514,26 @@ export default function OwnerTicketsPage() {
 
   const postingTitleById = (id?: string | null) => jobPostings.find(p => p.id === id)?.title;
 
+  const renderBaseFieldsPanel = (service: BusinessGatewayService) => {
+    const bf = service.config?.baseFields;
+    const rows: { key: 'name' | 'phone' | 'email'; label: string; value: boolean }[] = [
+      { key: 'name', label: t('ownerGateway.baseFieldName'), value: bf?.name !== false },
+      { key: 'phone', label: t('ownerGateway.baseFieldPhone'), value: bf?.phone !== false },
+      { key: 'email', label: t('ownerGateway.baseFieldEmail'), value: bf?.email === true },
+    ];
+    return (
+      <div className="mt-3 pt-3 border-t border-gray-100 space-y-2" onClick={(e) => e.stopPropagation()}>
+        <p className="text-[10px] font-bold text-gray-600">{t('ownerGateway.baseFieldsTitle')}</p>
+        {rows.map((row) => (
+          <div key={row.key} className="flex items-center justify-between">
+            <span className="text-[10px] text-gray-600">{row.label}</span>
+            <Switch checked={row.value} onCheckedChange={(v) => updateBaseFields(service, { [row.key]: v })} />
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-5 pb-20">
       <PageHeader title={t('ownerGateway.sectionTitle')} description={t('ownerGateway.sectionDescription')} />
@@ -562,12 +602,23 @@ export default function OwnerTicketsPage() {
                       <p className="text-[10px] text-gray-600 mt-1.5">{t(service.descKey)}</p>
                     </button>
                     <div className="flex flex-col items-center gap-1 shrink-0">
-                      <Switch
-                        checked={enabled}
-                        onCheckedChange={() => toggleService(service.type)}
-                        disabled={isTogglingService}
-                        onClick={(e) => e.stopPropagation()}
-                      />
+                      <div className="flex items-center gap-1">
+                        {getService(service.type) && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setExpandedSettingsType(expandedSettingsType === service.type ? null : service.type); }}
+                            className="w-6 h-6 rounded-md flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+                          >
+                            <Settings className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        <Switch
+                          checked={enabled}
+                          onCheckedChange={() => toggleService(service.type)}
+                          disabled={isTogglingService}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
                       <span className={cn("text-[9px] font-bold", enabled ? 'text-emerald-600' : 'text-gray-400')}>
                         {enabled ? t('ownerGateway.enabled') : t('ownerGateway.disabled')}
                       </span>
@@ -576,6 +627,7 @@ export default function OwnerTicketsPage() {
                   <button onClick={() => setActiveService(service.type)} className="flex items-center justify-between mt-3 w-full text-start">
                     <span className="text-[10px] font-bold text-gray-600">{requestsByType(service.type).length} {t('ownerGateway.requestsCount')}</span>
                   </button>
+                  {expandedSettingsType === service.type && getService(service.type) && renderBaseFieldsPanel(getService(service.type)!)}
                 </div>
               );
             })}
@@ -664,10 +716,18 @@ export default function OwnerTicketsPage() {
                   {customDraft.fields.map((field, index) => (
                     <div key={field.id} className="border border-gray-100 rounded-lg p-3 space-y-2">
                       <div className="flex items-center gap-2">
+                        <div className="flex flex-col shrink-0">
+                          <button type="button" onClick={() => moveDraftField(index, -1)} disabled={index === 0} className="w-6 h-4 flex items-center justify-center text-gray-600 disabled:opacity-25 hover:text-gray-900">
+                            <ChevronUp className="h-3.5 w-3.5" />
+                          </button>
+                          <button type="button" onClick={() => moveDraftField(index, 1)} disabled={index === customDraft.fields.length - 1} className="w-6 h-4 flex items-center justify-center text-gray-600 disabled:opacity-25 hover:text-gray-900">
+                            <ChevronDown className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                         <Input
                           value={field.label || ''}
                           onChange={(e) => updateDraftField(index, { label: e.target.value })}
-                          placeholder={t('ownerGateway.fieldLabelPlaceholder')}
+                          placeholder={field.type === 'paragraph' ? t('ownerGateway.paragraphTextPlaceholder') : t('ownerGateway.fieldLabelPlaceholder')}
                           className="h-9 rounded-lg border-gray-200 text-xs flex-1"
                         />
                         <button type="button" onClick={() => removeDraftField(index)} className="w-8 h-8 shrink-0 rounded-lg flex items-center justify-center text-gray-600 hover:bg-red-50 hover:text-red-500 transition-colors">
@@ -681,6 +741,7 @@ export default function OwnerTicketsPage() {
                           <SelectItem value="textarea">{t('ownerGateway.fieldTypeTextarea')}</SelectItem>
                           <SelectItem value="number">{t('ownerGateway.fieldTypeNumber')}</SelectItem>
                           <SelectItem value="select">{t('ownerGateway.fieldTypeSelect')}</SelectItem>
+                          <SelectItem value="paragraph">{t('ownerGateway.fieldTypeParagraph')}</SelectItem>
                         </SelectContent>
                       </Select>
                       {field.type === 'select' && (
@@ -762,6 +823,12 @@ export default function OwnerTicketsPage() {
                           {requestsByType(service.service_type).length} {t('ownerGateway.requestsCount')}
                         </button>
                         <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => setExpandedSettingsType(expandedSettingsType === service.service_type ? null : service.service_type)}
+                            className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors"
+                          >
+                            <Settings className="h-3.5 w-3.5" />
+                          </button>
                           <button onClick={() => openEditCustomType(service)} className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors">
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
@@ -770,6 +837,7 @@ export default function OwnerTicketsPage() {
                           </button>
                         </div>
                       </div>
+                      {expandedSettingsType === service.service_type && renderBaseFieldsPanel(service)}
                     </div>
                   );
                 })}

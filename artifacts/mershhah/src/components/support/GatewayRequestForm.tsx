@@ -16,7 +16,7 @@ import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
-import type { BusinessGatewayField, BusinessGatewayServiceType } from '@/lib/types';
+import type { BusinessGatewayField, BusinessGatewayServiceType, BusinessGatewayBaseFields } from '@/lib/types';
 
 interface GatewayRequestFormProps {
   serviceType: BusinessGatewayServiceType;
@@ -43,6 +43,7 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
 
   const [restaurant, setRestaurant] = useState<any>(null);
   const [customConfig, setCustomConfig] = useState<{ title?: string; fields?: BusinessGatewayField[] } | null>(null);
+  const [baseFields, setBaseFields] = useState<BusinessGatewayBaseFields>({});
   const [loading, setLoading] = useState(true);
   const [isSubmitting, startSubmitting] = useTransition();
   const [submitted, setSubmitted] = useState(false);
@@ -59,16 +60,15 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
         const data = await getPublicPage(username);
         if (data?.restaurant) {
           setRestaurant(data.restaurant);
-          if (isCustom) {
-            const svc = (data.gatewayServices || []).find((s) => s.service_type === serviceType);
-            setCustomConfig((svc?.config as typeof customConfig) || null);
-          }
+          const svc = (data.gatewayServices || []).find((s) => s.service_type === serviceType);
+          if (isCustom) setCustomConfig((svc?.config as typeof customConfig) || null);
+          setBaseFields(svc?.config?.baseFields || {});
           setLoading(false);
           return;
         }
         const { data: rest } = await supabase.from('restaurants').select('*').eq('username', username).limit(1).single();
         setRestaurant(rest || null);
-        if (rest && isCustom) {
+        if (rest) {
           const { data: svc } = await supabase
             .from('business_gateway_services')
             .select('config')
@@ -76,7 +76,8 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
             .eq('service_type', serviceType)
             .eq('is_enabled', true)
             .single();
-          setCustomConfig(svc?.config || null);
+          if (isCustom) setCustomConfig(svc?.config || null);
+          setBaseFields(svc?.config?.baseFields || {});
         }
       } catch (e) {
         console.error(e);
@@ -89,6 +90,10 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
 
   const effectiveTitle = isCustom ? (customConfig?.title || '') : (titleKey ? t(titleKey) : '');
   const effectiveFields = isCustom ? (customConfig?.fields || []) : (fields || []);
+  const nameRequired = baseFields.name !== false;
+  const phoneRequired = baseFields.phone !== false;
+  const emailRequired = baseFields.email === true;
+  const canSubmit = (!nameRequired || !!name.trim()) && (!phoneRequired || !!phone.trim()) && (!emailRequired || !!email.trim());
 
   const handleSubmit = () => {
     if (!restaurant) return;
@@ -188,19 +193,22 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
         ) : (
           <div className={`border border-gray-100 p-5 space-y-4 ${alignStart}`} style={{ borderRadius: 'var(--r-radius)' }}>
             <div>
-              <label className="text-xs text-gray-600 mb-1.5 block">{t('publicSupport.nameLabel')}</label>
+              <label className="text-xs text-gray-600 mb-1.5 block">{t('publicSupport.nameLabel')}{nameRequired && ' *'}</label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('publicSupport.namePlaceholder')} className="h-10 text-sm rounded-lg border-gray-100" />
             </div>
             <div>
-              <label className="text-xs text-gray-600 mb-1.5 block">{t('ownerSettings.phoneLabel')}</label>
+              <label className="text-xs text-gray-600 mb-1.5 block">{t('ownerSettings.phoneLabel')}{phoneRequired && ' *'}</label>
               <Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" placeholder="05XXXXXXXX" className="h-10 text-sm rounded-lg border-gray-100" dir="ltr" />
             </div>
             <div>
-              <label className="text-xs text-gray-600 mb-1.5 block">{t('ownerSettings.emailLabel')}</label>
+              <label className="text-xs text-gray-600 mb-1.5 block">{t('ownerSettings.emailLabel')}{emailRequired && ' *'}</label>
               <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" className="h-10 text-sm rounded-lg border-gray-100" dir="ltr" />
             </div>
 
             {effectiveFields.map((field) => (
+              field.type === 'paragraph' ? (
+                <p key={field.id} className="text-xs text-gray-600 leading-relaxed">{field.labelKey ? t(field.labelKey) : field.label}</p>
+              ) : (
               <div key={field.id}>
                 <label className="text-xs text-gray-600 mb-1.5 block">{field.labelKey ? t(field.labelKey) : field.label}</label>
                 {field.type === 'textarea' ? (
@@ -230,13 +238,14 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
                   />
                 )}
               </div>
+              )
             ))}
 
             <Button
               onClick={handleSubmit}
               className="w-full h-10 rounded-lg text-sm font-semibold"
               style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
-              disabled={isSubmitting || !name.trim() || !phone.trim()}
+              disabled={isSubmitting || !canSubmit}
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t('publicShared.send')}
             </Button>
