@@ -1,0 +1,11 @@
+-- Cancels the free plan for good, per the owner's decision. Existing
+-- restaurants already subscribed to it are grandfathered - their
+-- subscriptions.plan_id keeps pointing at this row regardless of
+-- is_active, and useUser.tsx's entitlement resolution never filters by
+-- is_active, so their access is unaffected.
+--
+-- Deactivating (is_active = false) is enough to hide it from every
+-- customer-facing plan list, since both /pricing and PlanPricingGrid
+-- (the in-app upgrade/checkout gate shown to new signups) already
+-- filter to is_active = true plans only.
+update public.plans set is_active = false where id = 'free';

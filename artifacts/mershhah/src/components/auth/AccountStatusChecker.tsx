@@ -6,9 +6,7 @@ import { Button } from '../ui/button';
 import { Link } from 'wouter';
 import { useState, useEffect } from 'react';
 import type { Subscription } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
-import { FREE_PLAN_ID, freeSubscriptionEndDate } from '@/lib/free-plan';
 import { PlanPricingGrid } from '@/components/dashboard/PlanPricingGrid';
 import { FullScreenLoader } from '@/components/shared/FullScreenLoader';
 import { isUnlimitedAccount } from '@/lib/unlimited-account';
@@ -25,7 +23,6 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
     const { user, isLoading: isUserLoading } = useUser();
     const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
     const [isCheckingSubscription, setIsCheckingSubscription] = useState(true);
-    const { toast } = useToast();
 
     useEffect(() => {
         if (isUserLoading || !user) {
@@ -33,7 +30,7 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
             return;
         }
 
-        const checkAndMigrateSubscription = async () => {
+        const checkSubscription = async () => {
             setIsCheckingSubscription(true);
             try {
                 const { data: subs, error } = await supabase
@@ -49,40 +46,17 @@ export function AccountStatusChecker({ children }: { children: React.ReactNode }
                     return sub.status === 'active' && endDate > now;
                 });
 
-                if (hasValidSub) {
-                    setHasActiveSubscription(true);
-                } else {
-                    setHasActiveSubscription(false);
-
-                    // Migration: old user with active account but no subscription row
-                    if (user.account_status === 'active' && (!subs || subs.length === 0)) {
-                        const startDate = new Date();
-
-                        const { error: insertError } = await supabase.from('subscriptions').insert({
-                            profile_id: user.uid,
-                            plan_id: FREE_PLAN_ID,
-                            plan_name: 'الباقة المجانية',
-                            status: 'active',
-                            start_date: startDate.toISOString(),
-                            end_date: freeSubscriptionEndDate(startDate).toISOString(),
-                        });
-
-                        if (!insertError) {
-                            setHasActiveSubscription(true);
-                            toast({ title: 'أهلاً بعودتك!', description: 'تم تحديث حسابك إلى نظام الباقات الجديد (الباقة المجانية).', duration: 5000 });
-                        }
-                    }
-                }
+                setHasActiveSubscription(hasValidSub);
             } catch (error) {
-                console.error("Error checking/migrating subscription:", error);
+                console.error("Error checking subscription:", error);
                 setHasActiveSubscription(false);
             } finally {
                 setIsCheckingSubscription(false);
             }
         };
 
-        checkAndMigrateSubscription();
-    }, [user, isUserLoading, toast]);
+        checkSubscription();
+    }, [user, isUserLoading]);
 
     const isLoading = isUserLoading || isCheckingSubscription;
 

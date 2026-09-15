@@ -6,7 +6,6 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from '@/lib/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/components/shared/LanguageContext';
-import { FREE_PLAN_ID, freeSubscriptionEndDate } from '@/lib/free-plan';
 import { cn } from '@/lib/utils';
 import type { User } from '@supabase/supabase-js';
 
@@ -109,16 +108,8 @@ export function OnboardingForm() {
         aiConfig: null, created_at: now, is_paid_plan: false,
       });
 
-      const startDate = new Date();
-      await supabase.from('subscriptions').insert({
-        id: crypto.randomUUID(), profile_id: userId, plan_id: FREE_PLAN_ID,
-        plan_name: 'الباقة المجانية', status: 'active',
-        start_date: startDate.toISOString(), end_date: freeSubscriptionEndDate(startDate).toISOString(),
-      });
-
       await supabase.from('activity').insert([
         { id: crypto.randomUUID(), type: 'restaurant_created', restaurantId, restaurantName: projectName.trim(), userId, timestamp: now },
-        { id: crypto.randomUUID(), type: 'subscription_started', restaurantId, userId, planName: 'الباقة المجانية', restaurantName: projectName.trim(), timestamp: now },
       ]);
 
       supabase.auth.getSession().then(({ data: sessionData }: any) => {
@@ -128,7 +119,10 @@ export function OnboardingForm() {
         }).catch(() => {});
       });
 
-      toast({ title: 'تم تفعيل الباقة المجانية.' });
+      toast({ title: 'تم إنشاء حسابك! اختر باقتك للتفعيل.' });
+      // No subscription row is created here on purpose - there's no more
+      // free plan to auto-grant. AccountStatusChecker (wrapping /owner/*)
+      // detects the missing subscription and shows PlanPricingGrid next.
       router.push('/owner/dashboard');
       router.refresh();
     } catch (error: any) {
