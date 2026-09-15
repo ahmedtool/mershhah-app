@@ -124,11 +124,9 @@ export default function PricingPage() {
       try {
         const { data } = await supabase.from("plans").select("*").eq("is_active", true);
         const fetched = ((data || []) as Plan[]).filter((p) => !HIDDEN_PLAN_IDS.includes(p.id));
-        fetched.sort((a, b) => {
-          if (a.is_featured && !b.is_featured) return -1;
-          if (!a.is_featured && b.is_featured) return 1;
-          return (a.price_yearly ?? 0) - (b.price_yearly ?? 0);
-        });
+        // Strict price order (free first) - is_featured only controls the
+        // "الأكثر انتشاراً" badge/border on its own card, not its position.
+        fetched.sort((a, b) => (a.price_yearly ?? 0) - (b.price_yearly ?? 0));
         setPlans(fetched);
       } catch {
         setPlans([]);
@@ -139,16 +137,21 @@ export default function PricingPage() {
     fetchPlans();
   }, []);
 
-  // Union of every feature row that's actually true for at least one plan
-  // (plus the three always-shown limit rows) — the comparison table below
-  // only lists rows that meaningfully differ, driven entirely by real data.
+  // Union of every boolean feature row that's actually true for at least one
+  // plan - the numeric limit rows (menu/branches/tools) are deliberately
+  // excluded here: their label text bakes in one specific plan's number
+  // ("حتى 150 صنف"), so reusing that same label as a shared row for every
+  // column and reducing it to a check/dash was actively misleading (a lower
+  // tier would show a checkmark next to a number it doesn't actually get).
+  // Those limits are already shown correctly, per-plan, on the cards above.
   const comparisonRows: FeatureRow[] = plans.length
     ? (() => {
         const perPlanRows = plans.map(buildFeatureRows);
         const template = perPlanRows[0] || [];
         return template
           .map((row) => row.key)
-          .filter((key) => ['menu', 'branches', 'tools'].includes(key) || perPlanRows.some((rows) => rows.find((r) => r.key === key)?.included))
+          .filter((key) => !['menu', 'branches', 'tools'].includes(key))
+          .filter((key) => perPlanRows.some((rows) => rows.find((r) => r.key === key)?.included))
           .map((key) => perPlanRows[0].find((r) => r.key === key)!);
       })()
     : [];
@@ -192,7 +195,7 @@ export default function PricingPage() {
                   const featured = !!plan.is_featured;
                   const rows = buildFeatureRows(plan);
                   const checking = isCheckingOut(plan.id, 'yearly');
-                  const ctaClass = `block w-full h-12 rounded-2xl text-sm font-bold text-center leading-[3rem] transition-colors disabled:opacity-60 ${featured ? 'bg-white text-gray-900 hover:bg-gray-100' : 'bg-gray-900 text-white hover:bg-gray-800'}`;
+                  const ctaClass = 'block w-full h-12 rounded-2xl text-sm font-bold text-center leading-[3rem] transition-colors disabled:opacity-60 bg-gray-900 text-white hover:bg-gray-800';
 
                   // Free plan and logged-out visitors go through registration -
                   // a freshly-registered account lands on the real in-app
@@ -214,49 +217,41 @@ export default function PricingPage() {
                   return (
                     <div
                       key={plan.id}
-                      className={`relative rounded-3xl p-6 flex flex-col ${
-                        featured
-                          ? 'bg-gray-900 text-white sm:-translate-y-3 shadow-2xl shadow-gray-900/20'
-                          : 'bg-white border border-gray-100 text-gray-900'
+                      className={`relative rounded-3xl p-6 flex flex-col bg-white text-gray-900 ${
+                        featured ? 'border-2 border-gray-900' : 'border border-gray-100'
                       }`}
                     >
                       {featured && (
-                        <div className="absolute -top-3 right-6 bg-white text-gray-900 text-[10px] font-black px-3 py-1 rounded-full">
+                        <div className="absolute -top-3 right-6 bg-gray-900 text-white text-[10px] font-black px-3 py-1 rounded-full">
                           الأكثر انتشاراً
                         </div>
                       )}
 
                       <div className="mb-4">
                         <h3 className="text-lg font-black mb-1">{plan.name}</h3>
-                        <p className={`text-xs ${featured ? 'text-gray-400' : 'text-gray-600'}`}>{plan.description || ''}</p>
+                        <p className="text-xs text-gray-600">{plan.description || ''}</p>
                       </div>
 
                       <div className="flex items-baseline gap-1.5 mb-1">
                         <span className="text-4xl font-black">{isFree ? '0' : plan.price_yearly}</span>
-                        <span className={`text-sm font-bold ${featured ? 'text-gray-400' : 'text-gray-600'}`}>ر.س</span>
+                        <span className="text-sm font-bold text-gray-600">ر.س</span>
                       </div>
-                      <p className={`text-[11px] mb-5 ${featured ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <p className="text-[11px] mb-5 text-gray-600">
                         {isFree ? 'دائماً مجاناً' : 'سنوياً'}
                       </p>
 
-                      <div className={`border-t pt-4 mb-5 flex-1 ${featured ? 'border-white/10' : 'border-gray-100'}`}>
+                      <div className="border-t pt-4 mb-5 flex-1 border-gray-100">
                         <ul className="space-y-3">
                           {rows.map((row) => {
                             const Icon = row.icon;
                             return (
                               <li key={row.key} className={`flex items-start gap-3 text-xs leading-relaxed ${
-                                row.included
-                                  ? featured ? 'text-gray-100' : 'text-gray-700'
-                                  : featured ? 'text-gray-600' : 'text-gray-600 line-through'
+                                row.included ? 'text-gray-700' : 'text-gray-600 line-through'
                               }`}>
                                 <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
-                                  row.included
-                                    ? featured ? 'bg-white/10' : 'bg-gray-900/5'
-                                    : featured ? 'bg-white/5' : 'bg-gray-50'
+                                  row.included ? 'bg-gray-900/5' : 'bg-gray-50'
                                 }`}>
-                                  {row.included
-                                    ? <Icon className={`h-3.5 w-3.5 ${featured ? 'text-white' : 'text-gray-900'}`} />
-                                    : <Icon className={`h-3.5 w-3.5 ${featured ? 'text-gray-600' : 'text-gray-600'}`} />}
+                                  <Icon className={`h-3.5 w-3.5 ${row.included ? 'text-gray-900' : 'text-gray-600'}`} />
                                 </span>
                                 <span>{row.label}</span>
                               </li>
