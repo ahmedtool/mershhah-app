@@ -31,8 +31,13 @@ function upsertOgMeta(property: string, content: string) {
  * for link previews) on mount. The SPA ships one static index.html with no
  * per-route metadata at all, so every page otherwise looks identical to
  * search engines and to link-unfurlers (WhatsApp, Twitter, etc).
+ *
+ * `iconUrl`, when given, also swaps the browser tab's favicon to it (e.g. a
+ * restaurant's own logo instead of Mershhah's) - restored to whatever it
+ * was on unmount, so navigating away doesn't leave one restaurant's icon
+ * showing on an unrelated page.
  */
-export function useDocumentMeta(title?: string, description: string = DEFAULT_DESCRIPTION) {
+export function useDocumentMeta(title?: string, description: string = DEFAULT_DESCRIPTION, iconUrl?: string) {
   useEffect(() => {
     const fullTitle = title ? `${title} | ${SITE_NAME}` : SITE_NAME;
     document.title = fullTitle;
@@ -40,4 +45,15 @@ export function useDocumentMeta(title?: string, description: string = DEFAULT_DE
     upsertOgMeta('og:title', fullTitle);
     upsertOgMeta('og:description', description);
   }, [title, description]);
+
+  useEffect(() => {
+    if (!iconUrl) return;
+    const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+    if (!link) return;
+    const prevHref = link.getAttribute('href');
+    link.setAttribute('href', iconUrl);
+    return () => {
+      if (prevHref !== null) link.setAttribute('href', prevHref);
+    };
+  }, [iconUrl]);
 }

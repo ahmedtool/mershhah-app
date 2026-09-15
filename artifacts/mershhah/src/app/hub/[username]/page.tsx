@@ -17,6 +17,7 @@ import { Link } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage } from '@/lib/public-pages';
 import { StorageImage } from '@/components/shared/StorageImage';
+import { resolveStorageUrl } from '@/lib/storage-url';
 import { InstagramIcon, TikTokIcon, SnapchatIcon, XIcon, WhatsAppIcon, WebsiteIcon, FacebookIcon, YoutubeIcon } from '@/components/shared/SocialIcons';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trackAppClick, trackSocialClick, trackPageView } from '@/lib/event-tracker';
@@ -72,7 +73,8 @@ export default function RestaurantHubPage() {
       ? (metaDescription || (dir === 'rtl'
           ? `${t('hubPage.menuWord')} ${metaName} ${t('hubPage.digitalMenuDescSuffix')}`
           : `${metaName}'s ${t('hubPage.digitalMenuDescSuffix')}`))
-      : undefined
+      : undefined,
+    resolveStorageUrl(restaurant?.logo) || undefined
   );
   useGoogleFont(restaurant?.fontFamily);
   usePublicPageBackground(restaurant?.secondaryColor);

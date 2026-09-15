@@ -9,6 +9,7 @@ import { getPublicPage, syncPublicPage } from '@/lib/public-pages';
 import { trackPageView, trackAppClick } from '@/lib/event-tracker';
 import { detectTrafficSource } from '@/lib/traffic-source';
 import { StorageImage } from '@/components/shared/StorageImage';
+import { resolveStorageUrl } from '@/lib/storage-url';
 import type { MenuItem } from '@/lib/types';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -181,7 +182,8 @@ export default function PublicMenuPage() {
       ? (displayDescription || (dir === 'rtl'
           ? `${t('publicMenu.metaDescPrefixWord')} ${t('hubPage.menuWord')} ${displayName} ${t('publicMenu.metaDescSuffix')}`
           : `${t('publicMenu.metaDescPrefixWord')} ${displayName}'s ${t('publicMenu.metaDescSuffix')}`))
-      : undefined
+      : undefined,
+    resolveStorageUrl(restaurant?.logo) || undefined
   );
   useGoogleFont(restaurant?.fontFamily);
   usePublicPageBackground(restaurant?.secondaryColor);
