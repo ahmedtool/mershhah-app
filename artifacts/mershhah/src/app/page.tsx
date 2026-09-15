@@ -69,7 +69,7 @@ export default function HomePage() {
       icon: QrCode,
       title: "داخل الفرع",
       subtitle: "عبر QR",
-      description: "يمسح العميل الكود على الطاولة فيظهر له منيو ت互动لي. يرى صور الأطباق، يقرأ المكونات، ويسأل المساعد الذكي."
+      description: "يمسح العميل الكود على الطاولة فيظهر له منيو تفاعلي. يرى صور الأطباق، يقرأ المكونات، ويسأل المساعد الذكي."
     },
     {
       icon: LinkIcon,
@@ -90,7 +90,7 @@ export default function HomePage() {
               <Link href="/login">دخول</Link>
             </Button>
             <Button asChild className="bg-gray-900 text-white hover:bg-gray-800 rounded-xl text-sm font-bold px-5 h-9">
-              <Link href="/register">ابدأ مجاناً</Link>
+              <Link href="/register">ابدأ الآن</Link>
             </Button>
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function HomePage() {
           <div className="max-w-3xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-full px-4 py-1.5 mb-6">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span className="text-[11px] font-bold text-gray-600">متوفر مجاناً للتجربة</span>
+              <span className="text-[11px] font-bold text-gray-600">جاهز خلال دقائق</span>
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-gray-900 leading-tight mb-6">
               الواجهة الرقمية <br className="hidden sm:block" />
@@ -113,7 +113,7 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button asChild className="w-full sm:w-auto h-12 px-8 bg-gray-900 text-white hover:bg-gray-800 rounded-xl text-sm font-bold">
-                <Link href="/register">سجل الآن مجاناً</Link>
+                <Link href="/register">سجل الآن</Link>
               </Button>
               <Button asChild variant="outline" className="w-full sm:w-auto h-12 px-8 rounded-xl text-sm font-bold border-gray-200 text-gray-600 hover:bg-gray-50">
                 <Link href="/pricing">اكتشف الباقات</Link>
@@ -179,7 +179,7 @@ export default function HomePage() {
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Button asChild className="w-full sm:w-auto h-11 px-8 bg-white text-gray-900 hover:bg-gray-100 rounded-xl text-sm font-bold">
-                  <Link href="/register">ابدأ الآن مجاناً</Link>
+                  <Link href="/register">ابدأ الآن</Link>
                 </Button>
                 <Button asChild variant="ghost" className="w-full sm:w-auto h-11 px-8 text-white hover:bg-white/10 rounded-xl text-sm font-bold">
                   <Link href="/pricing">عرض الباقات</Link>

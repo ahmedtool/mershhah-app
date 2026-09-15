@@ -137,7 +137,7 @@ export default function PricingPage() {
           <div className="text-center mb-14">
             <h1 className="text-3xl sm:text-4xl font-black text-gray-900 mb-3">باقة تكبر مع عدد فروعك</h1>
             <p className="text-sm text-gray-600 max-w-lg mx-auto">
-              جميع أساسيات مرشح متاحة في كل الباقات — لا مزايا مقفلة. ابدأ مجاناً بدون بطاقة ائتمان، ورقّي وقت ما تحتاج.
+              جميع أساسيات مرشح متاحة في كل الباقات — لا مزايا مقفلة. اختر الباقة المناسبة لعدد فروعك، ورقّي وقت ما تحتاج.
             </p>
           </div>
 
@@ -155,22 +155,19 @@ export default function PricingPage() {
           ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
                 {plans.map((plan) => {
-                  const isFree = (plan.price_yearly ?? 0) === 0;
                   const featured = !!plan.is_featured;
                   const rows = buildFeatureRows(plan);
                   const checking = isCheckingOut(plan.id, 'yearly');
                   const ctaClass = 'block w-full h-12 rounded-2xl text-sm font-bold text-center leading-[3rem] transition-colors disabled:opacity-60 bg-gray-900 text-white hover:bg-gray-800';
 
-                  // Free plan and logged-out visitors go through registration -
-                  // a freshly-registered account lands on the real in-app
-                  // upgrade gate (PlanPricingGrid), which already checks out
-                  // correctly. A logged-in visitor on this marketing page can
-                  // check out directly, the same way the dashboard does -
-                  // this is what makes the payment actually tied to their
-                  // account instead of a static, identity-less payment link.
-                  const cta = isFree ? (
-                    <Link href="/register" className={ctaClass}>ابدأ مجاناً</Link>
-                  ) : user ? (
+                  // Logged-out visitors go through registration - a freshly
+                  // registered account lands on the real in-app upgrade gate
+                  // (PlanPricingGrid), which already checks out correctly. A
+                  // logged-in visitor on this marketing page can check out
+                  // directly, the same way the dashboard does - this is what
+                  // makes the payment actually tied to their account instead
+                  // of a static, identity-less payment link.
+                  const cta = user ? (
                     <button type="button" onClick={() => checkout(plan.id, 'yearly')} disabled={checking} className={ctaClass}>
                       {checking ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : 'اختر هذه الباقة'}
                     </button>
@@ -197,12 +194,10 @@ export default function PricingPage() {
                       </div>
 
                       <div className="flex items-baseline gap-1.5 mb-1">
-                        <span className="text-4xl font-black">{isFree ? '0' : plan.price_yearly}</span>
+                        <span className="text-4xl font-black">{plan.price_yearly}</span>
                         <span className="text-sm font-bold text-gray-600">ر.س</span>
                       </div>
-                      <p className="text-[11px] mb-5 text-gray-600">
-                        {isFree ? 'دائماً مجاناً' : 'سنوياً'}
-                      </p>
+                      <p className="text-[11px] mb-5 text-gray-600">سنوياً</p>
 
                       <div className="border-t pt-4 mb-5 flex-1 border-gray-100">
                         <ul className="space-y-3">
@@ -232,11 +227,11 @@ export default function PricingPage() {
           )}
 
           <div className="mt-20 text-center rounded-3xl bg-gray-900 text-white px-6 py-14">
-            <h2 className="text-2xl font-black mb-2">جرّب مرشح مجاناً اليوم</h2>
-            <p className="text-sm text-gray-400 mb-7">فعّل مشروعك في أقل من خمس دقائق — بدون بطاقة ائتمان.</p>
+            <h2 className="text-2xl font-black mb-2">انضم لمرشح اليوم</h2>
+            <p className="text-sm text-gray-400 mb-7">فعّل مشروعك في أقل من خمس دقائق.</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button asChild className="h-12 px-8 rounded-2xl bg-white text-gray-900 hover:bg-gray-100 text-sm font-bold">
-                <Link href="/register">ابدأ مجاناً</Link>
+                <Link href="/register">ابدأ الآن</Link>
               </Button>
               <Button asChild variant="outline" className="h-12 px-8 rounded-2xl border-white/20 bg-transparent text-white hover:bg-white/10 text-sm font-bold">
                 <Link href="/contact">تحدث معنا</Link>

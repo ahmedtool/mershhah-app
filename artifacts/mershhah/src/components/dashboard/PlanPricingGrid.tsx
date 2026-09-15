@@ -90,7 +90,6 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
         {plans.map((plan) => {
           const originalPrice = plan.price_yearly || 0;
           const price = applyDiscount(originalPrice);
-          const isFree = originalPrice === 0;
           const isCurrentPlan = currentPlanId === plan.id && !isCurrentSubscriptionExpired;
           const features = Object.entries(plan.features || {});
           const checking = isCheckingOut(plan.id, 'yearly');
@@ -113,15 +112,11 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
               </div>
 
               <div className="px-5 py-4 border-b border-gray-100">
-                {isFree ? (
-                  <span className="text-2xl font-black text-gray-900">{t('planPricing.free')}</span>
-                ) : (
-                  <div className="flex items-baseline gap-1">
-                    {couponDiscount && price !== originalPrice && <span className="text-xs text-gray-600 line-through">{originalPrice}</span>}
-                    <span className="text-2xl font-black text-gray-900">{price}</span>
-                    <span className="text-xs text-gray-600">{t('planPricing.perYear')}</span>
-                  </div>
-                )}
+                <div className="flex items-baseline gap-1">
+                  {couponDiscount && price !== originalPrice && <span className="text-xs text-gray-600 line-through">{originalPrice}</span>}
+                  <span className="text-2xl font-black text-gray-900">{price}</span>
+                  <span className="text-xs text-gray-600">{t('planPricing.perYear')}</span>
+                </div>
                 {plan.trial_days > 0 && <p className="text-[10px] text-amber-600 font-bold mt-1">{t('planPricing.trialPeriodPrefix')} {plan.trial_days} {t('planPricing.daySuffix')}</p>}
               </div>
 
@@ -144,11 +139,10 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
               <div className="px-5 pb-5">
                 <button
                   onClick={() => checkout(plan.id, 'yearly', couponCode)}
-                  disabled={isCurrentPlan || isCheckoutInProgress || isFree}
+                  disabled={isCurrentPlan || isCheckoutInProgress}
                   className={cn(
                     "w-full h-11 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2",
                     isCurrentPlan ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
-                      : isFree ? 'bg-gray-50 text-gray-600 cursor-default'
                       : checking ? 'bg-gray-400 text-white cursor-wait'
                       : plan.is_featured ? 'bg-gray-900 text-white hover:bg-gray-800'
                       : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
@@ -156,8 +150,6 @@ export function PlanPricingGrid({ currentPlanId, isCurrentSubscriptionExpired }:
                 >
                   {isCurrentPlan
                     ? t('planPricing.currentPlanButton')
-                    : isFree
-                    ? t('planPricing.freePlanButton')
                     : checking
                     ? <><Loader2 className="h-4 w-4 animate-spin" /> {t('planPricing.redirecting')}</>
                     : t('planPricing.subscribeYearly')}

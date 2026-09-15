@@ -76,7 +76,7 @@ export default function BlogPage() {
           <h2 className="text-lg font-black text-white mb-2">هل أنت صاحب مطعم أو مقهى؟</h2>
           <p className="text-xs text-gray-400 mb-6 max-w-md mx-auto">انضم إلى مشاريع تستخدم أدواتنا الذكية لزيادة أرباحها وتبسيط عملياتها.</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/register" className="h-10 rounded-xl bg-white text-gray-900 text-xs font-bold text-center leading-10 hover:bg-gray-100 transition-colors">ابدأ مجاناً</Link>
+            <Link href="/register" className="h-10 rounded-xl bg-white text-gray-900 text-xs font-bold text-center leading-10 hover:bg-gray-100 transition-colors">ابدأ الآن</Link>
             <Link href="/pricing" className="h-10 rounded-xl border border-gray-700 text-gray-300 text-xs font-bold text-center leading-10 hover:bg-gray-800 transition-colors">اكتشف الباقات</Link>
           </div>
         </div>

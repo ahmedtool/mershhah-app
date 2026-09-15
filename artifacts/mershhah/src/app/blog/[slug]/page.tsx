@@ -145,7 +145,7 @@ export default function PostPage() {
             <h2 className="text-3xl md:text-5xl font-black mb-8 relative z-10 leading-tight">جاهز لتطبيق هذه الرؤى <br/> في مشروعك؟</h2>
             <p className="text-white/80 mb-12 text-lg md:text-xl max-w-2xl mx-auto font-medium relative z-10 leading-relaxed">انضم إلى مرشح اليوم وابدأ في تحويل بيانات مشروعك إلى نمو حقيقي ومستدام عبر أدواتنا الذكية المتكاملة.</p>
             <Button asChild size="lg" className="bg-white text-primary hover:bg-gray-50 h-16 px-14 text-xl font-black rounded-2xl relative z-10 transition-all active:scale-95 shadow-2xl">
-                <Link href="/register">ابدأ رحلة التحول مجاناً</Link>
+                <Link href="/register">ابدأ رحلة التحول</Link>
             </Button>
         </div>
 
