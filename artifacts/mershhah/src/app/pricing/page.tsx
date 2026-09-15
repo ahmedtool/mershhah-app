@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/shared/Logo";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Utensils, MapPin, Wrench, Sparkles, TrendingUp, Star, Headset, Building2, Check, Minus } from "lucide-react";
+import { ArrowLeft, Loader2, Utensils, MapPin, Wrench, Sparkles, TrendingUp, Star, Headset, Building2 } from "lucide-react";
 import { Link } from "wouter";
 import { PublicFooter } from "@/components/shared/PublicFooter";
 import { supabase } from "@/lib/supabase";
@@ -92,29 +92,6 @@ function buildFeatureRows(plan: Plan): FeatureRow[] {
   ];
 }
 
-const FAQS = [
-  {
-    q: 'هل يتطلب التسجيل بطاقة ائتمان؟',
-    a: 'لا. التسجيل في مرشح مجاني بالكامل ولا يطلب أي بيانات دفع — تدفع فقط إذا وعندما تختار الترقية لباقة مدفوعة.',
-  },
-  {
-    q: 'ما الفرق الأساسي بين الباقات؟',
-    a: 'كل الباقات تشترك في نفس الأساسيات (منيو رقمي، أكواد QR، مساعد ذكي). الفرق الرئيسي هو عدد الفروع المسموح، مع مزايا إضافية في الباقات الأعلى مثل التحليلات الذكية ودعم الأولوية.',
-  },
-  {
-    q: 'ماذا لو وصلت للحد الأقصى من الفروع أو الأدوات في باقتي؟',
-    a: 'يظهر لك تنبيه واضح بحد باقتك الحالية عند محاولة تجاوزه، ويمكنك حينها الترقية لباقة أعلى مباشرة من هذه الصفحة.',
-  },
-  {
-    q: 'هل يمكنني التبديل بين الباقات لاحقاً؟',
-    a: 'إذا كنت على الباقة المجانية، يمكنك الترقية لأي باقة مدفوعة مباشرة من هذه الصفحة. إذا كان لديك اشتراك مدفوع فعّال وتريد التبديل لباقة أخرى، تواصل معنا وسنساعدك.',
-  },
-  {
-    q: 'هل عدد الأدوات المفعّلة من متجر الأدوات يعتمد على باقتي؟',
-    a: 'نعم — كل باقة لها حد أقصى لعدد الأدوات المفعّلة في نفس الوقت (موضح أعلاه). رقّي باقتك لتفعيل المزيد من الأدوات.',
-  },
-];
-
 export default function PricingPage() {
   useDocumentMeta(
     'الأسعار والباقات',
@@ -143,25 +120,6 @@ export default function PricingPage() {
     };
     fetchPlans();
   }, []);
-
-  // Union of every boolean feature row that's actually true for at least one
-  // plan - the numeric limit rows (menu/branches/tools) are deliberately
-  // excluded here: their label text bakes in one specific plan's number
-  // ("حتى 150 صنف"), so reusing that same label as a shared row for every
-  // column and reducing it to a check/dash was actively misleading (a lower
-  // tier would show a checkmark next to a number it doesn't actually get).
-  // Those limits are already shown correctly, per-plan, on the cards above.
-  const comparisonRows: FeatureRow[] = plans.length
-    ? (() => {
-        const perPlanRows = plans.map(buildFeatureRows);
-        const template = perPlanRows[0] || [];
-        return template
-          .map((row) => row.key)
-          .filter((key) => !['menu', 'branches', 'tools'].includes(key))
-          .filter((key) => perPlanRows.some((rows) => rows.find((r) => r.key === key)?.included))
-          .map((key) => perPlanRows[0].find((r) => r.key === key)!);
-      })()
-    : [];
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-white" dir="rtl">
@@ -195,7 +153,6 @@ export default function PricingPage() {
               <p className="text-sm">لا توجد باقات متاحة حالياً.</p>
             </div>
           ) : (
-            <>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
                 {plans.map((plan) => {
                   const isFree = (plan.price_yearly ?? 0) === 0;
@@ -272,55 +229,7 @@ export default function PricingPage() {
                   );
                 })}
               </div>
-
-              {plans.length > 1 && (
-                <div className="mt-20">
-                  <h2 className="text-xl font-black text-gray-900 text-center mb-8">مقارنة تفصيلية</h2>
-                  <div className="overflow-x-auto rounded-2xl border border-gray-100">
-                    <table className="w-full text-xs text-center min-w-[560px]">
-                      <thead>
-                        <tr className="border-b border-gray-100 bg-gray-50">
-                          <th className="text-right py-3 px-4 font-bold text-gray-600">الميزة</th>
-                          {plans.map((plan) => (
-                            <th key={plan.id} className="py-3 px-4 font-black text-gray-900">{plan.name}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {comparisonRows.map((row) => (
-                          <tr key={row.key} className="border-b border-gray-50 last:border-0">
-                            <td className="text-right py-3 px-4 font-bold text-gray-700">{row.label}</td>
-                            {plans.map((plan) => {
-                              const planRow = buildFeatureRows(plan).find((r) => r.key === row.key)!;
-                              return (
-                                <td key={plan.id} className="py-3 px-4">
-                                  {planRow.included
-                                    ? <Check className="h-4 w-4 text-emerald-500 mx-auto" />
-                                    : <Minus className="h-4 w-4 text-gray-600 mx-auto" />}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </>
           )}
-
-          <div className="mt-20">
-            <h2 className="text-xl font-black text-gray-900 text-center mb-8">أسئلة متكررة</h2>
-            <div className="max-w-2xl mx-auto space-y-3">
-              {FAQS.map((item) => (
-                <div key={item.q} className="rounded-2xl border border-gray-100 p-5">
-                  <p className="text-sm font-bold text-gray-900 mb-1.5">{item.q}</p>
-                  <p className="text-xs text-gray-600 leading-relaxed">{item.a}</p>
-                </div>
-              ))}
-            </div>
-          </div>
 
           <div className="mt-20 text-center rounded-3xl bg-gray-900 text-white px-6 py-14">
             <h2 className="text-2xl font-black mb-2">جرّب مرشح مجاناً اليوم</h2>
