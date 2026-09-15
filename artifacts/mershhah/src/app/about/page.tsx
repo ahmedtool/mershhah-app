@@ -44,9 +44,12 @@ export default function AboutPage() {
       <main className="py-16 sm:py-24 px-4">
         <div className="max-w-3xl mx-auto text-center mb-20">
           <h1 className="text-3xl sm:text-4xl font-black text-gray-900 mb-4">من نحن</h1>
-          <p className="text-sm text-gray-600 leading-relaxed">
-            أنا أحمد، بنيت «مرشح» كمشروع فردي — منصة رقمية واحدة تجمع للمطاعم والمقاهي المنيو، المساعد الذكي، والتحليلات. المشروع يُدار بشكل مستقل في إطار وثيقة العمل الحر، وهدفي تمكين أصحاب المشاريع بأدوات بسيطة وفعّالة.
+          <p className="text-sm text-gray-600 leading-relaxed mb-5">
+            أنا أحمد، متخصص في إدارة وتنشيط المبيعات، أسّست «مرشح» كمنصة رقمية موحدة تجمع للمطاعم والمقاهي المنيو الرقمي، المساعد الذكي، وأدوات التحليل والنمو. أُدير المشروع باحترافية واستقلالية بموجب وثيقة العمل الحر، وهدفي تمكين أصحاب المشاريع الغذائية بأدوات بسيطة وفعّالة تساعدهم على النمو.
           </p>
+          <div className="inline-flex items-center gap-2 text-[11px] font-bold text-gray-500 border border-gray-200 rounded-full px-4 py-1.5">
+            وثيقة عمل حر رقم (FL-577995240) — تخصص إدارة وتنشيط المبيعات
+          </div>
         </div>
 
         <div className="max-w-4xl mx-auto grid sm:grid-cols-2 gap-4 mb-20">
