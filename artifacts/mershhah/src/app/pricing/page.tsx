@@ -28,6 +28,11 @@ function buildFeatureRows(plan: Plan): FeatureRow[] {
   const menuLimit = plan.max_menu_items ?? 0;
   const branchLimit = plan.max_branches ?? 0;
   const toolsLimit = plan.max_tools ?? 0;
+  // The DB column is kept at 1 (not 0) on branches-disabled plans, since 0
+  // means "unlimited" for this column - real "zero branches" is expressed
+  // via this separate flag instead. Read it here too so the card's copy
+  // matches the actual entitlement instead of leaking the workaround value.
+  const branchesDisabled = !!features.branches_disabled;
 
   return [
     {
@@ -39,7 +44,9 @@ function buildFeatureRows(plan: Plan): FeatureRow[] {
     {
       key: 'branches',
       icon: MapPin,
-      label: branchLimit > 0 ? `حتى ${branchLimit} ${branchLimit === 1 ? 'فرع' : 'فروع'}` : 'فروع بلا حدود',
+      label: branchesDisabled
+        ? 'بدون فروع'
+        : branchLimit > 0 ? `حتى ${branchLimit} ${branchLimit === 1 ? 'فرع' : 'فروع'}` : 'فروع بلا حدود',
       included: true,
     },
     {
