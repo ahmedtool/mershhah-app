@@ -20,7 +20,7 @@ const contactChannels = [
   {
     title: "واتساب",
     description: "رد سريع على استفساراتك",
-    href: "https://wa.me/966560766880",
+    href: "https://wa.me/966541727971",
     icon: WhatsAppIcon,
     label: "تواصل عبر واتساب",
   },

@@ -20,7 +20,7 @@ export function PublicFooter() {
               <a href="https://www.instagram.com/mershhah/" target="_blank" rel="noopener noreferrer" aria-label="مرشح على انستقرام" className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600 hover:text-gray-600 transition-colors">
                 <InstagramIcon size={16} />
               </a>
-              <a href="https://wa.me/966560766880" target="_blank" rel="noopener noreferrer" aria-label="تواصل معنا عبر واتساب" className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600 hover:text-gray-600 transition-colors">
+              <a href="https://wa.me/966541727971" target="_blank" rel="noopener noreferrer" aria-label="تواصل معنا عبر واتساب" className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600 hover:text-gray-600 transition-colors">
                 <WhatsAppIcon size={16} />
               </a>
               <a href="mailto:info@mershhah.com" aria-label="راسلنا عبر البريد الإلكتروني" className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center text-gray-600 hover:text-gray-600 transition-colors">
