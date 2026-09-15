@@ -140,8 +140,14 @@ function computeEntitlements(activeSub: Subscription | null, profile: Profile, p
     canUseGatewayPartnership: featureFlag(plan?.features, 'gateway_partnership'),
     canUseGatewayCustomTypes: featureFlag(plan?.features, 'gateway_custom_types'),
     // 0 or unset historically meant "not customized" for these columns —
-    // treat it as unlimited rather than silently blocking everyone.
-    maxBranches: rawMaxBranches > 0 ? rawMaxBranches : UNLIMITED,
+    // treat it as unlimited rather than silently blocking everyone. The one
+    // exception is branches on a plan with features.branches_disabled set -
+    // that plan genuinely means "zero, not unlimited" (currently just
+    // "free"), which the 0-means-unlimited column convention on its own has
+    // no way to express.
+    maxBranches: featureFlag(plan?.features, 'branches_disabled')
+      ? 0
+      : (rawMaxBranches > 0 ? rawMaxBranches : UNLIMITED),
     maxMenuItems: rawMaxMenuItems > 0 ? rawMaxMenuItems : UNLIMITED,
     maxTools: rawMaxTools > 0 ? rawMaxTools : UNLIMITED,
     maxJobPostings: rawMaxJobPostings > 0 ? rawMaxJobPostings : UNLIMITED,
