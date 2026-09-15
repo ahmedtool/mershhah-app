@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Logo } from "@/components/shared/Logo";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Utensils, MapPin, Wrench, Sparkles, TrendingUp, Star, Headset, Globe, Building2, Check, Minus } from "lucide-react";
+import { ArrowLeft, Loader2, Utensils, MapPin, Wrench, Sparkles, TrendingUp, Star, Headset, Building2, Check, Minus } from "lucide-react";
 import { Link } from "wouter";
 import { PublicFooter } from "@/components/shared/PublicFooter";
 import { supabase } from "@/lib/supabase";
@@ -65,12 +65,6 @@ function buildFeatureRows(plan: Plan): FeatureRow[] {
       icon: Star,
       label: 'صفحة خاصة بمطعمك بدون أي شعار ثاني',
       included: !!features.white_label,
-    },
-    {
-      key: 'custom_domain',
-      icon: Globe,
-      label: 'دومين خاص باسم مطعمك',
-      included: !!features.custom_domain,
     },
     {
       key: 'gateway_corporate',
