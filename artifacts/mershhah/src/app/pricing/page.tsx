@@ -49,6 +49,16 @@ function buildFeatureRows(plan: Plan): FeatureRow[] {
       included: true,
     },
     {
+      key: 'priority_support',
+      icon: Headset,
+      label: 'دعم فني سريع لما تحتاجنا',
+      // A baseline promise to every customer regardless of plan, not a
+      // paid differentiator - grouped with the other always-included rows
+      // above (rather than last) so it doesn't strand a checkmark after a
+      // run of crossed-out differentiators on lower tiers.
+      included: true,
+    },
+    {
       key: 'ai_tools',
       icon: Sparkles,
       label: 'أدوات ذكاء اصطناعي — تحسين صور الأطباق ومساعد ذكي يرد على عملائك',
@@ -71,14 +81,6 @@ function buildFeatureRows(plan: Plan): FeatureRow[] {
       icon: Building2,
       label: 'استقبال طلبات الشركات والفعاليات',
       included: !!features.gateway_corporate,
-    },
-    {
-      key: 'priority_support',
-      icon: Headset,
-      label: 'دعم فني سريع لما تحتاجنا',
-      // A baseline promise to every customer regardless of plan, not a
-      // paid differentiator - support quality reflects on us either way.
-      included: true,
     },
   ];
 }
@@ -172,10 +174,11 @@ export default function PricingPage() {
           </div>
 
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              <Skeleton className="h-[460px] rounded-3xl" />
-              <Skeleton className="h-[460px] rounded-3xl" />
-              <Skeleton className="h-[460px] rounded-3xl hidden lg:block" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Skeleton className="h-[420px] rounded-3xl" />
+              <Skeleton className="h-[420px] rounded-3xl" />
+              <Skeleton className="h-[420px] rounded-3xl hidden lg:block" />
+              <Skeleton className="h-[420px] rounded-3xl hidden lg:block" />
             </div>
           ) : plans.length === 0 ? (
             <div className="text-center py-20 text-gray-600">
@@ -183,7 +186,7 @@ export default function PricingPage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
                 {plans.map((plan) => {
                   const isFree = (plan.price_yearly ?? 0) === 0;
                   const featured = !!plan.is_featured;
@@ -211,39 +214,33 @@ export default function PricingPage() {
                   return (
                     <div
                       key={plan.id}
-                      className={`relative rounded-3xl p-7 flex flex-col ${
+                      className={`relative rounded-3xl p-6 flex flex-col ${
                         featured
                           ? 'bg-gray-900 text-white sm:-translate-y-3 shadow-2xl shadow-gray-900/20'
                           : 'bg-white border border-gray-100 text-gray-900'
                       }`}
                     >
                       {featured && (
-                        <div className="absolute -top-3 right-7 bg-white text-gray-900 text-[10px] font-black px-3 py-1 rounded-full">
+                        <div className="absolute -top-3 right-6 bg-white text-gray-900 text-[10px] font-black px-3 py-1 rounded-full">
                           الأكثر انتشاراً
                         </div>
                       )}
 
-                      <div className="mb-5">
+                      <div className="mb-4">
                         <h3 className="text-lg font-black mb-1">{plan.name}</h3>
                         <p className={`text-xs ${featured ? 'text-gray-400' : 'text-gray-600'}`}>{plan.description || ''}</p>
                       </div>
 
                       <div className="flex items-baseline gap-1.5 mb-1">
-                        {isFree ? (
-                          <span className="text-3xl font-black">مجاني</span>
-                        ) : (
-                          <>
-                            <span className="text-4xl font-black">{plan.price_yearly}</span>
-                            <span className={`text-sm font-bold ${featured ? 'text-gray-400' : 'text-gray-600'}`}>ر.س</span>
-                          </>
-                        )}
+                        <span className="text-4xl font-black">{isFree ? '0' : plan.price_yearly}</span>
+                        <span className={`text-sm font-bold ${featured ? 'text-gray-400' : 'text-gray-600'}`}>ر.س</span>
                       </div>
-                      <p className={`text-[11px] mb-6 ${featured ? 'text-gray-400' : 'text-gray-600'}`}>
+                      <p className={`text-[11px] mb-5 ${featured ? 'text-gray-400' : 'text-gray-600'}`}>
                         {isFree ? 'دائماً مجاناً' : 'سنوياً'}
                       </p>
 
-                      <div className={`border-t pt-5 mb-6 flex-1 ${featured ? 'border-white/10' : 'border-gray-100'}`}>
-                        <ul className="space-y-3.5">
+                      <div className={`border-t pt-4 mb-5 flex-1 ${featured ? 'border-white/10' : 'border-gray-100'}`}>
+                        <ul className="space-y-3">
                           {rows.map((row) => {
                             const Icon = row.icon;
                             return (
