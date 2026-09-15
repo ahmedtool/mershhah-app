@@ -1,5 +1,13 @@
-// Vercel Edge Middleware - runs before the SPA rewrite in vercel.json, only
-// for the paths listed in `config.matcher` below.
+/// <reference lib="dom" />
+/// <reference types="node" />
+
+// Vercel Middleware (Node.js runtime, per Vercel's own recommendation over
+// the deprecated default edge runtime) - runs before the SPA rewrite in
+// vercel.json, only for the paths listed in `config.matcher` below. This
+// file sits alone at the repo root with no tsconfig of its own, so it
+// inherits tsconfig.base.json's minimal `lib`/`types` (no DOM, no node) -
+// the triple-slash references above pull in Request/Response/URL/fetch and
+// process without touching that shared config.
 //
 // Link-preview crawlers (WhatsApp, Telegram, Discord, etc.) fetch the raw
 // HTML and never run JavaScript, so the per-restaurant <title>/og:* tags
@@ -16,6 +24,7 @@
 const BOT_UA_RE = /(facebookexternalhit|Facebot|Twitterbot|WhatsApp|TelegramBot|Slackbot|LinkedInBot|Discordbot|SkypeUriPreview|Pinterest|redditbot|vkShare|W3C_Validator|Applebot|Googlebot|Bingbot|YandexBot|DuckDuckBot)/i;
 
 export const config = {
+  runtime: 'nodejs',
   matcher: ['/menu/:username*'],
 };
 
