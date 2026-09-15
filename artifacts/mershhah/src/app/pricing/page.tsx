@@ -63,7 +63,7 @@ function buildFeatureRows(plan: Plan): FeatureRow[] {
     {
       key: 'white_label',
       icon: Star,
-      label: 'صفحة خاصة بمطعمك بدون أي شعار ثاني',
+      label: 'صفحة مطعمك بدون علامة مرشح المائية',
       included: !!features.white_label,
     },
     {
@@ -76,7 +76,9 @@ function buildFeatureRows(plan: Plan): FeatureRow[] {
       key: 'priority_support',
       icon: Headset,
       label: 'دعم فني سريع لما تحتاجنا',
-      included: !!features.priority_support,
+      // A baseline promise to every customer regardless of plan, not a
+      // paid differentiator - support quality reflects on us either way.
+      included: true,
     },
   ];
 }
