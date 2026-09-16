@@ -52,7 +52,9 @@ function buildFeatureRows(plan: Plan): FeatureRow[] {
     {
       key: 'tools',
       icon: Wrench,
-      label: toolsLimit > 0 ? `حتى ${toolsLimit} ${toolsLimit === 1 ? 'أداة مفعّلة' : 'أدوات مفعّلة'} من متجر الأدوات` : 'أدوات بلا حدود من متجر الأدوات',
+      label: toolsLimit > 0
+        ? `حتى ${toolsLimit} ${toolsLimit === 1 ? 'أداة مفعّلة' : 'أدوات مفعّلة'} من متجر الأدوات (بعضها مجاني وبعضها مدفوع)`
+        : 'أدوات بلا حدود من متجر الأدوات (بعضها مجاني وبعضها مدفوع)',
       included: true,
     },
     {
@@ -68,7 +70,7 @@ function buildFeatureRows(plan: Plan): FeatureRow[] {
     {
       key: 'ai_tools',
       icon: Sparkles,
-      label: 'أدوات ذكاء اصطناعي — تحسين صور الأطباق ومساعد ذكي يرد على عملائك',
+      label: 'مساعد ذكاء اصطناعي يرد على استفسارات عملائك تلقائياً',
       included: !!features.ai_tools,
     },
     {
