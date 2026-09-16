@@ -25,6 +25,7 @@ import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
 import { useNearestBranch } from '@/hooks/useNearestBranch';
 import { Riyal } from '@/components/shared/Riyal';
 import { usePublicPageBackground } from '@/hooks/usePublicPageBackground';
+import { useAnnouncePresence } from '@/hooks/useRestaurantPresence';
 
 // One order channel shown on an item's card - either the branch's own
 // custom app (the featured "direct" tile) or one of its enabled global
@@ -188,6 +189,7 @@ export default function PublicMenuPage() {
   );
   useGoogleFont(restaurant?.fontFamily);
   usePublicPageBackground(restaurant?.secondaryColor);
+  useAnnouncePresence(restaurant?.id);
 
   useEffect(() => {
     if (!restaurant?.id || visitRecorded.current) return;

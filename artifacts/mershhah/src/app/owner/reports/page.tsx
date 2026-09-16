@@ -19,9 +19,6 @@ import {
     Sparkles,
     MapPin,
     Search,
-    Bot,
-    Lightbulb,
-    RefreshCw,
     History,
     Users,
 } from 'lucide-react';
@@ -44,8 +41,8 @@ import {
     type TrafficSource,
 } from '@/lib/traffic-source';
 import { useLanguage } from '@/components/shared/LanguageContext';
-import { generateDailyPulse, type DailyPulseOutput } from '@/ai/flows/generate-daily-pulse';
 import { syncPublicPage } from '@/lib/public-pages';
+import { useLiveVisitorCount } from '@/hooks/useRestaurantPresence';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -241,8 +238,6 @@ export default function InsightsHubPage() {
     const [hubUsername, setHubUsername] = useState<string | null>(null);
     const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
     const [hoveredDay, setHoveredDay] = useState<number | null>(null);
-    const [dailyPulse, setDailyPulse] = useState<DailyPulseOutput | null>(null);
-    const [isPulseLoading, setIsPulseLoading] = useState(false);
     const [isTogglingVisibility, setIsTogglingVisibility] = useState<string | null>(null);
     const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>('7d');
     const [historyRows, setHistoryRows] = useState<AnalyticsDailyRow[]>([]);
@@ -250,6 +245,7 @@ export default function InsightsHubPage() {
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
     const isPaid = user?.entitlements?.planId && user.entitlements.planId !== 'free' && user.entitlements.planId !== 'none';
+    const liveVisitorCount = useLiveVisitorCount(user?.restaurantId);
 
     const fetchData = useCallback(async () => {
         if (!user?.restaurantId) return;
@@ -456,50 +452,6 @@ export default function InsightsHubPage() {
     const topicCounts = useMemo(() => countReviewsByTag(reviewComments), [reviewComments]);
     const topicMax = Math.max(1, ...Object.values(topicCounts));
 
-    const fetchPulse = useCallback(async () => {
-        if (!user?.restaurantId || !user.name) return;
-        setIsPulseLoading(true);
-        try {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const { data: sessions } = await supabase
-                .from('ai_sessions')
-                .select('created_at')
-                .eq('restaurant_id', user.restaurantId)
-                .gte('created_at', yesterday.toISOString());
-            const recentSessions = sessions || [];
-            if (recentSessions.length === 0) {
-                setDailyPulse(null);
-                return;
-            }
-            const hourCounts: Record<number, number> = {};
-            recentSessions.forEach((session: any) => {
-                if (!session.created_at) return;
-                const hour = new Date(session.created_at).getHours();
-                hourCounts[hour] = (hourCounts[hour] || 0) + 1;
-            });
-            let peakHour = -1; let maxCount = 0;
-            Object.entries(hourCounts).forEach(([hour, count]) => {
-                if (count > maxCount) { maxCount = count; peakHour = parseInt(hour, 10); }
-            });
-            const result = await generateDailyPulse({
-                restaurantName: user.name,
-                totalInteractions: recentSessions.length,
-                peakActivityHour: peakHour !== -1 ? `${peakHour}:00 - ${peakHour + 1}:00` : 'N/A',
-                mostDiscussedItem: 'N/A',
-            });
-            setDailyPulse(result);
-        } catch {
-            setDailyPulse(null);
-        } finally {
-            setIsPulseLoading(false);
-        }
-    }, [user?.restaurantId, user?.name]);
-
-    useEffect(() => {
-        if (user?.restaurantId) fetchPulse();
-    }, [user?.restaurantId, fetchPulse]);
-
     const handleVisibilityToggle = (reviewId: string, newVisibility: boolean) => {
         setIsTogglingVisibility(reviewId);
         supabase.from('reviews').update({ is_visible: newVisibility }).eq('id', reviewId).then(({ error }: { error: any }) => {
@@ -545,36 +497,20 @@ export default function InsightsHubPage() {
         <div className="space-y-4 pb-10">
             <PageHeader title={t('reports.title')} description={t('reports.subtitle')} />
 
-            {/* Daily pulse — one AI-generated summary + one actionable recommendation */}
-            {(isPulseLoading || dailyPulse) && (
-                <div className="bg-gray-900 rounded-2xl p-5 text-white">
-                    <div className="flex items-center justify-between gap-3 mb-3">
-                        <div className="flex items-center gap-2">
-                            <Bot className="h-4 w-4" />
-                            <h3 className="text-sm font-bold">{t('reports.dailyPulseTitle')}</h3>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={fetchPulse}
-                            disabled={isPulseLoading}
-                            className="shrink-0 w-7 h-7 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-                        >
-                            <RefreshCw className={cn("h-3.5 w-3.5", isPulseLoading && "animate-spin")} />
-                        </button>
+            {/* Live visitors — Supabase Realtime Presence, no DB writes, updates the instant someone opens/closes the menu or hub page */}
+            <div className="bg-gray-900 rounded-2xl p-5 text-white flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                    <span className="relative flex h-2.5 w-2.5 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                    </span>
+                    <div>
+                        <h3 className="text-sm font-bold">{t('reports.liveVisitorsTitle')}</h3>
+                        <p className="text-[10px] text-white/60">{t('reports.liveVisitorsDesc')}</p>
                     </div>
-                    {isPulseLoading && !dailyPulse ? (
-                        <div className="h-10 flex items-center text-xs text-white/70">{t('reports.dailyPulseLoading')}</div>
-                    ) : dailyPulse ? (
-                        <div className="space-y-3">
-                            <p className="text-base font-bold leading-relaxed">{dailyPulse.pulseSummary}</p>
-                            <div className="flex items-start gap-2 pt-3 border-t border-white/10">
-                                <Lightbulb className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
-                                <p className="text-xs text-white/90 leading-relaxed">{dailyPulse.singleActionableRecommendation}</p>
-                            </div>
-                        </div>
-                    ) : null}
                 </div>
-            )}
+                <p className="text-3xl font-black tabular-nums">{liveVisitorCount}</p>
+            </div>
 
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
