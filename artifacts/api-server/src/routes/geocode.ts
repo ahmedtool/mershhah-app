@@ -86,6 +86,13 @@ router.get("/autocomplete", async (req: Request, res: Response) => {
       key,
       language: "ar",
       components: "country:sa",
+      // Without this, Google mixes in cities/districts/plain addresses
+      // alongside actual businesses - typing a broad area name (a city or
+      // neighborhood) then surfaced that region itself as a top "match"
+      // instead of the restaurant/shop the owner was actually looking for.
+      // "establishment" restricts results to real places of business, so
+      // multiple branches of the same name each show up as their own pick.
+      types: "establishment",
     });
     if (sessiontoken) params.set("sessiontoken", sessiontoken);
     const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?${params.toString()}`;
