@@ -93,8 +93,18 @@ serve(async (req) => {
 
     // Only the cron job (calling with the service key) may trigger this.
     const authHeader = req.headers.get("Authorization") || "";
-    const token = authHeader.replace("Bearer ", "");
+    const token = authHeader.replace("Bearer ", "").trim();
     if (token !== supabaseServiceKey) {
+      // Temporary diagnostic (never logs the actual secret values) - remove
+      // once the length/prefix mismatch that's causing 401s is identified.
+      console.log("[auth-debug]", {
+        tokenLen: token.length,
+        serviceKeyLen: supabaseServiceKey?.length,
+        tokenStart: token.slice(0, 12),
+        serviceKeyStart: supabaseServiceKey?.slice(0, 12),
+        tokenEnd: token.slice(-6),
+        serviceKeyEnd: supabaseServiceKey?.slice(-6),
+      });
       return json({ error: "Unauthorized" }, 401);
     }
 
