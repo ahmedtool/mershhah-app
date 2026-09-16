@@ -126,23 +126,34 @@ export default function HomePage() {
               <h3 className="m-0 text-center text-[17px] font-bold text-[#131a2b] leading-[1.6]">منيو يفتح بمسح كود<br />على الطاولة</h3>
               <div className="absolute left-1/2 top-[150px] w-[300px] h-[300px] -ml-[150px] rounded-full border border-[#e4e4ea]" />
               <div className="absolute left-1/2 top-[190px] w-[220px] h-[220px] -ml-[110px] rounded-full border border-[#e4e4ea]" />
-              <div className="relative flex items-center justify-center gap-3 mt-[30px]">
-                <div className="w-[64px] h-[64px] shrink-0" style={{ backgroundImage: 'repeating-conic-gradient(#131a2b 0% 25%, #fff 0% 50%)', backgroundSize: '8px 8px', border: '3px solid #fff', outline: '1px solid #e4e4ea' }} />
-                <div className="relative w-[100px] bg-[#0d0d12] rounded-[20px] p-1.5 pb-0">
-                  <div className="bg-white rounded-t-[16px] px-2 pt-2 pb-3">
+              <div className="relative flex items-center justify-center gap-2.5 mt-6">
+                <div className="w-[46px] h-[46px] shrink-0" style={{ backgroundImage: 'repeating-conic-gradient(#131a2b 0% 25%, #fff 0% 50%)', backgroundSize: '7px 7px', border: '3px solid #fff', outline: '1px solid #e4e4ea' }} />
+                <div className="relative w-[142px] bg-[#0d0d12] rounded-[24px] p-1.5 pb-0">
+                  <div className="bg-white rounded-t-[19px] px-2.5 pt-2.5 pb-3">
                     <div className="flex justify-between items-center">
-                      <div className="w-[15px] h-[15px] rounded-md bg-[#f2f2f7]" />
-                      <div className="text-[7px] font-bold text-[#131a2b]">البيت السعودي</div>
-                      <div className="w-[15px] h-[15px] rounded-md bg-[#131a2b] text-white text-[6px] font-bold flex items-center justify-center">ب</div>
+                      <div className="w-[16px] h-[16px] rounded-md bg-[#f2f2f7] flex items-center justify-center text-[7px] text-[#131a2b]">☰</div>
+                      <div className="text-[8px] font-bold text-[#131a2b]">البيت السعودي</div>
+                      <div className="w-[16px] h-[16px] rounded-md bg-[#131a2b] text-white text-[7px] font-bold flex items-center justify-center">ب</div>
+                    </div>
+                    <div className="flex gap-1 mt-2 text-[6px] font-semibold overflow-hidden">
+                      {MENU_CATEGORIES.slice(0, 3).map((cat, i) => (
+                        <span key={cat} className={`rounded-full px-1.5 py-1 whitespace-nowrap ${i === 0 ? 'bg-[#131a2b] text-white' : 'bg-[#f2f2f7] text-[#8b8b95]'}`}>{cat}</span>
+                      ))}
                     </div>
                     <div className="flex justify-center mt-2.5">
-                      <div className="w-[46px] h-[46px] rounded-full bg-[#f2f2f7] flex items-center justify-center text-base">🥗</div>
+                      <div className="w-[64px] h-[64px] rounded-full bg-[#f2f2f7] flex items-center justify-center text-xl">🥗</div>
                     </div>
-                    <div className="text-center mt-1.5 text-[7px] font-bold text-[#131a2b]">خيار باللبن</div>
+                    <div className="text-center mt-2">
+                      <div className="text-[9px] font-bold text-[#131a2b]">خيار باللبن</div>
+                      <div className="flex items-center justify-center gap-0.5 mt-1 text-[7px] font-bold text-[#131a2b]">
+                        <Star className="h-2 w-2 fill-[#f2b705] text-[#f2b705]" /> 3.0
+                      </div>
+                    </div>
+                    <div className="bg-[#131a2b] text-white rounded-full py-1.5 text-[7px] font-bold mt-2.5 text-center">اطلب الآن · 12 ر.س</div>
                   </div>
                 </div>
               </div>
-              <p className="relative text-center mt-4 text-[10.5px] text-[#b0b0bb] leading-[1.6]">يفتح المنيو فوراً بلا تطبيق<br />ولا تحميل</p>
+              <p className="relative text-center mt-5 text-[10.5px] text-[#b0b0bb] leading-[1.6]">يفتح المنيو فوراً بلا تطبيق<br />ولا تحميل</p>
             </div>
 
             {/* Card 2: AI assistant - real chat captured live from /ai/saudi */}
