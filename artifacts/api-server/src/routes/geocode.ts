@@ -117,6 +117,60 @@ router.get("/autocomplete", async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/geocode/textsearch?query=.. — a real one-shot "find every
+// matching business" search (Places Text Search), used by the bulk branch
+// importer instead of Autocomplete: Autocomplete is a per-keystroke
+// typeahead capped at ~5 predictions, fine for picking one place but far
+// too few for "this chain has dozens of branches in Saudi Arabia". Text
+// Search returns up to 20 results per page and up to 3 pages (Google's
+// hard cap - 60 total, no way to request more from a single query),
+// fetched here automatically so the caller gets one combined list.
+router.get("/textsearch", async (req: Request, res: Response) => {
+  try {
+    const query = (req.query.query as string || "").trim();
+    if (!query) {
+      res.json({ places: [] });
+      return;
+    }
+    const key = getApiKey();
+    const places: Array<{ placeId: string; name: string; address: string }> = [];
+    let pageToken: string | undefined;
+
+    for (let page = 0; page < 3; page++) {
+      const params = new URLSearchParams({ key, language: "ar", region: "sa" });
+      if (pageToken) {
+        params.set("pagetoken", pageToken);
+      } else {
+        params.set("query", `${query} Saudi Arabia`);
+      }
+      const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?${params.toString()}`;
+
+      // A fresh next_page_token isn't immediately valid - Google's own docs
+      // say to expect a short delay. Retry once on INVALID_REQUEST instead
+      // of giving up on what would otherwise be a real next page.
+      let data: { status: string; results?: Array<{ place_id: string; name: string; formatted_address: string }>; next_page_token?: string } | undefined;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (pageToken) await new Promise((r) => setTimeout(r, 2000));
+        const r = await fetch(url);
+        data = (await r.json()) as typeof data;
+        if (data?.status !== "INVALID_REQUEST") break;
+      }
+      if (!data || (data.status !== "OK" && data.status !== "ZERO_RESULTS")) break;
+
+      for (const place of data.results || []) {
+        places.push({ placeId: place.place_id, name: place.name, address: place.formatted_address });
+      }
+      if (!data.next_page_token) break;
+      pageToken = data.next_page_token;
+    }
+
+    res.json({ places });
+  } catch (error: any) {
+    console.error("[geocode-route] textsearch error:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
+});
+
 type AddressComponent = { long_name: string; short_name: string; types: string[] };
 
 function findComponent(components: AddressComponent[], ...types: string[]): string | undefined {

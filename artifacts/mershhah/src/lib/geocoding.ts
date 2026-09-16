@@ -146,16 +146,43 @@ export async function autocompletePlaces(input: string, sessionToken: string): P
   }
 }
 
-export async function getPlaceDetails(placeId: string, sessionToken: string): Promise<GeocodingResult | null> {
+export async function getPlaceDetails(placeId: string, sessionToken?: string): Promise<GeocodingResult | null> {
   try {
-    const res = await fetch(
-      `/api/geocode/place-details?placeId=${encodeURIComponent(placeId)}&sessiontoken=${sessionToken}`
-    );
+    const params = new URLSearchParams({ placeId });
+    if (sessionToken) params.set('sessiontoken', sessionToken);
+    const res = await fetch(`/api/geocode/place-details?${params.toString()}`);
     if (!res.ok) return null;
     const data = await res.json();
     return data.result || null;
   } catch (error) {
     console.error('Place details error:', error);
     return null;
+  }
+}
+
+// ── Places Text Search (find-many, Saudi Arabia only) ──────────────────────
+// Unlike autocompletePlaces (a per-keystroke typeahead capped at ~5
+// predictions), this is a one-shot "find every matching business" search -
+// used by the bulk branch importer, where a chain's name can legitimately
+// match dozens of real branches. No session token: Text Search isn't part
+// of the Autocomplete billing session model.
+
+export interface TextSearchPlace {
+  placeId: string;
+  name: string;
+  address: string;
+}
+
+export async function textSearchPlaces(query: string): Promise<TextSearchPlace[]> {
+  if (!query || query.trim().length < 2) return [];
+
+  try {
+    const res = await fetch(`/api/geocode/textsearch?query=${encodeURIComponent(query.trim())}`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.places || [];
+  } catch (error) {
+    console.error('Places text search error:', error);
+    return [];
   }
 }

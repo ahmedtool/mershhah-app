@@ -1,13 +1,13 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, MapPin, X, Layers, Check, ListPlus } from 'lucide-react';
+import { Loader2, MapPin, X, Layers, Check, ListPlus, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
-import { createPlacesSessionToken, autocompletePlaces, getPlaceDetails, type PlaceSuggestion } from '@/lib/geocoding';
+import { textSearchPlaces, getPlaceDetails, type TextSearchPlace } from '@/lib/geocoding';
 import { useUser } from '@/hooks/useUser';
 import { useLanguage } from '@/components/shared/LanguageContext';
 
@@ -32,31 +32,36 @@ interface BulkAddBranchesDialogProps {
 // Lets an owner with many locations search and queue up several branches -
 // one search batch at a time (e.g. every Jeddah location, then every Riyadh
 // one) - before saving them all in a single insert, instead of repeating
-// the full single-branch dialog per location. Reuses the same real Google
-// Places autocomplete/details as EditBranchDialog's branch-name search.
+// the full single-branch dialog per location.
+//
+// Uses Places Text Search (via textSearchPlaces), not the Autocomplete
+// EditBranchDialog uses for its single-pick search: Autocomplete is a
+// per-keystroke typeahead capped at ~5 predictions, far too few for "this
+// chain has dozens of branches nationwide". Text Search returns up to 60
+// (Google's hard cap, paginated server-side) from one explicit search - a
+// deliberate button/Enter action here rather than live-as-you-type, since
+// fetching all pages takes a few seconds and costs more per call.
 export function BulkAddBranchesDialog({ open, onOpenChange, restaurantId, existingCount, onSaved }: BulkAddBranchesDialogProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const { t, dir } = useLanguage();
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
   const [query, setQuery] = useState('');
-  const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
+  const [results, setResults] = useState<TextSearchPlace[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [resultsOpen, setResultsOpen] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [queue, setQueue] = useState<QueuedBranch[]>([]);
   const [resolvingPlaceId, setResolvingPlaceId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const sessionTokenRef = useRef(createPlacesSessionToken());
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const maxBranches = user?.entitlements?.maxBranches ?? 1;
   const remainingSlots = Math.max(0, maxBranches - existingCount - queue.length);
 
   function reset() {
     setQuery('');
-    setSuggestions([]);
+    setResults([]);
+    setHasSearched(false);
     setQueue([]);
-    sessionTokenRef.current = createPlacesSessionToken();
   }
 
   function handleClose(next: boolean) {
@@ -64,19 +69,16 @@ export function BulkAddBranchesDialog({ open, onOpenChange, restaurantId, existi
     onOpenChange(next);
   }
 
-  function handleQueryChange(value: string) {
-    setQuery(value);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!value.trim()) { setSuggestions([]); return; }
-    debounceRef.current = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const results = await autocompletePlaces(value, sessionTokenRef.current);
-        setSuggestions(results);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300);
+  async function handleSearch() {
+    if (!query.trim() || isSearching) return;
+    setIsSearching(true);
+    try {
+      const found = await textSearchPlaces(query);
+      setResults(found);
+      setHasSearched(true);
+    } finally {
+      setIsSearching(false);
+    }
   }
 
   function isMaxedOut() {
@@ -89,25 +91,22 @@ export function BulkAddBranchesDialog({ open, onOpenChange, restaurantId, existi
     return true;
   }
 
-  // Resolves one suggestion to a full branch and queues it, WITHOUT closing
-  // the results list or clearing the search - a query for a chain's name
-  // (e.g. "ماكدونالدز الرياض") legitimately matches several of its real
-  // branches at once, and picking one used to wipe the list, forcing the
-  // owner to retype the exact same search just to reach the next branch.
-  async function resolveAndQueue(suggestion: PlaceSuggestion): Promise<boolean> {
-    setResolvingPlaceId(suggestion.placeId);
+  // Resolves one search result to a full branch and queues it - keeps the
+  // results list as-is (no clearing/closing) so the owner can keep picking
+  // more branches from the same search instead of starting over.
+  async function resolveAndQueue(place: TextSearchPlace): Promise<boolean> {
+    setResolvingPlaceId(place.placeId);
     try {
-      const result = await getPlaceDetails(suggestion.placeId, sessionTokenRef.current);
+      const result = await getPlaceDetails(place.placeId);
       // city is the branches table's one required location field (NOT
       // NULL) - a result without one can't be queued for a silent insert.
       if (!result || !result.city) {
         toast({ variant: 'destructive', title: t('branches.coordinatesNotFound') });
         return false;
       }
-      const name = result.name || suggestion.description.split(/[،,]/)[0].trim();
       setQueue((prev) => [...prev, {
-        placeId: suggestion.placeId,
-        name,
+        placeId: place.placeId,
+        name: result.name || place.name,
         city: result.city!,
         district: result.district || '',
         phone: result.phone,
@@ -120,30 +119,27 @@ export function BulkAddBranchesDialog({ open, onOpenChange, restaurantId, existi
     }
   }
 
-  // Clicking a queued suggestion again removes it - a quick way to undo a
-  // pick without hunting for it in the list below.
-  async function handlePick(suggestion: PlaceSuggestion) {
-    if (queue.some((b) => b.placeId === suggestion.placeId)) {
-      removeFromQueue(suggestion.placeId);
+  // Clicking a queued result again removes it - a quick way to undo a pick
+  // without hunting for it in the list below.
+  async function handlePick(place: TextSearchPlace) {
+    if (queue.some((b) => b.placeId === place.placeId)) {
+      removeFromQueue(place.placeId);
       return;
     }
     if (isMaxedOut()) return;
-    await resolveAndQueue(suggestion);
-    sessionTokenRef.current = createPlacesSessionToken();
+    await resolveAndQueue(place);
   }
 
   // Queues every not-yet-added result from the current search in one go -
-  // the fast path for "this business name has several branches, add them
-  // all" instead of clicking each one individually.
+  // the fast path for "this business has several branches, add them all".
   async function handleAddAll() {
-    const toAdd = suggestions.filter((s) => !queue.some((b) => b.placeId === s.placeId));
+    const toAdd = results.filter((p) => !queue.some((b) => b.placeId === p.placeId));
     if (toAdd.length === 0) return;
     const capped = toAdd.slice(0, remainingSlots);
     if (capped.length < toAdd.length) isMaxedOut();
-    for (const suggestion of capped) {
-      await resolveAndQueue(suggestion);
+    for (const place of capped) {
+      await resolveAndQueue(place);
     }
-    sessionTokenRef.current = createPlacesSessionToken();
   }
 
   function removeFromQueue(placeId: string) {
@@ -194,52 +190,62 @@ export function BulkAddBranchesDialog({ open, onOpenChange, restaurantId, existi
         </div>
 
         <div className="p-5 space-y-4">
-          <div className="relative">
+          <div className="flex gap-2">
             <Input
               value={query}
-              onChange={(e) => handleQueryChange(e.target.value)}
-              onFocus={() => setResultsOpen(true)}
-              onBlur={() => setTimeout(() => setResultsOpen(false), 200)}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSearch(); } }}
               placeholder={t('branches.branchNamePlaceholder')}
-              className="h-11 rounded-xl border-gray-200 text-sm"
+              className="h-11 rounded-xl border-gray-200 text-sm flex-1"
               disabled={saving}
             />
-            {isSearching && (
-              <Loader2 className="absolute end-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
-            )}
-            {resultsOpen && suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 max-h-64 overflow-y-auto">
-                {suggestions.length > 1 && (
-                  <button type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={handleAddAll}
-                    className={`w-full ${alignStart} px-3 py-2 text-xs font-bold text-gray-900 hover:bg-gray-50 transition-colors flex items-center gap-2 border-b border-gray-100`}>
-                    <ListPlus className="h-3.5 w-3.5 shrink-0" />
-                    {t('branches.bulkAddAllResults')}
-                  </button>
-                )}
-                {suggestions.map((s) => {
-                  const isQueued = queue.some((b) => b.placeId === s.placeId);
-                  return (
-                    <button key={s.placeId} type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => handlePick(s)}
-                      disabled={resolvingPlaceId === s.placeId}
-                      className={`w-full ${alignStart} px-3 py-2 text-sm transition-colors flex items-center justify-between gap-2 disabled:opacity-50 ${
-                        isQueued ? 'bg-emerald-50 text-emerald-700' : 'text-gray-700 hover:bg-gray-50'
-                      }`}>
-                      <span className="truncate">{s.description}</span>
-                      {resolvingPlaceId === s.placeId ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400 shrink-0" />
-                      ) : isQueued ? (
-                        <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-                      ) : null}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+            <button type="button" onClick={handleSearch} disabled={isSearching || !query.trim() || saving}
+              className="h-11 px-4 rounded-xl bg-gray-900 text-white text-sm font-bold hover:bg-gray-800 transition-colors disabled:opacity-50 flex items-center gap-1.5 shrink-0">
+              {isSearching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              {t('branches.bulkAddSearchButton')}
+            </button>
           </div>
+
+          {isSearching && (
+            <p className="text-[11px] text-gray-600">{t('branches.bulkAddSearching')}</p>
+          )}
+
+          {!isSearching && hasSearched && results.length === 0 && (
+            <p className="text-[11px] text-gray-600">{t('branches.bulkAddNoResults')}</p>
+          )}
+
+          {!isSearching && results.length > 0 && (
+            <div className="border border-gray-200 rounded-xl max-h-64 overflow-y-auto">
+              {results.length > 1 && (
+                <button type="button" onClick={handleAddAll}
+                  className={`w-full ${alignStart} px-3 py-2 text-xs font-bold text-gray-900 hover:bg-gray-50 transition-colors flex items-center gap-2 border-b border-gray-100`}>
+                  <ListPlus className="h-3.5 w-3.5 shrink-0" />
+                  {t('branches.bulkAddAllResults')} ({results.length})
+                </button>
+              )}
+              {results.map((p) => {
+                const isQueued = queue.some((b) => b.placeId === p.placeId);
+                return (
+                  <button key={p.placeId} type="button"
+                    onClick={() => handlePick(p)}
+                    disabled={resolvingPlaceId === p.placeId}
+                    className={`w-full ${alignStart} px-3 py-2 transition-colors flex items-center justify-between gap-2 disabled:opacity-50 border-b border-gray-50 last:border-0 ${
+                      isQueued ? 'bg-emerald-50' : 'hover:bg-gray-50'
+                    }`}>
+                    <span className="min-w-0">
+                      <span className={`block text-sm font-bold truncate ${isQueued ? 'text-emerald-700' : 'text-gray-900'}`}>{p.name}</span>
+                      <span className="block text-[10.5px] text-gray-600 truncate">{p.address}</span>
+                    </span>
+                    {resolvingPlaceId === p.placeId ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400 shrink-0" />
+                    ) : isQueued ? (
+                      <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div className="space-y-2">
             <p className="text-[11px] font-bold text-gray-600">

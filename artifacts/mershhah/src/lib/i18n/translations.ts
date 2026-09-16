@@ -266,6 +266,9 @@ export const translations = {
       bulkAddAllResults: 'إضافة كل نتائج البحث',
       bulkAddSuccessPrefix: 'تمت إضافة',
       bulkAddSubmitPrefix: 'إضافة',
+      bulkAddSearchButton: 'بحث',
+      bulkAddSearching: 'جاري البحث...',
+      bulkAddNoResults: 'ما لقينا نتائج مطابقة، جرّب اسم مختلف',
     },
     offers: {
       title: 'إدارة العروض',
@@ -1590,6 +1593,9 @@ export const translations = {
       bulkAddAllResults: 'Add all search results',
       bulkAddSuccessPrefix: 'Added',
       bulkAddSubmitPrefix: 'Add',
+      bulkAddSearchButton: 'Search',
+      bulkAddSearching: 'Searching...',
+      bulkAddNoResults: 'No matching results, try a different name',
     },
     offers: {
       title: 'Offer Management',
