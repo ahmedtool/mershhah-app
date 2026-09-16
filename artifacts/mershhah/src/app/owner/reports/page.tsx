@@ -56,6 +56,18 @@ type FullReview = {
 
 type ItemReview = FullReview & { menu_item_id: string };
 
+type ReviewSort = 'newest' | 'rating_desc' | 'rating_asc';
+
+// 'newest' relies on the original Supabase query order (created_at desc) -
+// rating sorts are stable (Array.prototype.sort in modern JS engines), so
+// reviews with equal ratings keep their newest-first relative order too.
+function sortReviews<T extends { rating: number }>(list: T[], sort: ReviewSort): T[] {
+    if (sort === 'newest') return list;
+    const sorted = [...list];
+    sorted.sort((a, b) => sort === 'rating_desc' ? b.rating - a.rating : a.rating - b.rating);
+    return sorted;
+}
+
 const KNOWN_TRAFFIC_SOURCES = new Set(Object.keys(TRAFFIC_SOURCE_LABEL_KEYS));
 
 type HistoryPeriod = '7d' | 'this_month' | 'last_month' | '3m' | 'year';
@@ -233,6 +245,7 @@ export default function InsightsHubPage() {
     const [itemReviews, setItemReviews] = useState<ItemReview[]>([]);
     const [itemNames, setItemNames] = useState<Record<string, string>>({});
     const [reputationTab, setReputationTab] = useState<'restaurant' | 'products'>('restaurant');
+    const [reviewSort, setReviewSort] = useState<ReviewSort>('newest');
     const [restaurantRating, setRestaurantRating] = useState(0);
     const [restaurantReviewCount, setRestaurantReviewCount] = useState(0);
     const [hubUsername, setHubUsername] = useState<string | null>(null);
@@ -450,6 +463,8 @@ export default function InsightsHubPage() {
         [fullReviews],
     );
     const topicCounts = useMemo(() => countReviewsByTag(reviewComments), [reviewComments]);
+    const sortedFullReviews = useMemo(() => sortReviews(fullReviews, reviewSort), [fullReviews, reviewSort]);
+    const sortedItemReviews = useMemo(() => sortReviews(itemReviews, reviewSort), [itemReviews, reviewSort]);
     const topicMax = Math.max(1, ...Object.values(topicCounts));
 
     const handleVisibilityToggle = (reviewId: string, newVisibility: boolean) => {
@@ -969,12 +984,29 @@ export default function InsightsHubPage() {
                     </div>
                 </div>
 
+                <div className="flex items-center gap-1 bg-gray-50 border border-gray-100 p-1 rounded-lg w-fit mb-3">
+                    {([
+                        ['newest', 'reports.reviewSortNewest'],
+                        ['rating_desc', 'reports.reviewSortHighest'],
+                        ['rating_asc', 'reports.reviewSortLowest'],
+                    ] as [ReviewSort, string][]).map(([sort, labelKey]) => (
+                        <button
+                            key={sort}
+                            type="button"
+                            onClick={() => setReviewSort(sort)}
+                            className={cn("px-2.5 h-6 rounded-md text-[10px] font-bold transition-all", reviewSort === sort ? "bg-white text-gray-900 shadow-sm" : "text-gray-600")}
+                        >
+                            {t(labelKey)}
+                        </button>
+                    ))}
+                </div>
+
                 {reputationTab === 'restaurant' ? (
-                    fullReviews.length === 0 ? (
+                    sortedFullReviews.length === 0 ? (
                         <div className="py-10 text-center text-gray-600 text-xs">{t('reports.noReviewsYet')}</div>
                     ) : (
                         <div className="space-y-2 max-h-[28rem] overflow-y-auto">
-                            {fullReviews.map(review => {
+                            {sortedFullReviews.map(review => {
                                 const isVisible = review.is_visible !== false;
                                 return (
                                     <div key={review.id} className="border border-gray-100 rounded-xl p-3">
@@ -1006,11 +1038,11 @@ export default function InsightsHubPage() {
                         </div>
                     )
                 ) : (
-                    itemReviews.length === 0 ? (
+                    sortedItemReviews.length === 0 ? (
                         <div className="py-10 text-center text-gray-600 text-xs">{t('reports.noProductReviewsYet')}</div>
                     ) : (
                         <div className="space-y-2 max-h-[28rem] overflow-y-auto">
-                            {itemReviews.map(review => {
+                            {sortedItemReviews.map(review => {
                                 const isVisible = review.is_visible !== false;
                                 return (
                                     <div key={review.id} className="border border-gray-100 rounded-xl p-3">
