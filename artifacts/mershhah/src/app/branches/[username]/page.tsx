@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useParams } from 'wouter';
 import { ChevronRight, ChevronLeft, MapPin, Phone, Clock, Info, Navigation, MessageCircle } from 'lucide-react';
@@ -38,6 +38,179 @@ function RadarPin({ color, reduced }: { color: string; reduced: boolean }) {
   );
 }
 
+// One branch row - header (number badge, name, badges, city/distance) plus
+// the expandable details panel. Extracted so the page can render it either
+// as one flat list (no location / single-city chains) or split across the
+// "near you" + per-city groups below (multi-city chains once we know where
+// the visitor is).
+function BranchCard({
+  branch, index, isNearest, isExpanded, onToggle, primaryColor, alignStart, dir, restaurant, t, isBranchOpen,
+}: {
+  branch: any;
+  index: number;
+  isNearest: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+  primaryColor: string;
+  alignStart: string;
+  dir: string;
+  restaurant: any;
+  t: (key: string) => string;
+  isBranchOpen: (hours?: string | null) => boolean | null;
+}) {
+  const isOpen = isBranchOpen(branch.opening_hours);
+
+  return (
+    <div
+      className="border border-gray-100 overflow-hidden transition-all"
+      style={{
+        borderRadius: 'var(--r-radius)',
+        ...(isExpanded ? { borderColor: `${primaryColor}30` } : isNearest ? { borderColor: `${primaryColor}20`, backgroundColor: `${primaryColor}03` } : {}),
+      }}
+    >
+      {/* Branch Header */}
+      <button
+        onClick={onToggle}
+        className={`w-full flex items-center gap-4 p-4 ${alignStart}`}
+      >
+        {/* Number badge */}
+        <div
+          className="w-10 h-10 flex items-center justify-center shrink-0 text-sm font-bold"
+          style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)', borderRadius: 'var(--r-radius-sm)' }}
+        >
+          {index + 1}
+        </div>
+
+        <div className={`flex-1 min-w-0 ${alignStart}`}>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="text-sm font-bold text-gray-900 truncate">{branch.name}</h3>
+            {isNearest && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}>
+                {t('publicBranches.nearestBadge')}
+              </span>
+            )}
+            {isOpen !== null && (
+              <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${isOpen ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'}`}>
+                {isOpen ? t('publicBranches.openBadge') : t('publicBranches.closedBadge')}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5">
+            {(branch.city || branch.district) && (
+              <p className="text-xs text-gray-600 truncate">
+                {[branch.city, branch.district].filter(Boolean).join(' · ')}
+              </p>
+            )}
+            {branch.distance != null && branch.distance !== Infinity && (
+              <span className="text-[10px] text-gray-600 shrink-0">
+                {branch.distance < 1 ? `${Math.round(branch.distance * 1000)} ${t('publicBranches.meterSuffix')}` : `${branch.distance.toFixed(1)} ${t('publicBranches.kmSuffix')}`}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {dir === 'rtl' ? (
+          <ChevronRight
+            className="h-4 w-4 text-gray-600 shrink-0 transition-transform duration-200"
+            style={isExpanded ? { transform: 'rotate(-90deg)' } : {}}
+          />
+        ) : (
+          <ChevronLeft
+            className="h-4 w-4 text-gray-600 shrink-0 transition-transform duration-200"
+            style={isExpanded ? { transform: 'rotate(90deg)' } : {}}
+          />
+        )}
+      </button>
+
+      {/* Expanded Content */}
+      {isExpanded && (
+        <div className={`px-4 pb-4 space-y-3 border-t border-gray-50 ${alignStart}`}>
+          {branch.address && (
+            <div className="flex items-start gap-2.5 pt-3">
+              <MapPin className="h-3.5 w-3.5 text-gray-600 mt-0.5 shrink-0" />
+              <p className="text-xs text-gray-600 leading-relaxed">{branch.address}</p>
+            </div>
+          )}
+
+          {branch.opening_hours && (
+            <div className="flex items-center gap-2.5">
+              <Clock className="h-3.5 w-3.5 text-gray-600 shrink-0" />
+              <p className="text-xs text-gray-600">{branch.opening_hours}</p>
+            </div>
+          )}
+
+          <div className="flex gap-2 pt-1">
+            {branch.phone ? (
+              <a
+                href={`https://wa.me/${branch.phone.replace(/[^0-9]/g, '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => restaurant?.id && trackWhatsappClick(restaurant.id)}
+                className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-[#25D366]/10 text-[#25D366] text-xs font-semibold hover:bg-[#25D366]/20 transition-colors"
+              >
+                <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+                {t('publicBranches.whatsapp')}
+              </a>
+            ) : null}
+
+            {(branch.google_maps_url || (branch.latitude && branch.longitude)) ? (
+              <a
+                href={branch.google_maps_url || `https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => restaurant?.id && trackMapsClick(restaurant.id)}
+                className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90"
+                style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
+              >
+                <Navigation className="h-3.5 w-3.5" />
+                {t('publicBranches.directions')}
+              </a>
+            ) : null}
+
+            {branch.phone ? (
+              <a
+                href={`tel:${branch.phone}`}
+                onClick={() => restaurant?.id && trackPhoneClick(restaurant.id)}
+                className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                <Phone className="h-3.5 w-3.5" />
+                {t('publicBranches.call')}
+              </a>
+            ) : null}
+          </div>
+
+          {/* Branch Delivery Apps */}
+          {branch.applications && branch.applications.length > 0 && (
+            <div className="pt-2">
+              <p className="text-[10px] text-gray-600 font-medium mb-2">{t('publicBranches.deliveryApps')}</p>
+              <div className="flex gap-2 flex-wrap">
+                {branch.applications.map((app: any, idx: number) => (
+                  <a
+                    key={app.id || idx}
+                    href={app.value || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 h-9 px-3 rounded-lg bg-gray-50 border border-gray-100 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    {app.logo && (
+                      <div className="relative w-5 h-5 shrink-0">
+                        <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain" sizes="20px" />
+                      </div>
+                    )}
+                    {app.name}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function PublicBranchesPage() {
   const params = useParams();
   const username = params.username as string;
@@ -51,6 +224,33 @@ export default function PublicBranchesPage() {
   const { phase: locationPhase, sortedBranches, requestLocation } = useNearestBranch(branches);
   const userLocation = locationPhase === 'located';
   const locating = locationPhase === 'locating';
+
+  // Once we know where the visitor is, a flat list sorted by raw distance
+  // mixes in branches from other cities right alongside the genuinely
+  // nearby ones - confusing for chains with many branches nationwide.
+  // Instead: whichever city the closest branch sits in becomes "near you",
+  // and every other city gets its own labeled group below (sorted branches
+  // within each group), so it reads as "closest + in your city" up top and
+  // "everywhere else" clearly separated underneath.
+  const cityGroups = useMemo(() => {
+    if (!userLocation || sortedBranches.length === 0) return null;
+    const nearestCity = sortedBranches[0]?.city || null;
+    const distinctCities = new Set(branches.map((b) => b.city).filter(Boolean));
+    if (!nearestCity || distinctCities.size <= 1) return null;
+
+    const nearby: any[] = [];
+    const othersByCity = new Map<string, any[]>();
+    for (const b of sortedBranches) {
+      if (b.city === nearestCity) {
+        nearby.push(b);
+      } else {
+        const key = b.city || t('publicBranches.otherCitiesLabel');
+        if (!othersByCity.has(key)) othersByCity.set(key, []);
+        othersByCity.get(key)!.push(b);
+      }
+    }
+    return { nearestCity, nearby, others: Array.from(othersByCity.entries()) };
+  }, [branches, sortedBranches, userLocation, t]);
   usePublicPageBackground(restaurant?.secondaryColor);
 
   useEffect(() => {
@@ -219,172 +419,86 @@ export default function PublicBranchesPage() {
 
       <div className={`max-w-lg mx-auto w-full px-5 space-y-3 ${alignStart}`} dir={dir}>
 
-        {          branches.length === 0 ? (
+        {branches.length === 0 ? (
           <div className="text-center py-20 space-y-3">
             <MapPin className="h-10 w-10 text-gray-200 mx-auto" />
             <p className="text-sm text-gray-600">{t('publicBranches.noBranchesAvailable')}</p>
           </div>
-        ) : (
-          sortedBranches.map((branch: any, index: number) => {
-            const isOpen = isBranchOpen(branch.opening_hours);
-            const isExpanded = expandedId === branch.id;
-            const isNearest = userLocation && index === 0 && branch.distance !== Infinity;
-
-            return (
-              <div
-                key={branch.id}
-                className="border border-gray-100 overflow-hidden transition-all"
-                style={{
-                  borderRadius: 'var(--r-radius)',
-                  ...(isExpanded ? { borderColor: `${primaryColor}30` } : isNearest ? { borderColor: `${primaryColor}20`, backgroundColor: `${primaryColor}03` } : {}),
-                }}
-              >
-                {/* Branch Header */}
-                <button
-                  onClick={() => {
-                    const next = isExpanded ? null : branch.id;
+        ) : cityGroups ? (
+          <>
+            <div className="space-y-3">
+              <p className={`text-xs font-bold text-gray-500 px-1 ${alignStart}`}>
+                {t('publicBranches.nearYouInPrefix')} {cityGroups.nearestCity}
+              </p>
+              {cityGroups.nearby.map((branch: any, index: number) => (
+                <BranchCard
+                  key={branch.id}
+                  branch={branch}
+                  index={index}
+                  isNearest={index === 0 && branch.distance !== Infinity}
+                  isExpanded={expandedId === branch.id}
+                  onToggle={() => {
+                    const next = expandedId === branch.id ? null : branch.id;
                     setExpandedId(next);
                     if (next && restaurant?.id) trackBranchView(restaurant.id, branch.name);
                   }}
-                  className={`w-full flex items-center gap-4 p-4 ${alignStart}`}
-                >
-                  {/* Number badge */}
-                  <div
-                    className="w-10 h-10 flex items-center justify-center shrink-0 text-sm font-bold"
-                    style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)', borderRadius: 'var(--r-radius-sm)' }}
-                  >
-                    {index + 1}
-                  </div>
+                  primaryColor={primaryColor}
+                  alignStart={alignStart}
+                  dir={dir}
+                  restaurant={restaurant}
+                  t={t}
+                  isBranchOpen={isBranchOpen}
+                />
+              ))}
+            </div>
 
-                  <div className={`flex-1 min-w-0 ${alignStart}`}>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm font-bold text-gray-900 truncate">{branch.name}</h3>
-                      {isNearest && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}>
-                          {t('publicBranches.nearestBadge')}
-                        </span>
-                      )}
-                      {isOpen !== null && (
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${isOpen ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-600'}`}>
-                          {isOpen ? t('publicBranches.openBadge') : t('publicBranches.closedBadge')}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {(branch.city || branch.district) && (
-                        <p className="text-xs text-gray-600 truncate">
-                          {[branch.city, branch.district].filter(Boolean).join(' · ')}
-                        </p>
-                      )}
-                      {branch.distance != null && branch.distance !== Infinity && (
-                        <span className="text-[10px] text-gray-600 shrink-0">
-                          {branch.distance < 1 ? `${Math.round(branch.distance * 1000)} ${t('publicBranches.meterSuffix')}` : `${branch.distance.toFixed(1)} ${t('publicBranches.kmSuffix')}`}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {dir === 'rtl' ? (
-                    <ChevronRight
-                      className="h-4 w-4 text-gray-600 shrink-0 transition-transform duration-200"
-                      style={isExpanded ? { transform: 'rotate(-90deg)' } : {}}
-                    />
-                  ) : (
-                    <ChevronLeft
-                      className="h-4 w-4 text-gray-600 shrink-0 transition-transform duration-200"
-                      style={isExpanded ? { transform: 'rotate(90deg)' } : {}}
-                    />
-                  )}
-                </button>
-
-                {/* Expanded Content */}
-                {isExpanded && (
-                  <div className={`px-4 pb-4 space-y-3 border-t border-gray-50 ${alignStart}`}>
-                    {branch.address && (
-                      <div className="flex items-start gap-2.5 pt-3">
-                        <MapPin className="h-3.5 w-3.5 text-gray-600 mt-0.5 shrink-0" />
-                        <p className="text-xs text-gray-600 leading-relaxed">{branch.address}</p>
-                      </div>
-                    )}
-
-                    {branch.opening_hours && (
-                      <div className="flex items-center gap-2.5">
-                        <Clock className="h-3.5 w-3.5 text-gray-600 shrink-0" />
-                        <p className="text-xs text-gray-600">{branch.opening_hours}</p>
-                      </div>
-                    )}
-
-                    <div className="flex gap-2 pt-1">
-                      {branch.phone ? (
-                        <a
-                          href={`https://wa.me/${branch.phone.replace(/[^0-9]/g, '')}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => restaurant?.id && trackWhatsappClick(restaurant.id)}
-                          className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-[#25D366]/10 text-[#25D366] text-xs font-semibold hover:bg-[#25D366]/20 transition-colors"
-                        >
-                          <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                          </svg>
-                          {t('publicBranches.whatsapp')}
-                        </a>
-                      ) : null}
-
-                      {(branch.google_maps_url || (branch.latitude && branch.longitude)) ? (
-                        <a
-                          href={branch.google_maps_url || `https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => restaurant?.id && trackMapsClick(restaurant.id)}
-                          className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg text-xs font-semibold transition-opacity hover:opacity-90"
-                          style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
-                        >
-                          <Navigation className="h-3.5 w-3.5" />
-                          {t('publicBranches.directions')}
-                        </a>
-                      ) : null}
-
-                      {branch.phone ? (
-                        <a
-                          href={`tel:${branch.phone}`}
-                          onClick={() => restaurant?.id && trackPhoneClick(restaurant.id)}
-                          className="flex-1 flex items-center justify-center gap-2 h-9 rounded-lg bg-gray-50 text-xs font-semibold text-gray-600 hover:bg-gray-100 transition-colors"
-                        >
-                          <Phone className="h-3.5 w-3.5" />
-                          {t('publicBranches.call')}
-                        </a>
-                      ) : null}
-                    </div>
-
-                    {/* Branch Delivery Apps */}
-                    {branch.applications && branch.applications.length > 0 && (
-                      <div className="pt-2">
-                        <p className="text-[10px] text-gray-600 font-medium mb-2">{t('publicBranches.deliveryApps')}</p>
-                        <div className="flex gap-2 flex-wrap">
-                          {branch.applications.map((app: any, idx: number) => (
-                            <a
-                              key={app.id || idx}
-                              href={app.value || '#'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 h-9 px-3 rounded-lg bg-gray-50 border border-gray-100 text-xs font-semibold text-gray-700 hover:bg-gray-100 transition-colors"
-                            >
-                              {app.logo && (
-                                <div className="relative w-5 h-5 shrink-0">
-                                  <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain" sizes="20px" />
-                                </div>
-                              )}
-                              {app.name}
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+            {cityGroups.others.map(([city, list]) => (
+              <div key={city} className="space-y-3 pt-2">
+                <p className={`text-xs font-bold text-gray-500 px-1 ${alignStart}`}>{city}</p>
+                {list.map((branch: any, index: number) => (
+                  <BranchCard
+                    key={branch.id}
+                    branch={branch}
+                    index={index}
+                    isNearest={false}
+                    isExpanded={expandedId === branch.id}
+                    onToggle={() => {
+                      const next = expandedId === branch.id ? null : branch.id;
+                      setExpandedId(next);
+                      if (next && restaurant?.id) trackBranchView(restaurant.id, branch.name);
+                    }}
+                    primaryColor={primaryColor}
+                    alignStart={alignStart}
+                    dir={dir}
+                    restaurant={restaurant}
+                    t={t}
+                    isBranchOpen={isBranchOpen}
+                  />
+                ))}
               </div>
-            );
-          })
+            ))}
+          </>
+        ) : (
+          sortedBranches.map((branch: any, index: number) => (
+            <BranchCard
+              key={branch.id}
+              branch={branch}
+              index={index}
+              isNearest={userLocation && index === 0 && branch.distance !== Infinity}
+              isExpanded={expandedId === branch.id}
+              onToggle={() => {
+                const next = expandedId === branch.id ? null : branch.id;
+                setExpandedId(next);
+                if (next && restaurant?.id) trackBranchView(restaurant.id, branch.name);
+              }}
+              primaryColor={primaryColor}
+              alignStart={alignStart}
+              dir={dir}
+              restaurant={restaurant}
+              t={t}
+              isBranchOpen={isBranchOpen}
+            />
+          ))
         )}
       </div>
     </div>

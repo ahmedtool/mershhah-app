@@ -1032,6 +1032,8 @@ export const translations = {
       openNow: 'مفتوح الآن',
       closedNow: 'مغلق حاليًا',
       goToLocation: 'الذهاب للموقع',
+      nearYouInPrefix: 'الأقرب لك في',
+      otherCitiesLabel: 'فروع أخرى',
     },
     publicSupport: {
       nameRequired: 'الاسم مطلوب',
@@ -2359,6 +2361,8 @@ export const translations = {
       openNow: 'Open now',
       closedNow: 'Closed now',
       goToLocation: 'Get directions',
+      nearYouInPrefix: 'Nearest to you in',
+      otherCitiesLabel: 'Other branches',
     },
     publicSupport: {
       nameRequired: 'Name is required',
