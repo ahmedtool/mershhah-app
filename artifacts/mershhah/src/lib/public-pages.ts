@@ -12,6 +12,7 @@ export type PublicPageData = {
     applications?: Array<{ id?: string; name?: string; value?: string; url?: string; logo?: string }>;
     socialLinks?: Array<{ platform?: string; value?: string }>;
     is_paid_plan?: boolean;
+    hide_delivery_prices?: boolean;
     [key: string]: unknown;
   };
   menu: Array<{
@@ -183,6 +184,7 @@ export async function syncPublicPage(restaurantId: string): Promise<void> {
         applications: Array.isArray(restData.applications) ? restData.applications : [],
         socialLinks: Array.isArray(restData.socialLinks) ? restData.socialLinks : [],
         is_paid_plan: restData.is_paid_plan ?? false,
+        hide_delivery_prices: restData.hide_delivery_prices ?? false,
         rating: restData.rating ?? null,
         review_count: restData.review_count ?? 0,
       },

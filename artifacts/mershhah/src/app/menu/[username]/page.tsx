@@ -478,6 +478,7 @@ export default function PublicMenuPage() {
           dir={dir}
           t={t}
           nearestBranch={nearestBranch}
+          hideDeliveryPrices={!!restaurant?.hide_delivery_prices}
           onEngageItem={(item) => recordItemClick(item)}
           onSubmitRating={submitItemRating}
           onChannelClick={(item, channel) => {
@@ -500,6 +501,7 @@ interface MenuExperienceProps {
   dir: 'rtl' | 'ltr';
   t: (key: string) => string;
   nearestBranch: any;
+  hideDeliveryPrices: boolean;
   onEngageItem: (item: MenuItem) => void;
   onSubmitRating: (item: MenuItem, rating: number, comment: string) => Promise<void>;
   onChannelClick: (item: MenuItem, channel: OrderChannel) => void;
@@ -509,7 +511,7 @@ interface MenuExperienceProps {
 // on "which item is active right now" - the rating chip, the size picker
 // and the order-channel picker all read the same live position instead of
 // three components independently re-deriving it.
-function MenuExperience({ categories, categoryNameEn, menuItems, searchQuery, primaryColor, dir, t, nearestBranch, onEngageItem, onSubmitRating, onChannelClick }: MenuExperienceProps) {
+function MenuExperience({ categories, categoryNameEn, menuItems, searchQuery, primaryColor, dir, t, nearestBranch, hideDeliveryPrices, onEngageItem, onSubmitRating, onChannelClick }: MenuExperienceProps) {
   const tabs = useMemo(() => [ALL_CATEGORY_ID, ...categories], [categories]);
   const catCarousel = useDragCarousel(tabs.length, CATEGORY_SPACING);
   const activeCatIndex = resolveIndex(catCarousel.pos, tabs.length, true);
@@ -579,6 +581,7 @@ function MenuExperience({ categories, categoryNameEn, menuItems, searchQuery, pr
   const channels = activeItem ? buildOrderChannels(activeItem, nearestBranch, basePrice) : [];
   const selectedChannel = channels[Math.min(selectedChannelIndex, Math.max(0, channels.length - 1))];
   const ctaPrice = selectedChannel?.price ?? displayPrice;
+  const showCtaPrice = !selectedChannel || selectedChannel.isDirect || !hideDeliveryPrices;
 
   if (menuItems.length === 0) {
     return (
@@ -853,9 +856,11 @@ function MenuExperience({ categories, categoryNameEn, menuItems, searchQuery, pr
                               )}
                             </div>
                             <span className="text-[9px] font-bold text-gray-900 leading-tight line-clamp-2 min-h-[18px]">{channelNameOf(channel)}</span>
-                            <span className="text-[10px] font-bold" style={{ color: channel.isDirect ? primaryColor : undefined }}>
-                              {channel.price} <Riyal />
-                            </span>
+                            {(channel.isDirect || !hideDeliveryPrices) && (
+                              <span className="text-[10px] font-bold" style={{ color: channel.isDirect ? primaryColor : undefined }}>
+                                {channel.price} <Riyal />
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -871,7 +876,7 @@ function MenuExperience({ categories, categoryNameEn, menuItems, searchQuery, pr
                   style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)', boxShadow: `0 16px 30px -18px color-mix(in srgb, ${primaryColor} 90%, transparent)` }}
                 >
                   {selectedChannel ? (
-                    <>{t('publicMenu.orderNow')} · {ctaPrice} <Riyal /></>
+                    showCtaPrice ? <>{t('publicMenu.orderNow')} · {ctaPrice} <Riyal /></> : t('publicMenu.orderNow')
                   ) : (
                     <>{displayPrice} <Riyal /></>
                   )}

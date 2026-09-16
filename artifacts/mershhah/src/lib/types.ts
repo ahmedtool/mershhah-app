@@ -76,6 +76,7 @@ export type Restaurant = {
   menu_import_monthly_count?: number;
   menu_import_last_reset?: any;
   is_paid_plan?: boolean; // Control visibility of "Powered by" and other pro features
+  hide_delivery_prices?: boolean; // Hide each third-party delivery app's per-item price on the public menu
 };
 
 export type Branch = {

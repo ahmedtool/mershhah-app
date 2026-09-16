@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { ColorSwatchPicker } from '@/components/dashboard/ColorSwatchPicker';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/useUser';
@@ -269,6 +270,7 @@ export default function CustomizePage() {
             socialLinks: settings.socialLinks || [],
             deliveryApps: settings.deliveryApps || [],
             applications: updatedApplications || [],
+            hide_delivery_prices: !!settings.hide_delivery_prices,
             aiConfig: settings.aiConfig || {},
             updated_at: new Date().toISOString(),
         };
@@ -638,6 +640,16 @@ export default function CustomizePage() {
                         <div className="flex items-center gap-2"><AppWindow className="h-4 w-4 text-gray-600"/> {t('customize.apps')}</div>
                     </AccordionTrigger>
                     <AccordionContent className={`space-y-5 pb-5 ${alignStart}`}>
+                      <div className={`flex items-center justify-between gap-3 p-3 bg-gray-50 border border-gray-100 rounded-xl ${rowReverse}`}>
+                          <div className={alignStart}>
+                              <p className="text-xs font-bold text-gray-900">{t('customize.hideDeliveryPricesTitle')}</p>
+                              <p className="text-[10px] text-gray-600 mt-0.5">{t('customize.hideDeliveryPricesDesc')}</p>
+                          </div>
+                          <Switch
+                              checked={!!settings.hide_delivery_prices}
+                              onCheckedChange={(v) => setSettings({ ...settings, hide_delivery_prices: v })}
+                          />
+                      </div>
                       {branches.length > 0 ? (
                         <>
                           <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
