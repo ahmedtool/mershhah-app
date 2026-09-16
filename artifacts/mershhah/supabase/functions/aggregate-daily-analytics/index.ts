@@ -3,12 +3,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // Runs nightly via pg_cron (see schedule_analytics_aggregation.sql). Rolls
 // up yesterday's hub_visits/page_events rows into one analytics_daily row
-// per restaurant, then purges raw rows older than RETENTION_DAYS from both
-// tables - they're safely aggregated by then, so keeping them forever would
-// only make hub_visits/page_events grow without bound as traffic scales.
-// menu_item_interactions is deliberately left alone: the reports page reads
-// it as an all-time total for per-item popularity with no rollup of its
-// own yet, so purging it would silently break that feature.
+// per restaurant, and yesterday's menu_item_interactions into one
+// analytics_daily_items row per (restaurant, item) - then purges raw rows
+// older than RETENTION_DAYS from all three tables, since they're safely
+// aggregated by then. The reports page's all-time item-popularity total
+// stays correct after the purge by summing analytics_daily_items (history)
+// plus today's not-yet-aggregated raw rows, instead of scanning the raw
+// table's full lifetime.
 const RIYADH_OFFSET_HOURS = 3; // Saudi Arabia has no DST
 const RETENTION_DAYS = 180;
 const PAGE_SIZE = 1000;
@@ -78,6 +79,7 @@ type Bucket = {
   sources: Record<string, number>;
   clicks: number;
   events: Record<string, number>;
+  items: Map<string, number>;
 };
 
 serve(async (req) => {
@@ -100,16 +102,17 @@ serve(async (req) => {
     const dateOverride = new URL(req.url).searchParams.get("date");
     const { dayLabel, startUtc, endUtc } = riyadhDayUtcRange(dateOverride);
 
-    const [visits, events] = await Promise.all([
+    const [visits, events, interactions] = await Promise.all([
       fetchAllRows(supabase, "hub_visits", "restaurant_id, source, visitor_id", startUtc, endUtc),
       fetchAllRows(supabase, "page_events", "restaurant_id, event_type, event_detail", startUtc, endUtc),
+      fetchAllRows(supabase, "menu_item_interactions", "restaurant_id, menu_item_id", startUtc, endUtc),
     ]);
 
     const byRestaurant = new Map<string, Bucket>();
     function bucket(restaurantId: string): Bucket {
       let b = byRestaurant.get(restaurantId);
       if (!b) {
-        b = { visitsTotal: 0, uniqueVisitors: new Set(), qr: 0, link: 0, sources: {}, clicks: 0, events: {} };
+        b = { visitsTotal: 0, uniqueVisitors: new Set(), qr: 0, link: 0, sources: {}, clicks: 0, events: {}, items: new Map() };
         byRestaurant.set(restaurantId, b);
       }
       return b;
@@ -134,6 +137,11 @@ serve(async (req) => {
       b.events[key] = (b.events[key] || 0) + 1;
       b.clicks++;
     }
+    for (const i of interactions) {
+      if (!i.restaurant_id || !i.menu_item_id) continue;
+      const b = bucket(i.restaurant_id);
+      b.items.set(i.menu_item_id, (b.items.get(i.menu_item_id) || 0) + 1);
+    }
 
     const rows = Array.from(byRestaurant.entries()).map(([restaurant_id, b]) => ({
       restaurant_id,
@@ -147,30 +155,45 @@ serve(async (req) => {
       event_breakdown: b.events,
     }));
 
+    const itemRows: { restaurant_id: string; menu_item_id: string; day: string; interactions: number }[] = [];
+    for (const [restaurant_id, b] of byRestaurant.entries()) {
+      for (const [menu_item_id, interactions_count] of b.items.entries()) {
+        itemRows.push({ restaurant_id, menu_item_id, day: dayLabel, interactions: interactions_count });
+      }
+    }
+
     if (rows.length > 0) {
       const { error: upsertError } = await supabase
         .from("analytics_daily")
         .upsert(rows, { onConflict: "restaurant_id,day" });
       if (upsertError) throw upsertError;
     }
+    if (itemRows.length > 0) {
+      const { error: upsertItemsError } = await supabase
+        .from("analytics_daily_items")
+        .upsert(itemRows, { onConflict: "restaurant_id,menu_item_id,day" });
+      if (upsertItemsError) throw upsertItemsError;
+    }
 
     // Skip the purge on a manual backfill call (?date=...) - only the
     // unattended nightly run (aggregating yesterday) should ever delete
-    // anything, so replaying old days to fill analytics_daily in can never
+    // anything, so replaying old days to fill the rollups in can never
     // accidentally wipe raw data early.
     let purgedBefore: string | null = null;
     if (!dateOverride) {
       const cutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
-      const [{ error: purgeVisitsError }, { error: purgeEventsError }] = await Promise.all([
+      const [{ error: purgeVisitsError }, { error: purgeEventsError }, { error: purgeInteractionsError }] = await Promise.all([
         supabase.from("hub_visits").delete().lt("created_at", cutoff),
         supabase.from("page_events").delete().lt("created_at", cutoff),
+        supabase.from("menu_item_interactions").delete().lt("created_at", cutoff),
       ]);
       if (purgeVisitsError) throw purgeVisitsError;
       if (purgeEventsError) throw purgeEventsError;
+      if (purgeInteractionsError) throw purgeInteractionsError;
       purgedBefore = cutoff;
     }
 
-    return json({ day: dayLabel, restaurantsAggregated: rows.length, purgedBefore });
+    return json({ day: dayLabel, restaurantsAggregated: rows.length, itemRowsAggregated: itemRows.length, purgedBefore });
   } catch (err: any) {
     return json({ error: err.message }, 500);
   }

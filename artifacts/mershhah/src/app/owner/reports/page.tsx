@@ -208,6 +208,19 @@ function dayKey(d: Date): string {
     return d.toISOString().slice(0, 10);
 }
 
+const RIYADH_OFFSET_MS = 3 * 60 * 60 * 1000; // Saudi Arabia has no DST
+
+// Everything before today has already been rolled into analytics_daily_items
+// by the nightly aggregation job (which then purges the raw rows) - only
+// today's not-yet-aggregated menu_item_interactions rows need to be read
+// live, and added on top of the rollup, to get a correct all-time total.
+function riyadhTodayStartUtcIso(): string {
+    const now = new Date();
+    const riyadhNow = new Date(now.getTime() + RIYADH_OFFSET_MS);
+    const riyadhTodayStart = new Date(Date.UTC(riyadhNow.getUTCFullYear(), riyadhNow.getUTCMonth(), riyadhNow.getUTCDate()));
+    return new Date(riyadhTodayStart.getTime() - RIYADH_OFFSET_MS).toISOString();
+}
+
 export default function InsightsHubPage() {
     const { user, isLoading: isUserLoading } = useUser();
     const { toast } = useToast();
@@ -233,6 +246,7 @@ export default function InsightsHubPage() {
     const [isTogglingVisibility, setIsTogglingVisibility] = useState<string | null>(null);
     const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>('7d');
     const [historyRows, setHistoryRows] = useState<AnalyticsDailyRow[]>([]);
+    const [historyTopItems, setHistoryTopItems] = useState<[string, number][]>([]);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
     const isPaid = user?.entitlements?.planId && user.entitlements.planId !== 'free' && user.entitlements.planId !== 'none';
@@ -241,9 +255,13 @@ export default function InsightsHubPage() {
         if (!user?.restaurantId) return;
         try {
             const restaurantId = user.restaurantId;
-            const [itemsRes, interactionsRes, hubVisitsRes, restRes, reviewsRes, itemReviewsRes] = await Promise.all([
+            const [itemsRes, interactionsRes, itemRollupRes, hubVisitsRes, restRes, reviewsRes, itemReviewsRes] = await Promise.all([
                 supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId),
-                supabase.from('menu_item_interactions').select('menu_item_id').eq('restaurant_id', restaurantId),
+                // Only today's rows - anything older is already folded into
+                // analytics_daily_items below and gets purged from this raw
+                // table after the retention window.
+                supabase.from('menu_item_interactions').select('menu_item_id').eq('restaurant_id', restaurantId).gte('created_at', riyadhTodayStartUtcIso()),
+                supabase.from('analytics_daily_items').select('menu_item_id, interactions').eq('restaurant_id', restaurantId),
                 supabase.from('hub_visits').select('source, created_at').eq('restaurant_id', restaurantId).gte('created_at', new Date(Date.now() - TREND_DAYS * DAY_MS).toISOString()),
                 supabase.from('restaurants').select('username, rating, review_count').eq('id', restaurantId).single(),
                 supabase.from('reviews').select('id, rating, comment, created_at, is_visible').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }),
@@ -252,7 +270,7 @@ export default function InsightsHubPage() {
 
             const items = (itemsRes.data || []) as MenuItem[];
             const interactions = interactionsRes.data || [];
-            setTotalClicks(interactions.length);
+            const itemRollup = itemRollupRes.data || [];
 
             let qrCount = 0; let linkCount = 0;
             const dates: string[] = [];
@@ -286,7 +304,9 @@ export default function InsightsHubPage() {
             setItemNames(names);
 
             const popularityMap = new Map<string, number>();
+            itemRollup.forEach((r: any) => popularityMap.set(r.menu_item_id, (popularityMap.get(r.menu_item_id) || 0) + (r.interactions || 0)));
             interactions.forEach((i: any) => popularityMap.set(i.menu_item_id, (popularityMap.get(i.menu_item_id) || 0) + 1));
+            setTotalClicks(Array.from(popularityMap.values()).reduce((sum, n) => sum + n, 0));
 
             const analyzed = items.map(item => {
                 const size = item.sizes?.[0] || { price: 0, cost: 0 };
@@ -329,17 +349,32 @@ export default function InsightsHubPage() {
         setIsHistoryLoading(true);
         try {
             const { start, end } = historyPeriodRange(historyPeriod);
-            const { data, error } = await supabase
-                .from('analytics_daily')
-                .select('day, visits_total, visits_unique, visits_qr, visits_link, source_breakdown')
-                .eq('restaurant_id', user.restaurantId)
-                .gte('day', start)
-                .lte('day', end)
-                .order('day', { ascending: false });
-            if (error) throw error;
-            setHistoryRows((data || []) as AnalyticsDailyRow[]);
+            const [visitsRes, itemsRes] = await Promise.all([
+                supabase
+                    .from('analytics_daily')
+                    .select('day, visits_total, visits_unique, visits_qr, visits_link, source_breakdown')
+                    .eq('restaurant_id', user.restaurantId)
+                    .gte('day', start)
+                    .lte('day', end)
+                    .order('day', { ascending: false }),
+                supabase
+                    .from('analytics_daily_items')
+                    .select('menu_item_id, interactions')
+                    .eq('restaurant_id', user.restaurantId)
+                    .gte('day', start)
+                    .lte('day', end),
+            ]);
+            if (visitsRes.error) throw visitsRes.error;
+            setHistoryRows((visitsRes.data || []) as AnalyticsDailyRow[]);
+
+            const itemTotals = new Map<string, number>();
+            (itemsRes.data || []).forEach((r: any) => {
+                itemTotals.set(r.menu_item_id, (itemTotals.get(r.menu_item_id) || 0) + (r.interactions || 0));
+            });
+            setHistoryTopItems(Array.from(itemTotals.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5));
         } catch {
             setHistoryRows([]);
+            setHistoryTopItems([]);
         } finally {
             setIsHistoryLoading(false);
         }
@@ -759,6 +794,26 @@ export default function InsightsHubPage() {
                     </div>
                 </div>
                 <p className="text-[10px] text-gray-500 mb-4">{t('reports.historyUniqueNote')}</p>
+
+                {historyTopItems.length > 0 && (
+                    <div className="border-t border-gray-100 pt-4 mb-4">
+                        <div className="flex items-center gap-1.5 mb-3">
+                            <Crown className="h-3.5 w-3.5 text-amber-500" />
+                            <p className="text-[11px] font-bold text-gray-700">{t('reports.historyTopItemsTitle')}</p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+                            {historyTopItems.map(([itemId, count], idx) => (
+                                <div key={itemId} className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl p-2.5">
+                                    <span className="w-5 h-5 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[11px] font-bold text-gray-900 truncate">{itemNames[itemId] || t('reports.historyUnknownItem')}</p>
+                                        <p className="text-[10px] text-gray-500">{count} {t('reports.historyInteractionWord')}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 <div className="border-t border-gray-100 pt-4">
                     <p className="text-[11px] font-bold text-gray-700 mb-2">{t('reports.historyDailyLogTitle')}</p>
