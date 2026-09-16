@@ -2,20 +2,22 @@
 
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/shared/Logo';
-import { QrCode, Link as LinkIcon, Star } from 'lucide-react';
+import { QrCode, Link as LinkIcon } from 'lucide-react';
 import { Link } from 'wouter';
 import { LandingFooter } from '@/components/shared/LandingFooter';
 import { useDocumentMeta } from '@/hooks/useDocumentMeta';
 
-// The phone mockups below are recreations of real, live customer-facing
-// screens on مرشح (public menu + AI chat for "البيت السعودي", one of the
-// platform's actual restaurants) - real names, categories, item, prices and
-// even a real captured AI reply, not fabricated placeholder content. The
-// analytics card uses the dashboard's real metric names (visits/traffic
-// sources - see reports.* in translations.ts) since actual sales figures
-// aren't something this page can screenshot without owner login; the
-// numbers shown there are illustrative only.
-const MENU_CATEGORIES = ['الكل', 'الدجاج', 'وجبات رئيسية', 'حلويات', 'المقبلات'];
+// The phone-frame "screens" below are real screenshots, not drawn mockups -
+// drop each file at the exact path referenced (under public/images/landing/)
+// and it renders inside its phone frame automatically. See the PhoneScreen
+// calls further down for which file goes where and the recommended crop.
+function PhoneScreen({ src, alt, rounded = '32px' }: { src: string; alt: string; rounded?: string }) {
+  return (
+    <div className="w-full aspect-[9/18.5] overflow-hidden bg-[#f4f4f7]" style={{ borderRadius: rounded }}>
+      <img src={src} alt={alt} className="w-full h-full object-cover object-top" />
+    </div>
+  );
+}
 
 export default function HomePage() {
   useDocumentMeta(
@@ -61,49 +63,12 @@ export default function HomePage() {
             </Button>
           </div>
 
-          {/* Phone mockup - recreates the real public menu page (mershhah.com/menu/saudi) */}
+          {/* Phone mockup - drop your screenshot at public/images/landing/hero-menu.png
+              (recommended: your public menu page, portrait, ~1080x2220) */}
           <div className="relative flex justify-center pt-2">
             <div className="absolute inset-x-[6%] top-[70px] h-[66%] bg-[#131a2b] rounded-[28px]" />
             <div className="relative w-[260px] sm:w-[286px] bg-[#0d0d12] rounded-[40px] p-[9px] shadow-[0_30px_60px_rgba(13,13,18,0.28)]">
-              <div className="bg-white rounded-[32px] overflow-hidden px-4 pt-3.5 pb-4">
-                <div className="flex justify-between items-center text-[11px] font-bold text-[#111] pb-3">
-                  <span className="tracking-widest text-[#9a9aa5]">▰ ⌁ ▮▮</span>
-                  <span dir="ltr">9:41</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <div className="w-[26px] h-[26px] rounded-lg bg-[#f2f2f7] flex items-center justify-center text-[11px] text-[#131a2b]">☰</div>
-                  <div className="text-[11.5px] font-bold text-[#131a2b]">البيت السعودي</div>
-                  <div className="w-[26px] h-[26px] rounded-lg bg-[#131a2b] text-white flex items-center justify-center text-[11px] font-bold">ب</div>
-                </div>
-                <div className="flex gap-1.5 mt-3.5 text-[9px] font-semibold overflow-hidden">
-                  {MENU_CATEGORIES.map((cat, i) => (
-                    <span key={cat} className={`rounded-full px-2.5 py-1.5 whitespace-nowrap ${i === 0 ? 'bg-[#131a2b] text-white' : 'bg-[#f2f2f7] text-[#8b8b95]'}`}>{cat}</span>
-                  ))}
-                </div>
-                <div className="flex justify-center mt-4">
-                  <div className="w-[104px] h-[104px] rounded-full bg-[#f2f2f7] flex items-center justify-center text-3xl">🥗</div>
-                </div>
-                <div className="text-center mt-3">
-                  <div className="text-[13px] font-bold text-[#131a2b]">خيار باللبن</div>
-                  <div className="text-[9.5px] text-[#b0b0bb] mt-0.5">طبق خيار باللبن</div>
-                  <div className="flex items-center justify-center gap-1 mt-1.5 text-[9px] font-bold text-[#131a2b]">
-                    <Star className="h-2.5 w-2.5 fill-[#f2b705] text-[#f2b705]" /> 3.0 <span className="text-[#b0b0bb] font-normal">(1)</span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2 mt-3.5">
-                  <div className="bg-[#f4f4f7] rounded-xl py-2 text-center">
-                    <div className="w-4 h-4 rounded-full bg-[#131a2b] text-white text-[7px] font-bold mx-auto mb-1 flex items-center justify-center">جا</div>
-                    <div className="text-[8px] font-bold text-[#131a2b]">جاهز</div>
-                    <div className="text-[8px] font-bold text-[#131a2b]">13 ر.س</div>
-                  </div>
-                  <div className="bg-[#f4f4f7] rounded-xl py-2 text-center">
-                    <div className="w-4 h-4 rounded-full bg-[#131a2b] text-white text-[7px] font-bold mx-auto mb-1 flex items-center justify-center">هن</div>
-                    <div className="text-[8px] font-bold text-[#131a2b]">هنقرستيشن</div>
-                    <div className="text-[8px] font-bold text-[#131a2b]">12 ر.س</div>
-                  </div>
-                </div>
-                <div className="bg-[#131a2b] text-white rounded-full py-2.5 text-[10px] font-bold mt-3.5 text-center">اطلب الآن · 12 ر.س</div>
-              </div>
+              <PhoneScreen src="/images/landing/hero-menu.png" alt="منيو مرشح الرقمي" />
             </div>
           </div>
         </section>
@@ -126,31 +91,11 @@ export default function HomePage() {
               <h3 className="m-0 text-center text-[17px] font-bold text-[#131a2b] leading-[1.6]">منيو يفتح بمسح كود<br />على الطاولة</h3>
               <div className="absolute left-1/2 top-[150px] w-[300px] h-[300px] -ml-[150px] rounded-full border border-[#e4e4ea]" />
               <div className="absolute left-1/2 top-[190px] w-[220px] h-[220px] -ml-[110px] rounded-full border border-[#e4e4ea]" />
+              {/* Drop a screenshot at public/images/landing/feature-qr.png */}
               <div className="relative flex items-center justify-center gap-2.5 mt-6">
                 <div className="w-[46px] h-[46px] shrink-0" style={{ backgroundImage: 'repeating-conic-gradient(#131a2b 0% 25%, #fff 0% 50%)', backgroundSize: '7px 7px', border: '3px solid #fff', outline: '1px solid #e4e4ea' }} />
-                <div className="relative w-[142px] bg-[#0d0d12] rounded-[24px] p-1.5 pb-0">
-                  <div className="bg-white rounded-t-[19px] px-2.5 pt-2.5 pb-3">
-                    <div className="flex justify-between items-center">
-                      <div className="w-[16px] h-[16px] rounded-md bg-[#f2f2f7] flex items-center justify-center text-[7px] text-[#131a2b]">☰</div>
-                      <div className="text-[8px] font-bold text-[#131a2b]">البيت السعودي</div>
-                      <div className="w-[16px] h-[16px] rounded-md bg-[#131a2b] text-white text-[7px] font-bold flex items-center justify-center">ب</div>
-                    </div>
-                    <div className="flex gap-1 mt-2 text-[6px] font-semibold overflow-hidden">
-                      {MENU_CATEGORIES.slice(0, 3).map((cat, i) => (
-                        <span key={cat} className={`rounded-full px-1.5 py-1 whitespace-nowrap ${i === 0 ? 'bg-[#131a2b] text-white' : 'bg-[#f2f2f7] text-[#8b8b95]'}`}>{cat}</span>
-                      ))}
-                    </div>
-                    <div className="flex justify-center mt-2.5">
-                      <div className="w-[64px] h-[64px] rounded-full bg-[#f2f2f7] flex items-center justify-center text-xl">🥗</div>
-                    </div>
-                    <div className="text-center mt-2">
-                      <div className="text-[9px] font-bold text-[#131a2b]">خيار باللبن</div>
-                      <div className="flex items-center justify-center gap-0.5 mt-1 text-[7px] font-bold text-[#131a2b]">
-                        <Star className="h-2 w-2 fill-[#f2b705] text-[#f2b705]" /> 3.0
-                      </div>
-                    </div>
-                    <div className="bg-[#131a2b] text-white rounded-full py-1.5 text-[7px] font-bold mt-2.5 text-center">اطلب الآن · 12 ر.س</div>
-                  </div>
+                <div className="relative w-[142px] bg-[#0d0d12] rounded-[24px] p-1.5">
+                  <PhoneScreen src="/images/landing/feature-qr.png" alt="منيو مرشح بعد مسح الكود" rounded="19px" />
                 </div>
               </div>
               <p className="relative text-center mt-5 text-[10.5px] text-[#b0b0bb] leading-[1.6]">يفتح المنيو فوراً بلا تطبيق<br />ولا تحميل</p>
@@ -160,16 +105,9 @@ export default function HomePage() {
             <div className="relative bg-[#f4f4f7] rounded-[20px] px-5 pb-6 h-[340px] overflow-hidden flex flex-col justify-end">
               <div className="absolute left-1/2 top-5 w-[300px] h-[300px] -ml-[150px] rounded-full border border-[#e4e4ea]" />
               <div className="absolute left-1/2 top-[60px] w-[220px] h-[220px] -ml-[110px] rounded-full border border-[#e4e4ea]" />
+              {/* Drop a screenshot at public/images/landing/feature-ai.png */}
               <div className="absolute left-1/2 -top-[26px] -ml-[75px] w-[150px] bg-[#0d0d12] rounded-[26px] p-1.5">
-                <div className="bg-white rounded-[22px] px-2.5 pt-3.5 pb-3">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-[18px] h-[18px] rounded-full bg-[#131a2b] text-white text-[8px] flex items-center justify-center">✦</div>
-                    <div className="text-[8px] font-bold text-[#131a2b]">البيت السعودي · المساعد الذكي</div>
-                  </div>
-                  <div className="bg-[#f4f4f7] rounded-tl-[10px] rounded-tr-[10px] rounded-br-[3px] rounded-bl-[10px] px-2 py-1.5 mt-2.5 text-[6.5px] text-[#5b6478] leading-[1.7]">أنا رفيقك الذكي، كيف أقدر أساعدك اليوم؟</div>
-                  <div className="bg-[#131a2b] text-white rounded-tl-[10px] rounded-tr-[10px] rounded-br-[10px] rounded-bl-[3px] px-2 py-1.5 mt-1.5 text-[6.5px] leading-[1.7]">وش أطيب طبق عندكم؟</div>
-                  <div className="bg-[#f4f4f7] rounded-tl-[10px] rounded-tr-[10px] rounded-br-[3px] rounded-bl-[10px] px-2 py-1.5 mt-1.5 text-[6.5px] text-[#5b6478] leading-[1.7]">جرّب تسألني عن: المنيو والأسعار، العروض، الفروع 😊</div>
-                </div>
+                <PhoneScreen src="/images/landing/feature-ai.png" alt="محادثة المساعد الذكي" rounded="22px" />
               </div>
               <h3 className="relative m-0 text-center text-[17px] font-bold text-[#131a2b] leading-[1.6]">مساعد ذكي يرد على<br />عملائك على مدار الساعة</h3>
             </div>
@@ -180,37 +118,10 @@ export default function HomePage() {
             <div className="relative bg-[#f4f4f7] rounded-[20px] pt-6 px-5 h-[340px] overflow-hidden sm:col-span-2 lg:col-span-1">
               <h3 className="m-0 text-center text-[17px] font-bold text-[#131a2b] leading-[1.6]">قرارات مبنية على<br />أرقام لا على تخمين</h3>
               <div className="absolute left-1/2 top-[150px] w-[300px] h-[300px] -ml-[150px] rounded-full border border-[#e4e4ea]" />
-              <div className="relative w-[150px] mx-auto mt-[22px] bg-[#0d0d12] rounded-[26px] p-1.5 pb-0">
-                <div className="bg-white rounded-t-[22px] px-2.5 pt-2 pb-3.5">
-                  <div className="flex justify-between text-[7px] font-bold text-[#111]">
-                    <span className="text-[#9a9aa5]">▰ ⌁ ▮</span><span dir="ltr">9:41</span>
-                  </div>
-                  <div className="text-center mt-2 text-[8px] font-bold">واجهتك الرقمية</div>
-                  <div className="bg-[#131a2b] rounded-xl px-2.5 py-2.5 mt-2.5 text-white">
-                    <div className="text-[7px] opacity-75">الزيارات آخر 30 يوم</div>
-                    <div className="text-[13px] font-bold mt-0.5">3,140</div>
-                    <div className="text-[6.5px] text-[#2fbf71] font-bold mt-0.5">+18% مقارنة بالأسبوع اللي قبله</div>
-                  </div>
-                  <div className="mt-3">
-                    <div className="text-[6.5px] font-bold text-[#131a2b] mb-1.5">تفصيل مصادر الزيارات</div>
-                    <div className="space-y-1.5">
-                      {[
-                        { label: 'QR على الطاولة', pct: 55 },
-                        { label: 'رابط الانستقرام', pct: 30 },
-                        { label: 'مباشر', pct: 15 },
-                      ].map((s) => (
-                        <div key={s.label}>
-                          <div className="flex justify-between text-[6px] text-[#8b8b95] mb-0.5"><span>{s.label}</span><span className="font-bold text-[#131a2b]">{s.pct}%</span></div>
-                          <div className="h-[3px] bg-[#f4f4f7] rounded-full overflow-hidden"><div className="h-full bg-[#131a2b] rounded-full" style={{ width: `${s.pct}%` }} /></div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-3">
-                    <div className="flex-1 bg-[#f4f4f7] rounded-lg p-2"><div className="text-[6.5px] text-[#b0b0bb]">الأصناف الأعلى تفاعلاً</div><div className="text-[7px] font-bold">خيار باللبن</div></div>
-                    <div className="flex-1 bg-[#f4f4f7] rounded-lg p-2"><div className="text-[6.5px] text-[#b0b0bb]">التقييم</div><div className="text-[7px] font-bold">⭐ 3.0</div></div>
-                  </div>
-                </div>
+              {/* Drop a screenshot at public/images/landing/feature-analytics.png
+                  (owner reports dashboard - needs an owner login to capture) */}
+              <div className="relative w-[150px] mx-auto mt-[22px] bg-[#0d0d12] rounded-[26px] p-1.5">
+                <PhoneScreen src="/images/landing/feature-analytics.png" alt="لوحة تحليلات مرشح" rounded="22px" />
               </div>
             </div>
           </div>
