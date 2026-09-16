@@ -92,19 +92,13 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     // Only the cron job (calling with the service key) may trigger this.
+    // Deployed with --no-verify-jwt: the project's SUPABASE_SERVICE_ROLE_KEY
+    // is the newer sb_secret_... format, not a JWT, so the platform's own
+    // gateway JWT check would reject it before this code ever runs - this
+    // manual comparison is the only auth check for this function.
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace("Bearer ", "").trim();
     if (token !== supabaseServiceKey) {
-      // Temporary diagnostic (never logs the actual secret values) - remove
-      // once the length/prefix mismatch that's causing 401s is identified.
-      console.log("[auth-debug]", {
-        tokenLen: token.length,
-        serviceKeyLen: supabaseServiceKey?.length,
-        tokenStart: token.slice(0, 12),
-        serviceKeyStart: supabaseServiceKey?.slice(0, 12),
-        tokenEnd: token.slice(-6),
-        serviceKeyEnd: supabaseServiceKey?.slice(-6),
-      });
       return json({ error: "Unauthorized" }, 401);
     }
 
