@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { getPublicPage, syncPublicPage } from '@/lib/public-pages';
 import { trackPageView, trackAppClick } from '@/lib/event-tracker';
 import { detectTrafficSource } from '@/lib/traffic-source';
+import { getVisitorId } from '@/lib/visitor-id';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { resolveStorageUrl } from '@/lib/storage-url';
 import type { MenuItem } from '@/lib/types';
@@ -195,6 +196,7 @@ export default function PublicMenuPage() {
     supabase.from('hub_visits').insert({
       restaurant_id: restaurant.id,
       source,
+      visitor_id: getVisitorId(),
       created_at: new Date().toISOString(),
     }).then(() => {});
     trackPageView(restaurant.id);

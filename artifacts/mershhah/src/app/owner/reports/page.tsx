@@ -22,6 +22,8 @@ import {
     Bot,
     Lightbulb,
     RefreshCw,
+    History,
+    Users,
 } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
 import { useToast } from '@/hooks/use-toast';
@@ -58,6 +60,49 @@ type FullReview = {
 type ItemReview = FullReview & { menu_item_id: string };
 
 const KNOWN_TRAFFIC_SOURCES = new Set(Object.keys(TRAFFIC_SOURCE_LABEL_KEYS));
+
+type HistoryPeriod = '7d' | 'this_month' | 'last_month' | '3m' | 'year';
+
+type AnalyticsDailyRow = {
+    day: string;
+    visits_total: number;
+    visits_unique: number;
+    visits_qr: number;
+    visits_link: number;
+    source_breakdown: Record<string, number>;
+};
+
+// analytics_daily only has full calendar days in it (yesterday's the most
+// recent), so every period here is expressed as day-string boundaries
+// rather than timestamps - "today" itself never has a row yet.
+function historyPeriodRange(period: HistoryPeriod): { start: string; end: string } {
+    const now = new Date();
+    const toDay = (d: Date) => d.toISOString().slice(0, 10);
+    switch (period) {
+        case 'this_month': {
+            const start = new Date(now.getFullYear(), now.getMonth(), 1);
+            return { start: toDay(start), end: toDay(now) };
+        }
+        case 'last_month': {
+            const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const end = new Date(now.getFullYear(), now.getMonth(), 0);
+            return { start: toDay(start), end: toDay(end) };
+        }
+        case '3m': {
+            const start = new Date(now.getTime() - 89 * DAY_MS);
+            return { start: toDay(start), end: toDay(now) };
+        }
+        case 'year': {
+            const start = new Date(now.getFullYear(), 0, 1);
+            return { start: toDay(start), end: toDay(now) };
+        }
+        case '7d':
+        default: {
+            const start = new Date(now.getTime() - 6 * DAY_MS);
+            return { start: toDay(start), end: toDay(now) };
+        }
+    }
+}
 
 const TRAFFIC_SOURCE_ICONS: Partial<Record<TrafficSource, React.ElementType>> = {
     whatsapp: WhatsAppIcon,
@@ -186,6 +231,9 @@ export default function InsightsHubPage() {
     const [dailyPulse, setDailyPulse] = useState<DailyPulseOutput | null>(null);
     const [isPulseLoading, setIsPulseLoading] = useState(false);
     const [isTogglingVisibility, setIsTogglingVisibility] = useState<string | null>(null);
+    const [historyPeriod, setHistoryPeriod] = useState<HistoryPeriod>('7d');
+    const [historyRows, setHistoryRows] = useState<AnalyticsDailyRow[]>([]);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(false);
 
     const isPaid = user?.entitlements?.planId && user.entitlements.planId !== 'free' && user.entitlements.planId !== 'none';
 
@@ -271,6 +319,47 @@ export default function InsightsHubPage() {
             .subscribe();
         return () => { supabase.removeChannel(channel); };
     }, [user?.restaurantId, fetchData]);
+
+    // Historical periods read from analytics_daily (the nightly rollup)
+    // instead of the raw event tables above - it's the only way a "this
+    // year" report stays cheap once traffic grows, and it's what lets the
+    // owner go back past the fixed 30-day window the live chart is capped to.
+    const fetchHistory = useCallback(async () => {
+        if (!user?.restaurantId) return;
+        setIsHistoryLoading(true);
+        try {
+            const { start, end } = historyPeriodRange(historyPeriod);
+            const { data, error } = await supabase
+                .from('analytics_daily')
+                .select('day, visits_total, visits_unique, visits_qr, visits_link, source_breakdown')
+                .eq('restaurant_id', user.restaurantId)
+                .gte('day', start)
+                .lte('day', end)
+                .order('day', { ascending: false });
+            if (error) throw error;
+            setHistoryRows((data || []) as AnalyticsDailyRow[]);
+        } catch {
+            setHistoryRows([]);
+        } finally {
+            setIsHistoryLoading(false);
+        }
+    }, [user?.restaurantId, historyPeriod]);
+
+    useEffect(() => { fetchHistory(); }, [fetchHistory]);
+
+    const historyTotals = useMemo(() => {
+        const totals = { visits: 0, unique: 0, qr: 0, link: 0, sources: {} as Record<string, number> };
+        historyRows.forEach((r) => {
+            totals.visits += r.visits_total;
+            totals.unique += r.visits_unique;
+            totals.qr += r.visits_qr;
+            totals.link += r.visits_link;
+            Object.entries(r.source_breakdown || {}).forEach(([src, count]) => {
+                totals.sources[src] = (totals.sources[src] || 0) + count;
+            });
+        });
+        return totals;
+    }, [historyRows]);
 
     useEffect(() => {
         if (!hubUsername || typeof window === 'undefined') return;
@@ -619,6 +708,92 @@ export default function InsightsHubPage() {
                     </p>
                 </div>
             )}
+
+            {/* Historical reports by period — reads analytics_daily, not raw event tables */}
+            <div className="bg-white border border-gray-100 rounded-2xl p-5">
+                <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
+                    <div className="flex items-center gap-2">
+                        <History className="h-4 w-4 text-gray-600" />
+                        <h3 className="text-sm font-bold text-gray-900">{t('reports.historyTitle')}</h3>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                        {([
+                            ['7d', 'reports.periodWeek'],
+                            ['this_month', 'reports.periodThisMonth'],
+                            ['last_month', 'reports.periodLastMonth'],
+                            ['3m', 'reports.period3Months'],
+                            ['year', 'reports.periodYear'],
+                        ] as [HistoryPeriod, string][]).map(([period, labelKey]) => (
+                            <button
+                                key={period}
+                                type="button"
+                                onClick={() => setHistoryPeriod(period)}
+                                className={cn(
+                                    "h-8 px-3 rounded-full text-[11px] font-bold transition-colors",
+                                    historyPeriod === period ? "bg-gray-900 text-white" : "bg-gray-50 text-gray-600 hover:bg-gray-100",
+                                )}
+                            >
+                                {t(labelKey)}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                <p className="text-[10px] text-gray-600 mb-4">{t('reports.historyDesc')}</p>
+
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-3.5">
+                        <div className="flex items-center gap-1.5 text-gray-600 mb-1"><TrendingUp className="h-3 w-3" /><span className="text-[10px] font-medium">{t('reports.historyTotalVisits')}</span></div>
+                        <p className="text-xl font-black text-gray-900">{historyTotals.visits}</p>
+                    </div>
+                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-3.5">
+                        <div className="flex items-center gap-1.5 text-gray-600 mb-1"><Users className="h-3 w-3" /><span className="text-[10px] font-medium">{t('reports.historyUniqueVisitors')}</span></div>
+                        <p className="text-xl font-black text-gray-900">{historyTotals.unique}</p>
+                    </div>
+                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-3.5">
+                        <div className="flex items-center gap-1.5 text-gray-600 mb-1"><QrCode className="h-3 w-3" /><span className="text-[10px] font-medium">{t('reports.insideBranch')}</span></div>
+                        <p className="text-xl font-black text-gray-900">{historyTotals.qr}</p>
+                    </div>
+                    <div className="bg-gray-50 border border-gray-100 rounded-xl p-3.5">
+                        <div className="flex items-center gap-1.5 text-gray-600 mb-1"><Link2 className="h-3 w-3" /><span className="text-[10px] font-medium">{t('reports.outsideBranch')}</span></div>
+                        <p className="text-xl font-black text-gray-900">{historyTotals.link}</p>
+                    </div>
+                </div>
+                <p className="text-[10px] text-gray-500 mb-4">{t('reports.historyUniqueNote')}</p>
+
+                <div className="border-t border-gray-100 pt-4">
+                    <p className="text-[11px] font-bold text-gray-700 mb-2">{t('reports.historyDailyLogTitle')}</p>
+                    {isHistoryLoading ? (
+                        <Skeleton className="h-24 w-full rounded-xl" />
+                    ) : historyRows.length === 0 ? (
+                        <p className="text-[11px] text-gray-500 py-4 text-center">{t('reports.historyDailyLogEmpty')}</p>
+                    ) : (
+                        <div className="max-h-72 overflow-y-auto rounded-xl border border-gray-100">
+                            <table className="w-full text-xs">
+                                <thead className="sticky top-0 bg-gray-50">
+                                    <tr className="text-gray-600">
+                                        <th className="text-start font-semibold px-3 py-2">{t('reports.historyDate')}</th>
+                                        <th className="text-start font-semibold px-3 py-2">{t('reports.historyVisitsCol')}</th>
+                                        <th className="text-start font-semibold px-3 py-2">{t('reports.historyUniqueCol')}</th>
+                                        <th className="text-start font-semibold px-3 py-2">{t('reports.historyQrCol')}</th>
+                                        <th className="text-start font-semibold px-3 py-2">{t('reports.historyLinkCol')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {historyRows.map((row) => (
+                                        <tr key={row.day} className="border-t border-gray-50">
+                                            <td className="px-3 py-2 font-mono text-gray-700">{row.day}</td>
+                                            <td className="px-3 py-2 font-bold text-gray-900">{row.visits_total}</td>
+                                            <td className="px-3 py-2 text-gray-600">{row.visits_unique}</td>
+                                            <td className="px-3 py-2 text-gray-600">{row.visits_qr}</td>
+                                            <td className="px-3 py-2 text-gray-600">{row.visits_link}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            </div>
 
             {/* QR & Link Section */}
             {hubUsername && (

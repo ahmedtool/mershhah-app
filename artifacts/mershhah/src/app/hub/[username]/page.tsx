@@ -22,6 +22,7 @@ import { InstagramIcon, TikTokIcon, SnapchatIcon, XIcon, WhatsAppIcon, WebsiteIc
 import { Skeleton } from '@/components/ui/skeleton';
 import { trackAppClick, trackSocialClick, trackPageView } from '@/lib/event-tracker';
 import { detectTrafficSource } from '@/lib/traffic-source';
+import { getVisitorId } from '@/lib/visitor-id';
 import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useToast } from '@/hooks/use-toast';
@@ -109,6 +110,7 @@ export default function RestaurantHubPage() {
     supabase.from('hub_visits').insert({
       restaurant_id: restaurant.id,
       source,
+      visitor_id: getVisitorId(),
       created_at: new Date().toISOString(),
     }).then(() => {});
     trackPageView(restaurant.id);
