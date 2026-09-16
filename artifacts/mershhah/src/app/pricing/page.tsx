@@ -161,11 +161,10 @@ export default function PricingPage() {
     : [];
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#e9e9ec] py-6 sm:py-10 px-3 sm:px-6">
-      <div className="max-w-[1040px] mx-auto bg-white rounded-[24px] sm:rounded-[28px] overflow-hidden">
+    <div dir="rtl" className="min-h-screen bg-white overflow-x-hidden">
 
         {/* Header */}
-        <header className="flex items-center gap-4 sm:gap-7 px-5 sm:px-10 py-5 sm:py-6">
+        <header className="max-w-[1040px] mx-auto flex items-center gap-4 sm:gap-7 px-5 sm:px-10 py-5 sm:py-6">
           <Logo />
           <Link href="/" className="text-sm font-semibold text-[#8b8b95] hover:text-[#3d4a66] transition-colors">
             الرئيسية
@@ -178,7 +177,7 @@ export default function PricingPage() {
         </header>
 
         {/* Hero */}
-        <section className="text-center pt-8 sm:pt-10 px-5 sm:px-10">
+        <section className="max-w-[1040px] mx-auto text-center pt-8 sm:pt-10 px-5 sm:px-10">
           <div className="inline-flex items-center gap-2 bg-[#f4f4f7] rounded-full px-4 py-[7px] text-xs font-semibold text-[#5b6478]">
             <span className="w-[7px] h-[7px] rounded-full bg-[#2fbf71]" />
             أسعار واضحة بدون تعقيد
@@ -196,7 +195,7 @@ export default function PricingPage() {
 
         {/* Plan cards */}
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[18px] px-5 sm:px-10 pt-9">
+          <div className="max-w-[1040px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[18px] px-5 sm:px-10 pt-9">
             <Skeleton className="h-[460px] rounded-[22px]" />
             <Skeleton className="h-[460px] rounded-[22px]" />
             <Skeleton className="h-[460px] rounded-[22px] hidden sm:block" />
@@ -206,7 +205,7 @@ export default function PricingPage() {
             <p className="text-sm">لا توجد باقات متاحة حالياً.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[18px] px-5 sm:px-10 pt-9 items-stretch">
+          <div className="max-w-[1040px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[18px] px-5 sm:px-10 pt-9 items-stretch">
             {plans.map((plan) => {
               const featured = !!plan.is_featured;
               const rows = buildFeatureRows(plan);
@@ -280,7 +279,7 @@ export default function PricingPage() {
 
         {/* Comparison table */}
         {comparisonRows.length > 0 && (
-          <div className="pt-16 px-5 sm:px-10">
+          <div className="max-w-[1040px] mx-auto pt-16 px-5 sm:px-10">
             <h2 className="m-0 text-center text-2xl sm:text-[26px] font-bold text-[#131a2b] tracking-tight">مقارنة تفصيلية</h2>
             <div className="mt-6 border border-[#eeeef3] rounded-[18px] overflow-hidden overflow-x-auto">
               <table className="w-full text-[12.5px] min-w-[480px]">
@@ -315,7 +314,7 @@ export default function PricingPage() {
         )}
 
         {/* FAQ */}
-        <div className="pt-16 px-5 sm:px-10">
+        <div className="max-w-[1040px] mx-auto pt-16 px-5 sm:px-10">
           <h2 className="m-0 text-center text-2xl sm:text-[26px] font-bold text-[#131a2b] tracking-tight">أسئلة متكررة</h2>
           <div className="grid sm:grid-cols-2 gap-4 mt-6">
             {FAQS.map((item) => (
@@ -328,7 +327,7 @@ export default function PricingPage() {
         </div>
 
         {/* Final CTA */}
-        <div className="pt-16 px-4 sm:px-6">
+        <div className="max-w-[1040px] mx-auto pt-16 px-4 sm:px-6">
           <div className="relative bg-[#131a2b] rounded-[24px] px-6 sm:px-8 py-12 text-center overflow-hidden">
             <div className="absolute left-1/2 -top-[200px] w-[640px] h-[640px] -ml-[320px] rounded-full border border-white/[0.07]" />
             <h2 className="relative m-0 text-2xl sm:text-[27px] font-bold tracking-tight text-white">جاهز تبدأ؟</h2>
@@ -344,9 +343,10 @@ export default function PricingPage() {
           </div>
         </div>
 
-        <LandingFooter />
+        <div className="max-w-[1040px] mx-auto">
+          <LandingFooter />
+        </div>
 
-      </div>
     </div>
   );
 }
