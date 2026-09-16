@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import PageHeader from '@/components/dashboard/PageHeader';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Layers } from 'lucide-react';
 import { useUser } from '@/hooks/useUser';
 import { EditBranchDialog } from '@/components/dashboard/EditBranchDialog';
+import { BulkAddBranchesDialog } from '@/components/dashboard/BulkAddBranchesDialog';
 import { BranchesList } from '@/components/dashboard/BranchesList';
 import { supabase } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -18,6 +19,7 @@ export default function BranchesPage() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
+  const [bulkAddOpen, setBulkAddOpen] = useState(false);
 
   const restaurantId = user?.restaurantId ?? '';
   const [username, setUsername] = useState<string | null>(null);
@@ -58,11 +60,18 @@ export default function BranchesPage() {
     <div className="space-y-5" dir={dir}>
       <PageHeader title={t('branches.title')} description={t('branches.subtitle')}>
         {restaurantId && (
-          <button type="button" onClick={() => setAddOpen(true)}
-            className="h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors flex items-center gap-2">
-            <Plus className="h-3.5 w-3.5" />
-            {t('branches.addBranch')}
-          </button>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setBulkAddOpen(true)}
+              className="h-9 px-4 rounded-xl border border-gray-200 text-gray-700 text-xs font-bold hover:bg-gray-50 transition-colors flex items-center gap-2">
+              <Layers className="h-3.5 w-3.5" />
+              {t('branches.bulkAddButton')}
+            </button>
+            <button type="button" onClick={() => setAddOpen(true)}
+              className="h-9 px-4 rounded-xl bg-gray-900 text-white text-xs font-bold hover:bg-gray-800 transition-colors flex items-center gap-2">
+              <Plus className="h-3.5 w-3.5" />
+              {t('branches.addBranch')}
+            </button>
+          </div>
         )}
       </PageHeader>
 
@@ -78,6 +87,16 @@ export default function BranchesPage() {
           onOpenChange={setAddOpen}
           restaurantId={restaurantId}
           onSaved={() => { setAddOpen(false); fetchBranches(); }}
+        />
+      )}
+
+      {restaurantId && (
+        <BulkAddBranchesDialog
+          open={bulkAddOpen}
+          onOpenChange={setBulkAddOpen}
+          restaurantId={restaurantId}
+          existingCount={branches.length}
+          onSaved={() => { setBulkAddOpen(false); fetchBranches(); }}
         />
       )}
     </div>
