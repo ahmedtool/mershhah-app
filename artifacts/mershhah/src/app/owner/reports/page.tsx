@@ -219,15 +219,24 @@ function dayKey(d: Date): string {
 
 const RIYADH_OFFSET_MS = 3 * 60 * 60 * 1000; // Saudi Arabia has no DST
 
-// Everything before today has already been rolled into analytics_daily_items
-// by the nightly aggregation job (which then purges the raw rows) - only
-// today's not-yet-aggregated menu_item_interactions rows need to be read
-// live, and added on top of the rollup, to get a correct all-time total.
-function riyadhTodayStartUtcIso(): string {
-    const now = new Date();
-    const riyadhNow = new Date(now.getTime() + RIYADH_OFFSET_MS);
-    const riyadhTodayStart = new Date(Date.UTC(riyadhNow.getUTCFullYear(), riyadhNow.getUTCMonth(), riyadhNow.getUTCDate()));
-    return new Date(riyadhTodayStart.getTime() - RIYADH_OFFSET_MS).toISOString();
+// Riyadh-local calendar day (YYYY-MM-DD) for a given UTC timestamp - matches
+// the `day` column analytics_daily_items rows are keyed by.
+function riyadhDayKey(isoString: string): string {
+    const riyadhTime = new Date(new Date(isoString).getTime() + RIYADH_OFFSET_MS);
+    return riyadhTime.toISOString().slice(0, 10);
+}
+
+// A generous safety window for the raw menu_item_interactions read below -
+// NOT simply "today". A day only stops needing to be read live once it's
+// actually present in analytics_daily_items, and a same-day manual backfill
+// (e.g. `?date=<today>`, used once already in this project to preview
+// unique-visitor counts) can put today's data in the rollup *before* the
+// day is over. Reading raw rows purely by wall-clock "today" and adding
+// them on top of a rollup that might already include today would double-
+// count - the actual de-dup happens client-side in fetchData by comparing
+// each raw row's day against the latest day present in the rollup.
+function recentRawInteractionsStartUtcIso(): string {
+    return new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
 }
 
 export default function InsightsHubPage() {
@@ -266,11 +275,11 @@ export default function InsightsHubPage() {
             const restaurantId = user.restaurantId;
             const [itemsRes, interactionsRes, itemRollupRes, hubVisitsRes, restRes, reviewsRes, itemReviewsRes] = await Promise.all([
                 supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId),
-                // Only today's rows - anything older is already folded into
-                // analytics_daily_items below and gets purged from this raw
-                // table after the retention window.
-                supabase.from('menu_item_interactions').select('menu_item_id').eq('restaurant_id', restaurantId).gte('created_at', riyadhTodayStartUtcIso()),
-                supabase.from('analytics_daily_items').select('menu_item_id, interactions').eq('restaurant_id', restaurantId),
+                // A few recent days as a raw safety net - de-duplicated
+                // against analytics_daily_items below by day, not assumed
+                // to exclude "today" outright (see recentRawInteractionsStartUtcIso).
+                supabase.from('menu_item_interactions').select('menu_item_id, created_at').eq('restaurant_id', restaurantId).gte('created_at', recentRawInteractionsStartUtcIso()),
+                supabase.from('analytics_daily_items').select('menu_item_id, day, interactions').eq('restaurant_id', restaurantId),
                 supabase.from('hub_visits').select('source, created_at').eq('restaurant_id', restaurantId).gte('created_at', new Date(Date.now() - TREND_DAYS * DAY_MS).toISOString()),
                 supabase.from('restaurants').select('username, rating, review_count').eq('id', restaurantId).single(),
                 supabase.from('reviews').select('id, rating, comment, created_at, is_visible').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }),
@@ -313,8 +322,20 @@ export default function InsightsHubPage() {
             setItemNames(names);
 
             const popularityMap = new Map<string, number>();
-            itemRollup.forEach((r: any) => popularityMap.set(r.menu_item_id, (popularityMap.get(r.menu_item_id) || 0) + (r.interactions || 0)));
-            interactions.forEach((i: any) => popularityMap.set(i.menu_item_id, (popularityMap.get(i.menu_item_id) || 0) + 1));
+            let maxAggregatedDay: string | null = null;
+            itemRollup.forEach((r: any) => {
+                popularityMap.set(r.menu_item_id, (popularityMap.get(r.menu_item_id) || 0) + (r.interactions || 0));
+                if (r.day && (!maxAggregatedDay || r.day > maxAggregatedDay)) maxAggregatedDay = r.day;
+            });
+            // Only add a raw row if its own day hasn't already been rolled
+            // up - otherwise a same-day backfill (or any day the rollup
+            // already covers) would get counted twice: once here, once in
+            // itemRollup above.
+            interactions.forEach((i: any) => {
+                if (!i.created_at) return;
+                if (maxAggregatedDay && riyadhDayKey(i.created_at) <= maxAggregatedDay) return;
+                popularityMap.set(i.menu_item_id, (popularityMap.get(i.menu_item_id) || 0) + 1);
+            });
             setTotalClicks(Array.from(popularityMap.values()).reduce((sum, n) => sum + n, 0));
 
             const analyzed = items.map(item => {
