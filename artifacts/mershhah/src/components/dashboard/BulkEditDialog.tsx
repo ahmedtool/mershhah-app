@@ -1,16 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { TimePicker } from '@/components/ui/time-picker';
+import { StorageImage } from '@/components/shared/StorageImage';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Check } from 'lucide-react';
+import { Loader2, Check, Image as ImageIcon, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
 import { generateHoursText } from '@/lib/branch-hours';
 import { useLanguage } from '@/components/shared/LanguageContext';
-import type { Branch } from '@/lib/types';
+import type { Branch, AppLink } from '@/lib/types';
+
+interface AvailableApp {
+  id: string;
+  name: string;
+  name_en?: string | null;
+  logo_url: string;
+  type: 'global' | 'custom';
+}
 
 interface BulkEditDialogProps {
   open: boolean;
@@ -34,12 +43,36 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
   const [applyStatus, setApplyStatus] = useState(false);
   const [applyHours, setApplyHours] = useState(false);
   const [applyPhone, setApplyPhone] = useState(false);
+  const [applyApps, setApplyApps] = useState(false);
+  const [globalApps, setGlobalApps] = useState<AvailableApp[]>([]);
+  const [customAppDefs, setCustomAppDefs] = useState<AvailableApp[]>([]);
+  const [bulkApps, setBulkApps] = useState<AppLink[]>([]);
 
   const openingHoursText = generateHoursText(allDaysOpen, allDaysClose, showFriday ? fridayOpen : '', showFriday ? fridayClose : '');
 
+  const availableApps: AvailableApp[] = [
+    ...globalApps,
+    ...customAppDefs,
+  ];
+
+  useEffect(() => {
+    if (!open) return;
+    supabase.from('applications').select('*').then(({ data }: { data: any[] | null }) => {
+      setGlobalApps((data || []).map((a) => ({ id: a.id, name: a.name, name_en: a.name_en, logo_url: a.logo_url, type: 'global' as const })));
+    });
+    if (restaurantId) {
+      supabase.from('restaurants').select('applications').eq('id', restaurantId).single().then(({ data }: { data: any }) => {
+        const apps = Array.isArray(data?.applications) ? data.applications : [];
+        setCustomAppDefs(
+          apps.filter((a: any) => a.type === 'custom').map((a: any) => ({ id: a.id, name: a.name, name_en: a.name_en, logo_url: a.logo, type: 'custom' as const }))
+        );
+      });
+    }
+  }, [open, restaurantId]);
+
   const handleSave = async () => {
     if (!restaurantId || branches.length === 0) return;
-    if (!applyStatus && !applyHours && !applyPhone) {
+    if (!applyStatus && !applyHours && !applyPhone && !applyApps) {
       toast({ title: t('branches.chooseEditFirst'), variant: 'destructive' });
       return;
     }
@@ -51,13 +84,35 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
       if (applyHours && openingHoursText) updates.opening_hours = openingHoursText;
       if (applyPhone) updates.phone = phone.trim() || null;
 
-      const { error } = await supabase
-        .from('branches')
-        .update(updates)
-        .eq('restaurant_id', restaurantId)
-        .in('id', branches.map(b => b.id));
+      if (Object.keys(updates).length > 0) {
+        const { error } = await supabase
+          .from('branches')
+          .update(updates)
+          .eq('restaurant_id', restaurantId)
+          .in('id', branches.map(b => b.id));
+        if (error) throw error;
+      }
 
-      if (error) throw error;
+      if (applyApps && bulkApps.length > 0) {
+        // Each branch's `applications` JSONB is its own array - a blanket
+        // bulk .update() would overwrite one branch's existing app links
+        // with another's, so each branch gets its own read-modify-write:
+        // keep every existing entry untouched, only add/replace the apps
+        // the owner explicitly checked here.
+        await Promise.all(
+          branches.map(async (branch) => {
+            const existing = Array.isArray(branch.applications) ? branch.applications : [];
+            const merged = [...existing];
+            for (const app of bulkApps) {
+              const idx = merged.findIndex((a) => a.platformId === app.platformId);
+              if (idx >= 0) merged[idx] = { ...merged[idx], value: app.value };
+              else merged.push(app);
+            }
+            const { error } = await supabase.from('branches').update({ applications: merged }).eq('id', branch.id);
+            if (error) throw error;
+          })
+        );
+      }
 
       syncPublicPage(restaurantId).catch(() => {});
       toast({ title: `${t('branches.updatedCountPrefix')} ${branches.length} ${t('branches.branchWord')}` });
@@ -82,9 +137,11 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
     setApplyStatus(false);
     setApplyHours(false);
     setApplyPhone(false);
+    setApplyApps(false);
+    setBulkApps([]);
   };
 
-  const hasChanges = applyStatus || applyHours || applyPhone;
+  const hasChanges = applyStatus || applyHours || applyPhone || applyApps;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetState(); onOpenChange(o); }}>
@@ -170,6 +227,81 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
                   className="h-10 rounded-xl border-gray-200 text-sm"
                 />
                 <p className="text-[10px] text-gray-600 mt-1">{t('branches.leaveEmptyToRemove')}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Delivery Apps */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={applyApps} onChange={(e) => setApplyApps(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300" />
+              <span className="text-sm font-medium text-gray-700">{t('branches.bulkChangeApps')}</span>
+            </label>
+            {applyApps && (
+              <div className="ms-6 space-y-2">
+                <p className="text-[10px] text-gray-600">{t('branches.bulkAppsHint')}</p>
+                {availableApps.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {availableApps.map((app) => {
+                      const isAdded = bulkApps.some((a) => a.platformId === app.id);
+                      return (
+                        <button key={app.id} type="button"
+                          onClick={() => {
+                            if (isAdded) {
+                              setBulkApps(bulkApps.filter((a) => a.platformId !== app.id));
+                            } else {
+                              setBulkApps([...bulkApps, {
+                                id: `branch-app-${app.id}`,
+                                type: app.type,
+                                platformId: app.id,
+                                name: app.name,
+                                name_en: app.name_en,
+                                logo: app.logo_url,
+                                value: '',
+                              }]);
+                            }
+                          }}
+                          className={`h-8 gap-1.5 text-[10px] font-bold rounded-lg px-3 flex items-center border transition-colors ${
+                            isAdded ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                          }`}>
+                          <div className="relative w-3.5 h-3.5 shrink-0">
+                            <StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="14px" />
+                          </div>
+                          {(dir === 'ltr' && app.name_en) || app.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {bulkApps.map((app) => (
+                  <div key={app.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                    <div className="relative w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+                      {app.logo ? (
+                        <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain p-1" sizes="32px" />
+                      ) : (
+                        <ImageIcon size={14} className="text-gray-200" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold text-gray-700">{(dir === 'ltr' && app.name_en) || app.name}</p>
+                      <Input dir="ltr" value={app.value} placeholder={t('customize.linkPlaceholder')}
+                        onChange={(e) => {
+                          setBulkApps(bulkApps.map((a) => a.id === app.id ? { ...a, value: e.target.value } : a));
+                        }}
+                        className="h-7 text-[10px] rounded-lg border-gray-200 mt-1" />
+                    </div>
+                    <button type="button" onClick={() => setBulkApps(bulkApps.filter((a) => a.id !== app.id))}
+                      className="text-gray-600 hover:text-red-500 transition-colors p-1">
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+                {bulkApps.length > 0 && (
+                  <p className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1">
+                    {t('branches.bulkAppsMergeNote')}
+                  </p>
+                )}
               </div>
             )}
           </div>

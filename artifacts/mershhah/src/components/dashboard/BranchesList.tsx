@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Pencil, Trash2, MapPin, Phone, Layers, Clock, Link2, X, CheckSquare } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Pencil, Trash2, MapPin, Phone, Layers, Clock, Link2, X, CheckSquare, AlertTriangle, Check, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
@@ -15,11 +15,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EditBranchDialog } from './EditBranchDialog';
 import { BulkEditDialog } from './BulkEditDialog';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import type { Branch } from '@/lib/types';
+
+interface BranchWarning {
+  key: string;
+  label: string;
+}
+
+function getBranchWarnings(branch: Branch, t: (key: string) => string): BranchWarning[] {
+  const acknowledged = branch.acknowledged_warnings || [];
+  const candidates: BranchWarning[] = [];
+  if (!branch.phone) candidates.push({ key: 'no_phone', label: t('branches.warningNoPhone') });
+  if (!branch.opening_hours) candidates.push({ key: 'no_hours', label: t('branches.warningNoHours') });
+  if (!branch.latitude || !branch.longitude) candidates.push({ key: 'no_location', label: t('branches.warningNoLocation') });
+  return candidates.filter((w) => !acknowledged.includes(w.key));
+}
 
 interface BranchesListProps {
   branches: Branch[];
@@ -38,6 +53,19 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [cityFilter, setCityFilter] = useState<string | null>(null);
+  const [acknowledgingKey, setAcknowledgingKey] = useState<string | null>(null);
+
+  const cities = useMemo(
+    () => [...new Set(branches.map((b) => b.city).filter(Boolean))] as string[],
+    [branches],
+  );
+  const cityLabel = (city: string) => {
+    if (dir !== 'ltr') return city;
+    const withEn = branches.find((b) => b.city === city && b.city_en);
+    return withEn?.city_en || city;
+  };
+  const visibleBranches = cityFilter ? branches.filter((b) => b.city === cityFilter) : branches;
 
   const selectedBranches = branches.filter((b) => selectedIds.has(b.id));
 
@@ -50,8 +78,27 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
     });
   };
 
-  const selectAll = () => setSelectedIds(new Set(branches.map((b) => b.id)));
+  // Select-all only picks up what the current city filter shows, so
+  // filtering to one city then hitting select-all doesn't silently pull
+  // in every other city's branches too.
+  const selectAll = () => setSelectedIds(new Set(visibleBranches.map((b) => b.id)));
   const clearSelection = () => setSelectedIds(new Set());
+
+  const handleAcknowledgeWarning = async (branch: Branch, warningKey: string) => {
+    const trackingKey = `${branch.id}:${warningKey}`;
+    setAcknowledgingKey(trackingKey);
+    try {
+      const next = [...(branch.acknowledged_warnings || []), warningKey];
+      const { error } = await supabase.from('branches').update({ acknowledged_warnings: next }).eq('id', branch.id);
+      if (error) throw error;
+      onChanged?.();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast({ variant: 'destructive', title: t('common.errorTitle'), description: msg });
+    } finally {
+      setAcknowledgingKey(null);
+    }
+  };
 
   const handleCopyBranchLink = (branch: Branch) => {
     if (!username) return;
@@ -120,14 +167,31 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
   return (
     <>
       <div className="space-y-3">
+        {/* City filter */}
+        {cities.length > 1 && (
+          <div className="flex items-center gap-2">
+            <Select value={cityFilter ?? '__all__'} onValueChange={(v) => setCityFilter(v === '__all__' ? null : v)}>
+              <SelectTrigger className="h-9 w-auto min-w-[160px] rounded-lg border-gray-200 text-xs">
+                <SelectValue placeholder={t('branches.allCitiesFilter')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">{t('branches.allCitiesFilter')}</SelectItem>
+                {cities.map((city) => (
+                  <SelectItem key={city} value={city}>{cityLabel(city)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         {/* Selection bar - only appears once at least one branch is checked */}
         {selectedIds.size > 0 ? (
           <div className="flex items-center justify-between gap-3 flex-wrap bg-gray-900 rounded-xl px-4 py-2.5">
             <div className="flex items-center gap-3">
               <span className="text-xs font-bold text-white">{selectedIds.size} {t('branches.branchSelectedSuffix')}</span>
-              {selectedIds.size < branches.length ? (
+              {selectedIds.size < visibleBranches.length ? (
                 <button onClick={selectAll} className="text-[11px] font-medium text-gray-300 hover:text-white transition-colors">
-                  {t('branches.selectAllLabel')} ({branches.length})
+                  {t('branches.selectAllLabel')} ({visibleBranches.length})
                 </button>
               ) : (
                 <button onClick={clearSelection} className="text-[11px] font-medium text-gray-300 hover:text-white transition-colors">
@@ -168,8 +232,9 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
 
         {/* Branches grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {branches.map((branch) => {
+          {visibleBranches.map((branch) => {
             const isSelected = selectedIds.has(branch.id);
+            const warnings = getBranchWarnings(branch, t);
             return (
               <div
                 key={branch.id}
@@ -209,6 +274,37 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
                     {branch.status === 'active' ? t('common.active') : t('branches.disabled')}
                   </span>
                 </div>
+
+                {/* Persistent missing-info warnings - stay until the owner
+                    fixes the underlying field or explicitly acknowledges it */}
+                {warnings.length > 0 && (
+                  <div className="mb-3 space-y-1.5">
+                    {warnings.map((w) => {
+                      const trackingKey = `${branch.id}:${w.key}`;
+                      const isAcking = acknowledgingKey === trackingKey;
+                      return (
+                        <div key={w.key} className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5">
+                          <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                          <span className="flex-1 text-[11px] font-medium text-amber-800">{w.label}</span>
+                          <button
+                            onClick={() => setEditBranch(branch)}
+                            className="text-[10px] font-bold text-amber-700 hover:text-amber-900 underline underline-offset-2 shrink-0"
+                          >
+                            {t('branches.fixNow')}
+                          </button>
+                          <button
+                            onClick={() => handleAcknowledgeWarning(branch, w.key)}
+                            disabled={isAcking}
+                            title={t('branches.acknowledgeWarning')}
+                            className="shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-amber-600 hover:bg-amber-100 disabled:opacity-50"
+                          >
+                            {isAcking ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Info */}
                 <div className="space-y-1.5 mb-3">

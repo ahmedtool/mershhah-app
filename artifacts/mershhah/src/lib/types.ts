@@ -98,6 +98,7 @@ export type Branch = {
   latitude?: number;
   longitude?: number;
   applications?: AppLink[] | null;
+  acknowledged_warnings?: string[]; // warning keys the owner dismissed as "on purpose" (e.g. "no_phone")
 };
 
 export type MenuItemSize = {
