@@ -967,7 +967,7 @@ export default function InsightsHubPage() {
                     ) : engineered.length < 2 ? (
                         <div className="py-12 text-center text-gray-600 text-xs">{t('reports.needTwoItemsMinimum')}</div>
                     ) : (
-                        <MenuEngineeringMatrix items={engineered} t={t} locale={locale} />
+                        <MenuEngineeringMatrix items={engineered} t={t} locale={locale} dir={dir} />
                     )}
                 </div>
             </div>
@@ -1145,7 +1145,7 @@ function UpgradeGate({ description }: { description: string }) {
     );
 }
 
-function MenuEngineeringMatrix({ items, t, locale }: { items: (AnalyzedItem & { classification: MenuClassification })[]; t: (key: string) => string; locale: string }) {
+function MenuEngineeringMatrix({ items, t, locale, dir }: { items: (AnalyzedItem & { classification: MenuClassification })[]; t: (key: string) => string; locale: string; dir: string }) {
     const size = 300;
     const pad = 28;
     const maxPop = Math.max(1, ...items.map(i => i.popularity));
@@ -1192,10 +1192,10 @@ function MenuEngineeringMatrix({ items, t, locale }: { items: (AnalyzedItem & { 
                 {items.map(item => (
                     <g key={item.id}>
                         <circle cx={x(item.popularity)} cy={y(item.profitMargin)} r="5.5" fill={CLASSIFICATION_INFO[item.classification].color} stroke="white" strokeWidth="1.5">
-                            <title>{`${item.name} — ${t(CLASSIFICATION_INFO[item.classification].labelKey)} (${t('reports.popularityWord')} ${item.popularity}${locale === 'ar' ? '،' : ','} ${t('reports.profitabilityWord')} ${item.profitMargin.toFixed(0)}%)`}</title>
+                            <title>{`${(dir === 'ltr' && item.name_en) || item.name} — ${t(CLASSIFICATION_INFO[item.classification].labelKey)} (${t('reports.popularityWord')} ${item.popularity}${locale === 'ar' ? '،' : ','} ${t('reports.profitabilityWord')} ${item.profitMargin.toFixed(0)}%)`}</title>
                         </circle>
                         {labeled.has(item.id) && (
-                            <text x={x(item.popularity) + 8} y={y(item.profitMargin) + 3} fontSize="9" fontWeight="700" fill="#0b0b0b">{item.name}</text>
+                            <text x={x(item.popularity) + 8} y={y(item.profitMargin) + 3} fontSize="9" fontWeight="700" fill="#0b0b0b">{(dir === 'ltr' && item.name_en) || item.name}</text>
                         )}
                     </g>
                 ))}
