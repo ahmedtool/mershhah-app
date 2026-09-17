@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } 
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search, ArrowRight, UploadCloud, X, Library } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supabase';
 import { uploadToImageKit } from '@/lib/imagekit';
 import { StorageImage } from '@/components/shared/StorageImage';
@@ -59,6 +60,15 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
     () => [...new Set(products.map(p => p.category).filter(Boolean))] as string[],
     [products],
   );
+
+  // One category_en per Arabic category value, so the dropdown label can
+  // flip language while the filter itself still matches on the Arabic
+  // value stored on each product.
+  const categoryEnByName = useMemo(() => {
+    const map: Record<string, string> = {};
+    products.forEach((p) => { if (p.category && p.category_en && !map[p.category]) map[p.category] = p.category_en; });
+    return map;
+  }, [products]);
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
@@ -180,25 +190,15 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('menu.searchProductPlaceholder')} className="h-10 rounded-xl border-gray-200 text-sm pe-9" />
               </div>
               {libraryCategories.length > 0 && (
-                <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-                  <button
-                    type="button"
-                    onClick={() => setCategoryFilter(null)}
-                    className={`shrink-0 h-7 px-3 rounded-full text-[11px] font-bold transition-colors ${categoryFilter === null ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                  >
-                    {t('common.all')}
-                  </button>
-                  {libraryCategories.map((cat) => (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setCategoryFilter(cat)}
-                      className={`shrink-0 h-7 px-3 rounded-full text-[11px] font-bold transition-colors ${categoryFilter === cat ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
-                </div>
+                <Select value={categoryFilter ?? '__all__'} onValueChange={(v) => setCategoryFilter(v === '__all__' ? null : v)}>
+                  <SelectTrigger className="h-9 rounded-xl border-gray-200 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">{t('common.all')}</SelectItem>
+                    {libraryCategories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{(dir === 'ltr' && categoryEnByName[cat]) || cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
             </div>
 
@@ -218,7 +218,7 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
                       onClick={() => handleSelect(product)}
                       className="text-start rounded-2xl border border-gray-100 hover:border-gray-300 hover:shadow-sm transition-all overflow-hidden"
                     >
-                      <div className="aspect-square bg-gray-50 relative">
+                      <div className="aspect-[4/3] bg-gray-50 relative">
                         <StorageImage imagePath={product.image_path} alt={product.name} fill className="w-full h-full object-cover" />
                       </div>
                       <div className="p-2">

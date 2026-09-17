@@ -113,6 +113,7 @@ export type SharedMenuProduct = {
   id: string;
   name: string;
   category?: string;
+  category_en?: string;
   calories?: number;
   image_path?: string;
   created_at?: any;

@@ -8,16 +8,23 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription } 
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CupSoda } from "lucide-react";
+import { Loader2, CupSoda, Sparkles } from "lucide-react";
 import { supabase } from '@/lib/supabase';
 import { StorageImage } from "@/components/shared/StorageImage";
+import { translateText } from '@/lib/translate-text';
 import type { SharedMenuProduct } from "@/lib/types";
 
-const CATEGORIES = ['مشروبات غازية', 'عصائر طبيعية', 'حلويات', 'صوصات'];
+const CATEGORIES: [string, string][] = [
+  ['مشروبات غازية', 'Soft Drinks'],
+  ['عصائر طبيعية', 'Natural Juices'],
+  ['حلويات', 'Desserts'],
+  ['صوصات', 'Sauces'],
+];
 
 const formSchema = z.object({
   name: z.string().min(2, "الاسم مطلوب"),
   category: z.string().min(1, "الرجاء اختيار أو إدخال تصنيف"),
+  category_en: z.string().optional(),
   calories: z.coerce.number().min(0).optional().or(z.literal(0)),
 });
 
@@ -40,20 +47,36 @@ export function EditSharedProductDialog({ children, product, onSave }: EditShare
   const [localImageFile, setLocalImageFile] = useState<File | null>(null);
 
   const form = useForm<FormValues>({ resolver: zodResolver(formSchema) });
+  const [isTranslating, setIsTranslating] = useState(false);
 
   useEffect(() => {
     if (open) {
       form.reset(isEditing ? {
         name: product.name,
         category: product.category || '',
+        category_en: product.category_en || '',
         calories: product.calories ?? 0,
       } : {
-        name: '', category: '', calories: 0,
+        name: '', category: '', category_en: '', calories: 0,
       });
       setPreviewImage(product?.image_path || null);
       setLocalImageFile(null);
     }
   }, [open, product, isEditing, form]);
+
+  async function handleTranslateCategory() {
+    const category = form.getValues('category');
+    if (!category.trim()) return;
+    setIsTranslating(true);
+    try {
+      const category_en = await translateText(category);
+      form.setValue('category_en', category_en, { shouldValidate: true });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "فشلت الترجمة", description: error.message });
+    } finally {
+      setIsTranslating(false);
+    }
+  }
 
   async function onSubmit(values: FormValues) {
     startSaving(async () => {
@@ -74,6 +97,7 @@ export function EditSharedProductDialog({ children, product, onSave }: EditShare
         const dataToSave = {
           name: values.name,
           category: values.category,
+          category_en: values.category_en || null,
           calories: values.calories || null,
           image_path: imagePath,
           updated_at: new Date().toISOString(),
@@ -161,12 +185,29 @@ export function EditSharedProductDialog({ children, product, onSave }: EditShare
                   <Input placeholder="مثال: عصائر طبيعية" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
                 </FormControl>
                 <div className="flex flex-wrap gap-1 mt-1">
-                  {CATEGORIES.map((cat) => (
-                    <button key={cat} type="button" onClick={() => field.onChange(cat)}
+                  {CATEGORIES.map(([cat, catEn]) => (
+                    <button key={cat} type="button" onClick={() => { field.onChange(cat); form.setValue('category_en', catEn); }}
                       className={`px-2 py-0.5 rounded-full text-[10px] transition-colors ${field.value === cat ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                       {cat}
                     </button>
                   ))}
+                </div>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )} />
+
+            <FormField control={form.control} name="category_en" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs text-gray-600">التصنيف بالإنجليزي</FormLabel>
+                <div className="flex gap-2">
+                  <FormControl>
+                    <Input placeholder="e.g. Natural Juices" {...field} dir="ltr" className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
+                  </FormControl>
+                  <button type="button" onClick={handleTranslateCategory} disabled={isSaving || isTranslating}
+                    className="h-11 w-11 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors shrink-0 disabled:opacity-50"
+                    title="ترجمة تلقائية">
+                    {isTranslating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  </button>
                 </div>
                 <FormMessage className="text-[10px]" />
               </FormItem>
