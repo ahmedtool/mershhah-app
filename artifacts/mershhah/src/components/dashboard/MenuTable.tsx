@@ -58,7 +58,7 @@ function MenuItemCard({ item, items, restaurantId, userId, onActionCompletion, o
   item: MenuItem; items: MenuItem[]; restaurantId: string; userId: string;
   onActionCompletion: () => void; onDeleteRequest: (item: MenuItem) => void; className?: string;
 }) {
-  const { t } = useLanguage();
+  const { t, dir } = useLanguage();
   const price = getPrice(item);
   const cost = getCost(item);
   const tag = getTag(item, t);
@@ -96,14 +96,14 @@ function MenuItemCard({ item, items, restaurantId, userId, onActionCompletion, o
       {/* Content */}
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="text-sm font-bold text-gray-900 leading-tight">{item.name}</h3>
+          <h3 className="text-sm font-bold text-gray-900 leading-tight">{(dir === 'ltr' && item.name_en) || item.name}</h3>
           <span className={`shrink-0 px-1.5 py-0.5 rounded text-[8px] font-bold ${classification.color}`}>
             {classification.label}
           </span>
         </div>
 
         {item.description && (
-          <p className="text-[10px] text-gray-600 leading-relaxed line-clamp-2 mb-3">{item.description}</p>
+          <p className="text-[10px] text-gray-600 leading-relaxed line-clamp-2 mb-3">{(dir === 'ltr' && item.description_en) || item.description}</p>
         )}
 
         <div className="flex items-center justify-between mb-3">
@@ -173,7 +173,7 @@ function CategoryRow({ title, items, restaurantId, userId, onActionCompletion, o
 
 export function MenuTable({ items, categories, activeCategoryId, restaurantId, userId, onActionCompletion }: MenuTableProps) {
   const { toast } = useToast();
-  const { t } = useLanguage();
+  const { t, dir } = useLanguage();
   const [isDeleting, startDelete] = useTransition();
   const [itemToDelete, setItemToDelete] = useState<MenuItem | null>(null);
 
@@ -214,7 +214,7 @@ export function MenuTable({ items, categories, activeCategoryId, restaurantId, u
     });
 
     const sections = categories
-      .map((cat) => ({ id: cat.id, title: cat.name, items: byCategoryId.get(cat.id) || [] }))
+      .map((cat) => ({ id: cat.id, title: (dir === 'ltr' && cat.name_en) || cat.name, items: byCategoryId.get(cat.id) || [] }))
       .filter((s) => s.items.length > 0);
 
     const uncategorized = byCategoryId.get(UNCATEGORIZED_ID) || [];
@@ -276,7 +276,7 @@ function DeleteDialog({ itemToDelete, isDeleting, onCancel, onConfirm }: {
     <AlertDialog open={!!itemToDelete} onOpenChange={(open) => !open && onCancel()}>
       <AlertDialogContent className="sm:max-w-lg p-0 gap-0" dir={dir}>
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
-          <AlertDialogTitle className="text-base font-bold text-gray-900">{t('menu.deleteItemTitle')} "{itemToDelete?.name}"</AlertDialogTitle>
+          <AlertDialogTitle className="text-base font-bold text-gray-900">{t('menu.deleteItemTitle')} "{(dir === 'ltr' && itemToDelete?.name_en) || itemToDelete?.name}"</AlertDialogTitle>
           <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">{t('common.cannotUndo')}</AlertDialogDescription>
         </div>
         <div className="flex gap-2 px-5 pb-5 pt-3">

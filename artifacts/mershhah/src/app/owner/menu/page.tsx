@@ -21,7 +21,7 @@ type ItemCategory = 'Star' | 'Plow-Horse' | 'Puzzle' | 'Dog';
 
 export default function MenuPage() {
   const { user, isLoading: isUserLoading } = useUser();
-  const { t } = useLanguage();
+  const { t, dir } = useLanguage();
   const [isRefreshing, startRefresh] = useTransition();
   const [isApplyingSort, startApplyingSort] = useTransition();
   const [isTranslatingAll, startTranslatingAll] = useTransition();
@@ -286,7 +286,7 @@ export default function MenuPage() {
                   <Flame className="h-3.5 w-3.5 text-amber-500" />
                 </div>
               </div>
-              <div className="text-sm font-black text-gray-900 truncate">{popularItem?.name || '—'}</div>
+              <div className="text-sm font-black text-gray-900 truncate">{(dir === 'ltr' && popularItem?.name_en) || popularItem?.name || '—'}</div>
               <p className="text-[9px] text-gray-600 mt-1">{t('menu.basedOnInteraction')}</p>
             </div>
             <div className="bg-white border border-gray-100 rounded-2xl p-4">
@@ -327,7 +327,7 @@ export default function MenuPage() {
                   activeCategoryId === cat.id ? "bg-gray-900 text-white shadow-sm" : "bg-gray-100/80 text-gray-600 hover:bg-gray-200/70"
                 )}
               >
-                {cat.name} <span className="opacity-60">({count})</span>
+                {(dir === 'ltr' && cat.name_en) || cat.name} <span className="opacity-60">({count})</span>
               </button>
             );
           })}

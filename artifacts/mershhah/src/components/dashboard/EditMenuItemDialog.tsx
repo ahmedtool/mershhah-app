@@ -109,7 +109,7 @@ export function EditMenuItemDialog({
         supabase.from('restaurants').select('applications').eq('id', restaurantId).single().then(({ data: restData }: { data: any }) => {
           const customApps = ((restData?.applications || []) as any[])
             .filter((a) => a.type === 'custom')
-            .map((a) => ({ id: a.id, name: a.name, logo_url: a.logo }));
+            .map((a) => ({ id: a.id, name: a.name, name_en: a.name_en, logo_url: a.logo }));
           setGlobalApps([...(data || []), ...customApps]);
         });
       });
@@ -365,7 +365,10 @@ export function EditMenuItemDialog({
                           !field.value && "text-gray-600"
                         )}
                       >
-                        <span>{field.value || t('menuItem.chooseOrCreateCategory')}</span>
+                        <span>{(() => {
+                          const matched = categories.find((c) => c.id === form.watch('category_id'));
+                          return (dir === 'ltr' && matched?.name_en) || field.value || t('menuItem.chooseOrCreateCategory');
+                        })()}</span>
                         <ChevronDown className="h-4 w-4 text-gray-600 shrink-0" />
                       </button>
                     </FormControl>
@@ -384,7 +387,7 @@ export function EditMenuItemDialog({
                               setCategorySearch('');
                             }}>
                               <Check className={cn("h-4 w-4 shrink-0", cat.id === form.watch('category_id') ? "opacity-100" : "opacity-0")} />
-                              <span className="ms-2">{cat.name}</span>
+                              <span className="ms-2">{(dir === 'ltr' && cat.name_en) || cat.name}</span>
                             </CommandItem>
                           ))}
                           {categorySearch.trim() && !categories.some(c => c.name.toLowerCase() === categorySearch.trim().toLowerCase()) && (
@@ -492,7 +495,7 @@ export function EditMenuItemDialog({
                           <div className="relative w-6 h-6 rounded-md bg-white border border-gray-100 shrink-0 overflow-hidden">
                             <StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="24px" />
                           </div>
-                          <span className="text-[11px] font-bold text-gray-700 flex-1 truncate">{app.name}</span>
+                          <span className="text-[11px] font-bold text-gray-700 flex-1 truncate">{dir === 'ltr' && app.name_en ? app.name_en : app.name}</span>
                           <Input
                             type="number"
                             dir="ltr"

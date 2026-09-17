@@ -15,6 +15,7 @@ import { StorageImage } from "@/components/shared/StorageImage";
 
 const formSchema = z.object({
   name: z.string().min(2, "اسم التطبيق مطلوب"),
+  name_en: z.string().optional(),
   platform_id: z.string().min(3, "المعرّف مطلوب (3 أحرف على الأقل)").regex(/^[a-z0-9_]+$/, "استخدم حروف إنجليزية صغيرة وأرقام وشرطة سفلية فقط."),
   category: z.enum(['delivery', 'loyalty', 'payment', 'other']),
   logo_url: z.string().optional().nullable(),
@@ -51,8 +52,9 @@ export function EditApplicationDialog({ children, application, onSave }: EditApp
 
   useEffect(() => {
     if (open) {
-      form.reset(isEditing ? application : {
+      form.reset(isEditing ? { ...application, name_en: application.name_en || "" } : {
         name: "",
+        name_en: "",
         platform_id: "",
         category: 'delivery',
         logo_url: null,
@@ -163,6 +165,17 @@ export function EditApplicationDialog({ children, application, onSave }: EditApp
                 )} />
               </div>
             </div>
+
+            {/* English name - shown to owners/customers when the app is set to English */}
+            <FormField control={form.control} name="name_en" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs text-gray-600">اسم التطبيق <span className="text-gray-600">(إنجليزي)</span></FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g. Jahez" {...field} className="h-11 rounded-xl border-gray-200 text-sm" dir="ltr" disabled={isSaving} />
+                </FormControl>
+                <FormMessage className="text-[10px]" />
+              </FormItem>
+            )} />
 
             {/* Platform ID */}
             <FormField control={form.control} name="platform_id" render={({ field }) => (
