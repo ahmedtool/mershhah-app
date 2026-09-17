@@ -257,8 +257,6 @@ export default function InsightsHubPage() {
     const [itemNames, setItemNames] = useState<Record<string, { name: string; name_en?: string }>>({});
     const [reputationTab, setReputationTab] = useState<'restaurant' | 'products'>('restaurant');
     const [reviewSort, setReviewSort] = useState<ReviewSort>('newest');
-    const [restaurantRating, setRestaurantRating] = useState(0);
-    const [restaurantReviewCount, setRestaurantReviewCount] = useState(0);
     const [hubUsername, setHubUsername] = useState<string | null>(null);
     const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
     const [hoveredDay, setHoveredDay] = useState<number | null>(null);
@@ -297,7 +295,7 @@ export default function InsightsHubPage() {
                 supabase.from('menu_item_interactions').select('menu_item_id, created_at').eq('restaurant_id', restaurantId).gte('created_at', recentRawInteractionsStartUtcIso()),
                 supabase.from('analytics_daily_items').select('menu_item_id, day, interactions').eq('restaurant_id', restaurantId),
                 supabase.from('hub_visits').select('source, created_at, visitor_id').eq('restaurant_id', restaurantId).gte('created_at', new Date(Date.now() - TREND_DAYS * DAY_MS).toISOString()),
-                supabase.from('restaurants').select('username, rating, review_count').eq('id', restaurantId).single(),
+                supabase.from('restaurants').select('username').eq('id', restaurantId).single(),
                 supabase.from('reviews').select('id, rating, comment, created_at, is_visible').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }),
                 supabase.from('menu_item_reviews').select('id, menu_item_id, rating, comment, created_at, is_visible').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }),
             ]);
@@ -334,8 +332,6 @@ export default function InsightsHubPage() {
 
             const rest = restRes.data as any;
             setHubUsername(rest?.username || null);
-            setRestaurantRating(rest?.rating || 0);
-            setRestaurantReviewCount(rest?.review_count || 0);
 
             setFullReviews((reviewsRes.data || []) as FullReview[]);
             setItemReviews((itemReviewsRes.data || []) as ItemReview[]);
@@ -502,6 +498,21 @@ export default function InsightsHubPage() {
         liveVisitorCount,
         t,
     }), [engineered, weekChange, hubVisitsQr, hubVisitsLink, uniqueVisitorsThisWeek, liveVisitorCount, t]);
+
+    // Computed live from the same reviews already fetched, instead of
+    // reading restaurants.rating/review_count - those columns are never
+    // actually written anywhere in this app (confirmed: no write path, no
+    // DB trigger), so they always read as 0 regardless of real reviews.
+    // syncPublicPage() already computes this exact number correctly for
+    // reviews_summary, just never persists it back onto the row.
+    const { restaurantRating, restaurantReviewCount } = useMemo(() => {
+        const visible = fullReviews.filter(r => r.is_visible !== false);
+        const restaurantReviewCount = visible.length;
+        const restaurantRating = restaurantReviewCount > 0
+            ? visible.reduce((sum, r) => sum + (r.rating || 0), 0) / restaurantReviewCount
+            : 0;
+        return { restaurantRating, restaurantReviewCount };
+    }, [fullReviews]);
 
     const reviewComments = useMemo(
         () => fullReviews.filter(r => r.is_visible !== false && r.comment).map(r => r.comment as string),
