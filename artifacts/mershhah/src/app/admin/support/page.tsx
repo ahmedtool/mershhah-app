@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import type { ChatMessage, ChatSession } from '@/lib/types';
+import { sanitizeFileName } from '@/lib/utils';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -85,8 +86,8 @@ export default function AdminSupportPage() {
         schema: 'public',
         table: 'chat_messages',
         filter: `chat_id=eq.${chat.id}`,
-      }, (payload) => {
-        setMessages(prev => [...prev, payload.new as ChatMessage]);
+      }, (payload: { new: ChatMessage }) => {
+        setMessages(prev => [...prev, payload.new]);
       })
       .subscribe();
     msgChannelRef.current = msgChannel;
@@ -108,7 +109,7 @@ export default function AdminSupportPage() {
 
     try {
       if (file) {
-        const filePath = `chat_attachments/${selectedChat.id}/${Date.now()}-${file.name}`;
+        const filePath = `chat_attachments/${selectedChat.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
         const { error: uploadError } = await supabase.storage
           .from('chat-attachments')
           .upload(filePath, file);

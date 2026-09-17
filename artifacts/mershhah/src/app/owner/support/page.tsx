@@ -8,8 +8,7 @@ import { useUser } from '@/hooks/useUser';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import type { ChatMessage, ChatSession } from '@/lib/types';
-import { formatDistanceToNow } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { sanitizeFileName } from '@/lib/utils';
 import { useLanguage } from '@/components/shared/LanguageContext';
 
 // This page is deliberately a single fixed thread, not a messaging inbox:
@@ -129,7 +128,7 @@ export default function OwnerSupportPage() {
 
     try {
       if (file) {
-        const filePath = `chat_attachments/${chat.id}/${Date.now()}-${file.name}`;
+        const filePath = `chat_attachments/${chat.id}/${Date.now()}-${sanitizeFileName(file.name)}`;
         const { error: uploadError } = await supabase.storage
           .from('chat-attachments')
           .upload(filePath, file);
