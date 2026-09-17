@@ -27,6 +27,7 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
   const [products, setProducts] = useState<SharedMenuProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   const [selected, setSelected] = useState<SharedMenuProduct | null>(null);
   const [category, setCategory] = useState('');
   const [price, setPrice] = useState('');
@@ -47,16 +48,25 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
     if (!open) return;
     setSelected(null);
     setSearch('');
+    setCategoryFilter(null);
     supabase.from('shared_menu_products').select('*').order('name').then(({ data }: { data: any[] | null }) => {
       setProducts((data || []) as SharedMenuProduct[]);
       setIsLoading(false);
     });
   }, [open]);
 
+  const libraryCategories = useMemo(
+    () => [...new Set(products.map(p => p.category).filter(Boolean))] as string[],
+    [products],
+  );
+
   const filteredProducts = useMemo(() => {
-    if (!search.trim()) return products;
-    return products.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
-  }, [products, search]);
+    return products.filter(p => {
+      const matchesSearch = !search.trim() || p.name.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = !categoryFilter || p.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, search, categoryFilter]);
 
   const handleSelect = (product: SharedMenuProduct) => {
     setSelected(product);
@@ -169,6 +179,27 @@ export function AddFromLibraryDialog({ children, restaurantId, menuItems, itemCo
                 <Search className="absolute end-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-600" />
                 <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('menu.searchProductPlaceholder')} className="h-10 rounded-xl border-gray-200 text-sm pe-9" />
               </div>
+              {libraryCategories.length > 0 && (
+                <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => setCategoryFilter(null)}
+                    className={`shrink-0 h-7 px-3 rounded-full text-[11px] font-bold transition-colors ${categoryFilter === null ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                  >
+                    {t('common.all')}
+                  </button>
+                  {libraryCategories.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setCategoryFilter(cat)}
+                      className={`shrink-0 h-7 px-3 rounded-full text-[11px] font-bold transition-colors ${categoryFilter === cat ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="p-5">

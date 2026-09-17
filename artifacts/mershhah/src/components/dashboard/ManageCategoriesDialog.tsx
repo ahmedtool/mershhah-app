@@ -44,9 +44,10 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
     return q ? name.toLowerCase().includes(q) : true;
   }).slice(0, 8);
 
-  const visibleItems = menuItems.filter((item) =>
-    item.name.toLowerCase().includes(itemSearch.trim().toLowerCase())
-  );
+  const visibleItems = menuItems.filter((item) => {
+    const q = itemSearch.trim().toLowerCase();
+    return item.name.toLowerCase().includes(q) || (item.name_en || '').toLowerCase().includes(q);
+  });
 
   const fetchCategories = async () => {
     setIsLoading(true);
@@ -295,10 +296,10 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                         />
                       ) : (
                         <button onClick={() => openAssignment(cat)} className="flex-1 text-start min-w-0">
-                          <p className="text-sm font-bold text-gray-900 truncate">{cat.name}</p>
+                          <p className="text-sm font-bold text-gray-900 truncate">{(dir === 'ltr' && cat.name_en) || cat.name}</p>
                           <p className="text-[10px] text-gray-600">
                             {countInCategory(cat.id)} {t('menu.itemsSuffix')}
-                            {cat.name_en ? ` · ${cat.name_en}` : ''}
+                            {(dir === 'ltr' ? cat.name : cat.name_en) ? ` · ${dir === 'ltr' ? cat.name : cat.name_en}` : ''}
                           </p>
                         </button>
                       )}
@@ -333,7 +334,7 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                 <ArrowRight className="h-3.5 w-3.5" />
                 {t('menu.backToCategories')}
               </button>
-              <h2 className="text-base font-bold text-gray-900">{t('menu.itemsOfCategoryLabel')} "{assigning.name}"</h2>
+              <h2 className="text-base font-bold text-gray-900">{t('menu.itemsOfCategoryLabel')} "{(dir === 'ltr' && assigning.name_en) || assigning.name}"</h2>
               <p className="text-xs text-gray-600 mt-0.5">{t('menu.selectItemsForCategoryDesc')}</p>
             </div>
 
@@ -374,10 +375,12 @@ export function ManageCategoriesDialog({ children, restaurantId, menuItems, onSa
                         {isSelected && <Check className="h-3.5 w-3.5 text-gray-900" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={cn("text-xs font-bold truncate", isSelected ? "text-white" : "text-gray-900")}>{item.name}</p>
-                        {item.category && item.category_id !== assigning.id && (
-                          <p className={cn("text-[10px]", isSelected ? "text-gray-400" : "text-gray-600")}>{t('menu.currentlyLabel')}: {item.category}</p>
-                        )}
+                        <p className={cn("text-xs font-bold truncate", isSelected ? "text-white" : "text-gray-900")}>{(dir === 'ltr' && item.name_en) || item.name}</p>
+                        {item.category && item.category_id !== assigning.id && (() => {
+                          const currentCat = categories.find((c) => c.id === item.category_id);
+                          const currentCatName = (dir === 'ltr' && currentCat?.name_en) || item.category;
+                          return <p className={cn("text-[10px]", isSelected ? "text-gray-400" : "text-gray-600")}>{t('menu.currentlyLabel')}: {currentCatName}</p>;
+                        })()}
                       </div>
                     </button>
                   );
