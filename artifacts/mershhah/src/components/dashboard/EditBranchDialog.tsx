@@ -24,7 +24,7 @@ function buildSchema(t: (key: string) => string) {
   return z.object({
     name: z.string().min(2, t('branches.branchNameRequired')),
     city: z.string().min(2, t('branches.selectCityError')),
-    district: z.string().min(2, t('branches.selectDistrictError')),
+    district: z.string().optional(),
     phone: z.string().optional(),
     opening_hours: z.string().max(200).optional(),
     status: z.enum(['active', 'inactive']),
@@ -123,7 +123,7 @@ export function EditBranchDialog({
     if (!open) return;
     if (branch) {
       form.reset({
-        name: branch.name, city: branch.city, district: branch.district,
+        name: branch.name, city: branch.city, district: branch.district ?? '',
         phone: branch.phone ?? '', opening_hours: branch.opening_hours ?? '',
         status: branch.status ?? 'active', latitude: branch.latitude ?? null, longitude: branch.longitude ?? null,
       });
@@ -233,7 +233,7 @@ export function EditBranchDialog({
       const data: Record<string, unknown> = {
         name: values.name,
         city: values.city,
-        district: values.district,
+        district: values.district?.trim() || null,
         status: values.status,
         restaurant_id: restaurantId,
         applications: branchApps,
@@ -377,7 +377,7 @@ export function EditBranchDialog({
 
               {/* District Searchable */}
               <div className="space-y-1.5">
-                <FormLabel className="text-xs text-gray-600">{t('branches.district')}</FormLabel>
+                <FormLabel className="text-xs text-gray-600">{t('branches.district')} <span className="text-gray-600">({t('common.optional')})</span></FormLabel>
                 <div className="relative">
                   <Input
                     value={districtSearch}
