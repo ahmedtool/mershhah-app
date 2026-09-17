@@ -677,7 +677,10 @@ export default function CustomizePage() {
                                       >
                                           {app.logo ? <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain p-1" sizes="36px" /> : <ImageIcon size={16} className="text-gray-200" />}
                                       </div>
-                                      <Input value={app.name} onChange={e => updateAppField(app.id, 'name', e.target.value)} className={`h-8 text-[11px] font-bold flex-1 ${alignStart} rounded-lg border-gray-200`} />
+                                      <div className="flex-1 min-w-0 space-y-1">
+                                          <Input value={app.name} onChange={e => updateAppField(app.id, 'name', e.target.value)} placeholder={t('customize.appNamePlaceholder')} className={`h-8 text-[11px] font-bold w-full ${alignStart} rounded-lg border-gray-200`} />
+                                          <Input dir="ltr" value={app.name_en || ''} onChange={e => updateAppField(app.id, 'name_en', e.target.value)} placeholder={t('customize.appNameEnPlaceholder')} className="h-8 text-[11px] w-full rounded-lg border-gray-200" />
+                                      </div>
                                       <button onClick={() => removeApp(app.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1"><X size={12} /></button>
                                       <input type="file" ref={el => { appLogoInputRefs.current[app.id] = el; }} onChange={e => e.target.files?.[0] && handleAppLogoChange(app.id, e.target.files[0])} className="hidden" accept="image/*" />
                                   </div>
@@ -704,7 +707,7 @@ export default function CustomizePage() {
                                         <div className="relative w-3.5 h-3.5 shrink-0">
                                             <StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="14px" />
                                         </div>
-                                        {app.name}
+                                        {(dir === 'ltr' && app.name_en) || app.name}
                                     </button>
                                 );
                             })}
@@ -726,8 +729,15 @@ export default function CustomizePage() {
                                         >
                                             {app.logo ? <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain p-1" sizes="36px" /> : <ImageIcon size={16} className="text-gray-200" />}
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            {app.type === 'global' ? <p className="text-[11px] font-bold text-gray-900">{app.name}</p> : <Input value={app.name} onChange={e => updateAppField(app.id, 'name', e.target.value)} className={`h-8 text-[11px] font-bold ${alignStart} rounded-lg border-gray-200`} />}
+                                        <div className="flex-1 min-w-0 space-y-1">
+                                            {app.type === 'global' ? (
+                                                <p className="text-[11px] font-bold text-gray-900">{(dir === 'ltr' && app.name_en) || app.name}</p>
+                                            ) : (
+                                                <>
+                                                    <Input value={app.name} onChange={e => updateAppField(app.id, 'name', e.target.value)} placeholder={t('customize.appNamePlaceholder')} className={`h-8 text-[11px] font-bold w-full ${alignStart} rounded-lg border-gray-200`} />
+                                                    <Input dir="ltr" value={app.name_en || ''} onChange={e => updateAppField(app.id, 'name_en', e.target.value)} placeholder={t('customize.appNameEnPlaceholder')} className="h-8 text-[11px] w-full rounded-lg border-gray-200" />
+                                                </>
+                                            )}
                                         </div>
                                         <button onClick={() => removeApp(app.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1"><X size={12} /></button>
                                     </div>

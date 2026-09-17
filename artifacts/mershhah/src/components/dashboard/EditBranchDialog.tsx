@@ -515,7 +515,7 @@ export function EditBranchDialog({
                         <div className="relative w-3.5 h-3.5 shrink-0">
                           <StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="14px" />
                         </div>
-                        {app.name}
+                        {(dir === 'ltr' && app.name_en) || app.name}
                       </button>
                     );
                   })}
@@ -532,7 +532,7 @@ export function EditBranchDialog({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-gray-700">{app.name}</p>
+                    <p className="text-[10px] font-bold text-gray-700">{(dir === 'ltr' && app.name_en) || app.name}</p>
                     <Input dir="ltr" value={app.value} placeholder={t('customize.linkPlaceholder')}
                       onChange={(e) => {
                         setBranchApps(branchApps.map((a: any) => a.id === app.id ? { ...a, value: e.target.value } : a));
