@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import PageHeader from "@/components/dashboard/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,8 +30,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'wouter';
 import { cn } from '@/lib/utils';
 import { classifyMenuItems, CLASSIFICATION_INFO, type MenuClassification } from '@/lib/menu-engineering';
-import { buildInsights, type Insight, type InsightTone } from '@/lib/report-insights';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { buildInsights, type Insight, type InsightTone, type InsightTarget } from '@/lib/report-insights';
 import { REVIEW_TAGS, countReviewsByTag } from '@/lib/review-tags';
 import { WhatsAppIcon, InstagramIcon, SnapchatIcon, TikTokIcon, XIcon } from '@/components/shared/SocialIcons';
 import {
@@ -164,7 +163,7 @@ const INSIGHT_TONE_BLOCK: Record<InsightTone, string> = {
     neutral: "bg-gray-50 border-gray-100 text-gray-600",
 };
 
-function SmartInsightsCompact({ insights, detailsLabel }: { insights: Insight[]; detailsLabel: string }) {
+function SmartInsightsCompact({ insights, onAction }: { insights: Insight[]; onAction: (target?: InsightTarget) => void }) {
     const [activeIndex, setActiveIndex] = useState(0);
     const active = insights[Math.min(activeIndex, insights.length - 1)];
     return (
@@ -181,24 +180,27 @@ function SmartInsightsCompact({ insights, detailsLabel }: { insights: Insight[];
                         className={cn(
                             "w-5 h-5 rounded-md text-[10px] font-bold flex items-center justify-center transition-opacity",
                             idx === activeIndex ? "bg-white/70 opacity-100" : "opacity-40 hover:opacity-70",
+                            insight.id === 'live-now' && "relative",
                         )}
                     >
+                        {insight.id === 'live-now' && (
+                            <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        )}
                         {idx + 1}
                     </button>
                 ))}
             </div>
             <span className="hidden sm:inline-block w-px h-4 bg-current opacity-20 shrink-0" />
             <span className="font-medium truncate min-w-0 max-w-[240px] sm:max-w-[420px]">{active.text}</span>
-            <Popover>
-                <PopoverTrigger asChild>
-                    <button type="button" className="shrink-0 text-[10px] font-bold underline decoration-dotted opacity-70 hover:opacity-100">
-                        {detailsLabel}
-                    </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-64 text-xs leading-relaxed" side="bottom" align="start">
-                    {active.text}
-                </PopoverContent>
-            </Popover>
+            {active.target && active.actionLabel && (
+                <button
+                    type="button"
+                    onClick={() => onAction(active.target)}
+                    className="shrink-0 text-[10px] font-bold underline decoration-dotted opacity-70 hover:opacity-100"
+                >
+                    {active.actionLabel}
+                </button>
+            )}
         </div>
     );
 }
@@ -265,9 +267,17 @@ export default function InsightsHubPage() {
     const [historyRows, setHistoryRows] = useState<AnalyticsDailyRow[]>([]);
     const [historyTopItems, setHistoryTopItems] = useState<[string, number][]>([]);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+    const [uniqueVisitorsThisWeek, setUniqueVisitorsThisWeek] = useState(0);
+    const trendChartRef = useRef<HTMLDivElement>(null);
+    const matrixRef = useRef<HTMLDivElement>(null);
 
     const isPaid = user?.entitlements?.planId && user.entitlements.planId !== 'free' && user.entitlements.planId !== 'none';
     const liveVisitorCount = useLiveVisitorCount(user?.restaurantId);
+
+    const scrollToInsightTarget = useCallback((target?: InsightTarget) => {
+        const ref = target === 'matrix' ? matrixRef : target === 'trend' ? trendChartRef : null;
+        ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, []);
 
     const fetchData = useCallback(async () => {
         if (!user?.restaurantId) return;
@@ -280,7 +290,7 @@ export default function InsightsHubPage() {
                 // to exclude "today" outright (see recentRawInteractionsStartUtcIso).
                 supabase.from('menu_item_interactions').select('menu_item_id, created_at').eq('restaurant_id', restaurantId).gte('created_at', recentRawInteractionsStartUtcIso()),
                 supabase.from('analytics_daily_items').select('menu_item_id, day, interactions').eq('restaurant_id', restaurantId),
-                supabase.from('hub_visits').select('source, created_at').eq('restaurant_id', restaurantId).gte('created_at', new Date(Date.now() - TREND_DAYS * DAY_MS).toISOString()),
+                supabase.from('hub_visits').select('source, created_at, visitor_id').eq('restaurant_id', restaurantId).gte('created_at', new Date(Date.now() - TREND_DAYS * DAY_MS).toISOString()),
                 supabase.from('restaurants').select('username, rating, review_count').eq('id', restaurantId).single(),
                 supabase.from('reviews').select('id, rating, comment, created_at, is_visible').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }),
                 supabase.from('menu_item_reviews').select('id, menu_item_id, rating, comment, created_at, is_visible').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }),
@@ -293,9 +303,14 @@ export default function InsightsHubPage() {
             let qrCount = 0; let linkCount = 0;
             const dates: string[] = [];
             const sources: Partial<Record<TrafficSource, number>> = {};
+            const uniqueThisWeek = new Set<string>();
+            const sevenDaysAgoMs = Date.now() - 7 * DAY_MS;
             (hubVisitsRes.data || []).forEach((d: any) => {
                 if (d.source === 'qr_branch') qrCount++; else linkCount++;
                 if (d.created_at) dates.push(dayKey(new Date(d.created_at)));
+                if (d.visitor_id && d.created_at && new Date(d.created_at).getTime() >= sevenDaysAgoMs) {
+                    uniqueThisWeek.add(d.visitor_id);
+                }
                 // Rows from before the per-platform traffic-source upgrade
                 // stored a plain 'link' (or nothing) instead of a real
                 // TrafficSource value - fall back to 'other' for anything
@@ -309,6 +324,7 @@ export default function InsightsHubPage() {
             setHubVisitsLink(linkCount);
             setSourceCounts(sources);
             setVisitDates(dates);
+            setUniqueVisitorsThisWeek(uniqueThisWeek.size);
 
             const rest = restRes.data as any;
             setHubUsername(rest?.username || null);
@@ -476,8 +492,10 @@ export default function InsightsHubPage() {
         visitsLastWeek: weekChange.lastWeek,
         qrVisits: hubVisitsQr,
         linkVisits: hubVisitsLink,
+        uniqueVisitorsThisWeek,
+        liveVisitorCount,
         t,
-    }), [engineered, weekChange, hubVisitsQr, hubVisitsLink, t]);
+    }), [engineered, weekChange, hubVisitsQr, hubVisitsLink, uniqueVisitorsThisWeek, liveVisitorCount, t]);
 
     const reviewComments = useMemo(
         () => fullReviews.filter(r => r.is_visible !== false && r.comment).map(r => r.comment as string),
@@ -593,7 +611,7 @@ export default function InsightsHubPage() {
             </div>
 
             {/* Trend chart — free tier */}
-            <div className="bg-white border border-gray-100 rounded-2xl p-5">
+            <div ref={trendChartRef} className="bg-white border border-gray-100 rounded-2xl p-5">
                 <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
                     <div className="flex items-center gap-2">
                         <TrendingUp className="h-4 w-4 text-gray-600" />
@@ -902,7 +920,7 @@ export default function InsightsHubPage() {
                 ) : insights.length === 0 ? (
                     <div className="py-10 text-center text-gray-600 text-xs">{t('reports.needMoreDataForInsights')}</div>
                 ) : (
-                    <SmartInsightsCompact insights={insights} detailsLabel={t('reports.insightDetails')} />
+                    <SmartInsightsCompact insights={insights} onAction={scrollToInsightTarget} />
                 )}
             </div>
 
@@ -932,7 +950,7 @@ export default function InsightsHubPage() {
                 </div>
 
                 {/* Menu Engineering Matrix — paid tier */}
-                <div className={cn("bg-white border border-gray-100 rounded-2xl p-5", !isPaid && "relative")}>
+                <div ref={matrixRef} className={cn("bg-white border border-gray-100 rounded-2xl p-5", !isPaid && "relative")}>
                     <div className="flex items-center gap-2 mb-1">
                         <BarChart3 className="h-4 w-4 text-gray-600" />
                         <h3 className="text-sm font-bold text-gray-900">{t('reports.menuEngineeringMatrix')}</h3>
