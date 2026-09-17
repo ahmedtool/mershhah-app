@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Pencil, Trash2, MapPin, Phone, Layers, Clock, Link2, X, CheckSquare, AlertTriangle, Check, Loader2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Pencil, Trash2, MapPin, Phone, Layers, Clock, Link2, X, CheckSquare, AlertTriangle, Check, Loader2, QrCode, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
@@ -15,6 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { EditBranchDialog } from './EditBranchDialog';
 import { BulkEditDialog } from './BulkEditDialog';
@@ -55,6 +56,23 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [cityFilter, setCityFilter] = useState<string | null>(null);
   const [acknowledgingKey, setAcknowledgingKey] = useState<string | null>(null);
+  const [qrBranch, setQrBranch] = useState<Branch | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  // Each branch needs its OWN QR code, not one shared code for the whole
+  // restaurant - a single QR can't reveal which physical branch it was
+  // scanned at, that only works if each branch's printed code encodes its
+  // own ?branch=<id> link. Generated lazily (only while this dialog is
+  // open for a specific branch) instead of pre-rendering one per branch.
+  useEffect(() => {
+    if (!qrBranch || !username) { setQrDataUrl(null); return; }
+    const link = `${window.location.origin}/${username}?branch=${qrBranch.id}`;
+    let cancelled = false;
+    import('qrcode').then((QRCode) => {
+      QRCode.toDataURL(link, { width: 280, margin: 2 }).then((url) => { if (!cancelled) setQrDataUrl(url); }).catch(() => {});
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [qrBranch, username]);
 
   const cities = useMemo(
     () => [...new Set(branches.map((b) => b.city).filter(Boolean))] as string[],
@@ -339,21 +357,28 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
                   </button>
                   <div className="w-px h-4 bg-gray-100" />
                   <button
-                    onClick={() => handleCopyBranchLink(branch)}
-                    disabled={!username}
-                    title={t('branches.copyBranchLinkTooltip')}
-                    className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-40"
-                  >
-                    <Link2 className="h-3.5 w-3.5" />
-                    {t('branches.branchLink')}
-                  </button>
-                  <div className="w-px h-4 bg-gray-100" />
-                  <button
                     onClick={() => setDeleteBranch(branch)}
                     className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                     {t('common.delete')}
+                  </button>
+                  <div className="w-px h-4 bg-gray-100" />
+                  <button
+                    onClick={() => handleCopyBranchLink(branch)}
+                    disabled={!username}
+                    title={t('branches.copyBranchLinkTooltip')}
+                    className="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-40"
+                  >
+                    <Link2 className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setQrBranch(branch)}
+                    disabled={!username}
+                    title={t('branches.branchQrTooltip')}
+                    className="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-40"
+                  >
+                    <QrCode className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
@@ -377,6 +402,49 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
         restaurantId={restaurantId}
         onSaved={() => { setEditBranch(null); onChanged?.(); }}
       />
+
+      <Dialog open={Boolean(qrBranch)} onOpenChange={(o) => !o && setQrBranch(null)}>
+        <DialogContent className="sm:max-w-sm p-0 gap-0" dir={dir}>
+          <div className="px-5 pt-5 pb-3 border-b border-gray-100">
+            <h2 className="text-base font-bold text-gray-900">{t('branches.branchQrTitle')}</h2>
+            <p className="text-xs text-gray-600 mt-0.5">{qrBranch?.name}</p>
+          </div>
+          <div className="p-5 flex flex-col items-center gap-3">
+            {qrDataUrl ? (
+              <>
+                <div className="inline-block p-3 bg-white rounded-2xl border border-gray-100">
+                  <img src={qrDataUrl} alt={t('branches.branchQrTitle')} className="w-[200px] h-[200px]" />
+                </div>
+                <div className="flex gap-2 w-full">
+                  <button
+                    onClick={() => qrBranch && handleCopyBranchLink(qrBranch)}
+                    className="flex-1 h-9 rounded-xl border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Link2 className="h-3.5 w-3.5" />
+                    {t('common.copy')}
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!qrDataUrl || !qrBranch) return;
+                      const link = document.createElement('a');
+                      link.href = qrDataUrl;
+                      link.download = `branch-qr-${qrBranch.name || qrBranch.id}.png`;
+                      document.body.appendChild(link); link.click(); link.remove();
+                    }}
+                    className="flex-1 h-9 rounded-xl bg-gray-900 text-white text-xs font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    {t('reports.downloadQr')}
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-500 text-center leading-relaxed">{t('branches.branchQrHint')}</p>
+              </>
+            ) : (
+              <div className="w-[200px] h-[200px] bg-gray-50 border border-gray-100 rounded-2xl animate-pulse flex items-center justify-center text-[10px] text-gray-600">{t('reports.generating')}</div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={Boolean(deleteBranch)} onOpenChange={(o) => !o && setDeleteBranch(null)}>
         <AlertDialogContent dir={dir} className={dir === 'rtl' ? 'text-right' : 'text-left'}>
