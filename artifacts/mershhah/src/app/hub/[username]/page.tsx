@@ -112,6 +112,7 @@ export default function RestaurantHubPage() {
     supabase.from('hub_visits').insert({
       restaurant_id: restaurant.id,
       source,
+      branch_id: branchParam || null,
       visitor_id: getVisitorId(),
       created_at: new Date().toISOString(),
     }).then(() => {});

@@ -77,6 +77,7 @@ type Bucket = {
   qr: number;
   link: number;
   sources: Record<string, number>;
+  branches: Record<string, number>;
   clicks: number;
   events: Record<string, number>;
   items: Map<string, number>;
@@ -107,7 +108,7 @@ serve(async (req) => {
     const { dayLabel, startUtc, endUtc } = riyadhDayUtcRange(dateOverride);
 
     const [visits, events, interactions] = await Promise.all([
-      fetchAllRows(supabase, "hub_visits", "restaurant_id, source, visitor_id", startUtc, endUtc),
+      fetchAllRows(supabase, "hub_visits", "restaurant_id, source, visitor_id, branch_id", startUtc, endUtc),
       fetchAllRows(supabase, "page_events", "restaurant_id, event_type, event_detail", startUtc, endUtc),
       fetchAllRows(supabase, "menu_item_interactions", "restaurant_id, menu_item_id", startUtc, endUtc),
     ]);
@@ -116,7 +117,7 @@ serve(async (req) => {
     function bucket(restaurantId: string): Bucket {
       let b = byRestaurant.get(restaurantId);
       if (!b) {
-        b = { visitsTotal: 0, uniqueVisitors: new Set(), qr: 0, link: 0, sources: {}, clicks: 0, events: {}, items: new Map() };
+        b = { visitsTotal: 0, uniqueVisitors: new Set(), qr: 0, link: 0, sources: {}, branches: {}, clicks: 0, events: {}, items: new Map() };
         byRestaurant.set(restaurantId, b);
       }
       return b;
@@ -130,6 +131,7 @@ serve(async (req) => {
       const source = v.source || "other";
       if (source === "qr_branch") b.qr++; else b.link++;
       b.sources[source] = (b.sources[source] || 0) + 1;
+      if (v.branch_id) b.branches[v.branch_id] = (b.branches[v.branch_id] || 0) + 1;
     }
     for (const e of events) {
       if (!e.restaurant_id) continue;
@@ -155,6 +157,7 @@ serve(async (req) => {
       visits_qr: b.qr,
       visits_link: b.link,
       source_breakdown: b.sources,
+      branch_breakdown: b.branches,
       clicks_total: b.clicks,
       event_breakdown: b.events,
     }));

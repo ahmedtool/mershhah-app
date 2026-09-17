@@ -78,6 +78,7 @@ type AnalyticsDailyRow = {
     visits_qr: number;
     visits_link: number;
     source_breakdown: Record<string, number>;
+    branch_breakdown: Record<string, number>;
 };
 
 // analytics_daily only has full calendar days in it (yesterday's the most
@@ -251,6 +252,8 @@ export default function InsightsHubPage() {
     const [hubVisitsQr, setHubVisitsQr] = useState(0);
     const [hubVisitsLink, setHubVisitsLink] = useState(0);
     const [sourceCounts, setSourceCounts] = useState<Partial<Record<TrafficSource, number>>>({});
+    const [branchCounts, setBranchCounts] = useState<Record<string, number>>({});
+    const [branchNames, setBranchNames] = useState<Record<string, { name: string; name_en?: string }>>({});
     const [visitDates, setVisitDates] = useState<string[]>([]);
     const [fullReviews, setFullReviews] = useState<FullReview[]>([]);
     const [itemReviews, setItemReviews] = useState<ItemReview[]>([]);
@@ -287,17 +290,18 @@ export default function InsightsHubPage() {
         if (!user?.restaurantId) return;
         try {
             const restaurantId = user.restaurantId;
-            const [itemsRes, interactionsRes, itemRollupRes, hubVisitsRes, restRes, reviewsRes, itemReviewsRes] = await Promise.all([
+            const [itemsRes, interactionsRes, itemRollupRes, hubVisitsRes, restRes, reviewsRes, itemReviewsRes, branchesRes] = await Promise.all([
                 supabase.from('menu_items').select('*').eq('restaurant_id', restaurantId),
                 // A few recent days as a raw safety net - de-duplicated
                 // against analytics_daily_items below by day, not assumed
                 // to exclude "today" outright (see recentRawInteractionsStartUtcIso).
                 supabase.from('menu_item_interactions').select('menu_item_id, created_at').eq('restaurant_id', restaurantId).gte('created_at', recentRawInteractionsStartUtcIso()),
                 supabase.from('analytics_daily_items').select('menu_item_id, day, interactions').eq('restaurant_id', restaurantId),
-                supabase.from('hub_visits').select('source, created_at, visitor_id').eq('restaurant_id', restaurantId).gte('created_at', new Date(Date.now() - TREND_DAYS * DAY_MS).toISOString()),
+                supabase.from('hub_visits').select('source, created_at, visitor_id, branch_id').eq('restaurant_id', restaurantId).gte('created_at', new Date(Date.now() - TREND_DAYS * DAY_MS).toISOString()),
                 supabase.from('restaurants').select('username').eq('id', restaurantId).single(),
                 supabase.from('reviews').select('id, rating, comment, created_at, is_visible').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }),
                 supabase.from('menu_item_reviews').select('id, menu_item_id, rating, comment, created_at, is_visible').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }),
+                supabase.from('branches').select('id, name, name_en').eq('restaurant_id', restaurantId),
             ]);
 
             const items = (itemsRes.data || []) as MenuItem[];
@@ -307,6 +311,7 @@ export default function InsightsHubPage() {
             let qrCount = 0; let linkCount = 0;
             const dates: string[] = [];
             const sources: Partial<Record<TrafficSource, number>> = {};
+            const branchVisitCounts: Record<string, number> = {};
             const uniqueThisWeek = new Set<string>();
             const sevenDaysAgoMs = Date.now() - 7 * DAY_MS;
             (hubVisitsRes.data || []).forEach((d: any) => {
@@ -323,12 +328,18 @@ export default function InsightsHubPage() {
                 // an unrecognized key.
                 const src = (KNOWN_TRAFFIC_SOURCES.has(d.source) ? d.source : 'other') as TrafficSource;
                 sources[src] = (sources[src] || 0) + 1;
+                if (d.branch_id) branchVisitCounts[d.branch_id] = (branchVisitCounts[d.branch_id] || 0) + 1;
             });
             setHubVisitsQr(qrCount);
             setHubVisitsLink(linkCount);
             setSourceCounts(sources);
+            setBranchCounts(branchVisitCounts);
             setVisitDates(dates);
             setUniqueVisitorsThisWeek(uniqueThisWeek.size);
+
+            const branchNameMap: Record<string, { name: string; name_en?: string }> = {};
+            (branchesRes.data || []).forEach((b: any) => { branchNameMap[b.id] = { name: b.name, name_en: b.name_en }; });
+            setBranchNames(branchNameMap);
 
             const rest = restRes.data as any;
             setHubUsername(rest?.username || null);
@@ -400,7 +411,7 @@ export default function InsightsHubPage() {
             const [visitsRes, itemsRes] = await Promise.all([
                 supabase
                     .from('analytics_daily')
-                    .select('day, visits_total, visits_unique, visits_qr, visits_link, source_breakdown')
+                    .select('day, visits_total, visits_unique, visits_qr, visits_link, source_breakdown, branch_breakdown')
                     .eq('restaurant_id', user.restaurantId)
                     .gte('day', start)
                     .lte('day', end)
@@ -431,7 +442,7 @@ export default function InsightsHubPage() {
     useEffect(() => { fetchHistory(); }, [fetchHistory]);
 
     const historyTotals = useMemo(() => {
-        const totals = { visits: 0, unique: 0, qr: 0, link: 0, sources: {} as Record<string, number> };
+        const totals = { visits: 0, unique: 0, qr: 0, link: 0, sources: {} as Record<string, number>, branches: {} as Record<string, number> };
         historyRows.forEach((r) => {
             totals.visits += r.visits_total;
             totals.unique += r.visits_unique;
@@ -440,9 +451,18 @@ export default function InsightsHubPage() {
             Object.entries(r.source_breakdown || {}).forEach(([src, count]) => {
                 totals.sources[src] = (totals.sources[src] || 0) + count;
             });
+            Object.entries(r.branch_breakdown || {}).forEach(([branchId, count]) => {
+                totals.branches[branchId] = (totals.branches[branchId] || 0) + count;
+            });
         });
         return totals;
     }, [historyRows]);
+
+    const topHistoryBranches = useMemo(() => {
+        return Object.entries(historyTotals.branches)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8);
+    }, [historyTotals.branches]);
 
     useEffect(() => {
         if (!hubUsername || typeof window === 'undefined') return;
@@ -481,6 +501,21 @@ export default function InsightsHubPage() {
             .sort((a, b) => b[1] - a[1]);
     }, [sourceCounts]);
     const sourceTotal = sortedSources.reduce((s, [, count]) => s + count, 0);
+
+    // Highest-count branch first - only branches with at least one
+    // branch-linked visit show up here (a branch nobody's visited via its
+    // link yet simply doesn't appear, same convention as sortedSources).
+    const sortedBranches = useMemo(() => {
+        return Object.entries(branchCounts)
+            .filter(([, count]) => count > 0)
+            .sort((a, b) => b[1] - a[1]);
+    }, [branchCounts]);
+    const branchVisitTotal = sortedBranches.reduce((s, [, count]) => s + count, 0);
+    const branchLabel = (id: string) => {
+        const b = branchNames[id];
+        if (!b) return t('reports.unknownBranch');
+        return (dir === 'ltr' && b.name_en) || b.name;
+    };
 
     const baseUrl = typeof window !== 'undefined'
         ? (import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, '')
@@ -751,6 +786,43 @@ export default function InsightsHubPage() {
                 </div>
             )}
 
+            {/* Per-branch performance - only visits recorded via a
+                branch-specific link/QR (?branch=<id>) are attributable to a
+                branch, so a restaurant with a single branch or with visitors
+                only landing on the general hub link won't see this card. */}
+            {sortedBranches.length > 0 && (
+                <div className="bg-white border border-gray-100 rounded-2xl p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                        <MapPin className="h-4 w-4 text-gray-600" />
+                        <h3 className="text-sm font-bold text-gray-900">{t('reports.branchPerformanceTitle')}</h3>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {sortedBranches.map(([branchId, count]) => {
+                            const pct = branchVisitTotal > 0 ? (count / branchVisitTotal) * 100 : 0;
+                            return (
+                                <div key={branchId} className="flex items-center gap-2.5 p-2.5 bg-gray-50 border border-gray-100 rounded-xl">
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-gray-100 flex items-center justify-center shrink-0 text-gray-600">
+                                        <MapPin className="h-3.5 w-3.5" size={14} />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <span className="text-xs font-bold text-gray-900 truncate">{branchLabel(branchId)}</span>
+                                            <span className="text-[10px] font-mono font-bold text-gray-600 shrink-0">{count} · {pct.toFixed(0)}%</span>
+                                        </div>
+                                        <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden mt-1.5">
+                                            <div className="h-full rounded-full bg-[#2a78d6] transition-all" style={{ width: `${pct}%` }} />
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <p className="text-[10px] text-gray-500 mt-4 pt-4 border-t border-gray-100 leading-relaxed">
+                        {t('reports.branchPerformanceNote')}
+                    </p>
+                </div>
+            )}
+
             {/* Historical reports by period — reads analytics_daily, not raw event tables */}
             <div className="bg-white border border-gray-100 rounded-2xl p-5">
                 <div className="flex items-center justify-between flex-wrap gap-3 mb-1">
@@ -815,6 +887,26 @@ export default function InsightsHubPage() {
                                     <div className="min-w-0 flex-1">
                                         <p className="text-[11px] font-bold text-gray-900 truncate">{itemNameOf(itemId) || t('reports.historyUnknownItem')}</p>
                                         <p className="text-[10px] text-gray-500">{count} {t('reports.historyInteractionWord')}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {topHistoryBranches.length > 0 && (
+                    <div className="border-t border-gray-100 pt-4 mb-4">
+                        <div className="flex items-center gap-1.5 mb-3">
+                            <MapPin className="h-3.5 w-3.5 text-gray-600" />
+                            <p className="text-[11px] font-bold text-gray-700">{t('reports.historyTopBranchesTitle')}</p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+                            {topHistoryBranches.map(([branchId, count], idx) => (
+                                <div key={branchId} className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl p-2.5">
+                                    <span className="w-5 h-5 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-[11px] font-bold text-gray-900 truncate">{branchLabel(branchId)}</p>
+                                        <p className="text-[10px] text-gray-500">{count} {t('reports.visitWord')}</p>
                                     </div>
                                 </div>
                             ))}
