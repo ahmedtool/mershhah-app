@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import type { ChatMessage, ChatSession } from '@/lib/types';
 import { sanitizeFileName } from '@/lib/utils';
+import { useResolvedAttachmentUrls } from '@/hooks/useResolvedAttachmentUrls';
 import { useLanguage } from '@/components/shared/LanguageContext';
 
 // This page is deliberately a single fixed thread, not a messaging inbox:
@@ -116,6 +117,8 @@ export default function OwnerSupportPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const attachmentUrls = useResolvedAttachmentUrls(messages);
+
   const handleSendMessage = async (e: FormEvent, file?: File) => {
     e.preventDefault();
     if ((message.trim() === '' && !file) || !chat || !user) return;
@@ -134,9 +137,8 @@ export default function OwnerSupportPage() {
           .upload(filePath, file);
         if (uploadError) throw uploadError;
 
-        const { data: urlData } = supabase.storage.from('chat-attachments').getPublicUrl(filePath);
         attachmentData = {
-          attachment_url: urlData.publicUrl,
+          attachment_url: filePath,
           attachment_filename: file.name,
           attachment_type: file.type.startsWith('image/') ? 'image' : 'file',
         };
@@ -230,12 +232,14 @@ export default function OwnerSupportPage() {
                     {msg.text && <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>}
                     {msg.attachment_url && (
                       <div className="mt-2">
-                        {msg.attachment_type === 'image' ? (
-                          <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer">
-                            <img src={msg.attachment_url} alt={msg.attachment_filename || ''} width={200} height={200} className="rounded-lg object-cover cursor-pointer" />
+                        {!attachmentUrls[msg.id] ? (
+                          <div className="w-[200px] h-[200px] bg-black/10 rounded-lg animate-pulse" />
+                        ) : msg.attachment_type === 'image' ? (
+                          <a href={attachmentUrls[msg.id]} target="_blank" rel="noopener noreferrer">
+                            <img src={attachmentUrls[msg.id]} alt={msg.attachment_filename || ''} width={200} height={200} className="rounded-lg object-cover cursor-pointer" />
                           </a>
                         ) : (
-                          <a href={msg.attachment_url} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 p-2 rounded-lg ${isOwner ? 'bg-white/10' : 'bg-white border border-gray-100'} hover:opacity-80 transition-opacity`}>
+                          <a href={attachmentUrls[msg.id]} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 p-2 rounded-lg ${isOwner ? 'bg-white/10' : 'bg-white border border-gray-100'} hover:opacity-80 transition-opacity`}>
                             <FileIcon className="h-4 w-4 shrink-0" />
                             <span className="text-[11px] underline truncate">{msg.attachment_filename || t('ownerSupport.file')}</span>
                             <Download className="h-3 w-3 shrink-0" />
