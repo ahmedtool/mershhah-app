@@ -35,6 +35,8 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
   const [deleteBranch, setDeleteBranch] = useState<Branch | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const selectedBranches = branches.filter((b) => selectedIds.has(b.id));
@@ -80,6 +82,29 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0 || !restaurantId) return;
+    setBulkDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('branches')
+        .delete()
+        .in('id', Array.from(selectedIds))
+        .eq('restaurant_id', restaurantId);
+      if (error) throw error;
+      toast({ title: `${t('branches.deletedCountPrefix')} ${selectedIds.size} ${t('branches.branchWord')}` });
+      syncPublicPage(restaurantId).catch(() => {});
+      onChanged?.();
+      clearSelection();
+      setBulkDeleteOpen(false);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast({ variant: 'destructive', title: t('menu.deleteError'), description: msg });
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
   if (branches.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -117,6 +142,13 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
               >
                 <Layers className="h-3.5 w-3.5" />
                 {t('branches.bulkEdit')}
+              </button>
+              <button
+                onClick={() => setBulkDeleteOpen(true)}
+                className="h-8 px-3.5 rounded-lg bg-red-500 text-white text-xs font-bold hover:bg-red-600 transition-colors flex items-center gap-1.5"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {t('branches.deleteSelectedTitle')}
               </button>
               <button
                 onClick={clearSelection}
@@ -262,6 +294,23 @@ export function BranchesList({ branches, restaurantId, username, onChanged }: Br
             <AlertDialogCancel disabled={deleting}>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-destructive hover:bg-destructive/90">
               {deleting ? t('menu.deleting') : t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
+        <AlertDialogContent dir={dir} className={dir === 'rtl' ? 'text-right' : 'text-left'}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('branches.confirmBulkDeleteTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('branches.confirmBulkDeletePrefix')} {selectedIds.size} {t('branches.branchWord')}؟
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} disabled={bulkDeleting} className="bg-destructive hover:bg-destructive/90">
+              {bulkDeleting ? t('menu.deleting') : t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

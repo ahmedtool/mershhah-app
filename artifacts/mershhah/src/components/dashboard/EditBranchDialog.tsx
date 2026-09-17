@@ -14,7 +14,7 @@ import { TimePicker } from '@/components/ui/time-picker';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
 import { createPlacesSessionToken, autocompletePlaces, getPlaceDetails, type PlaceSuggestion, type DayHours } from '@/lib/geocoding';
-import { parseOpeningHoursText } from '@/lib/branch-hours';
+import { parseOpeningHoursText, generateHoursText } from '@/lib/branch-hours';
 import saGeodata from '@/data/sa-geodata.json';
 import type { Branch } from '@/lib/types';
 import { useUser } from '@/hooks/useUser';
@@ -34,23 +34,6 @@ function buildSchema(t: (key: string) => string) {
 }
 
 type FormValues = z.infer<ReturnType<typeof buildSchema>>;
-
-function generateHoursText(open: string, close: string, friOpen: string, friClose: string): string {
-  if (!open || !close) return '';
-  const to12 = (t: string) => {
-    const [h, m] = t.split(':');
-    const hour24 = parseInt(h);
-    const period = hour24 >= 12 ? 'م' : 'ص';
-    let hour12 = hour24 % 12;
-    if (hour12 === 0) hour12 = 12;
-    return `${hour12}:${m} ${period}`;
-  };
-  let text = `يوميًا ${to12(open)} - ${to12(close)}`;
-  if (friOpen && friClose) {
-    text += ` (الجمعة ${to12(friOpen)} - ${to12(friClose)})`;
-  }
-  return text;
-}
 
 // Google returns one open/close pair per day of week (0=Sunday..6=Saturday).
 // The branch form only models "same hours every day, optionally different

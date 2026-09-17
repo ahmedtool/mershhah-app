@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { TimePicker } from '@/components/ui/time-picker';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Check, X } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
+import { generateHoursText } from '@/lib/branch-hours';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import type { Branch } from '@/lib/types';
 
@@ -23,11 +25,17 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
   const { t, dir } = useLanguage();
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<'active' | 'inactive' | null>(null);
-  const [openingHours, setOpeningHours] = useState('');
+  const [allDaysOpen, setAllDaysOpen] = useState('');
+  const [allDaysClose, setAllDaysClose] = useState('');
+  const [showFriday, setShowFriday] = useState(false);
+  const [fridayOpen, setFridayOpen] = useState('');
+  const [fridayClose, setFridayClose] = useState('');
   const [phone, setPhone] = useState('');
   const [applyStatus, setApplyStatus] = useState(false);
   const [applyHours, setApplyHours] = useState(false);
   const [applyPhone, setApplyPhone] = useState(false);
+
+  const openingHoursText = generateHoursText(allDaysOpen, allDaysClose, showFriday ? fridayOpen : '', showFriday ? fridayClose : '');
 
   const handleSave = async () => {
     if (!restaurantId || branches.length === 0) return;
@@ -40,7 +48,7 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
     try {
       const updates: Record<string, unknown> = {};
       if (applyStatus && status) updates.status = status;
-      if (applyHours && openingHours.trim()) updates.opening_hours = openingHours.trim();
+      if (applyHours && openingHoursText) updates.opening_hours = openingHoursText;
       if (applyPhone) updates.phone = phone.trim() || null;
 
       const { error } = await supabase
@@ -65,7 +73,11 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
 
   const resetState = () => {
     setStatus(null);
-    setOpeningHours('');
+    setAllDaysOpen('');
+    setAllDaysClose('');
+    setShowFriday(false);
+    setFridayOpen('');
+    setFridayClose('');
     setPhone('');
     setApplyStatus(false);
     setApplyHours(false);
@@ -78,15 +90,8 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetState(); onOpenChange(o); }}>
       <DialogContent className="sm:max-w-md p-0 gap-0" dir={dir}>
         <div className="px-5 pt-5 pb-3 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-gray-900">{t('branches.bulkEdit')}</h2>
-              <p className="text-xs text-gray-600 mt-0.5">{branches.length} {t('branches.branchesSelectedSuffix')}</p>
-            </div>
-            <button onClick={() => onOpenChange(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-gray-600 hover:bg-gray-100">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
+          <h2 className="text-base font-bold text-gray-900">{t('branches.bulkEdit')}</h2>
+          <p className="text-xs text-gray-600 mt-0.5">{branches.length} {t('branches.branchesSelectedSuffix')}</p>
         </div>
 
         <div className="p-5 space-y-5">
@@ -123,13 +128,27 @@ export function BulkEditDialog({ open, onOpenChange, branches, restaurantId, onS
               <span className="text-sm font-medium text-gray-700">{t('branches.changeHours')}</span>
             </label>
             {applyHours && (
-              <div className="ms-6">
-                <Input
-                  value={openingHours}
-                  onChange={(e) => setOpeningHours(e.target.value)}
-                  placeholder={t('branches.hoursPlaceholderExample')}
-                  className="h-10 rounded-xl border-gray-200 text-sm"
-                />
+              <div className="ms-6 space-y-2">
+                <div className="flex gap-2">
+                  <TimePicker value={allDaysOpen} onChange={setAllDaysOpen} label={t('branches.openLabel')} className="flex-1" />
+                  <TimePicker value={allDaysClose} onChange={setAllDaysClose} label={t('branches.closeLabel')} className="flex-1" />
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={showFriday} onChange={(e) => { setShowFriday(e.target.checked); if (!e.target.checked) { setFridayOpen(''); setFridayClose(''); } }}
+                    className="w-3.5 h-3.5 rounded border-gray-300" />
+                  <span className="text-[11px] text-gray-600">{t('branches.fridayDifferent')}</span>
+                </label>
+                {showFriday && (
+                  <div className="flex gap-2">
+                    <TimePicker value={fridayOpen} onChange={setFridayOpen} label={t('branches.fridayOpenLabel')} className="flex-1" />
+                    <TimePicker value={fridayClose} onChange={setFridayClose} label={t('branches.fridayCloseLabel')} className="flex-1" />
+                  </div>
+                )}
+                {openingHoursText && (
+                  <div className="bg-gray-50 border border-gray-100 rounded-lg p-2">
+                    <p className="text-xs text-gray-600">{openingHoursText}</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

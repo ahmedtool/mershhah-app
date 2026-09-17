@@ -53,6 +53,28 @@ export function isBranchOpenNow(openingHours?: string | null): boolean | null {
   return isWithinRange(now.getHours() * 60 + now.getMinutes(), activeRange);
 }
 
+// Builds the exact "يوميًا H:MM ص/م - H:MM ص/م (الجمعة H:MM ص/م - H:MM ص/م)"
+// text isBranchOpenNow()/parseOpeningHoursText() above expect, from the
+// 24-hour "HH:MM" values a TimePicker produces. Shared by EditBranchDialog
+// (single branch) and BulkEditDialog (many at once) so both write the
+// exact same format.
+export function generateHoursText(open: string, close: string, friOpen: string, friClose: string): string {
+  if (!open || !close) return '';
+  const to12 = (t: string) => {
+    const [h, m] = t.split(':');
+    const hour24 = parseInt(h);
+    const period = hour24 >= 12 ? 'م' : 'ص';
+    let hour12 = hour24 % 12;
+    if (hour12 === 0) hour12 = 12;
+    return `${hour12}:${m} ${period}`;
+  };
+  let text = `يوميًا ${to12(open)} - ${to12(close)}`;
+  if (friOpen && friClose) {
+    text += ` (الجمعة ${to12(friOpen)} - ${to12(friClose)})`;
+  }
+  return text;
+}
+
 export interface ParsedOpeningHours {
   allOpen: string;
   allClose: string;
