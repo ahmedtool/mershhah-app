@@ -244,7 +244,7 @@ function recentRawInteractionsStartUtcIso(): string {
 export default function InsightsHubPage() {
     const { user, isLoading: isUserLoading } = useUser();
     const { toast } = useToast();
-    const { t, locale } = useLanguage();
+    const { t, locale, dir } = useLanguage();
     const [isLoadingData, setIsLoadingData] = useState(true);
     const [analysisData, setAnalysisData] = useState<AnalyzedItem[]>([]);
     const [totalClicks, setTotalClicks] = useState(0);
@@ -254,7 +254,7 @@ export default function InsightsHubPage() {
     const [visitDates, setVisitDates] = useState<string[]>([]);
     const [fullReviews, setFullReviews] = useState<FullReview[]>([]);
     const [itemReviews, setItemReviews] = useState<ItemReview[]>([]);
-    const [itemNames, setItemNames] = useState<Record<string, string>>({});
+    const [itemNames, setItemNames] = useState<Record<string, { name: string; name_en?: string }>>({});
     const [reputationTab, setReputationTab] = useState<'restaurant' | 'products'>('restaurant');
     const [reviewSort, setReviewSort] = useState<ReviewSort>('newest');
     const [restaurantRating, setRestaurantRating] = useState(0);
@@ -273,6 +273,12 @@ export default function InsightsHubPage() {
 
     const isPaid = user?.entitlements?.planId && user.entitlements.planId !== 'free' && user.entitlements.planId !== 'none';
     const liveVisitorCount = useLiveVisitorCount(user?.restaurantId);
+
+    const itemNameOf = useCallback((id: string): string | null => {
+        const entry = itemNames[id];
+        if (!entry) return null;
+        return (dir === 'ltr' && entry.name_en) || entry.name;
+    }, [itemNames, dir]);
 
     const scrollToInsightTarget = useCallback((target?: InsightTarget) => {
         const ref = target === 'matrix' ? matrixRef : target === 'trend' ? trendChartRef : null;
@@ -333,8 +339,8 @@ export default function InsightsHubPage() {
 
             setFullReviews((reviewsRes.data || []) as FullReview[]);
             setItemReviews((itemReviewsRes.data || []) as ItemReview[]);
-            const names: Record<string, string> = {};
-            items.forEach(i => { if (i.id) names[i.id] = i.name || ''; });
+            const names: Record<string, { name: string; name_en?: string }> = {};
+            items.forEach(i => { if (i.id) names[i.id] = { name: i.name || '', name_en: i.name_en }; });
             setItemNames(names);
 
             const popularityMap = new Map<string, number>();
@@ -796,7 +802,7 @@ export default function InsightsHubPage() {
                                 <div key={itemId} className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl p-2.5">
                                     <span className="w-5 h-5 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
                                     <div className="min-w-0 flex-1">
-                                        <p className="text-[11px] font-bold text-gray-900 truncate">{itemNames[itemId] || t('reports.historyUnknownItem')}</p>
+                                        <p className="text-[11px] font-bold text-gray-900 truncate">{itemNameOf(itemId) || t('reports.historyUnknownItem')}</p>
                                         <p className="text-[10px] text-gray-500">{count} {t('reports.historyInteractionWord')}</p>
                                     </div>
                                 </div>
@@ -940,7 +946,7 @@ export default function InsightsHubPage() {
                                 <div key={item.id || `popular-${idx}`} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
                                     <div className="flex items-center gap-3">
                                         <span className="text-[10px] font-bold text-gray-600 w-4">{idx + 1}</span>
-                                        <span className="text-sm font-bold text-gray-900">{item.name}</span>
+                                        <span className="text-sm font-bold text-gray-900">{(dir === 'ltr' && item.name_en) || item.name}</span>
                                     </div>
                                     <span className="text-[10px] font-mono font-bold text-gray-600 bg-white border border-gray-100 px-2 py-0.5 rounded-md">{item.popularity}</span>
                                 </div>
@@ -1092,7 +1098,7 @@ export default function InsightsHubPage() {
                                                         <Star key={s} className={cn("h-3 w-3", review.rating >= s ? "text-amber-400 fill-amber-400" : "text-gray-200")} />
                                                     ))}
                                                 </div>
-                                                <span className="text-[10px] font-bold text-gray-700 truncate">{itemNames[review.menu_item_id] || t('reports.deletedItem')}</span>
+                                                <span className="text-[10px] font-bold text-gray-700 truncate">{itemNameOf(review.menu_item_id) || t('reports.deletedItem')}</span>
                                             </div>
                                             <span className="text-[9px] text-gray-600 shrink-0">
                                                 {review.created_at ? formatDistanceToNow(new Date(review.created_at), { addSuffix: true, locale: locale === 'ar' ? ar : undefined }) : ''}
