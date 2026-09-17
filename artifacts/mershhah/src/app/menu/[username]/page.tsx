@@ -26,6 +26,7 @@ import { useNearestBranch } from '@/hooks/useNearestBranch';
 import { Riyal } from '@/components/shared/Riyal';
 import { usePublicPageBackground } from '@/hooks/usePublicPageBackground';
 import { useAnnouncePresence } from '@/hooks/useRestaurantPresence';
+import { ALLERGEN_META } from '@/lib/allergens';
 
 // One order channel shown on an item's card - either the branch's own
 // custom app (the featured "direct" tile) or one of its enabled global
@@ -803,6 +804,24 @@ function MenuExperience({ categories, categoryNameEn, menuItems, searchQuery, pr
                     )}
                   </div>
                 </div>
+
+                {(() => {
+                  const resolved = (activeItem.allergens || [])
+                    .map((raw: string) => ALLERGEN_META.find((a) => a.id === raw))
+                    .filter((meta: typeof ALLERGEN_META[number] | undefined): meta is typeof ALLERGEN_META[number] => !!meta);
+                  if (resolved.length === 0) return null;
+                  return (
+                    <div dir={dir} className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-gray-600">{t('menuItem.containsPrefix')}</span>
+                      {resolved.map((meta) => (
+                        <span key={meta.id} className="inline-flex items-center gap-1 bg-gray-50 border border-gray-100 rounded-full px-2 py-0.5 text-[10px] text-gray-700">
+                          <span>{meta.icon}</span>
+                          <span>{t(meta.labelKey)}</span>
+                        </span>
+                      ))}
+                    </div>
+                  );
+                })()}
 
                 {sizes.length > 1 && (
                   <div dir={dir} className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${sizes.length}, 1fr)` }}>

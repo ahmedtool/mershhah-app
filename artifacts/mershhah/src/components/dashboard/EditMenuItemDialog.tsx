@@ -23,19 +23,7 @@ import { syncPublicPage } from '@/lib/public-pages';
 import { COMMON_CATEGORY_SUGGESTIONS } from '@/lib/category-suggestions';
 import { useUser } from '@/hooks/useUser';
 import { useLanguage } from '@/components/shared/LanguageContext';
-
-
-const ALLERGEN_META = [
-  { id: 'nuts', labelKey: 'menuItem.allergenNuts', icon: '🥜' },
-  { id: 'milk', labelKey: 'menuItem.allergenMilk', icon: '🥛' },
-  { id: 'eggs', labelKey: 'menuItem.allergenEggs', icon: '🥚' },
-  { id: 'wheat', labelKey: 'menuItem.allergenWheat', icon: '🌾' },
-  { id: 'fish', labelKey: 'menuItem.allergenFish', icon: '🐟' },
-  { id: 'shellfish', labelKey: 'menuItem.allergenShellfish', icon: '🦐' },
-  { id: 'soy', labelKey: 'menuItem.allergenSoy', icon: '🫘' },
-  { id: 'sesame', labelKey: 'menuItem.allergenSesame', icon: '⚪' },
-  { id: 'gluten', labelKey: 'menuItem.allergenGluten', icon: '🍞' },
-];
+import { ALLERGEN_META } from '@/lib/allergens';
 
 function buildMenuItemSchema(t: (key: string) => string) {
   const sizeSchema = z.object({
