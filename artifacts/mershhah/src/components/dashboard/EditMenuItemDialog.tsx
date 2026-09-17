@@ -477,20 +477,20 @@ export function EditMenuItemDialog({
                 ) : (
                   <>
                     <p className="text-[10px] text-gray-600">{t('menuItem.channelPricesHint')}</p>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {globalApps.map((app) => (
-                        <div key={app.id} className="flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100">
+                        <div key={app.id} className="flex flex-col items-center gap-1.5 bg-gray-50 p-2 rounded-xl border border-gray-100">
                           <div className="relative w-6 h-6 rounded-md bg-white border border-gray-100 shrink-0 overflow-hidden">
                             <StorageImage imagePath={app.logo_url} alt={app.name} fill className="object-contain" sizes="24px" />
                           </div>
-                          <span className="text-[11px] font-bold text-gray-700 flex-1 truncate">{dir === 'ltr' && app.name_en ? app.name_en : app.name}</span>
+                          <span className="text-[10px] font-bold text-gray-700 text-center truncate w-full">{dir === 'ltr' && app.name_en ? app.name_en : app.name}</span>
                           <Input
                             type="number"
                             dir="ltr"
                             value={channelPrices[app.id] ?? ''}
                             onChange={(e) => setChannelPrices((prev) => ({ ...prev, [app.id]: e.target.value }))}
                             placeholder={t('menuItem.pricePlaceholder')}
-                            className="h-8 w-24 text-xs rounded-lg border-gray-200"
+                            className="h-7 w-full text-[11px] text-center rounded-lg border-gray-200 px-1"
                             disabled={pending}
                           />
                         </div>
