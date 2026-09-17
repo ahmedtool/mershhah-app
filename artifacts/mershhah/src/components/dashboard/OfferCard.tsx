@@ -17,7 +17,7 @@ interface OfferCardProps {
 }
 
 export function OfferCard({ offer, onDelete, restaurantId, branches = [], onActionCompletion }: OfferCardProps) {
-    const { t, locale } = useLanguage();
+    const { t, locale, dir } = useLanguage();
     const validUntilDate = offer.valid_until ? new Date(offer.valid_until) : new Date();
     const timeRemaining = Math.round((validUntilDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24));
     const isExpired = timeRemaining < 0;
@@ -44,14 +44,14 @@ export function OfferCard({ offer, onDelete, restaurantId, branches = [], onActi
             {/* Content */}
             <div className="p-4 flex-1">
                 <div className="flex items-center gap-1.5 mb-1">
-                    <h3 className="text-sm font-bold text-gray-900">{offer.title}</h3>
+                    <h3 className="text-sm font-bold text-gray-900">{(dir === 'ltr' && offer.title_en) || offer.title}</h3>
                     {targetBranch && (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 shrink-0">
-                            {targetBranch.name}
+                            {(dir === 'ltr' && targetBranch.name_en) || targetBranch.name}
                         </span>
                     )}
                 </div>
-                <p className="text-[11px] text-gray-600 line-clamp-2 mb-3">{offer.description}</p>
+                <p className="text-[11px] text-gray-600 line-clamp-2 mb-3">{(dir === 'ltr' && offer.description_en) || offer.description}</p>
 
                 {offer.external_link && (
                     <div className="flex items-center gap-1.5 text-[10px] text-gray-600 bg-gray-50 border border-gray-100 p-2 rounded-lg mb-3">

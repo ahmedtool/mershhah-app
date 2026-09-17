@@ -185,6 +185,7 @@ export type Offer = {
   views_count?: number;
   clicks_count?: number;
   link_clicks_count?: number;
+  show_text_to_visitors?: boolean; // false = hub page shows only the image, title/description stay owner-only
 };
 
 export type Subscription = {

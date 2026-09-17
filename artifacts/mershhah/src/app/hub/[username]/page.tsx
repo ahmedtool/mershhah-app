@@ -349,17 +349,21 @@ export default function RestaurantHubPage() {
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                         sizes="400px"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <h4 className="text-base font-black text-white text-center drop-shadow-lg">
-                          {offer.title}
-                        </h4>
-                        {offer.description && (
-                          <p className="text-xs text-white/90 text-center drop-shadow-lg mt-0.5 line-clamp-1">
-                            {offer.description}
-                          </p>
-                        )}
-                      </div>
+                      {offer.show_text_to_visitors !== false && (
+                        <>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                          <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <h4 className="text-base font-black text-white text-center drop-shadow-lg">
+                              {(dir === 'ltr' && offer.title_en) || offer.title}
+                            </h4>
+                            {offer.description && (
+                              <p className="text-xs text-white/90 text-center drop-shadow-lg mt-0.5 line-clamp-1">
+                                {(dir === 'ltr' && offer.description_en) || offer.description}
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </button>
                 ))}

@@ -10,13 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "../ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ImageIcon, UploadCloud, X, Calendar, ChevronDown, Check } from "lucide-react";
+import { Loader2, ImageIcon, UploadCloud, X, CalendarIcon, ChevronDown, Check, Sparkles } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { ar as arLocale, enUS } from "date-fns/locale";
 import { supabase } from "@/lib/supabase";
 import { uploadToImageKit } from "@/lib/imagekit";
 import { syncPublicPage } from '@/lib/public-pages';
+import { translateText } from '@/lib/translate-text';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import type { MenuItem, Branch } from "@/lib/types";
 import { Badge } from "../ui/badge";
@@ -28,13 +33,16 @@ import { useLanguage } from "@/components/shared/LanguageContext";
 function buildOfferSchema(t: (key: string) => string) {
   return z.object({
     title: z.string().min(2, t('offers.titleRequired')),
+    title_en: z.string().optional(),
     description: z.string().min(10, t('offers.descriptionMinLength')),
+    description_en: z.string().optional(),
     image_url: z.string().optional().or(z.literal("")),
     external_link: z.string().url({ message: t('offers.enterValidLink') }).optional().or(z.literal('')),
     valid_until: z.date({ required_error: t('offers.expiryDateRequired') }),
     status: z.enum(['active', 'expired']).default('active'),
     items: z.array(z.string()).optional(),
     branch_id: z.string().nullable().optional(),
+    show_text_to_visitors: z.boolean().default(true),
   });
 }
 
@@ -64,8 +72,49 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isTranslatingTitle, setIsTranslatingTitle] = useState(false);
+  const [isTranslatingDescription, setIsTranslatingDescription] = useState(false);
+  const [cityFilter, setCityFilter] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const offerSchema = useMemo(() => buildOfferSchema(t), [t]);
+
+  const cities = useMemo(
+    () => [...new Set(branches.map((b) => b.city).filter(Boolean))] as string[],
+    [branches],
+  );
+  const cityLabelOf = (city: string) => {
+    const withEn = branches.find((b) => b.city === city && b.city_en);
+    return (dir === 'ltr' && withEn?.city_en) || city;
+  };
+  const visibleBranches = cityFilter ? branches.filter((b) => b.city === cityFilter) : branches;
+
+  async function handleTranslateTitle() {
+    const title = form.getValues('title');
+    if (!title.trim()) return;
+    setIsTranslatingTitle(true);
+    try {
+      const title_en = await translateText(title);
+      form.setValue('title_en', title_en, { shouldValidate: true });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: t('menuItem.translationFailed'), description: error.message });
+    } finally {
+      setIsTranslatingTitle(false);
+    }
+  }
+
+  async function handleTranslateDescription() {
+    const description = form.getValues('description');
+    if (!description.trim()) return;
+    setIsTranslatingDescription(true);
+    try {
+      const description_en = await translateText(description);
+      form.setValue('description_en', description_en, { shouldValidate: true });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: t('menuItem.translationFailed'), description: error.message });
+    } finally {
+      setIsTranslatingDescription(false);
+    }
+  }
 
   const form = useForm<FormValues>({
     resolver: zodResolver(offerSchema),
@@ -86,20 +135,26 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
       fetchMenuItems();
       form.reset(isEditing ? {
         ...offer,
+        title_en: offer.title_en || "",
+        description_en: offer.description_en || "",
         valid_until: offer.valid_until ? new Date(offer.valid_until) : new Date(),
         items: offer.items || [],
         image_url: offer.image_url || "",
         external_link: offer.external_link || "",
         branch_id: offer.branch_id ?? null,
+        show_text_to_visitors: offer.show_text_to_visitors !== false,
       } : {
         title: initialValues?.title || "",
+        title_en: "",
         description: initialValues?.description || "",
+        description_en: "",
         image_url: "",
         external_link: "",
         valid_until: undefined,
         status: 'active',
         items: [],
         branch_id: null,
+        show_text_to_visitors: true,
       });
       setImageFile(null);
       setImagePreview(offer?.image_url || null);
@@ -252,6 +307,26 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="title_en"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs text-gray-600">{t('offers.offerTitle')} <span className="text-gray-600">({t('menuItem.english')})</span></FormLabel>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Input dir="ltr" placeholder="e.g. 20% off this weekend" {...field} className="h-11 rounded-xl border-gray-200 text-sm" disabled={isSaving} />
+                      </FormControl>
+                      <button type="button" onClick={handleTranslateTitle} disabled={isSaving || isTranslatingTitle}
+                        className="h-11 w-11 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors shrink-0 disabled:opacity-50"
+                        title={t('menuItem.translateAuto')}>
+                        {isTranslatingTitle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <FormMessage className="text-[10px]" />
+                  </FormItem>
+                )}
+              />
 
               {/* Description */}
               <FormField
@@ -270,6 +345,45 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                       />
                     </FormControl>
                     <FormMessage className="text-[10px]" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description_en"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs text-gray-600">{t('offers.offerDescriptionLabel')} <span className="text-gray-600">({t('menuItem.english')})</span></FormLabel>
+                    <div className="flex gap-2">
+                      <FormControl>
+                        <Textarea dir="ltr" placeholder="Describe the offer in English" {...field} rows={3} className="rounded-xl border-gray-200 text-sm resize-none min-h-[80px]" disabled={isSaving} />
+                      </FormControl>
+                      <button type="button" onClick={handleTranslateDescription} disabled={isSaving || isTranslatingDescription}
+                        className="h-11 w-11 rounded-xl border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors shrink-0 disabled:opacity-50 self-start"
+                        title={t('menuItem.translateAuto')}>
+                        {isTranslatingDescription ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <FormMessage className="text-[10px]" />
+                  </FormItem>
+                )}
+              />
+
+              {/* Visitor text visibility */}
+              <FormField
+                control={form.control}
+                name="show_text_to_visitors"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between gap-3 bg-gray-50 border border-gray-100 rounded-xl p-3">
+                      <div>
+                        <p className="text-xs font-bold text-gray-900">{t('offers.showTextToVisitors')}</p>
+                        <p className="text-[10px] text-gray-600 mt-0.5">{t('offers.showTextToVisitorsHint')}</p>
+                      </div>
+                      <FormControl>
+                        <Switch checked={field.value} onCheckedChange={field.onChange} disabled={isSaving} />
+                      </FormControl>
+                    </div>
                   </FormItem>
                 )}
               />
@@ -317,7 +431,10 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                               {field.value?.length ? (
                                 field.value.slice(0, 2).map(itemId => (
                                   <Badge key={itemId} variant="secondary" className="text-[10px] px-1.5 py-0">
-                                    {menuItems.find(item => item.id === itemId)?.name}
+                                    {(() => {
+                                      const item = menuItems.find(i => i.id === itemId);
+                                      return (dir === 'ltr' && item?.name_en) || item?.name;
+                                    })()}
                                   </Badge>
                                 ))
                               ) : (
@@ -350,7 +467,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                                   }}
                                 >
                                   <Check className={cn("h-4 w-4 shrink-0", field.value?.includes(item.id) ? "opacity-100" : "opacity-0")} />
-                                  <span className="ms-2">{item.name}</span>
+                                  <span className="ms-2">{(dir === 'ltr' && item.name_en) || item.name}</span>
                                 </CommandItem>
                               ))}
                             </CommandGroup>
@@ -371,6 +488,17 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs text-gray-600">{t('offers.showsIn')} <span className="text-gray-600">({t('common.optional')})</span></FormLabel>
+                      {cities.length > 1 && (
+                        <Select value={cityFilter ?? '__all__'} onValueChange={(v) => setCityFilter(v === '__all__' ? null : v)}>
+                          <SelectTrigger className="h-9 rounded-xl border-gray-200 text-xs mb-1.5"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__all__">{t('offers.allCitiesOption')}</SelectItem>
+                            {cities.map((city) => (
+                              <SelectItem key={city} value={city}>{cityLabelOf(city)}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
                       <div className="flex flex-wrap gap-1.5">
                         <button
                           type="button"
@@ -382,7 +510,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                         >
                           {t('offers.allBranchesOption')}
                         </button>
-                        {branches.map((branch) => (
+                        {visibleBranches.map((branch) => (
                           <button
                             key={branch.id}
                             type="button"
@@ -392,7 +520,7 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                               field.value === branch.id ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                             )}
                           >
-                            {branch.name}
+                            {(dir === 'ltr' && branch.name_en) || branch.name}
                           </button>
                         ))}
                       </div>
@@ -410,19 +538,35 @@ export function EditOfferDialog({ children, offer, initialValues, defaultOpen, o
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs text-gray-600">{t('offers.validUntilLabel')}</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        value={field.value ? format(new Date(field.value), "yyyy-MM-dd") : ''}
-                        onChange={(e) => {
-                          const date = e.target.value ? new Date(e.target.value) : undefined;
-                          field.onChange(date);
-                        }}
-                        className="h-10 rounded-xl border-gray-200 text-sm"
-                        disabled={isSaving}
-                        dir="ltr"
-                      />
-                    </FormControl>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <button
+                            type="button"
+                            disabled={isSaving}
+                            className={cn(
+                              "w-full h-11 rounded-xl border border-gray-200 bg-white px-3 flex items-center gap-2 text-sm transition-colors hover:border-gray-300 disabled:opacity-50",
+                              dir === 'rtl' ? 'text-right' : 'text-left',
+                              !field.value && "text-gray-600"
+                            )}
+                          >
+                            <CalendarIcon className="h-4 w-4 text-gray-600 shrink-0" />
+                            {field.value ? format(new Date(field.value), "d MMMM yyyy", { locale: dir === 'ltr' ? enUS : arLocale }) : t('offers.pickExpiryDate')}
+                          </button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 rounded-xl" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={{ before: new Date() }}
+                          locale={dir === 'ltr' ? enUS : arLocale}
+                          dir={dir}
+                          autoFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage className="text-[10px]" />
                   </FormItem>
                 )}
