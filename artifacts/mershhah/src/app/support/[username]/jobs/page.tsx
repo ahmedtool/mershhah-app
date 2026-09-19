@@ -5,8 +5,8 @@ import { useParams } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage } from '@/lib/public-pages';
 import { FileUploadInput } from '@/components/support/FormFieldsRenderer';
-import { DEFAULT_CV_RULES, clampFileRules } from '@/lib/form-fields';
-import type { FormFileRules, UploadedFormFile } from '@/lib/types';
+import { PLATFORM_CV_RULES } from '@/lib/form-fields';
+import type { UploadedFormFile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, ChevronRight, ChevronLeft, CheckCircle, Info, Briefcase, MapPin } from 'lucide-react';
@@ -38,7 +38,6 @@ export default function PublicJobsPage() {
   const [postings, setPostings] = useState<JobPostingLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobPostingLite | null>(null);
-  const [cvRules, setCvRules] = useState<FormFileRules>(DEFAULT_CV_RULES);
   const [closedPostingIds, setClosedPostingIds] = useState<Set<string>>(new Set());
   usePublicPageBackground(restaurant?.secondaryColor);
 
@@ -69,8 +68,6 @@ export default function PublicJobsPage() {
         if (data?.restaurant) {
           setRestaurant(data.restaurant);
           setPostings((data.jobPostings || []) as JobPostingLite[]);
-          const jobsSvc = (data.gatewayServices || []).find((sv) => sv.service_type === 'jobs');
-          setCvRules(clampFileRules(jobsSvc?.config?.cvRules, DEFAULT_CV_RULES));
           loadOpenStatus(data.restaurant.id);
           setLoading(false);
           return;
@@ -89,14 +86,6 @@ export default function PublicJobsPage() {
           .eq('restaurant_id', rest.id)
           .eq('is_active', true);
         setPostings((jp || []) as JobPostingLite[]);
-        const { data: svc } = await supabase
-          .from('business_gateway_services')
-          .select('config')
-          .eq('restaurant_id', rest.id)
-          .eq('service_type', 'jobs')
-          .eq('is_enabled', true)
-          .maybeSingle();
-        setCvRules(clampFileRules(svc?.config?.cvRules, DEFAULT_CV_RULES));
         loadOpenStatus(rest.id);
       } catch (e) {
         console.error(e);
@@ -278,7 +267,7 @@ export default function PublicJobsPage() {
               </div>
               <div>
                 <label className="text-xs text-gray-600 mb-1.5 block">{t('publicJobs.cvLabel')}</label>
-                <FileUploadInput rules={cvRules} value={cvFiles} onChange={setCvFiles} />
+                <FileUploadInput rules={PLATFORM_CV_RULES} value={cvFiles} onChange={setCvFiles} />
               </div>
             </div>
 

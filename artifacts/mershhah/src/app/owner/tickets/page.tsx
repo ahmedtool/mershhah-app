@@ -21,9 +21,8 @@ import { supabase } from '@/lib/supabase';
 import { syncPublicPage } from '@/lib/public-pages';
 import { translateText } from '@/lib/translate-text';
 import { GATEWAY_FIELD_DEFS, CUSTOM_TYPE_ICONS, DEFAULT_CUSTOM_TYPE_ICON, getCustomTypeIcon } from '@/lib/gateway-service-types';
-import { FIELD_TYPE_OPTIONS, typeHasOptions, typeCollectsInput, newFieldId, DEFAULT_CV_RULES, DEFAULT_FILE_RULES } from '@/lib/form-fields';
+import { FIELD_TYPE_OPTIONS, typeHasOptions, typeCollectsInput, newFieldId, PLATFORM_FILE_RULES, allowedExtensionsLabel } from '@/lib/form-fields';
 import { FormFieldsRenderer, fieldLabelOf, type FormValues } from '@/components/support/FormFieldsRenderer';
-import { FileRulesEditor } from '@/components/support/FileRulesEditor';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import type { SupportTicket, BusinessGatewayService, BusinessGatewayServiceConfig, JobPosting, BusinessRequest, BusinessGatewayField, UploadedFormFile } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -658,12 +657,6 @@ export default function OwnerTicketsPage() {
             <Switch checked={row.value} onCheckedChange={(v) => updateBaseFields(service, { [row.key]: v })} />
           </div>
         ))}
-        {service.service_type === 'jobs' && (
-          <div className="pt-2 space-y-1.5">
-            <p className="text-[10px] font-bold text-gray-600">{t('ownerGateway.cvRulesTitle')}</p>
-            <FileRulesEditor value={service.config?.cvRules} fallback={DEFAULT_CV_RULES} onChange={(r) => updateServiceConfig(service, { cvRules: r })} />
-          </div>
-        )}
       </div>
     );
   };
@@ -837,11 +830,12 @@ export default function OwnerTicketsPage() {
               </div>
             )}
             {field.type === 'file' && (
-              <FileRulesEditor
-                value={field.fileRules}
-                fallback={DEFAULT_FILE_RULES}
-                onChange={(rules) => updateDraftField(index, { fileRules: rules })}
-              />
+              <p className="text-[10px] text-gray-500 leading-relaxed rounded-lg bg-gray-50 border border-gray-100 px-3 py-2">
+                {t('ownerGateway.platformFileLimitsNote')
+                  .replace('{mb}', String(PLATFORM_FILE_RULES.maxSizeMB))
+                  .replace('{n}', String(PLATFORM_FILE_RULES.maxFiles))
+                  .replace('{types}', allowedExtensionsLabel(PLATFORM_FILE_RULES))}
+              </p>
             )}
           </div>
         ))}

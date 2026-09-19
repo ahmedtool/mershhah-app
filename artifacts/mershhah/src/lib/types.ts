@@ -376,15 +376,14 @@ export type BusinessGatewayField = {
   type: BusinessGatewayFieldType;
   options?: string[]; // for type: 'select' | 'radio' | 'checkbox'
   required?: boolean;
-  fileRules?: FormFileRules; // for type: 'file'
 };
 
 export type BusinessGatewayFieldType =
   | 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'url' | 'date'
   | 'select' | 'radio' | 'checkbox' | 'yesno' | 'file' | 'paragraph';
 
-// Upload limits for a file field / the jobs CV. Hard platform ceilings live in
-// src/lib/form-fields.ts - an owner can tighten these, never loosen past them.
+// Upload limits for a file field / the jobs CV. Set by the platform in
+// src/lib/form-fields.ts - owners can't change them.
 export type FormFileRules = {
   maxSizeMB: number;
   maxFiles: number;
@@ -420,7 +419,6 @@ export type BusinessGatewayServiceConfig = {
   // gateway-service-types.ts apply.
   fields?: BusinessGatewayField[];
   baseFields?: BusinessGatewayBaseFields;
-  cvRules?: FormFileRules; // jobs only - limits on the applicant's CV upload
 };
 
 export type BusinessGatewayService = {

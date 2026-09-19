@@ -27,15 +27,13 @@ export const typeCollectsInput = (type: BusinessGatewayFieldType) => type !== 'p
 export const newFieldId = () => `f${Date.now().toString(36)}${Math.floor(Math.random() * 1000)}`;
 
 // ---- Upload limits -------------------------------------------------------
-// Hard ceilings an owner can tighten but never loosen past. Uploads go
-// browser -> ImageKit with a short-lived signature, so these are enforced in
-// the client only: they stop honest mistakes and cap what the form UI accepts,
-// but a hand-crafted request could bypass them.
-export const MAX_FILE_SIZE_MB_CEILING = 10;
-export const MAX_FILES_CEILING = 5;
-
-export const DEFAULT_FILE_RULES: FormFileRules = { maxSizeMB: 5, maxFiles: 1, allowed: ['image', 'pdf'] };
-export const DEFAULT_CV_RULES: FormFileRules = { maxSizeMB: 5, maxFiles: 1, allowed: ['pdf', 'image'] };
+// Decided by the platform, NOT by restaurant owners: we pay for the storage,
+// so this is the one place that says how much a visitor may upload. Change a
+// number here and every form (custom, built-in, jobs CV) follows.
+// Enforced in the browser before upload - uploads go browser -> ImageKit
+// with a short-lived signature, so a hand-crafted request could bypass it.
+export const PLATFORM_FILE_RULES: FormFileRules = { maxSizeMB: 5, maxFiles: 1, allowed: ['image', 'pdf'] };
+export const PLATFORM_CV_RULES: FormFileRules = { maxSizeMB: 5, maxFiles: 1, allowed: ['pdf', 'image'] };
 
 const FILE_GROUPS: Record<FormFileRules['allowed'][number], { mimes: string[]; exts: string[]; accept: string }> = {
   image: { mimes: ['image/jpeg', 'image/png', 'image/webp'], exts: ['jpg', 'jpeg', 'png', 'webp'], accept: 'image/jpeg,image/png,image/webp' },
@@ -46,15 +44,6 @@ const FILE_GROUPS: Record<FormFileRules['allowed'][number], { mimes: string[]; e
     accept: '.doc,.docx',
   },
 };
-
-export function clampFileRules(rules?: Partial<FormFileRules> | null, fallback: FormFileRules = DEFAULT_FILE_RULES): FormFileRules {
-  const allowed = rules?.allowed?.length ? rules.allowed : fallback.allowed;
-  return {
-    maxSizeMB: Math.min(MAX_FILE_SIZE_MB_CEILING, Math.max(1, Math.round(rules?.maxSizeMB ?? fallback.maxSizeMB))),
-    maxFiles: Math.min(MAX_FILES_CEILING, Math.max(1, Math.round(rules?.maxFiles ?? fallback.maxFiles))),
-    allowed,
-  };
-}
 
 export const fileAcceptAttr = (rules: FormFileRules) => rules.allowed.map((g) => FILE_GROUPS[g].accept).join(',');
 

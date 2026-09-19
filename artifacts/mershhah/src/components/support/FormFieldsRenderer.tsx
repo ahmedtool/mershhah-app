@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { uploadToImageKit } from '@/lib/imagekit';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/components/shared/LanguageContext';
-import { clampFileRules, fileAcceptAttr, allowedExtensionsLabel, validateFile } from '@/lib/form-fields';
+import { PLATFORM_FILE_RULES, fileAcceptAttr, allowedExtensionsLabel, validateFile } from '@/lib/form-fields';
 import type { BusinessGatewayField, FormFileRules, UploadedFormFile } from '@/lib/types';
 
 export type FormFieldValue = string | string[] | UploadedFormFile[];
@@ -34,7 +34,7 @@ export function missingRequiredFields(fields: BusinessGatewayField[], values: Fo
 export function FileUploadInput({
   rules, value, onChange, preview,
 }: {
-  rules?: Partial<FormFileRules> | null;
+  rules?: FormFileRules;
   value: UploadedFormFile[];
   onChange: (files: UploadedFormFile[]) => void;
   preview?: boolean;
@@ -43,7 +43,7 @@ export function FileUploadInput({
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const r = clampFileRules(rules);
+  const r = rules ?? PLATFORM_FILE_RULES;
   const canAddMore = value.length < r.maxFiles;
 
   const handlePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,7 +206,7 @@ export function FormFieldsRenderer({
               </div>
             ) : field.type === 'file' ? (
               <FileUploadInput
-                rules={field.fileRules}
+                rules={PLATFORM_FILE_RULES}
                 value={Array.isArray(values[field.id]) ? (values[field.id] as UploadedFormFile[]) : []}
                 onChange={(files) => set(field.id, files)}
                 preview={preview}

@@ -68,9 +68,8 @@ export type PublicPageData = {
       title?: string;
       title_en?: string;
       icon?: string;
-      fields?: Array<{ id: string; label?: string; labelKey?: string; label_en?: string; type: string; options?: string[]; required?: boolean; fileRules?: { maxSizeMB: number; maxFiles: number; allowed: Array<'image' | 'pdf' | 'doc'> } }>;
+      fields?: Array<{ id: string; label?: string; labelKey?: string; label_en?: string; type: string; options?: string[]; required?: boolean }>;
       baseFields?: { name?: boolean; phone?: boolean; email?: boolean };
-      cvRules?: { maxSizeMB: number; maxFiles: number; allowed: Array<'image' | 'pdf' | 'doc'> };
     };
   }>;
   jobPostings: Array<{
