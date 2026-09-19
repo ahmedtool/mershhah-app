@@ -796,6 +796,10 @@ export const translations = {
       errorTitle: 'خطأ',
       fileTooLargeTitle: 'حجم الملف كبير',
       fileTooLargeDesc: 'أصغر من 5 ميجابايت.',
+      editMessage: 'تعديل',
+      deleteMessage: 'حذف',
+      deleteMessageConfirm: 'سيتم حذف هذه الرسالة نهائيًا. لا يمكن التراجع.',
+      editedLabel: 'تم التعديل',
     },
     ownerTickets: {
       pageTitle: 'تذاكر الدعم',
@@ -2179,6 +2183,10 @@ export const translations = {
       errorTitle: 'Error',
       fileTooLargeTitle: 'File too large',
       fileTooLargeDesc: 'Must be smaller than 5MB.',
+      editMessage: 'Edit',
+      deleteMessage: 'Delete',
+      deleteMessageConfirm: 'This message will be permanently deleted. This cannot be undone.',
+      editedLabel: 'Edited',
     },
     ownerTickets: {
       pageTitle: 'Support Tickets',

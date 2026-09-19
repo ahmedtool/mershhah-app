@@ -1,7 +1,7 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
-import { SendHorizonal, Paperclip, Loader2, FileIcon, Download, MessageSquare } from 'lucide-react';
+import { SendHorizonal, Paperclip, Loader2, FileIcon, Download, MessageSquare, Pencil, Trash2, Check, X } from 'lucide-react';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useUser } from '@/hooks/useUser';
@@ -10,7 +10,23 @@ import { supabase } from '@/lib/supabase';
 import type { ChatMessage, ChatSession } from '@/lib/types';
 import { sanitizeFileName } from '@/lib/utils';
 import { useResolvedAttachmentUrls } from '@/hooks/useResolvedAttachmentUrls';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/components/shared/LanguageContext';
+
+type RealtimePayload = {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+  new: ChatMessage;
+  old: Partial<ChatMessage>;
+};
 
 // This page is deliberately a single fixed thread, not a messaging inbox:
 // an owner only ever talks to one party (Mershhah admin), so there is
@@ -28,6 +44,11 @@ export default function OwnerSupportPage() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ChatMessage | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const msgChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
@@ -87,12 +108,18 @@ export default function OwnerSupportPage() {
         const msgChannel = supabase
           .channel(`chat-messages-${resolvedChat.id}`)
           .on('postgres_changes', {
-            event: 'INSERT',
+            event: '*',
             schema: 'public',
             table: 'chat_messages',
             filter: `chat_id=eq.${resolvedChat.id}`,
-          }, (payload: { new: ChatMessage }) => {
-            setMessages(prev => [...prev, payload.new]);
+          }, (payload: RealtimePayload) => {
+            if (payload.eventType === 'INSERT') {
+              setMessages(prev => [...prev, payload.new]);
+            } else if (payload.eventType === 'UPDATE') {
+              setMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
+            } else if (payload.eventType === 'DELETE') {
+              setMessages(prev => prev.filter(m => m.id !== payload.old.id));
+            }
           })
           .subscribe();
         msgChannelRef.current = msgChannel;
@@ -183,6 +210,51 @@ export default function OwnerSupportPage() {
     e.target.value = '';
   };
 
+  const startEdit = (msg: ChatMessage) => {
+    setEditingId(msg.id);
+    setEditingText(msg.text || '');
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingText('');
+  };
+
+  const saveEdit = async (msg: ChatMessage) => {
+    const trimmed = editingText.trim();
+    if (!trimmed || trimmed === msg.text) { cancelEdit(); return; }
+    setIsSavingEdit(true);
+    try {
+      const editedAt = new Date().toISOString();
+      const { error } = await supabase
+        .from('chat_messages')
+        .update({ text: trimmed, edited_at: editedAt })
+        .eq('id', msg.id);
+      if (error) throw error;
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: trimmed, edited_at: editedAt } : m));
+      cancelEdit();
+    } catch (error: any) {
+      toast({ title: t('ownerSupport.errorTitle'), description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      const { error } = await supabase.from('chat_messages').delete().eq('id', deleteTarget.id);
+      if (error) throw error;
+      setMessages(prev => prev.filter(m => m.id !== deleteTarget.id));
+      setDeleteTarget(null);
+    } catch (error: any) {
+      toast({ title: t('ownerSupport.errorTitle'), description: error.message, variant: 'destructive' });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (isInitializing) {
     return (
       <div className="space-y-4">
@@ -221,33 +293,77 @@ export default function OwnerSupportPage() {
             )}
             {!isLoadingMessages && messages.map((msg) => {
               const isOwner = msg.senderRole === 'owner';
+              const isEditing = editingId === msg.id;
               return (
-                <div key={msg.id} className={`flex items-end gap-2 ${isOwner ? 'justify-end' : 'justify-start'}`}>
-                  {!isOwner && (
-                    <div className="w-7 h-7 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
-                      <span className="text-[9px] font-bold text-white">{t('ownerSupport.adminInitials')}</span>
-                    </div>
-                  )}
-                  <div className={`p-3 text-[13px] rounded-2xl max-w-[70%] ${isOwner ? 'bg-gray-900 text-white rounded-br-md' : 'bg-gray-50 text-gray-700 border border-gray-100 rounded-bl-md'}`}>
-                    {msg.text && <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>}
-                    {msg.attachment_url && (
-                      <div className="mt-2">
-                        {!attachmentUrls[msg.id] ? (
-                          <div className="w-[200px] h-[200px] bg-black/10 rounded-lg animate-pulse" />
-                        ) : msg.attachment_type === 'image' ? (
-                          <a href={attachmentUrls[msg.id]} target="_blank" rel="noopener noreferrer">
-                            <img src={attachmentUrls[msg.id]} alt={msg.attachment_filename || ''} width={200} height={200} className="rounded-lg object-cover cursor-pointer" />
-                          </a>
-                        ) : (
-                          <a href={attachmentUrls[msg.id]} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 p-2 rounded-lg ${isOwner ? 'bg-white/10' : 'bg-white border border-gray-100'} hover:opacity-80 transition-opacity`}>
-                            <FileIcon className="h-4 w-4 shrink-0" />
-                            <span className="text-[11px] underline truncate">{msg.attachment_filename || t('ownerSupport.file')}</span>
-                            <Download className="h-3 w-3 shrink-0" />
-                          </a>
-                        )}
+                <div key={msg.id} className={`group flex flex-col ${isOwner ? 'items-end' : 'items-start'}`}>
+                  <div className={`flex items-end gap-2 w-full ${isOwner ? 'justify-end' : 'justify-start'}`}>
+                    {!isOwner && (
+                      <div className="w-7 h-7 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
+                        <span className="text-[9px] font-bold text-white">{t('ownerSupport.adminInitials')}</span>
                       </div>
                     )}
+                    <div className={`p-3 text-[13px] rounded-2xl max-w-[70%] ${isOwner ? 'bg-gray-900 text-white rounded-br-md' : 'bg-gray-50 text-gray-700 border border-gray-100 rounded-bl-md'}`}>
+                      {isEditing ? (
+                        <div className="flex items-center gap-1.5 min-w-[180px]">
+                          <input
+                            autoFocus
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') { e.preventDefault(); saveEdit(msg); }
+                              if (e.key === 'Escape') cancelEdit();
+                            }}
+                            disabled={isSavingEdit}
+                            className="flex-1 bg-white/10 text-white placeholder:text-white/50 text-[13px] rounded-lg px-2 py-1 outline-none border border-white/20"
+                            dir={dir}
+                          />
+                          <button onClick={() => saveEdit(msg)} disabled={isSavingEdit} className="shrink-0 text-white/80 hover:text-white">
+                            {isSavingEdit ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                          </button>
+                          <button onClick={cancelEdit} disabled={isSavingEdit} className="shrink-0 text-white/80 hover:text-white">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          {msg.text && <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>}
+                          {msg.edited_at && (
+                            <p className={`text-[9px] mt-0.5 ${isOwner ? 'text-white/50' : 'text-gray-400'}`}>{t('ownerSupport.editedLabel')}</p>
+                          )}
+                          {msg.attachment_url && (
+                            <div className="mt-2">
+                              {!attachmentUrls[msg.id] ? (
+                                <div className="w-[200px] h-[200px] bg-black/10 rounded-lg animate-pulse" />
+                              ) : msg.attachment_type === 'image' ? (
+                                <a href={attachmentUrls[msg.id]} target="_blank" rel="noopener noreferrer">
+                                  <img src={attachmentUrls[msg.id]} alt={msg.attachment_filename || ''} width={200} height={200} className="rounded-lg object-cover cursor-pointer" />
+                                </a>
+                              ) : (
+                                <a href={attachmentUrls[msg.id]} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 p-2 rounded-lg ${isOwner ? 'bg-white/10' : 'bg-white border border-gray-100'} hover:opacity-80 transition-opacity`}>
+                                  <FileIcon className="h-4 w-4 shrink-0" />
+                                  <span className="text-[11px] underline truncate">{msg.attachment_filename || t('ownerSupport.file')}</span>
+                                  <Download className="h-3 w-3 shrink-0" />
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
+                  {/* Edit/delete - only on the owner's own messages, only when not mid-edit */}
+                  {isOwner && !isEditing && (
+                    <div className="flex items-center gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity pe-1">
+                      {msg.text && (
+                        <button onClick={() => startEdit(msg)} className="text-[10px] text-gray-500 hover:text-gray-900 flex items-center gap-1">
+                          <Pencil className="h-2.5 w-2.5" /> {t('ownerSupport.editMessage')}
+                        </button>
+                      )}
+                      <button onClick={() => setDeleteTarget(msg)} className="text-[10px] text-gray-500 hover:text-red-500 flex items-center gap-1">
+                        <Trash2 className="h-2.5 w-2.5" /> {t('ownerSupport.deleteMessage')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -284,6 +400,21 @@ export default function OwnerSupportPage() {
           </button>
         </form>
       </div>
+
+      <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent dir={dir} className={dir === 'rtl' ? 'text-right' : 'text-left'}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('ownerSupport.deleteMessage')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('ownerSupport.deleteMessageConfirm')}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMessage} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+              {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -261,6 +261,7 @@ export type ChatMessage = {
   attachment_url?: string;
   attachment_type?: 'image' | 'file';
   attachment_filename?: string;
+  edited_at?: string | null;
 };
 
 export type AiSession = {

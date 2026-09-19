@@ -1,7 +1,7 @@
 'use client';
 
 import { Input } from '@/components/ui/input';
-import { SendHorizonal, Paperclip, Loader2, FileIcon, Download, MessageSquare, User, ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { SendHorizonal, Paperclip, Loader2, FileIcon, Download, MessageSquare, User, ArrowLeft, Plus, Trash2, Pencil, Check, X } from 'lucide-react';
 import { FormEvent, useEffect, useRef, useState, useTransition } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -30,6 +30,11 @@ export default function AdminSupportPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sessionToDelete, setSessionToDelete] = useState<ChatSession | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<ChatMessage | null>(null);
+  const [isDeletingMessage, setIsDeletingMessage] = useState(false);
 
   const [showPicker, setShowPicker] = useState(false);
   const [restaurants, setRestaurants] = useState<any[]>([]);
@@ -83,12 +88,18 @@ export default function AdminSupportPage() {
     const msgChannel = supabase
       .channel(`chat-messages-${chat.id}`)
       .on('postgres_changes', {
-        event: 'INSERT',
+        event: '*',
         schema: 'public',
         table: 'chat_messages',
         filter: `chat_id=eq.${chat.id}`,
-      }, (payload: { new: ChatMessage }) => {
-        setMessages(prev => [...prev, payload.new]);
+      }, (payload: { eventType: 'INSERT' | 'UPDATE' | 'DELETE'; new: ChatMessage; old: Partial<ChatMessage> }) => {
+        if (payload.eventType === 'INSERT') {
+          setMessages(prev => [...prev, payload.new]);
+        } else if (payload.eventType === 'UPDATE') {
+          setMessages(prev => prev.map(m => m.id === payload.new.id ? payload.new : m));
+        } else if (payload.eventType === 'DELETE') {
+          setMessages(prev => prev.filter(m => m.id !== payload.old.id));
+        }
       })
       .subscribe();
     msgChannelRef.current = msgChannel;
@@ -163,6 +174,51 @@ export default function AdminSupportPage() {
         return;
       }
       handleSendMessage(e as any, file);
+    }
+  };
+
+  const startEdit = (msg: ChatMessage) => {
+    setEditingId(msg.id);
+    setEditingText(msg.text || '');
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingText('');
+  };
+
+  const saveEdit = async (msg: ChatMessage) => {
+    const trimmed = editingText.trim();
+    if (!trimmed || trimmed === msg.text) { cancelEdit(); return; }
+    setIsSavingEdit(true);
+    try {
+      const editedAt = new Date().toISOString();
+      const { error } = await supabase
+        .from('chat_messages')
+        .update({ text: trimmed, edited_at: editedAt })
+        .eq('id', msg.id);
+      if (error) throw error;
+      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, text: trimmed, edited_at: editedAt } : m));
+      cancelEdit();
+    } catch (error: any) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDeleteMessage = async () => {
+    if (!messageToDelete) return;
+    setIsDeletingMessage(true);
+    try {
+      const { error } = await supabase.from('chat_messages').delete().eq('id', messageToDelete.id);
+      if (error) throw error;
+      setMessages(prev => prev.filter(m => m.id !== messageToDelete.id));
+      setMessageToDelete(null);
+    } catch (error: any) {
+      toast({ title: 'خطأ', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsDeletingMessage(false);
     }
   };
 
@@ -405,37 +461,80 @@ export default function AdminSupportPage() {
                   )}
                   {!isLoadingMessages && messages.map((msg) => {
                     const isAdmin = msg.senderRole === 'admin';
+                    const isEditing = editingId === msg.id;
                     return (
-                      <div key={msg.id} className={`flex items-end gap-2 ${isAdmin ? 'justify-end' : 'justify-start'}`}>
-                        {!isAdmin && (
-                          <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
-                            {selectedChat.ownerLogo ? (
-                              <StorageImage imagePath={selectedChat.ownerLogo} alt={selectedChat.ownerName || ''} width={28} height={28} className="object-cover w-full h-full" />
-                            ) : (
-                              <span className="text-[9px] font-bold text-gray-600">{(selectedChat.ownerName || 'م')[0]}</span>
-                            )}
-                          </div>
-                        )}
-                        <div className={`p-3 text-[13px] rounded-2xl max-w-[70%] ${isAdmin ? 'bg-gray-900 text-white rounded-br-md' : 'bg-gray-50 text-gray-700 border border-gray-100 rounded-bl-md'}`}>
-                          {msg.text && <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>}
-                          {msg.attachment_url && (
-                            <div className="mt-2">
-                              {!attachmentUrls[msg.id] ? (
-                                <div className="w-[200px] h-[200px] bg-black/10 rounded-lg animate-pulse" />
-                              ) : msg.attachment_type === 'image' ? (
-                                <a href={attachmentUrls[msg.id]} target="_blank" rel="noopener noreferrer">
-                                  <img src={attachmentUrls[msg.id]} alt={msg.attachment_filename || ''} width={200} height={200} className="rounded-lg object-cover cursor-pointer" />
-                                </a>
+                      <div key={msg.id} className={`group flex flex-col ${isAdmin ? 'items-end' : 'items-start'}`}>
+                        <div className={`flex items-end gap-2 w-full ${isAdmin ? 'justify-end' : 'justify-start'}`}>
+                          {!isAdmin && (
+                            <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+                              {selectedChat.ownerLogo ? (
+                                <StorageImage imagePath={selectedChat.ownerLogo} alt={selectedChat.ownerName || ''} width={28} height={28} className="object-cover w-full h-full" />
                               ) : (
-                                <a href={attachmentUrls[msg.id]} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 p-2 rounded-lg ${isAdmin ? 'bg-white/10' : 'bg-white border border-gray-100'} hover:opacity-80 transition-opacity`}>
-                                  <FileIcon className="h-4 w-4 shrink-0" />
-                                  <span className="text-[11px] underline truncate">{msg.attachment_filename || 'ملف'}</span>
-                                  <Download className="h-3 w-3 shrink-0" />
-                                </a>
+                                <span className="text-[9px] font-bold text-gray-600">{(selectedChat.ownerName || 'م')[0]}</span>
                               )}
                             </div>
                           )}
+                          <div className={`p-3 text-[13px] rounded-2xl max-w-[70%] ${isAdmin ? 'bg-gray-900 text-white rounded-br-md' : 'bg-gray-50 text-gray-700 border border-gray-100 rounded-bl-md'}`}>
+                            {isEditing ? (
+                              <div className="flex items-center gap-1.5 min-w-[180px]">
+                                <input
+                                  autoFocus
+                                  value={editingText}
+                                  onChange={(e) => setEditingText(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') { e.preventDefault(); saveEdit(msg); }
+                                    if (e.key === 'Escape') cancelEdit();
+                                  }}
+                                  disabled={isSavingEdit}
+                                  className="flex-1 bg-white/10 text-white placeholder:text-white/50 text-[13px] rounded-lg px-2 py-1 outline-none border border-white/20"
+                                  dir="rtl"
+                                />
+                                <button onClick={() => saveEdit(msg)} disabled={isSavingEdit} className="shrink-0 text-white/80 hover:text-white">
+                                  {isSavingEdit ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                                </button>
+                                <button onClick={cancelEdit} disabled={isSavingEdit} className="shrink-0 text-white/80 hover:text-white">
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            ) : (
+                              <>
+                                {msg.text && <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>}
+                                {msg.edited_at && (
+                                  <p className={`text-[9px] mt-0.5 ${isAdmin ? 'text-white/50' : 'text-gray-400'}`}>تم التعديل</p>
+                                )}
+                                {msg.attachment_url && (
+                                  <div className="mt-2">
+                                    {!attachmentUrls[msg.id] ? (
+                                      <div className="w-[200px] h-[200px] bg-black/10 rounded-lg animate-pulse" />
+                                    ) : msg.attachment_type === 'image' ? (
+                                      <a href={attachmentUrls[msg.id]} target="_blank" rel="noopener noreferrer">
+                                        <img src={attachmentUrls[msg.id]} alt={msg.attachment_filename || ''} width={200} height={200} className="rounded-lg object-cover cursor-pointer" />
+                                      </a>
+                                    ) : (
+                                      <a href={attachmentUrls[msg.id]} target="_blank" rel="noopener noreferrer" className={`flex items-center gap-2 p-2 rounded-lg ${isAdmin ? 'bg-white/10' : 'bg-white border border-gray-100'} hover:opacity-80 transition-opacity`}>
+                                        <FileIcon className="h-4 w-4 shrink-0" />
+                                        <span className="text-[11px] underline truncate">{msg.attachment_filename || 'ملف'}</span>
+                                        <Download className="h-3 w-3 shrink-0" />
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
                         </div>
+                        {isAdmin && !isEditing && (
+                          <div className="flex items-center gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity pe-1">
+                            {msg.text && (
+                              <button onClick={() => startEdit(msg)} className="text-[10px] text-gray-500 hover:text-gray-900 flex items-center gap-1">
+                                <Pencil className="h-2.5 w-2.5" /> تعديل
+                              </button>
+                            )}
+                            <button onClick={() => setMessageToDelete(msg)} className="text-[10px] text-gray-500 hover:text-red-500 flex items-center gap-1">
+                              <Trash2 className="h-2.5 w-2.5" /> حذف
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -496,6 +595,35 @@ export default function AdminSupportPage() {
             <AlertDialogAction onClick={handleDeleteConfirm} disabled={isDeleting}
               className="flex-1 h-11 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2">
               {isDeleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              نعم، حذف
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!messageToDelete} onOpenChange={(open) => !open && setMessageToDelete(null)}>
+        <AlertDialogContent className="sm:max-w-lg p-0 gap-0" dir="rtl">
+          <div className="px-5 pt-5 pb-3 border-b border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+                <Trash2 className="h-5 w-5 text-red-500" />
+              </div>
+              <div>
+                <AlertDialogTitle className="text-base font-bold text-gray-900">حذف الرسالة</AlertDialogTitle>
+                <AlertDialogDescription className="text-xs text-gray-600 mt-0.5">لا يمكن التراجع عن هذا الإجراء</AlertDialogDescription>
+              </div>
+            </div>
+          </div>
+          <div className="p-5">
+            <p className="text-sm text-gray-600">سيتم حذف هذه الرسالة نهائيًا.</p>
+          </div>
+          <div className="flex gap-2 px-5 pb-5">
+            <AlertDialogCancel disabled={isDeletingMessage} className="flex-1 h-11 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50">
+              إلغاء
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteMessage} disabled={isDeletingMessage}
+              className="flex-1 h-11 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2">
+              {isDeletingMessage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
               نعم، حذف
             </AlertDialogAction>
           </div>
