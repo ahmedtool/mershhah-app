@@ -12,6 +12,7 @@ import {
     Share2,
     Info,
     MessageCircle,
+    Mail,
 } from 'lucide-react';
 import { Link } from 'wouter';
 import { supabase } from '@/lib/supabase';
@@ -43,6 +44,7 @@ const SOCIAL_ICONS: { [key: string]: React.ElementType } = {
     facebook: FacebookIcon,
     youtube: YoutubeIcon,
     website: WebsiteIcon,
+    email: Mail,
 };
 
 export default function RestaurantHubPage() {
@@ -523,6 +525,29 @@ export default function RestaurantHubPage() {
                       <div className="flex flex-wrap items-center gap-2 pb-1">
                         {filteredSocialLinks.map((link: any, idx: number) => {
                           const Icon = SOCIAL_ICONS[link.platform] || WebsiteIcon;
+                          const linkClass = "w-12 h-12 flex items-center justify-center rounded-2xl shadow-sm shrink-0 active:scale-90 transition-all duration-300 ease-out";
+                          const linkStyle = {
+                            backgroundColor: primaryColor,
+                            transitionDelay: socialOpen ? `${idx * 60}ms` : '0ms',
+                            transform: socialOpen ? 'scale(1)' : 'scale(0.4)',
+                            opacity: socialOpen ? 1 : 0,
+                          };
+                          // An email address isn't a route - a plain mailto: anchor
+                          // opens the visitor's mail app (router Link would treat it
+                          // as an in-app path).
+                          if (link.platform === 'email') {
+                            return (
+                              <a
+                                key={link.id || idx}
+                                href={'mailto:' + link.value.trim().replace(/^mailto:/i, '')}
+                                onClick={() => restaurant.id && trackSocialClick(restaurant.id, 'email')}
+                                className={linkClass}
+                                style={linkStyle}
+                              >
+                                <Icon size={22} style={{ color: 'var(--r-button-text)' }} />
+                              </a>
+                            );
+                          }
                           return (
                             <Link
                               key={link.id || idx}
@@ -530,13 +555,8 @@ export default function RestaurantHubPage() {
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={() => restaurant.id && trackSocialClick(restaurant.id, link.platform || 'unknown')}
-                              className="w-12 h-12 flex items-center justify-center rounded-2xl shadow-sm shrink-0 active:scale-90 transition-all duration-300 ease-out"
-                              style={{
-                                backgroundColor: primaryColor,
-                                transitionDelay: socialOpen ? `${idx * 60}ms` : '0ms',
-                                transform: socialOpen ? 'scale(1)' : 'scale(0.4)',
-                                opacity: socialOpen ? 1 : 0,
-                              }}
+                              className={linkClass}
+                              style={linkStyle}
                             >
                               <Icon size={22} style={{ color: 'var(--r-button-text)' }} />
                             </Link>

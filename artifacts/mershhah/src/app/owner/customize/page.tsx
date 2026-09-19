@@ -26,6 +26,9 @@ import {
   AlertCircle,
   RefreshCw,
   Sparkles,
+  Mail,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { supabase } from '@/lib/supabase';
@@ -51,7 +54,13 @@ const SOCIAL_PLATFORMS = [
   { labelKey: 'customize.facebook', value: 'facebook', icon: FacebookIcon, color: '#1877F2' },
   { labelKey: 'customize.youtube', value: 'youtube', icon: YoutubeIcon, color: '#FF0000' },
   { labelKey: 'customize.website', value: 'website', icon: WebsiteIcon, color: '#714dfa' },
+  { labelKey: 'customize.email', value: 'email', icon: Mail, color: '#EA4335' },
 ];
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Owners often paste "mailto:name@x.com" - store just the address so the
+// public page can build the mailto: link itself.
+const normalizeEmail = (v: string) => (v || '').trim().replace(/^mailto:/i, '');
 
 export default function CustomizePage() {
   const { user, isLoading: userLoading } = useUser();
@@ -72,6 +81,7 @@ export default function CustomizePage() {
   const [isSaving, startSaving] = useTransition();
   const [isSuggestingColors, setIsSuggestingColors] = useState(false);
   const [isTranslatingProfile, startTranslatingProfile] = useTransition();
+  const [translatingAppId, setTranslatingAppId] = useState<string | null>(null);
 
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -217,6 +227,20 @@ export default function CustomizePage() {
   const handleSave = async () => {
     if (!user?.restaurantId || isSaving) return;
 
+    // A custom delivery app has to be named in BOTH languages - the public
+    // menu and branch pages show whichever one matches the visitor's language,
+    // so a missing English name would leave English visitors with an Arabic-only app.
+    const unnamedApp = (settings.applications || []).find((a: any) => a.type === 'custom' && (!(a.name || '').trim() || !(a.name_en || '').trim()));
+    if (unnamedApp) {
+      toast({ title: t('common.errorTitle'), description: t('customize.appNamesRequired'), variant: 'destructive' });
+      return;
+    }
+    const badEmail = (settings.socialLinks || []).find((l: any) => l.platform === 'email' && normalizeEmail(l.value) && !EMAIL_RE.test(normalizeEmail(l.value)));
+    if (badEmail) {
+      toast({ title: t('common.errorTitle'), description: t('customize.invalidEmail'), variant: 'destructive' });
+      return;
+    }
+
     startSaving(async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -267,7 +291,7 @@ export default function CustomizePage() {
             buttonTextColor: settings.buttonTextColor || null,
             borderRadius: settings.borderRadius ?? 16,
             fontFamily: settings.fontFamily || 'Cairo',
-            socialLinks: settings.socialLinks || [],
+            socialLinks: (settings.socialLinks || []).map((l: any) => l.platform === 'email' ? { ...l, value: normalizeEmail(l.value) } : l),
             deliveryApps: settings.deliveryApps || [],
             applications: updatedApplications || [],
             hide_delivery_prices: !!settings.hide_delivery_prices,
@@ -375,7 +399,8 @@ export default function CustomizePage() {
     const newApp = {
       id: `custom-${Date.now()}`,
       type: 'custom',
-      name: t('customize.newAppDefaultName'),
+      name: '',
+      name_en: '',
       logo: '',
       value: ''
     };
@@ -399,6 +424,45 @@ export default function CustomizePage() {
     });
   };
 
+  const translateCustomAppName = async (app: any) => {
+    if (!(app.name || '').trim()) return;
+    setTranslatingAppId(app.id);
+    try {
+      const name_en = await translateText(app.name);
+      updateAppField(app.id, 'name_en', name_en);
+    } catch (e: any) {
+      toast({ title: t('menuItem.translationFailed'), description: e.message, variant: 'destructive' });
+    } finally {
+      setTranslatingAppId(null);
+    }
+  };
+
+  // Arabic + English name inputs for a restaurant's own delivery app, shared by
+  // the with-branches and no-branches layouts below.
+  const renderCustomAppNameFields = (app: any) => (
+    <div className="flex-1 min-w-0 space-y-1.5">
+      <div className="space-y-1">
+        <Label className="text-[10px] text-gray-600">{t('customize.appNameArLabel')} *</Label>
+        <Input value={app.name || ''} onChange={e => updateAppField(app.id, 'name', e.target.value)} placeholder={t('customize.appNamePlaceholder')} className={`h-8 text-[11px] font-bold w-full ${alignStart} rounded-lg border-gray-200`} />
+      </div>
+      <div className="space-y-1">
+        <div className={`flex items-center justify-between ${rowReverse}`}>
+          <Label className="text-[10px] text-gray-600">{t('customize.appNameEnLabel')} *</Label>
+          <button
+            type="button"
+            onClick={() => translateCustomAppName(app)}
+            disabled={translatingAppId === app.id || !(app.name || '').trim()}
+            className="flex items-center gap-1 text-[10px] font-medium text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-40"
+          >
+            {translatingAppId === app.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            {t('menuItem.translateAuto')}
+          </button>
+        </div>
+        <Input dir="ltr" value={app.name_en || ''} onChange={e => updateAppField(app.id, 'name_en', e.target.value)} placeholder={t('customize.appNameEnPlaceholder')} className="h-8 text-[11px] w-full rounded-lg border-gray-200" />
+      </div>
+    </div>
+  );
+
   const handleAppLogoChange = (appId: string, file: File) => {
     const previewUrl = URL.createObjectURL(file);
     setCustomAppFiles(prev => ({ ...prev, [appId]: file }));
@@ -420,6 +484,17 @@ export default function CustomizePage() {
 
   const removeSocialLink = (id: string) => {
     setSettings({ ...settings, socialLinks: (settings.socialLinks || []).filter((l: any) => l.id !== id) });
+  };
+
+  // The array order IS the display order on the public page, so moving a
+  // link here is all that "arranging" needs.
+  const moveSocialLink = (id: string, delta: -1 | 1) => {
+    const links = [...(settings.socialLinks || [])];
+    const from = links.findIndex((l: any) => l.id === id);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= links.length) return;
+    [links[from], links[to]] = [links[to], links[from]];
+    setSettings({ ...settings, socialLinks: links });
   };
 
   const updateSocialLink = (id: string, value: string) => {
@@ -677,10 +752,7 @@ export default function CustomizePage() {
                                       >
                                           {app.logo ? <StorageImage imagePath={app.logo} alt={app.name} fill className="object-contain p-1" sizes="36px" /> : <ImageIcon size={16} className="text-gray-200" />}
                                       </div>
-                                      <div className="flex-1 min-w-0 space-y-1">
-                                          <Input value={app.name} onChange={e => updateAppField(app.id, 'name', e.target.value)} placeholder={t('customize.appNamePlaceholder')} className={`h-8 text-[11px] font-bold w-full ${alignStart} rounded-lg border-gray-200`} />
-                                          <Input dir="ltr" value={app.name_en || ''} onChange={e => updateAppField(app.id, 'name_en', e.target.value)} placeholder={t('customize.appNameEnPlaceholder')} className="h-8 text-[11px] w-full rounded-lg border-gray-200" />
-                                      </div>
+                                      {renderCustomAppNameFields(app)}
                                       <button onClick={() => removeApp(app.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1"><X size={12} /></button>
                                       <input type="file" ref={el => { appLogoInputRefs.current[app.id] = el; }} onChange={e => e.target.files?.[0] && handleAppLogoChange(app.id, e.target.files[0])} className="hidden" accept="image/*" />
                                   </div>
@@ -733,10 +805,7 @@ export default function CustomizePage() {
                                             {app.type === 'global' ? (
                                                 <p className="text-[11px] font-bold text-gray-900">{(dir === 'ltr' && app.name_en) || app.name}</p>
                                             ) : (
-                                                <>
-                                                    <Input value={app.name} onChange={e => updateAppField(app.id, 'name', e.target.value)} placeholder={t('customize.appNamePlaceholder')} className={`h-8 text-[11px] font-bold w-full ${alignStart} rounded-lg border-gray-200`} />
-                                                    <Input dir="ltr" value={app.name_en || ''} onChange={e => updateAppField(app.id, 'name_en', e.target.value)} placeholder={t('customize.appNameEnPlaceholder')} className="h-8 text-[11px] w-full rounded-lg border-gray-200" />
-                                                </>
+                                                renderCustomAppNameFields(app)
                                             )}
                                         </div>
                                         <button onClick={() => removeApp(app.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1"><X size={12} /></button>
@@ -770,15 +839,26 @@ export default function CustomizePage() {
                             ))}
                         </div>
                         <div className="space-y-2">
-                            {(settings.socialLinks || []).map((link: any) => {
+                            {(settings.socialLinks || []).length > 1 && (
+                                <p className="text-[10px] text-gray-500">{t('customize.socialOrderHint')}</p>
+                            )}
+                            {(settings.socialLinks || []).map((link: any, index: number, all: any[]) => {
                                 const platform = SOCIAL_PLATFORMS.find(p => p.value === link.platform);
                                 const Icon = platform?.icon || WebsiteIcon;
                                 return (
                                     <div key={link.id} className={`flex items-center gap-2 bg-gray-50 p-2 rounded-xl border border-gray-100 ${rowReverse}`}>
+                                        <div className="flex flex-col shrink-0">
+                                            <button type="button" onClick={() => moveSocialLink(link.id, -1)} disabled={index === 0} title={t('customize.moveUp')} className="w-5 h-4 flex items-center justify-center text-gray-600 disabled:opacity-25 hover:text-gray-900">
+                                                <ChevronUp className="h-3.5 w-3.5" />
+                                            </button>
+                                            <button type="button" onClick={() => moveSocialLink(link.id, 1)} disabled={index === all.length - 1} title={t('customize.moveDown')} className="w-5 h-4 flex items-center justify-center text-gray-600 disabled:opacity-25 hover:text-gray-900">
+                                                <ChevronDown className="h-3.5 w-3.5" />
+                                            </button>
+                                        </div>
                                         <div className="p-1.5 bg-white rounded-lg border border-gray-100 shrink-0">
                                             <Icon size={14} style={{ color: platform?.color }} />
                                         </div>
-                                        <Input dir="ltr" value={link.value} onChange={e => updateSocialLink(link.id, e.target.value)} placeholder={t('customize.socialLinkPlaceholder')} className="h-8 text-[10px] rounded-lg border-gray-200 flex-1" />
+                                        <Input dir="ltr" type={link.platform === 'email' ? 'email' : 'text'} value={link.value} onChange={e => updateSocialLink(link.id, e.target.value)} placeholder={link.platform === 'email' ? t('customize.socialEmailPlaceholder') : t('customize.socialLinkPlaceholder')} className="h-8 text-[10px] rounded-lg border-gray-200 flex-1" />
                                         <button onClick={() => removeSocialLink(link.id)} className="text-gray-600 hover:text-red-500 transition-colors p-1"><X size={12}/></button>
                                     </div>
                                 )

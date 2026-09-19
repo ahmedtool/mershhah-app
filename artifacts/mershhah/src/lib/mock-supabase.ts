@@ -22,6 +22,7 @@ const LS_HUB_VISITS = 'mershhah_mock_hub_visits';
 const LS_GATEWAY_SERVICES = 'mershhah_mock_gateway_services';
 const LS_JOB_POSTINGS = 'mershhah_mock_job_postings';
 const LS_BUSINESS_REQUESTS = 'mershhah_mock_business_requests';
+const LS_ACTIVATED_TOOLS = 'mershhah_mock_activated_tools';
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 function readStore<T>(key: string, fallback: T[]): T[] {
@@ -167,6 +168,7 @@ const TABLE_LS_KEY: Record<string, string> = {
   business_gateway_services: LS_GATEWAY_SERVICES,
   job_postings: LS_JOB_POSTINGS,
   business_requests: LS_BUSINESS_REQUESTS,
+  activated_tools: LS_ACTIVATED_TOOLS,
 };
 
 // ── Query Builder ───────────────────────────────────────────────────────────

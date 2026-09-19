@@ -453,7 +453,7 @@ export async function restaurantChat(input: RestaurantChatInput): Promise<Restau
         return { smartReply: `ما حددنا حسابات التواصل بعد، بس تقدر تتواصل معنا عبر واتساب أو تطبيقاتنا! 📱`, showApplications: true };
       }
       const platforms = data.socialLinks.map(l => {
-        const names: Record<string, string> = { instagram: 'انستقرام', tiktok: 'تيك توك', twitter: 'تويتر', snapchat: 'سناب شات', facebook: 'فيسبوك', youtube: 'يوتيوب' };
+        const names: Record<string, string> = { instagram: 'انستقرام', tiktok: 'تيك توك', twitter: 'تويتر', snapchat: 'سناب شات', facebook: 'فيسبوك', youtube: 'يوتيوب', email: 'البريد الإلكتروني' };
         return `• ${names[l.platform] || l.platform}: ${l.value}`;
       }).join('\n');
       return { smartReply: `📱 حساباتنا:\n\n${platforms}\n\nتابعنا! 🔔` };
