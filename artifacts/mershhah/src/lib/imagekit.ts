@@ -1,11 +1,16 @@
 import { compressImage } from '@/lib/compress-image';
+import { supabase } from '@/lib/supabase';
 
 const UPLOAD_URL = "https://upload.imagekit.io/api/v1/files/upload";
 
 type AuthParams = { token: string; expire: number; signature: string; publicKey: string };
 
 async function getAuthParams(): Promise<AuthParams> {
-  const res = await fetch("/api/imagekit/auth");
+  // The signature endpoint only serves logged-in owners/admins now.
+  const { data: { session } } = await supabase.auth.getSession();
+  const res = await fetch("/api/imagekit/auth", {
+    headers: session?.access_token ? { Authorization: "Bearer " + session.access_token } : {},
+  });
   if (!res.ok) throw new Error("Failed to get upload authorization");
   return res.json();
 }

@@ -267,7 +267,7 @@ export default function PublicJobsPage() {
               </div>
               <div>
                 <label className="text-xs text-gray-600 mb-1.5 block">{t('publicJobs.cvLabel')}</label>
-                <FileUploadInput rules={PLATFORM_CV_RULES} value={cvFiles} onChange={setCvFiles} />
+                <FileUploadInput rules={PLATFORM_CV_RULES} value={cvFiles} onChange={setCvFiles} uploadContext={{ restaurantId: restaurant.id, serviceType: 'jobs' }} />
               </div>
             </div>
 

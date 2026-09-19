@@ -224,7 +224,7 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
               </div>
             )}
 
-            <FormFieldsRenderer fields={effectiveFields} values={fieldValues} onChange={setFieldValues} />
+            <FormFieldsRenderer fields={effectiveFields} values={fieldValues} onChange={setFieldValues} uploadContext={{ restaurantId: restaurant.id, serviceType }} />
 
             <Button
               onClick={handleSubmit}

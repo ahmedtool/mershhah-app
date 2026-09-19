@@ -30,10 +30,12 @@ export const newFieldId = () => `f${Date.now().toString(36)}${Math.floor(Math.ra
 // Decided by the platform, NOT by restaurant owners: we pay for the storage,
 // so this is the one place that says how much a visitor may upload. Change a
 // number here and every form (custom, built-in, jobs CV) follows.
-// Enforced in the browser before upload - uploads go browser -> ImageKit
-// with a short-lived signature, so a hand-crafted request could bypass it.
-export const PLATFORM_FILE_RULES: FormFileRules = { maxSizeMB: 5, maxFiles: 1, allowed: ['image', 'pdf'] };
-export const PLATFORM_CV_RULES: FormFileRules = { maxSizeMB: 5, maxFiles: 1, allowed: ['pdf', 'image'] };
+// The browser checks these for a friendly error; the real enforcement is
+// server-side in artifacts/api-server (src/lib/upload-rules.ts, used by
+// POST /api/form-upload) - keep the two in sync. 4 MB because Vercel rejects
+// request bodies above 4.5 MB before our code runs.
+export const PLATFORM_FILE_RULES: FormFileRules = { maxSizeMB: 4, maxFiles: 1, allowed: ['image', 'pdf'] };
+export const PLATFORM_CV_RULES: FormFileRules = { maxSizeMB: 4, maxFiles: 1, allowed: ['pdf', 'image'] };
 
 const FILE_GROUPS: Record<FormFileRules['allowed'][number], { mimes: string[]; exts: string[]; accept: string }> = {
   image: { mimes: ['image/jpeg', 'image/png', 'image/webp'], exts: ['jpg', 'jpeg', 'png', 'webp'], accept: 'image/jpeg,image/png,image/webp' },
@@ -53,8 +55,8 @@ export const allowedExtensionsLabel = (rules: FormFileRules) =>
 // Returns which rule a file breaks, or null when it's fine. Checks the
 // extension as well as the MIME type because browsers report an empty type
 // for some document formats.
-export function validateFile(file: File, rules: FormFileRules): 'size' | 'type' | null {
-  if (file.size > rules.maxSizeMB * 1024 * 1024) return 'size';
+export function validateFile(file: File, rules: FormFileRules, sizeBytes: number = file.size): 'size' | 'type' | null {
+  if (sizeBytes > rules.maxSizeMB * 1024 * 1024) return 'size';
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
   const ok = rules.allowed.some((g) => FILE_GROUPS[g].mimes.includes(file.type) || FILE_GROUPS[g].exts.includes(ext));
   return ok ? null : 'type';

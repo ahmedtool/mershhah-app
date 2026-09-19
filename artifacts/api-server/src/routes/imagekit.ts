@@ -1,21 +1,15 @@
 import { Router, type IRouter } from "express";
-import ImageKit from "imagekit";
+import { getImageKit } from "../lib/imagekit";
+import { requireOwnerOrAdmin } from "../middleware/requireOwnerOrAdmin";
 
 const router: IRouter = Router();
 
-function getImageKit(): ImageKit {
-  const publicKey = process.env.IMAGEKIT_PUBLIC_KEY;
-  const privateKey = process.env.IMAGEKIT_PRIVATE_KEY;
-  const urlEndpoint = process.env.IMAGEKIT_URL_ENDPOINT;
-  if (!publicKey || !privateKey || !urlEndpoint) {
-    throw new Error("ImageKit is not configured (IMAGEKIT_PUBLIC_KEY/IMAGEKIT_PRIVATE_KEY/IMAGEKIT_URL_ENDPOINT)");
-  }
-  return new ImageKit({ publicKey, privateKey, urlEndpoint });
-}
-
 // GET /api/imagekit/auth — short-lived signature the browser needs to upload
-// straight to ImageKit without ever seeing the private key.
-router.get("/auth", (req, res) => {
+// straight to ImageKit without ever seeing the private key. A signature can't
+// restrict file size or type, so it is only handed to logged-in owners/admins
+// (dashboard image uploads). Anonymous visitors uploading through public forms
+// go through POST /api/form-upload instead, which validates the file itself.
+router.get("/auth", requireOwnerOrAdmin, (req, res) => {
   try {
     const imagekit = getImageKit();
     const { token, expire, signature } = imagekit.getAuthenticationParameters();

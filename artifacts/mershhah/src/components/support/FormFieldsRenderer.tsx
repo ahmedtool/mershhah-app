@@ -5,7 +5,8 @@ import { Loader2, Upload, X, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { uploadToImageKit } from '@/lib/imagekit';
+import { uploadFormFile, FormUploadError, type FormUploadContext } from '@/lib/form-upload';
+import { compressImage } from '@/lib/compress-image';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { PLATFORM_FILE_RULES, fileAcceptAttr, allowedExtensionsLabel, validateFile } from '@/lib/form-fields';
@@ -32,9 +33,10 @@ export function missingRequiredFields(fields: BusinessGatewayField[], values: Fo
 // Upload control shared by the "file" field type and the jobs CV. In preview
 // mode it renders the same UI but never touches the network.
 export function FileUploadInput({
-  rules, value, onChange, preview,
+  rules, value, onChange, preview, uploadContext,
 }: {
   rules?: FormFileRules;
+  uploadContext?: FormUploadContext;
   value: UploadedFormFile[];
   onChange: (files: UploadedFormFile[]) => void;
   preview?: boolean;
@@ -60,7 +62,11 @@ export function FileUploadInput({
     setUploading(true);
     const added: UploadedFormFile[] = [];
     for (const file of toUpload) {
-      const problem = validateFile(file, r);
+      // Photos are shrunk first (phone shots are often 6-10 MB), and the size
+      // limit is checked against what will actually be uploaded.
+      const isImage = file.type.startsWith('image/');
+      const toSend: Blob = isImage ? await compressImage(file) : file;
+      const problem = validateFile(file, r, toSend.size);
       if (problem === 'size') {
         toast({ title: t('publicFormFiles.fileTooLarge').replace('{mb}', String(r.maxSizeMB)), description: file.name, variant: 'destructive' });
         continue;
@@ -69,11 +75,22 @@ export function FileUploadInput({
         toast({ title: t('publicFormFiles.fileTypeNotAllowed').replace('{types}', allowedExtensionsLabel(r)), description: file.name, variant: 'destructive' });
         continue;
       }
-      try {
-        const url = await uploadToImageKit(file, 'form-uploads');
-        added.push({ url, name: file.name });
-      } catch {
+      if (!uploadContext) {
         toast({ title: t('publicJobs.cvUploadFailed'), description: file.name, variant: 'destructive' });
+        continue;
+      }
+      try {
+        const url = await uploadFormFile(toSend, uploadContext);
+        added.push({ url, name: file.name });
+      } catch (err) {
+        const code = err instanceof FormUploadError ? err.code : 'upload_failed';
+        const message =
+          code === 'file_too_large' ? t('publicFormFiles.fileTooLarge').replace('{mb}', String(r.maxSizeMB))
+          : code === 'file_type_not_allowed' ? t('publicFormFiles.fileTypeNotAllowed').replace('{types}', allowedExtensionsLabel(r))
+          : code === 'rate_limited' ? t('publicFormFiles.rateLimited')
+          : code === 'form_not_available' ? t('publicFormFiles.formNotAvailable')
+          : t('publicJobs.cvUploadFailed');
+        toast({ title: message, description: file.name, variant: 'destructive' });
       }
     }
     setUploading(false);
@@ -129,8 +146,9 @@ function htmlInputType(type: BusinessGatewayField['type']) {
 // public form and by the owner's "Preview" dialog (preview = true blocks
 // uploads so previewing never writes to storage).
 export function FormFieldsRenderer({
-  fields, values, onChange, preview,
+  fields, values, onChange, preview, uploadContext,
 }: {
+  uploadContext?: FormUploadContext;
   fields: BusinessGatewayField[];
   values: FormValues;
   onChange: (values: FormValues) => void;
@@ -210,6 +228,7 @@ export function FormFieldsRenderer({
                 value={Array.isArray(values[field.id]) ? (values[field.id] as UploadedFormFile[]) : []}
                 onChange={(files) => set(field.id, files)}
                 preview={preview}
+                uploadContext={uploadContext}
               />
             ) : (
               <Input

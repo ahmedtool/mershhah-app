@@ -1190,6 +1190,8 @@ export const translations = {
       submittedDesc: 'شكراً لتواصلك، تم استلام طلبك وسنتواصل معك قريباً.',
     },
     publicFormFiles: {
+      rateLimited: 'محاولات رفع كثيرة، انتظر شوي وحاول مرة ثانية',
+      formNotAvailable: 'هذا النموذج غير متاح حاليًا',
       tooManyFiles: 'الحد الأقصى {n} ملفات',
       fileTooLarge: 'الملف أكبر من {mb} ميجابايت',
       fileTypeNotAllowed: 'نوع الملف غير مسموح ({types})',
@@ -2616,6 +2618,8 @@ export const translations = {
       submittedDesc: "Thanks for reaching out. We've received your request and will contact you soon.",
     },
     publicFormFiles: {
+      rateLimited: 'Too many upload attempts - please wait a moment and try again',
+      formNotAvailable: 'This form is not available right now',
       tooManyFiles: 'Maximum {n} files',
       fileTooLarge: 'File is larger than {mb} MB',
       fileTypeNotAllowed: 'File type not allowed ({types})',
