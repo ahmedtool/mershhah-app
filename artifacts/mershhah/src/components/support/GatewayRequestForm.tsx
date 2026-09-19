@@ -6,8 +6,6 @@ import { supabase } from '@/lib/supabase';
 import { getPublicPage } from '@/lib/public-pages';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, ChevronRight, ChevronLeft, CheckCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StorageImage } from '@/components/shared/StorageImage';
@@ -16,6 +14,7 @@ import { getPublicThemeStyle } from '@/lib/public-theme';
 import { PublicPageBackdrop } from '@/components/shared/PublicPageBackdrop';
 import { useLanguage } from '@/components/shared/LanguageContext';
 import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher';
+import { FormFieldsRenderer, missingRequiredFields, type FormValues } from '@/components/support/FormFieldsRenderer';
 import type { BusinessGatewayField, BusinessGatewayServiceType, BusinessGatewayBaseFields } from '@/lib/types';
 import { usePublicPageBackground } from '@/hooks/usePublicPageBackground';
 
@@ -53,7 +52,7 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [fieldValues, setFieldValues] = useState<FormValues>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,7 +62,7 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
         if (data?.restaurant) {
           setRestaurant(data.restaurant);
           const svc = (data.gatewayServices || []).find((s) => s.service_type === serviceType);
-          if (isCustom) setCustomConfig((svc?.config as typeof customConfig) || null);
+          setCustomConfig((svc?.config as typeof customConfig) || null);
           setBaseFields(svc?.config?.baseFields || {});
           setLoading(false);
           return;
@@ -78,7 +77,7 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
             .eq('service_type', serviceType)
             .eq('is_enabled', true)
             .single();
-          if (isCustom) setCustomConfig(svc?.config || null);
+          setCustomConfig(svc?.config || null);
           setBaseFields(svc?.config?.baseFields || {});
         }
       } catch (e) {
@@ -94,8 +93,11 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
   const effectiveTitle = isCustom
     ? ((isEnglish && customConfig?.title_en) || customConfig?.title || '')
     : (titleKey ? t(titleKey) : '');
-  const effectiveFields = isCustom ? (customConfig?.fields || []) : (fields || []);
-  const fieldLabel = (field: BusinessGatewayField) => field.labelKey ? t(field.labelKey) : ((isEnglish && field.label_en) || field.label || '');
+  // Built-in types fall back to their default questions until the owner
+  // saves an override; custom types are always fully owner-authored.
+  const effectiveFields: BusinessGatewayField[] = isCustom
+    ? (customConfig?.fields || [])
+    : (Array.isArray(customConfig?.fields) ? customConfig!.fields! : (fields || []));
   const restaurantName = (isEnglish && restaurant?.name_en) || restaurant?.name || '';
   // A base field is shown-and-required, or hidden entirely - there's no
   // "shown but optional" state, so visibility and required-ness are the
@@ -103,7 +105,8 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
   const nameVisible = baseFields.name !== false;
   const phoneVisible = baseFields.phone !== false;
   const emailVisible = baseFields.email === true;
-  const canSubmit = (!nameVisible || !!name.trim()) && (!phoneVisible || !!phone.trim()) && (!emailVisible || !!email.trim());
+  const canSubmit = (!nameVisible || !!name.trim()) && (!phoneVisible || !!phone.trim()) && (!emailVisible || !!email.trim())
+    && missingRequiredFields(effectiveFields, fieldValues).length === 0;
 
   const handleSubmit = () => {
     if (!restaurant) return;
@@ -221,41 +224,7 @@ export function GatewayRequestForm({ serviceType, titleKey, fields }: GatewayReq
               </div>
             )}
 
-            {effectiveFields.map((field) => (
-              field.type === 'paragraph' ? (
-                <p key={field.id} className="text-xs text-gray-600 leading-relaxed">{fieldLabel(field)}</p>
-              ) : (
-              <div key={field.id}>
-                <label className="text-xs text-gray-600 mb-1.5 block">{fieldLabel(field)}</label>
-                {field.type === 'textarea' ? (
-                  <Textarea
-                    value={fieldValues[field.id] || ''}
-                    onChange={(e) => setFieldValues({ ...fieldValues, [field.id]: e.target.value })}
-                    rows={3}
-                    className="text-sm rounded-lg border-gray-100 resize-none min-h-[80px]"
-                  />
-                ) : field.type === 'select' ? (
-                  <Select value={fieldValues[field.id] || ''} onValueChange={(v) => setFieldValues({ ...fieldValues, [field.id]: v })}>
-                    <SelectTrigger className="h-10 text-sm rounded-lg border-gray-100">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(field.options || []).map((opt) => (
-                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    value={fieldValues[field.id] || ''}
-                    onChange={(e) => setFieldValues({ ...fieldValues, [field.id]: e.target.value })}
-                    type={field.type === 'number' ? 'number' : 'text'}
-                    className="h-10 text-sm rounded-lg border-gray-100"
-                  />
-                )}
-              </div>
-              )
-            ))}
+            <FormFieldsRenderer fields={effectiveFields} values={fieldValues} onChange={setFieldValues} />
 
             <Button
               onClick={handleSubmit}

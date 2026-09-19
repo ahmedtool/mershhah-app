@@ -373,9 +373,25 @@ export type BusinessGatewayField = {
   label_en?: string;
   // 'paragraph' renders as static descriptive text on the public form -
   // it collects no input and is never required or submitted.
-  type: 'text' | 'textarea' | 'number' | 'select' | 'paragraph';
-  options?: string[]; // for type: 'select'
+  type: BusinessGatewayFieldType;
+  options?: string[]; // for type: 'select' | 'radio' | 'checkbox'
+  required?: boolean;
+  fileRules?: FormFileRules; // for type: 'file'
 };
+
+export type BusinessGatewayFieldType =
+  | 'text' | 'textarea' | 'number' | 'email' | 'phone' | 'url' | 'date'
+  | 'select' | 'radio' | 'checkbox' | 'yesno' | 'file' | 'paragraph';
+
+// Upload limits for a file field / the jobs CV. Hard platform ceilings live in
+// src/lib/form-fields.ts - an owner can tighten these, never loosen past them.
+export type FormFileRules = {
+  maxSizeMB: number;
+  maxFiles: number;
+  allowed: Array<'image' | 'pdf' | 'doc'>;
+};
+
+export type UploadedFormFile = { url: string; name: string };
 
 export type BusinessGatewayServiceType =
   | 'jobs'
@@ -399,8 +415,12 @@ export type BusinessGatewayServiceConfig = {
   title?: string; // custom types only
   title_en?: string; // custom types only - see BusinessGatewayField.label_en
   icon?: string; // custom types only
-  fields?: BusinessGatewayField[]; // franchise/wholesale/corporate/partnership/custom
+  // franchise/wholesale/corporate/partnership/custom. For the built-in types
+  // this is an owner override - when absent the defaults in
+  // gateway-service-types.ts apply.
+  fields?: BusinessGatewayField[];
   baseFields?: BusinessGatewayBaseFields;
+  cvRules?: FormFileRules; // jobs only - limits on the applicant's CV upload
 };
 
 export type BusinessGatewayService = {
@@ -421,6 +441,7 @@ export type JobPosting = {
   employment_type?: 'full_time' | 'part_time' | null;
   description?: string | null;
   is_active: boolean;
+  max_applications?: number | null; // null/undefined = unlimited
   created_at: any;
 };
 

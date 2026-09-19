@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useParams } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { getPublicPage } from '@/lib/public-pages';
-import { uploadToImageKit } from '@/lib/imagekit';
+import { FileUploadInput } from '@/components/support/FormFieldsRenderer';
+import { DEFAULT_CV_RULES, clampFileRules } from '@/lib/form-fields';
+import type { FormFileRules, UploadedFormFile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, ChevronRight, ChevronLeft, CheckCircle, Info, Briefcase, MapPin, FileText, Upload } from 'lucide-react';
+import { Loader2, ChevronRight, ChevronLeft, CheckCircle, Info, Briefcase, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { StorageImage } from '@/components/shared/StorageImage';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -31,22 +33,33 @@ export default function PublicJobsPage() {
   const { toast } = useToast();
   const { t, dir } = useLanguage();
   const alignStart = dir === 'rtl' ? 'text-right' : 'text-left';
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [restaurant, setRestaurant] = useState<any>(null);
   const [postings, setPostings] = useState<JobPostingLite[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedJob, setSelectedJob] = useState<JobPostingLite | null>(null);
+  const [cvRules, setCvRules] = useState<FormFileRules>(DEFAULT_CV_RULES);
+  const [closedPostingIds, setClosedPostingIds] = useState<Set<string>>(new Set());
   usePublicPageBackground(restaurant?.secondaryColor);
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [cvUrl, setCvUrl] = useState<string | null>(null);
-  const [cvFileName, setCvFileName] = useState<string | null>(null);
-  const [isUploadingCv, setIsUploadingCv] = useState(false);
+  const [cvFiles, setCvFiles] = useState<UploadedFormFile[]>([]);
   const [isSubmitting, startSubmitting] = useTransition();
   const [submitted, setSubmitted] = useState(false);
+
+  // Postings that hit their application cap are shown as closed. The DB
+  // trigger is the real boundary - this just spares visitors from filling a
+  // whole form only to be rejected on submit.
+  const loadOpenStatus = async (restaurantId: string) => {
+    try {
+      const { data } = await supabase.rpc('job_posting_open_status', { p_restaurant_id: restaurantId });
+      setClosedPostingIds(new Set(((data || []) as Array<{ posting_id: string; is_open: boolean }>).filter((r) => !r.is_open).map((r) => r.posting_id)));
+    } catch {
+      // Availability is a UI nicety only - the DB trigger still enforces the cap.
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,6 +69,9 @@ export default function PublicJobsPage() {
         if (data?.restaurant) {
           setRestaurant(data.restaurant);
           setPostings((data.jobPostings || []) as JobPostingLite[]);
+          const jobsSvc = (data.gatewayServices || []).find((sv) => sv.service_type === 'jobs');
+          setCvRules(clampFileRules(jobsSvc?.config?.cvRules, DEFAULT_CV_RULES));
+          loadOpenStatus(data.restaurant.id);
           setLoading(false);
           return;
         }
@@ -73,6 +89,15 @@ export default function PublicJobsPage() {
           .eq('restaurant_id', rest.id)
           .eq('is_active', true);
         setPostings((jp || []) as JobPostingLite[]);
+        const { data: svc } = await supabase
+          .from('business_gateway_services')
+          .select('config')
+          .eq('restaurant_id', rest.id)
+          .eq('service_type', 'jobs')
+          .eq('is_enabled', true)
+          .maybeSingle();
+        setCvRules(clampFileRules(svc?.config?.cvRules, DEFAULT_CV_RULES));
+        loadOpenStatus(rest.id);
       } catch (e) {
         console.error(e);
       } finally {
@@ -82,24 +107,9 @@ export default function PublicJobsPage() {
     fetchData();
   }, [username]);
 
-  const handleCvChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsUploadingCv(true);
-    try {
-      const url = await uploadToImageKit(file, 'cv-uploads');
-      setCvUrl(url);
-      setCvFileName(file.name);
-    } catch {
-      toast({ title: t('ownerSettings.errorTitle'), description: t('publicJobs.cvUploadFailed'), variant: 'destructive' });
-    } finally {
-      setIsUploadingCv(false);
-    }
-  };
-
   const handleSubmit = () => {
     if (!restaurant || !selectedJob) return;
-    if (!cvUrl) {
+    if (cvFiles.length === 0) {
       toast({ title: t('publicJobs.cvRequired'), variant: 'destructive' });
       return;
     }
@@ -112,12 +122,18 @@ export default function PublicJobsPage() {
           name,
           phone,
           email: email || null,
-          fields: { cv_url: cvUrl },
+          fields: { cv_url: cvFiles[0].url, cv_files: cvFiles },
           status: 'new',
         });
         if (error) throw error;
         setSubmitted(true);
       } catch (error: any) {
+        if (String(error?.message || '').includes('job_posting_full')) {
+          setClosedPostingIds((prev) => new Set(prev).add(selectedJob.id));
+          setSelectedJob(null);
+          toast({ title: t('publicJobs.postingFullTitle'), description: t('publicJobs.postingFullDesc'), variant: 'destructive' });
+          return;
+        }
         toast({ title: t('ownerSettings.errorTitle'), description: t('publicJobs.applicationFailedDesc'), variant: 'destructive' });
       }
     });
@@ -193,11 +209,14 @@ export default function PublicJobsPage() {
             </div>
           ) : (
             <div className="space-y-3">
-              {postings.map((posting) => (
+              {postings.map((posting) => {
+                const isClosed = closedPostingIds.has(posting.id);
+                return (
                 <button
                   key={posting.id}
-                  onClick={() => setSelectedJob(posting)}
-                  className={`w-full flex items-center gap-4 p-4 bg-white border border-gray-100 shadow-sm hover:shadow-md transition-all ${alignStart}`}
+                  onClick={() => !isClosed && setSelectedJob(posting)}
+                  disabled={isClosed}
+                  className={`w-full flex items-center gap-4 p-4 bg-white border border-gray-100 shadow-sm transition-all ${isClosed ? 'opacity-60 cursor-not-allowed' : 'hover:shadow-md'} ${alignStart}`}
                   style={{ borderRadius: 'var(--r-radius)' }}
                 >
                   <div
@@ -215,9 +234,12 @@ export default function PublicJobsPage() {
                       </p>
                     )}
                   </div>
-                  {dir === 'rtl' ? <ChevronLeft className="h-4 w-4 text-gray-600 shrink-0" /> : <ChevronRight className="h-4 w-4 text-gray-600 shrink-0" />}
+                  {isClosed ? (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 shrink-0">{t('publicJobs.postingFullBadge')}</span>
+                  ) : dir === 'rtl' ? <ChevronLeft className="h-4 w-4 text-gray-600 shrink-0" /> : <ChevronRight className="h-4 w-4 text-gray-600 shrink-0" />}
                 </button>
-              ))}
+                );
+              })}
             </div>
           )
         ) : submitted ? (
@@ -256,21 +278,7 @@ export default function PublicJobsPage() {
               </div>
               <div>
                 <label className="text-xs text-gray-600 mb-1.5 block">{t('publicJobs.cvLabel')}</label>
-                <input ref={fileInputRef} type="file" accept=".pdf,image/*" onChange={handleCvChange} className="hidden" />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploadingCv}
-                  className="w-full h-10 rounded-lg border border-dashed border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isUploadingCv ? (
-                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> {t('publicJobs.cvUploading')}</>
-                  ) : cvFileName ? (
-                    <><FileText className="h-3.5 w-3.5" /> {cvFileName}</>
-                  ) : (
-                    <><Upload className="h-3.5 w-3.5" /> {t('publicJobs.cvUploadPrompt')}</>
-                  )}
-                </button>
+                <FileUploadInput rules={cvRules} value={cvFiles} onChange={setCvFiles} />
               </div>
             </div>
 
@@ -278,7 +286,7 @@ export default function PublicJobsPage() {
               onClick={handleSubmit}
               className="w-full h-10 rounded-lg text-sm font-semibold"
               style={{ backgroundColor: primaryColor, color: 'var(--r-button-text)' }}
-              disabled={isSubmitting || isUploadingCv || !name.trim() || !phone.trim()}
+              disabled={isSubmitting || !name.trim() || !phone.trim() || cvFiles.length === 0}
             >
               {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : t('publicShared.send')}
             </Button>
